@@ -2,9 +2,9 @@
 # This is the config file for building GDAL and running its autotest suite
 # with Travis-ci.org
 
-env: 
-  global: 
-  - secure: "bdpR37bX0xA4AbYxcnUtomsXiP33TpgPrK9Wgrbog3w5NTFEQwL+E8hHI8Ee\nub5dPmX/hG92VigWtn5t56XGCLP8Rxf6fJJv6KxYsX/qWzDoS1r0cKuILSsQ\n4fSL24fYIRoF3csbSTbtDyqIfsdxXsFmLcgbi5iJv7HuJJbO9PY="
+env:
+  global:
+    secure: "bdpR37bX0xA4AbYxcnUtomsXiP33TpgPrK9Wgrbog3w5NTFEQwL+E8hHI8Ee\nub5dPmX/hG92VigWtn5t56XGCLP8Rxf6fJJv6KxYsX/qWzDoS1r0cKuILSsQ\n4fSL24fYIRoF3csbSTbtDyqIfsdxXsFmLcgbi5iJv7HuJJbO9PY="
 
 language: cpp
 
