@@ -92,9 +92,9 @@ script:
   - make test
   - cd ../..
 # Java unit tests
-  - cd swig/java
-  - make test
-  - cd ../..
+#  - cd swig/java
+#  - make test
+#  - cd ../..
 # CPP unit tests
   - cd ../autotest
   - cd cpp
