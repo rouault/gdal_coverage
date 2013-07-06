@@ -8,9 +8,9 @@ env:
 
 language: cpp
 
-# We use clang, --without-libtool and --with-debug for faster build
+# We use --without-libtool and --with-debug for faster build
 compiler:
-  - clang
+  - gcc
 
 # remove libogdi3.2-dev : it pulls projects.h from PROJ.4 which no longer exists
 before_install:
