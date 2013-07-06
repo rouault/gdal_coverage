@@ -1,5 +1,10 @@
+
 # This is the config file for building GDAL and running its autotest suite
 # with Travis-ci.org
+
+env: 
+  global: 
+  - secure: "bdpR37bX0xA4AbYxcnUtomsXiP33TpgPrK9Wgrbog3w5NTFEQwL+E8hHI8Ee\nub5dPmX/hG92VigWtn5t56XGCLP8Rxf6fJJv6KxYsX/qWzDoS1r0cKuILSsQ\n4fSL24fYIRoF3csbSTbtDyqIfsdxXsFmLcgbi5iJv7HuJJbO9PY="
 
 language: cpp
 
@@ -42,6 +47,13 @@ before_install:
   - sudo cp -r install-openjpeg/include/* /usr/local/include
   - sudo cp -r install-openjpeg/lib/* /usr/local/lib
   - sudo ldconfig
+# coverage
+  - sudo apt-get install -qq curlftpfs lcov
+  - cd gdal
+  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/coverage.patch
+  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/filter_info.c
+  - patch -p0 < coverage.patch
+  - cd ..
 
 # installing PostGIS 2 from Ubuntu PPA draws libgdal1.9 dependency. We must install ourselves
 # in /usr too to avoid gdal version conflict. Might be fragile however
@@ -119,6 +131,10 @@ script:
   - LD_LIBRARY_PATH=$PWD python ogr_sqlite.py
   - cd ..
 
+after_success: 
+- cd ../gdal
+- sh -c "if $TRAVIS_SECURE_ENV_VARS; then ./run_code_coverage_upload.sh; fi"
+
 notifications:
   email:
     recipients:
@@ -128,4 +144,3 @@ notifications:
     channels:
       - "irc.freenode.org#gdal"
     use_notice: true
-
