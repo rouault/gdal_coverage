@@ -4,7 +4,7 @@
 
 env:
   global:
-    secure: "bdpR37bX0xA4AbYxcnUtomsXiP33TpgPrK9Wgrbog3w5NTFEQwL+E8hHI8Ee\nub5dPmX/hG92VigWtn5t56XGCLP8Rxf6fJJv6KxYsX/qWzDoS1r0cKuILSsQ\n4fSL24fYIRoF3csbSTbtDyqIfsdxXsFmLcgbi5iJv7HuJJbO9PY="
+    - secure: "qSk1Cw+eGPKj4z4O9Fk+kjKM8nmEraKH659Sd2mIJMCj/YaZ2cX4lcojESc9\nFHE1qsLklwUmrzrIWkAirYY2HRGoxiltUda6lJBGcmApL3EM+Y9dl+CFwGM/\nV9G9xvffrWo1/f16GOP0AwzZFPAKQcM0nWCqzlsBr9DIFaH0Thg="
 
 language: cpp
 
