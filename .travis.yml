@@ -133,7 +133,8 @@ script:
 
 after_success: 
 - cd ../gdal
-- sh -c "if $TRAVIS_SECURE_ENV_VARS; then ./run_code_coverage_upload.sh; fi"
+- echo "$TRAVIS_SECURE_ENV_VARS"
+- sh -c 'if test "$TRAVIS_SECURE_ENV_VARS" = "true"; then echo "run coverage"; ./run_code_coverage_upload.sh; fi'
 
 notifications:
 #  email:
