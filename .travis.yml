@@ -136,9 +136,9 @@ after_success:
 - sh -c "if $TRAVIS_SECURE_ENV_VARS; then ./run_code_coverage_upload.sh; fi"
 
 notifications:
-  email:
-    recipients:
-      - gdal-commits@lists.osgeo.org
+#  email:
+#    recipients:
+#      - gdal-commits@lists.osgeo.org
 
   irc:
     channels:
