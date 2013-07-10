@@ -36,7 +36,3 @@ echo "See http://rawgithub.com/rouault/gdalautotest-coverage-results/master/cove
 git add -A
 git commit -m "update with results of commit https://github.com/rouault/gdal_coverage/commit/$TRAVIS_COMMIT"
 git push origin master
-
-#mkdir /tmp/ftpperso
-#curlftpfs $MY_FTP_REPO /tmp/ftpperso/
-#rsync -av coverage_html /tmp/ftpperso
