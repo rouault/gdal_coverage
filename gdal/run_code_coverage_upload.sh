@@ -5,7 +5,7 @@ gcc filter_info.c -o filter_info
 
 
 cp /usr/bin/genhtml .
-# to remove date, so that only real differences show up
+# to remove date and occurences number, so that only real differences show up
 patch -p0 < genhtml.patch
 
 ./genhtml -o ./coverage_html --num-spaces 2 gdal_filtered.info 
