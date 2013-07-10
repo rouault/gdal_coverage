@@ -32,7 +32,7 @@ git pull origin master
 rm -rf *
 cp -r ../coverage_html .
 echo "Results of coverage of GDAL autotest" > README.md
-echo "See http://rawgithub.com/rouault/gdalautotest-coverage-results/master/gdalautotest-coverage-results/coverage_html/index.html" >> README.md
+echo "See http://rawgithub.com/rouault/gdalautotest-coverage-results/master/coverage_html/index.html" >> README.md
 git add -A
 git commit -m "update with results of commit https://github.com/rouault/gdal_coverage/commit/$TRAVIS_COMMIT"
 git push origin master
