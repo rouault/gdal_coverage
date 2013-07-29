@@ -15,7 +15,6 @@ install:
   - make test_ogrsf
   - cd ..
   - sudo make install
-  - sudo ldconfig
   - cd ../autotest/cpp
   - make -j3
   - cd ../../gdal
@@ -39,4 +38,5 @@ notifications:
     channels:
       - "irc.freenode.org#gdal"
     use_notice: true
+    on_success: change
 
