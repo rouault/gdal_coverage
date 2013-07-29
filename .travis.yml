@@ -28,15 +28,15 @@ install:
   - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
   - tar xvzf proj-datumgrid-1.5.tar.gz
   - cd ..
-  - ./configure --host=i586-mingw32msvc
-  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ LD=i586-mingw32msvc-ld make -j3
+  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ LD=i586-mingw32msvc-ld ./configure --host=i586-mingw32msvc
+  - make -j3
   - cd ..
 # build GDAL
   - cd gdal
-  - ./configure --enable-debug --host=i586-mingw32msvc
-  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ LD=i586-mingw32msvc-ld make -j3
+  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ ./configure --enable-debug --host=i586-mingw32msvc
+  - LD=i586-mingw32msvc-ld make -j3
   - cd apps
-  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ LD=i586-mingw32msvc-ld make test_ogrsf.exe
+  - LD=i586-mingw32msvc-ld make test_ogrsf.exe
   - cd ..
   - ln -sf $PWD/.libs/libgdal-1.dll $HOME/.wine/drive_c/windows
   - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libgcc_s_sjlj-1.dll $HOME/.wine/drive_c/windows
