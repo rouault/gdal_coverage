@@ -21,8 +21,19 @@ install:
   - ./configure --enable-debug --host=i686-w64-mingw32
   - make -j3
   - cd apps
-  - make test_ogrsf
+  - make test_ogrsf.exe
   - cd ..
+  - ln -s .libs/libgdal-1.dll 
+  - ln -s /usr/lib/gcc/i686-w64-mingw32/4.6/libgcc_s_sjlj-1.dll 
+  - ln -s /usr/lib/gcc/i686-w64-mingw32/4.6/libstdc++-6.dll 
+  - PATH=$PWD apps/.libs/gdalinfo.exe  --version
+  - wget http://www.python.org/ftp/python/2.7.3/python-2.7.3.msi
+  - wine msiexec /i python-2.7.3.msi
+  - cd swig/python
+  - sed "s/i586-mingw32msvc/i686-w64-mingw32/" < fallback_build_mingw32_under_unix.sh > tmp.sh
+  - mv tmp.sh fallback_build_mingw32_under_unix.sh
+  - bash fallback_build_mingw32_under_unix.sh 
+  - cd ../..
 
 script:
   - cd ../autotest
@@ -38,4 +49,4 @@ notifications:
     channels:
       - "irc.freenode.org#gdal"
     use_notice: true
-
+    on_success: change
