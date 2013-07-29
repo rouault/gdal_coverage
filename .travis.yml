@@ -8,7 +8,7 @@ compiler:
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq wine swig mingw-w64 g++-mingw-w64 curl
+  - sudo apt-get install -y wine swig mingw-w64 g++-mingw-w64 curl
   - psql -c "drop database if exists autotest" -U postgres
   - psql -c "create database autotest" -U postgres
   - psql -c "create extension postgis" -d autotest -U postgres
