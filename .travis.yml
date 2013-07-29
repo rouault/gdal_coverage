@@ -8,7 +8,7 @@ compiler:
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq wine swig mingw-w64 g++-mingw-w64
+  - sudo apt-get install -qq wine swig mingw-w64 g++-mingw-w64 curl
   - psql -c "drop database if exists autotest" -U postgres
   - psql -c "create database autotest" -U postgres
   - psql -c "create extension postgis" -d autotest -U postgres
@@ -17,16 +17,28 @@ before_install:
   - mysql -e "GRANT ALL ON autotest.* TO 'travis'@'localhost';" -u root
 
 install:
+# build proj
+  - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz > proj-4.8.0.tar.gz
+  - tar xvzf proj-4.8.0.tar.gz
+  - cd proj-4.8.0/nad
+  - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
+  - tar xvzf proj-datumgrid-1.5.tar.gz
+  - cd ..
+  - ./configure --host=i686-w64-mingw32
+  - make -j3
+  - cd ..
+# build GDAL
   - cd gdal
   - ./configure --enable-debug --host=i686-w64-mingw32
   - make -j3
   - cd apps
   - make test_ogrsf.exe
   - cd ..
-  - ln -s .libs/libgdal-1.dll 
-  - ln -s /usr/lib/gcc/i686-w64-mingw32/4.6/libgcc_s_sjlj-1.dll 
-  - ln -s /usr/lib/gcc/i686-w64-mingw32/4.6/libstdc++-6.dll 
-  - PATH=$PWD apps/.libs/gdalinfo.exe  --version
+  - ln -sf $PWD/.libs/libgdal-1.dll $HOME/.wine/drive_c/windows
+  - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libgcc_s_sjlj-1.dll $HOME/.wine/drive_c/windows
+  - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libstdc++-6.dll $HOME/.wine/drive_c/windows
+  - ln -sf $PWD/../proj-4.8.0/src/.libs/libproj-0.dll $HOME/.wine/drive_c/windows
+  - apps/.libs/gdalinfo.exe  --version
   - wget http://www.python.org/ftp/python/2.7.3/python-2.7.3.msi
   - wine msiexec /i python-2.7.3.msi
   - cd swig/python
@@ -37,8 +49,11 @@ install:
 
 script:
   - cd ../autotest
+# Does not work under wine
+  - rm gcore/gdal_api_proxy.py
+  - rm gcore/rfc30.py
 # Run all the Python autotests
-  - python run_all.py
+  - GDAL_DATA=$PWD/../gdal/data PYTHONPATH=$PWD/../gdal/swig/python/build/lib.win32-2.7 PATH=$PWD/../gdal:$PWD/../gdal/apps/.libs:$PWD:$PATH $HOME/.wine/drive_c/Python27/python.exe run_all.py
 
 notifications:
   email:
