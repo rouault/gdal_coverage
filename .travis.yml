@@ -164,9 +164,9 @@ script:
 
 after_success: 
 - cd ../gdal
+- sudo cp ../coverage.py /usr/local/lib/python2.7/dist-packages/coveralls
 - echo "$TRAVIS_SECURE_ENV_VARS"
 - sh -c 'if test "$TRAVIS_SECURE_ENV_VARS" = "true"; then echo "run coverage"; ./run_code_coverage_upload.sh; fi'
-- sudo cp coverage.py /usr/local/lib/python2.7/dist-packages/coveralls
 - coveralls --exclude swig
 
 notifications:
