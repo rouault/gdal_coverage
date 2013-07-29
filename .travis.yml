@@ -8,6 +8,18 @@ compiler:
   - clang
 
 install:
+# build proj
+  - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz
+  - tar xvzf proj-4.8.0.tar.gz
+  - cd proj-4.8.0/nad
+  - wget http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz
+  - tar xvzf proj-datumgrid-1.5.tar.gz
+  - cd ..
+  - ./configure --prefix=/usr
+  - make -j3
+  - make install
+  - cd ..
+# build GDAL
   - cd gdal
   - ./configure --prefix=/usr --enable-debug --with-jpeg12 --with-python
   - make -j3
@@ -24,7 +36,6 @@ script:
   - cd ../autotest
   - cd cpp
   - GDAL_SKIP=JP2ECW make quick_test
-  - cd ..
   - cd ..
 # Run all the Python autotests
   - python run_all.py
