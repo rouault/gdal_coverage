@@ -12,7 +12,7 @@ install:
   - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz > proj-4.8.0.tar.gz
   - tar xvzf proj-4.8.0.tar.gz
   - cd proj-4.8.0/nad
-  - wget http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
+  - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
   - tar xvzf proj-datumgrid-1.5.tar.gz
   - cd ..
   - ./configure --prefix=/usr
