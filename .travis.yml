@@ -79,7 +79,7 @@ before_install:
   - sudo ldconfig
 # coverage
   - sudo apt-get install -qq curlftpfs lcov
-  - sudo pip install cpp-coveralls --use-mirrors
+#  - sudo pip install cpp-coveralls --use-mirrors
   - cd gdal
   - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/coverage_r26292.patch -O coverage.patch
   - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/filter_info.c
@@ -167,7 +167,7 @@ after_success:
 - sudo cp ../coverage.py /usr/local/lib/python2.7/dist-packages/coveralls
 - echo "$TRAVIS_SECURE_ENV_VARS"
 - sh -c 'if test "$TRAVIS_SECURE_ENV_VARS" = "true"; then echo "run coverage"; ./run_code_coverage_upload.sh; fi'
-- coveralls --exclude swig
+#- coveralls --exclude swig
 
 notifications:
 #  email:
