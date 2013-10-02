@@ -194,6 +194,10 @@ def rasterio_5():
 
     ds = gdal.Open('data/byte.tif')
 
+    for obj in [ds, ds.GetRasterBand(1)]:
+        obj.ReadRaster(0,0,-2000000000,1,1,1)
+        obj.ReadRaster(0,0,1,-2000000000,1,1)
+
     for band_number in [-1,0,2]:
         gdal.ErrorReset()
         gdal.PushErrorHandler('CPLQuietErrorHandler')
