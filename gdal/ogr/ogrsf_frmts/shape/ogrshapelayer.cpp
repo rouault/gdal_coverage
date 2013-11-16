@@ -2420,7 +2420,7 @@ OGRErr OGRShapeLayer::Repack()
         pszAccess = "r";
     
     if( bMustReopenSHP )
-        hSHP = SHPOpen ( osSHPName , pszAccess );
+        hSHP = OGRShapeSHPOpen ( osSHPName , pszAccess );
     hDBF = DBFOpen ( osDBFName , pszAccess );
 
     if( (bMustReopenSHP && NULL == hSHP) || NULL == hDBF )
@@ -2630,20 +2630,28 @@ OGRErr OGRShapeLayer::RecomputeExtent()
                     bHasBeenInit = TRUE;
                     adBoundsMin[0] = adBoundsMax[0] = psObject->padfX[0];
                     adBoundsMin[1] = adBoundsMax[1] = psObject->padfY[0];
-                    adBoundsMin[2] = adBoundsMax[2] = psObject->padfZ[0];
-                    adBoundsMin[3] = adBoundsMax[3] = psObject->padfM[0];
+                    if( psObject->padfZ )
+                        adBoundsMin[2] = adBoundsMax[2] = psObject->padfZ[0];
+                    if( psObject->padfM )
+                        adBoundsMin[3] = adBoundsMax[3] = psObject->padfM[0];
                 }
 
                 for( int i = 0; i < psObject->nVertices; i++ )
                 {
                     adBoundsMin[0] = MIN(adBoundsMin[0],psObject->padfX[i]);
                     adBoundsMin[1] = MIN(adBoundsMin[1],psObject->padfY[i]);
-                    adBoundsMin[2] = MIN(adBoundsMin[2],psObject->padfZ[i]);
-                    adBoundsMin[3] = MIN(adBoundsMin[3],psObject->padfM[i]);
                     adBoundsMax[0] = MAX(adBoundsMax[0],psObject->padfX[i]);
                     adBoundsMax[1] = MAX(adBoundsMax[1],psObject->padfY[i]);
-                    adBoundsMax[2] = MAX(adBoundsMax[2],psObject->padfZ[i]);
-                    adBoundsMax[3] = MAX(adBoundsMax[3],psObject->padfM[i]);
+                    if( psObject->padfZ )
+                    {
+                        adBoundsMin[2] = MIN(adBoundsMin[2],psObject->padfZ[i]);
+                        adBoundsMax[2] = MAX(adBoundsMax[2],psObject->padfZ[i]);
+                    }
+                    if( psObject->padfM )
+                    {
+                        adBoundsMax[3] = MAX(adBoundsMax[3],psObject->padfM[i]);
+                        adBoundsMin[3] = MIN(adBoundsMin[3],psObject->padfM[i]);
+                    }
                 }
             }
             SHPDestroyObject(psObject);
@@ -2690,9 +2698,9 @@ int OGRShapeLayer::ReopenFileDescriptors()
     if( bHSHPWasNonNULL )
     {
         if( bUpdateAccess )
-            hSHP = SHPOpen( pszFullName, "r+" );
+            hSHP = OGRShapeSHPOpen( pszFullName, "r+" );
         else
-            hSHP = SHPOpen( pszFullName, "r" );
+            hSHP = OGRShapeSHPOpen( pszFullName, "r" );
 
         if (hSHP == NULL)
         {
