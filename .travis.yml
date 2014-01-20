@@ -1,4 +1,3 @@
-
 # This is the config file for building GDAL and running its autotest suite
 # with Travis-ci.org
 
@@ -81,7 +80,7 @@ before_install:
   - sudo apt-get install -qq curlftpfs lcov
 #  - sudo pip install cpp-coveralls --use-mirrors
   - cd gdal
-  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/coverage_r26292.patch -O coverage.patch
+  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/coverage_r26856.patch -O coverage.patch
   - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/filter_info.c
   - patch -p0 < coverage.patch
   - cd ..
