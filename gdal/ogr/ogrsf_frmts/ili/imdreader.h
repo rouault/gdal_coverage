@@ -2,11 +2,11 @@
  * $Id$
  *
  * Project:  Interlis 1/2 Translator
- * Purpose:   Definition of classes for OGR Interlis 1 driver.
+ * Purpose:  IlisMeta model reader.
  * Author:   Pirmin Kalberer, Sourcepole AG
  *
  ******************************************************************************
- * Copyright (c) 2004, Pirmin Kalberer, Sourcepole AG
+ * Copyright (c) 2014, Pirmin Kalberer, Sourcepole AG
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -27,17 +27,32 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#ifndef _ILIHELPER_H_INCLUDED
-#define _ILIHELPER_H_INCLUDED
+#ifndef _IMDREADER_H_INCLUDED
+#define _IMDREADER_H_INCLUDED
 
-#include "ogr_geometry.h"
+#include "cpl_vsi.h"
+#include "cpl_error.h"
+#include "ogr_feature.h"
+#include <list>
 
-#ifndef PI
-#define PI  3.1415926535897932384626433832795
-#endif
 
-OGRPoint *getARCCenter(OGRPoint *ptStart, OGRPoint *ptArc, OGRPoint *ptEnd);
-double getPhi(OGRPoint *center, OGRPoint *pt);
-void interpolateArc(OGRLineString* line, OGRPoint *ptStart, OGRPoint *ptOnArc, OGRPoint *ptEnd, double arcIncr);
+typedef std::list<OGRFeatureDefn*> FeatureDefnList;
 
-#endif /* _ILIHELPER_H_INCLUDED */
+class ImdReader
+{
+public:
+    int                  iliVersion; /* 1 or 2 */
+    CPLString            mainModelName;
+    CPLString            mainBasketName;
+    CPLString            mainTopicName;
+    char                 codeBlank;
+    char                 codeUndefined;
+    char                 codeContinue;
+public:
+                         ImdReader(int iliVersion);
+                        ~ImdReader();
+    const char*          LayerName(const char* psClassTID);
+    FeatureDefnList      ReadModel(const char *pszFilename);
+};
+
+#endif /* _IMDREADER_H_INCLUDED */
