@@ -220,12 +220,13 @@ OGRBoolean OGRGeoPackageLayer::IsGeomFieldSet( OGRFeature *poFeature )
 
 OGRErr OGRGeoPackageLayer::FeatureBindParameters( OGRFeature *poFeature, sqlite3_stmt *poStmt, int *pnColCount )
 {
-    OGRFeatureDefn *poFeatureDefn = poFeature->GetDefnRef();
     int nColCount = 1;
     int err;
     
     if ( ! (poFeature && poStmt && pnColCount) )
         return OGRERR_FAILURE;
+
+    OGRFeatureDefn *poFeatureDefn = poFeature->GetDefnRef();
     
     /* Bind data values to the statement, here bind the blob for geometry */
     if ( poFeatureDefn->GetGeomFieldCount() )
@@ -667,6 +668,7 @@ OGRGeoPackageLayer::OGRGeoPackageLayer(
 {
     m_pszTableName = CPLStrdup(pszTableName);
     m_pszFidColumn = NULL;
+    m_iSrs = 0;
     m_poDS = poDS;
     m_poExtent = NULL;
     m_bExtentChanged = FALSE;
@@ -1158,10 +1160,16 @@ OGRErr OGRGeoPackageLayer::RollbackTransaction()
 
 int OGRGeoPackageLayer::GetFeatureCount( int bForce )
 {
+    if( m_poFilterGeom != NULL )
+        return OGRLayer::GetFeatureCount(bForce);
+
     /* Ignore bForce, because we always do a full count on the database */
     OGRErr err;
     CPLString soSQL;
-    soSQL.Printf("SELECT Count(*) FROM %s", m_pszTableName);
+    if ( m_soFilter.length() > 0 )
+        soSQL.Printf("SELECT Count(*) FROM %s WHERE %s", m_pszTableName, m_soFilter.c_str());
+    else
+        soSQL.Printf("SELECT Count(*) FROM %s ", m_pszTableName);
 
     /* Just run the query directly and get back integer */
     int iFeatureCount = SQLGetInteger(m_poDS->GetDatabaseHandle(), soSQL.c_str(), &err);
