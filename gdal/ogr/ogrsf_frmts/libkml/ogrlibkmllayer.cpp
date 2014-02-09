@@ -49,6 +49,7 @@ using kmldom::ExtendedDataPtr;
 using kmldom::SchemaDataPtr;
 using kmldom::DataPtr;
 using kmldom::CameraPtr;
+using kmldom::LookAtPtr;
 
 #include "ogrlibkmlfeature.h"
 #include "ogrlibkmlfield.h"
@@ -766,4 +767,53 @@ CPLString OGRLIBKMLLayer::LaunderFieldNames(CPLString osName)
             osLaunderedName += "_";
     }
     return osLaunderedName;
+}
+
+/************************************************************************/
+/*                            SetLookAt()                               */
+/************************************************************************/
+
+void OGRLIBKMLLayer::SetLookAt( const char* pszLookatLongitude,
+                                const char* pszLookatLatitude,
+                                const char* pszLookatAltitude,
+                                const char* pszLookatHeading,
+                                const char* pszLookatTilt,
+                                const char* pszLookatRange,
+                                const char* pszLookatAltitudeMode )
+{
+    KmlFactory *poKmlFactory = m_poOgrDS->GetKmlFactory (  );
+    LookAtPtr lookAt = poKmlFactory->CreateLookAt();
+    lookAt->set_latitude(CPLAtof(pszLookatLatitude));
+    lookAt->set_longitude(CPLAtof(pszLookatLongitude));
+    if( pszLookatAltitude != NULL )
+        lookAt->set_altitude(CPLAtof(pszLookatAltitude));
+    if( pszLookatHeading != NULL )
+        lookAt->set_heading(CPLAtof(pszLookatHeading));
+    if( pszLookatTilt != NULL )
+    {
+        double dfTilt = CPLAtof(pszLookatTilt);
+        if( dfTilt >= 0 && dfTilt <= 90 )
+            lookAt->set_tilt(dfTilt);
+        else
+            CPLError(CE_Warning, CPLE_AppDefined, "Invalid value for tilt: %s",
+                     pszLookatTilt);
+    }
+    lookAt->set_range(CPLAtof(pszLookatRange));
+    if( pszLookatAltitudeMode != NULL )
+    {
+        int isGX = FALSE;
+        int iAltitudeMode = kmlAltitudeModeFromString(pszLookatAltitudeMode, isGX);
+        if( iAltitudeMode != kmldom::ALTITUDEMODE_CLAMPTOGROUND &&
+            pszLookatAltitude == NULL )
+        {
+            CPLError(CE_Warning, CPLE_AppDefined, "Lookat altitude should be present for altitudeMode = %s",
+                     pszLookatAltitudeMode);
+        }
+        else if( isGX )
+            lookAt->set_gx_altitudemode(iAltitudeMode);
+        else
+            lookAt->set_altitudemode(iAltitudeMode);
+    }
+
+    m_poKmlLayer->set_abstractview(lookAt);
 }
