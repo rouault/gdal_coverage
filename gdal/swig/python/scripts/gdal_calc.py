@@ -3,7 +3,7 @@
 #******************************************************************************
 # 
 #  Project:  GDAL
-#  Purpose:  Command line raster calculator for gdal supported files
+#  Purpose:  Command line raster calculator with numpy syntax
 #  Author:   Chris Yesson, chris.yesson@ioz.ac.uk
 # 
 #******************************************************************************
@@ -29,7 +29,7 @@
 #******************************************************************************
 
 ################################################################
-# Command line raster calculator for gdal supported files. Use any basic arithmetic supported by numpy arrays such as +-*\ along with logical operators such as >.  Note that all files must be the same dimensions, but no projection checking is performed.  Use gdal_calc.py --help for list of options.
+# Command line raster calculator with numpy syntax. Use any basic arithmetic supported by numpy arrays such as +-*\ along with logical operators such as >.  Note that all files must have the same dimensions, but no projection checking is performed.  Use gdal_calc.py --help for list of options.
 
 # example 1 - add two files together
 # gdal_calc.py -A input1.tif -B input2.tif --outfile=result.tif --calc="A+B"
@@ -107,12 +107,28 @@ def doit(opts, args):
             if opts.debug:
                 print("file %s: %s, dimensions: %s, %s, type: %s" %(myI,myF,DimensionsCheck[0],DimensionsCheck[1],myDataType[i]))
 
+    # process allBands option
+    allBandsIndex=None
+    allBandsCount=1
+    if opts.allBands:
+        try:
+            allBandsIndex=myAlphaList.index(opts.allBands)
+        except ValueError:
+            print("Error! allBands option was given but Band %s not found.  Cannot proceed" % (opts.allBands))
+            return
+        allBandsCount=myFiles[allBandsIndex].RasterCount
+        if allBandsCount <= 1:
+            allBandsIndex=None
+
     ################################################################
     # set up output file
     ################################################################
 
     # open output file exists
     if os.path.isfile(opts.outF) and not opts.overwrite:
+        if allBandsIndex is not None:
+            print("Error! allBands option was given but Output file exists, must use --overwrite option!")
+            return
         if opts.debug:
             print("Output file %s exists - filling in results into file" %(opts.outF))
         myOut=gdal.Open(opts.outF, gdal.GA_Update)
@@ -141,23 +157,23 @@ def doit(opts, args):
         # create file
         myOutDrv = gdal.GetDriverByName(opts.format)
         myOut = myOutDrv.Create(
-            opts.outF, DimensionsCheck[0], DimensionsCheck[1], 1,
+            opts.outF, DimensionsCheck[0], DimensionsCheck[1], allBandsCount,
             gdal.GetDataTypeByName(myOutType), opts.creation_options)
 
         # set output geo info based on first input layer
         myOut.SetGeoTransform(myFiles[0].GetGeoTransform())
         myOut.SetProjection(myFiles[0].GetProjection())
 
-        myOutB=myOut.GetRasterBand(1)
         if opts.NoDataValue!=None:
             myOutNDV=opts.NoDataValue
         else:
             myOutNDV=DefaultNDVLookup[myOutType]
-        myOutB.SetNoDataValue(myOutNDV)
-        # write to band
-        myOutB=None
-        # refetch band
-        myOutB=myOut.GetRasterBand(1)
+
+        for i in range(1,allBandsCount+1):
+            myOutB=myOut.GetRasterBand(i)
+            myOutB.SetNoDataValue(myOutNDV)
+            # write to band
+            myOutB=None
 
     if opts.debug:
         print("output file: %s, dimensions: %s, %s, type: %s" %(opts.outF,myOut.RasterXSize,myOut.RasterYSize,gdal.GetDataTypeName(myOutB.DataType)))
@@ -182,80 +198,91 @@ def doit(opts, args):
     # variables for displaying progress
     ProgressCt=-1
     ProgressMk=-1
-    ProgressEnd=nXBlocks*nYBlocks
+    ProgressEnd=nXBlocks*nYBlocks*allBandsCount
     
     ################################################################
-    # start looping through blocks of data
+    # start looping through each band in allBandsCount
     ################################################################
 
-    # loop through X-lines
-    for X in range(0,nXBlocks):
+    for bandNo in range(1,allBandsCount+1):
 
-        # in the rare (impossible?) case that the blocks don't fit perfectly
-        # change the block size of the final piece
-        if X==nXBlocks-1:
-             nXValid = DimensionsCheck[0] - X * myBlockSize[0]
-             myBufSize = nXValid*nYValid
+        ################################################################
+        # start looping through blocks of data
+        ################################################################
 
-        # find X offset
-        myX=X*myBlockSize[0]
+        # loop through X-lines
+        for X in range(0,nXBlocks):
 
-        # reset buffer size for start of Y loop
-        nYValid = myBlockSize[1]
-        myBufSize = nXValid*nYValid
-
-        # loop through Y lines
-        for Y in range(0,nYBlocks):
-            ProgressCt+=1
-            if 10*ProgressCt/ProgressEnd%10!=ProgressMk:
-                ProgressMk=10*ProgressCt/ProgressEnd%10
-                from sys import version_info
-                if version_info >= (3,0,0):
-                    exec('print("%d.." % (10*ProgressMk), end=" ")')
-                else:
-                    exec('print 10*ProgressMk, "..",')
-
+            # in the rare (impossible?) case that the blocks don't fit perfectly
             # change the block size of the final piece
-            if Y==nYBlocks-1:
-                nYValid = DimensionsCheck[1] - Y * myBlockSize[1]
+            if X==nXBlocks-1:
+                nXValid = DimensionsCheck[0] - X * myBlockSize[0]
                 myBufSize = nXValid*nYValid
 
-            # find Y offset
-            myY=Y*myBlockSize[1]
+            # find X offset
+            myX=X*myBlockSize[0]
 
-            # create empty buffer to mark where nodata occurs
-            myNDVs=numpy.zeros(myBufSize)
-            myNDVs.shape=(nYValid,nXValid)
+            # reset buffer size for start of Y loop
+            nYValid = myBlockSize[1]
+            myBufSize = nXValid*nYValid
 
-            # fetch data for each input layer
-            for i,Alpha in enumerate(myAlphaList):
+            # loop through Y lines
+            for Y in range(0,nYBlocks):
+                ProgressCt+=1
+                if 10*ProgressCt/ProgressEnd%10!=ProgressMk:
+                    ProgressMk=10*ProgressCt/ProgressEnd%10
+                    from sys import version_info
+                    if version_info >= (3,0,0):
+                        exec('print("%d.." % (10*ProgressMk), end=" ")')
+                    else:
+                        exec('print 10*ProgressMk, "..",')
 
-                # populate lettered arrays with values
-                myval=BandReadAsArray(myFiles[i].GetRasterBand(myBands[i]),
-                                      xoff=myX, yoff=myY,
-                                      win_xsize=nXValid, win_ysize=nYValid)
+                # change the block size of the final piece
+                if Y==nYBlocks-1:
+                    nYValid = DimensionsCheck[1] - Y * myBlockSize[1]
+                    myBufSize = nXValid*nYValid
 
-                # fill in nodata values
-                myNDVs=1*numpy.logical_or(myNDVs==1, myval==myNDV[i])
+                # find Y offset
+                myY=Y*myBlockSize[1]
 
-                # create an array of values for this block
-                exec("%s=myval" %Alpha)
-                myval=None
+                # create empty buffer to mark where nodata occurs
+                myNDVs=numpy.zeros(myBufSize)
+                myNDVs.shape=(nYValid,nXValid)
+
+                # fetch data for each input layer
+                for i,Alpha in enumerate(myAlphaList):
+
+                    # populate lettered arrays with values
+                    if allBandsIndex is not None and allBandsIndex==i:
+                        myBandNo=bandNo
+                    else:
+                        myBandNo=myBands[i]
+                    myval=BandReadAsArray(myFiles[i].GetRasterBand(myBandNo),
+                                          xoff=myX, yoff=myY,
+                                          win_xsize=nXValid, win_ysize=nYValid)
+
+                    # fill in nodata values
+                    myNDVs=1*numpy.logical_or(myNDVs==1, myval==myNDV[i])
+
+                    # create an array of values for this block
+                    exec("%s=myval" %Alpha)
+                    myval=None
 
 
-            # try the calculation on the array blocks
-            try:
-                myResult = eval(opts.calc)
-            except:
-                print("evaluation of calculation %s failed" %(opts.calc))
-                raise
+                # try the calculation on the array blocks
+                try:
+                    myResult = eval(opts.calc)
+                except:
+                    print("evaluation of calculation %s failed" %(opts.calc))
+                    raise
 
-            # propogate nodata values 
-            # (set nodata cells to zero then add nodata value to these cells)
-            myResult = ((1*(myNDVs==0))*myResult) + (myOutNDV*myNDVs)
+                # propogate nodata values 
+                # (set nodata cells to zero then add nodata value to these cells)
+                myResult = ((1*(myNDVs==0))*myResult) + (myOutNDV*myNDVs)
 
-            # write data block to the output file
-            BandWriteArray(myOutB, myResult, xoff=myX, yoff=myY)
+                # write data block to the output file
+                myOutB=myOut.GetRasterBand(bandNo)
+                BandWriteArray(myOutB, myResult, xoff=myX, yoff=myY)
 
     print("100 - Done")
     #print("Finished - Results written to %s" %opts.outF)
@@ -272,17 +299,18 @@ def main():
     # hack to limit the number of input file options close to required number
     for myAlpha in AlphaList[0:len(sys.argv)-1]:
         eval('parser.add_option("-%s", dest="%s", help="input gdal raster file, note you can use any letter A-Z")' %(myAlpha, myAlpha))
-        eval('parser.add_option("--%s_band", dest="%s_band", default=0, type=int, help="number of raster band for file %s")' %(myAlpha, myAlpha, myAlpha))
+        eval('parser.add_option("--%s_band", dest="%s_band", default=0, type=int, help="number of raster band for file %s (default 0)")' %(myAlpha, myAlpha, myAlpha))
 
-    parser.add_option("--outfile", dest="outF", default='gdal_calc.tif', help="output file to generate or fill.")
-    parser.add_option("--NoDataValue", dest="NoDataValue", type=float, help="set output nodatavalue (Defaults to datatype specific values)")
-    parser.add_option("--type", dest="type", help="set datatype must be one of %s" % list(DefaultNDVLookup.keys()))
+    parser.add_option("--outfile", dest="outF", default='gdal_calc.tif', help="output file to generate or fill")
+    parser.add_option("--NoDataValue", dest="NoDataValue", type=float, help="set output nodata value (Defaults to datatype specific value)")
+    parser.add_option("--type", dest="type", help="output datatype, must be one of %s" % list(DefaultNDVLookup.keys()))
     parser.add_option("--format", dest="format", default="GTiff", help="GDAL format for output file (default 'GTiff')")
     parser.add_option(
         "--creation-option", "--co", dest="creation_options", default=[], action="append",
-        help="Passes a creation option to the output format driver. Multiple"
-        "options may be listed. See format specific documentation for legal"
+        help="Passes a creation option to the output format driver. Multiple "
+        "options may be listed. See format specific documentation for legal "
         "creation options for each format.")
+    parser.add_option("--allBands", dest="allBands", default="", help="process all bands of given raster (A-Z)")
     parser.add_option("--overwrite", dest="overwrite", action="store_true", help="overwrite output file if it already exists")
     parser.add_option("--debug", dest="debug", action="store_true", help="print debugging information")
 
