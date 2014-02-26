@@ -1021,7 +1021,7 @@ def ogr_vrt_20():
         <SrcLayer>test</SrcLayer>
     </OGRVRTLayer>
 </OGRVRTDataSource>"""
-    vrt_ds = ogr.Open( vrt_xml )
+    vrt_ds = ogr.Open( vrt_xml, update = 1 )
     vrt_lyr = vrt_ds.GetLayerByName( 'mytest' )
 
     if vrt_lyr.TestCapability(ogr.OLCFastFeatureCount) != 1:
@@ -1080,6 +1080,20 @@ def ogr_vrt_20():
     vrt_lyr.SetSpatialFilter(None)
     if vrt_lyr.GetFeatureCount() != 4:
         gdaltest.post_reason( 'Feature count not 4 as expected with no filter.')
+        return 'fail'
+
+    vrt_lyr.ResetReading()
+    feat = vrt_lyr.GetNextFeature()
+    feat.SetGeometryDirectly(ogr.CreateGeometryFromWkt('POINT (1 2)'))
+    vrt_lyr.SetFeature(feat)
+    feat = None
+
+    vrt_lyr.ResetReading()
+    feat = vrt_lyr.GetNextFeature()
+    if feat.GetGeometryRef() is None or \
+       feat.GetGeometryRef().ExportToWkt() != 'POINT (1 2)':
+        gdaltest.post_reason( 'fail')
+        feat.DumpReadable()
         return 'fail'
 
     vrt_ds.Destroy()
@@ -1617,6 +1631,113 @@ def ogr_vrt_29():
             lyr.CreateFeature(feat)
             feat = None
 
+    ds = None
+
+    # Invalid source layer
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open("""<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="ogr_vrt_29">
+            <SrcDataSource>tmp/non_existing.shp</SrcDataSource>
+        </OGRVRTLayer>
+        <TargetSRS>EPSG:32631</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>""")
+    gdal.PopErrorHandler()
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    # Non-spatial layer
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open("""<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="flat">
+            <SrcDataSource>data/flat.dbf</SrcDataSource>
+        </OGRVRTLayer>
+        <TargetSRS>EPSG:32631</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>""")
+    gdal.PopErrorHandler()
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    # Missing TargetSRS
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open("""<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="ogr_vrt_29">
+            <SrcDataSource>tmp/ogr_vrt_29.shp</SrcDataSource>
+        </OGRVRTLayer>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>""")
+    gdal.PopErrorHandler()
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    # Invalid TargetSRS
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open("""<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="ogr_vrt_29">
+            <SrcDataSource>tmp/ogr_vrt_29.shp</SrcDataSource>
+        </OGRVRTLayer>
+        <TargetSRS>foo</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>""")
+    gdal.PopErrorHandler()
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    # Invalid SrcSRS
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open("""<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="ogr_vrt_29">
+            <SrcDataSource>tmp/ogr_vrt_29.shp</SrcDataSource>
+        </OGRVRTLayer>
+        <SrcSRS>foo</SrcSRS>
+        <TargetSRS>EPSG:32631</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>""")
+    gdal.PopErrorHandler()
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    # TargetSRS == source SRS
+    ds = ogr.Open("""<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="ogr_vrt_29">
+            <SrcDataSource>tmp/ogr_vrt_29.shp</SrcDataSource>
+        </OGRVRTLayer>
+        <TargetSRS>EPSG:4326</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>""")
+    lyr = ds.GetLayer(0)
+    ds = None
+
+    # Forced extent
+    ds = ogr.Open("""<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="ogr_vrt_29">
+            <SrcDataSource>tmp/ogr_vrt_29.shp</SrcDataSource>
+        </OGRVRTLayer>
+        <TargetSRS>EPSG:32631</TargetSRS>
+        <ExtentXMin>426857</ExtentXMin>
+        <ExtentYMin>5427475</ExtentYMin>
+        <ExtentXMax>485608</ExtentXMax>
+        <ExtentYMax>5516874</ExtentYMax>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>""")
+    lyr = ds.GetLayer(0)
+    bb = lyr.GetExtent()
+    if bb != ( 426857, 485608, 5427475, 5516874 ):
+        gdaltest.post_reason('fail')
+        return 'fail'
     ds = None
 
     f = open('tmp/ogr_vrt_29.vrt', 'wt')
@@ -2626,13 +2747,18 @@ def ogr_vrt_33():
     <OGRVRTLayer name="test">
         <SrcDataSource>tmp/ogr_vrt_33</SrcDataSource>
         <GeometryField name="geom__WKT_EPSG_4326_POINT"/>
-        <GeometryField name="foo" encoding="PointFromColumns" x="X" y="Y" reportSrcColumn="false"/>
+        <GeometryField name="foo" encoding="PointFromColumns" x="X" y="Y" reportSrcColumn="false">
+            <SRS>EPSG:4326</SRS>
+        </GeometryField>
     </OGRVRTLayer>
 </OGRVRTDataSource>
 """
     ds = ogr.Open(ds_str)
     lyr = ds.GetLayer(0)
     if lyr.GetLayerDefn().GetGeomFieldDefn(1).GetType() != ogr.wkbPoint:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if lyr.GetLayerDefn().GetGeomFieldDefn(1).GetSpatialRef().ExportToWkt().find('4326') < 0:
         gdaltest.post_reason('fail')
         return 'fail'
     feat = lyr.GetNextFeature()
@@ -2685,6 +2811,91 @@ def ogr_vrt_33():
             print(ret)
             return 'fail'
 
+    # Warped layer without explicit WarpedGeomFieldName
+    ds_str = """<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="test">
+            <SrcDataSource>tmp/ogr_vrt_33</SrcDataSource>
+        </OGRVRTLayer>
+        <TargetSRS>EPSG:32631</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>"""
+    ds = ogr.Open(ds_str)
+    lyr = ds.GetLayer(0)
+    if lyr.GetSpatialRef().ExportToWkt().find('32631') < 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    feat = lyr.GetNextFeature()
+    if feat.GetGeomFieldRef(0).ExportToWkt().find('POINT') < 0 or \
+       feat.GetGeomFieldRef(0).ExportToWkt() == 'POINT (1 2)' or \
+       feat.GetGeomFieldRef(1).ExportToWkt() != 'POLYGON ((0 0,0 1,1 1,1 0,0 0))':
+        gdaltest.post_reason('fail')
+        feat.DumpReadable()
+        return 'fail'
+
+    # Warped layer with explicit WarpedGeomFieldName (that is the first field)
+    ds_str = """<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="test">
+            <SrcDataSource>tmp/ogr_vrt_33</SrcDataSource>
+        </OGRVRTLayer>
+        <WarpedGeomFieldName>geom__WKT_EPSG_4326_POINT</WarpedGeomFieldName>
+        <TargetSRS>EPSG:32631</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>"""
+    ds = ogr.Open(ds_str)
+    lyr = ds.GetLayer(0)
+    if lyr.GetSpatialRef().ExportToWkt().find('32631') < 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    feat = lyr.GetNextFeature()
+    if feat.GetGeomFieldRef(0).ExportToWkt().find('POINT') < 0 or \
+       feat.GetGeomFieldRef(0).ExportToWkt() == 'POINT (1 2)' or \
+       feat.GetGeomFieldRef(1).ExportToWkt() != 'POLYGON ((0 0,0 1,1 1,1 0,0 0))':
+        gdaltest.post_reason('fail')
+        feat.DumpReadable()
+        return 'fail'
+
+    # Warped layer with explicit WarpedGeomFieldName (that does NOT exist)
+    ds_str = """<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="test">
+            <SrcDataSource>tmp/ogr_vrt_33</SrcDataSource>
+        </OGRVRTLayer>
+        <WarpedGeomFieldName>foo</WarpedGeomFieldName>
+        <TargetSRS>EPSG:32631</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>"""
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open(ds_str)
+    gdal.PopErrorHandler()
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    # Warped layer with explicit WarpedGeomFieldName (that is the second field)
+    ds_str = """<OGRVRTDataSource>
+    <OGRVRTWarpedLayer>
+        <OGRVRTLayer name="test">
+            <SrcDataSource>tmp/ogr_vrt_33</SrcDataSource>
+        </OGRVRTLayer>
+        <WarpedGeomFieldName>geom__WKT_EPSG_32632_POLYGON</WarpedGeomFieldName>
+        <TargetSRS>EPSG:4326</TargetSRS>
+    </OGRVRTWarpedLayer>
+</OGRVRTDataSource>"""
+    ds = ogr.Open(ds_str)
+    lyr = ds.GetLayer(0)
+    if lyr.GetLayerDefn().GetGeomFieldDefn(1).GetSpatialRef().ExportToWkt().find('4326') < 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    feat = lyr.GetNextFeature()
+    if feat.GetGeomFieldRef(1).ExportToWkt().find('POLYGON') < 0 or \
+       feat.GetGeomFieldRef(1).ExportToWkt() == 'POLYGON ((0 0,0 1,1 1,1 0,0 0))' or \
+       feat.GetGeomFieldRef(0).ExportToWkt() != 'POINT (1 2)':
+        gdaltest.post_reason('fail')
+        feat.DumpReadable()
+        return 'fail'
+        
     return 'success'
 
 ###############################################################################
