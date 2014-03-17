@@ -8,7 +8,7 @@
 # Author:   Even Rouault <even dot rouault at mines dash paris dot org>
 #
 ###############################################################################
-# Copyright (c) 2010, Even Rouault <even dot rouault at mines dash paris dot org>
+# Copyright (c) 2010-2014, Even Rouault <even dot rouault at mines-paris dot org>
 #
 # Permission is hereby granted, free of charge, to any person oxyzaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -266,7 +266,7 @@ def kmlsuperoverlay_6():
             return 'fail'
     for i in range(4):
         cs = ds.GetRasterBand(i+1).Checksum()
-        if cs != 60283:
+        if cs != 47673:
             print(cs)
             gdaltest.post_reason('failure')
             return 'fail'
