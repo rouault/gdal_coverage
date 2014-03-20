@@ -104,7 +104,7 @@ OGRErr OGRWAsPDataSource::Load(bool bSilent)
     OGRSpatialReference * poSpatialRef = new OGRSpatialReference;
     if ( poSpatialRef->importFromProj4( sLine.c_str() ) != OGRERR_NONE )
     {
-        if (!bSilent) CPLError( CE_Warning, CPLE_FileIO, "Cannot parse spatial reference");
+        if (!bSilent) CPLError( CE_Warning, CPLE_FileIO, "cannot find spatial reference");
         delete poSpatialRef;
         poSpatialRef = NULL;
     }
@@ -114,7 +114,7 @@ OGRErr OGRWAsPDataSource::Load(bool bSilent)
     CPLReadLineL( hFile );
     CPLReadLineL( hFile );
 
-    oLayer.reset( new OGRWAsPLayer( sFilename.substr(0,sFilename.length()-4).c_str(), 
+    oLayer.reset( new OGRWAsPLayer( CPLGetBasename(sFilename.c_str()), 
                                     hFile, 
                                     poSpatialRef ) );
     if (poSpatialRef) poSpatialRef->Release();
@@ -201,6 +201,18 @@ OGRLayer *OGRWAsPDataSource::CreateLayer(const char *pszName,
         return NULL;
     }
 
+    if ( !OGRGeometryFactory::haveGEOS() 
+            && ( eGType == wkbPolygon
+              || eGType == wkbPolygon25D
+              || eGType == wkbMultiPolygon
+              || eGType == wkbMultiPolygon25D ))
+    {
+        CPLError( CE_Failure, 
+                CPLE_NotSupported, 
+                "unsupported geometry type %s without GEOS support", OGRGeometryTypeToName( eGType ) );
+        return NULL;
+    }
+
     if ( oLayer.get() )
     {
         CPLError( CE_Failure, 
@@ -235,20 +247,30 @@ OGRLayer *OGRWAsPDataSource::CreateLayer(const char *pszName,
 
     double * pdfTolerance = NULL;
     const char *pszToler = CSLFetchNameValue( papszOptions, "WASP_TOLERANCE" );
+
     if (pszToler)
     {
-        pdfTolerance = new double;
-        if (!(std::istringstream( pszToler ) >> *pdfTolerance ))
+        if ( !OGRGeometryFactory::haveGEOS() )
         {
-            delete pdfTolerance;
-            CPLError( CE_Failure, 
+            CPLError( CE_Warning, 
                     CPLE_IllegalArg, 
-                    "cannot set tolerance from %s", pszToler );
-            return NULL;
+                    "GEOS support not enabled, ignoring option WASP_TOLERANCE" );
+        }
+        else
+        {
+            pdfTolerance = new double;
+            if (!(std::istringstream( pszToler ) >> *pdfTolerance ))
+            {
+                delete pdfTolerance;
+                CPLError( CE_Failure, 
+                        CPLE_IllegalArg, 
+                        "cannot set tolerance from %s", pszToler );
+                return NULL;
+            }
         }
     }
 
-    oLayer.reset( new OGRWAsPLayer( pszName, 
+    oLayer.reset( new OGRWAsPLayer( CPLGetBasename(pszName), 
                                     hFile, 
                                     poSpatialRef,
                                     sFirstField, 
