@@ -9,7 +9,7 @@ compiler:
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -y wine1.4-amd64
-  - sudo apt-get install -qq g++-mingw-w64
+  - sudo apt-get install g++-mingw-w64
 #  - psql -c "drop database if exists autotest" -U postgres
 #  - psql -c "create database autotest" -U postgres
 #  - psql -c "create extension postgis" -d autotest -U postgres
