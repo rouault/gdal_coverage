@@ -10,7 +10,8 @@ before_install:
   - cat /etc/apt/sources.list
   - ls -al /etc/apt/sources.list.d
   - sudo apt-get update -qq
-  - sudo apt-get install -y wine1.4-amd64
+#  - sudo apt-get install -y wine1.4-amd64
+  - sudo apt-get install binutils-mingw-w64-i686
   - sudo apt-get install gcc-mingw-w64-i686
   - sudo apt-get install g++-mingw-w64-i686
   - sudo apt-get install g++-mingw-w64
