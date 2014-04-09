@@ -48,7 +48,7 @@ install:
   - cd swig/python
 #  - sed "s/i586-mingw32msvc/i686-w64-mingw32/" < fallback_build_mingw32_under_unix.sh > tmp.sh
 #  - mv tmp.sh fallback_build_mingw32_under_unix.sh
-  - bash fallback_build_mingw32_under_unix.sh 
+  - CXX=i586-mingw32msvc-g++ bash fallback_build_mingw32_under_unix.sh 
   - cd ../..
 
 script:
