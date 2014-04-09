@@ -4,17 +4,17 @@
 language: cpp
 
 compiler:
-  - clang
+  - gcc
 
 before_install:
   - cat /etc/apt/sources.list
   - ls -al /etc/apt/sources.list.d
   - sudo apt-get update -qq
-#  - sudo apt-get install -y wine1.4-amd64
   - sudo apt-get install binutils-mingw-w64-i686
   - sudo apt-get install gcc-mingw-w64-i686
   - sudo apt-get install g++-mingw-w64-i686
   - sudo apt-get install g++-mingw-w64
+  - sudo apt-get install -y wine1.4-amd64
 #  - psql -c "drop database if exists autotest" -U postgres
 #  - psql -c "create database autotest" -U postgres
 #  - psql -c "create extension postgis" -d autotest -U postgres
@@ -23,6 +23,8 @@ before_install:
 #  - mysql -e "GRANT ALL ON autotest.* TO 'travis'@'localhost';" -u root
 
 install:
+  - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libstdc++-6.dll  $HOME/.wine/drive_c/windows
+  - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libgcc_s_sjlj_1.dll  $HOME/.wine/drive_c/windows
 # build proj
   - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz > proj-4.8.0.tar.gz
   - tar xvzf proj-4.8.0.tar.gz
@@ -30,19 +32,17 @@ install:
   - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
   - tar xvzf proj-datumgrid-1.5.tar.gz
   - cd ..
-  - ./configure --host=x86_64-w64-mingw32
+  - CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ LD=x86_64-w64-mingw32-ld ./configure --host=x86_64-w64-mingw32
   - make -j3
   - cd ..
 # build GDAL
   - cd gdal
-  - ./configure --enable-debug --host=x86_64-w64-mingw32
+  - CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ ./configure --enable-debug --host=x86_64-w64-mingw32
   - make -j3
   - cd apps
   - make test_ogrsf.exe
   - cd ..
   - ln -s $PWD/.libs/libgdal-1.dll $HOME/.wine/drive_c/windows
-  - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libstdc++-6.dll  $HOME/.wine/drive_c/windows
-  - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libgcc_s_sjlj_1.dll  $HOME/.wine/drive_c/windows
   - ln -sf $PWD/../proj-4.8.0/src/.libs/libproj-0.dll $HOME/.wine/drive_c/windows
 
 script:
