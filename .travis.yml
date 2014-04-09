@@ -8,11 +8,8 @@ compiler:
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq wine swig curl
-#  - sudo apt-get install -y gcc-mingw-w64
-#  - sudo apt-get install -y g++-mingw-w64
-#  - sudo apt-get install -y mingw-w64
-  - sudo apt-get install -qq mingw32
+  - sudo apt-get install -y wine1.4-amd64
+  - sudo apt-get install -qq g++-mingw-w64
 #  - psql -c "drop database if exists autotest" -U postgres
 #  - psql -c "create database autotest" -U postgres
 #  - psql -c "create extension postgis" -d autotest -U postgres
@@ -28,36 +25,23 @@ install:
   - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
   - tar xvzf proj-datumgrid-1.5.tar.gz
   - cd ..
-  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ LD=i586-mingw32msvc-ld ./configure --host=i586-mingw32msvc
+  - ./configure --host=x86_64-w64-mingw32
   - make -j3
   - cd ..
 # build GDAL
   - cd gdal
-  - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ ./configure --enable-debug --host=i586-mingw32msvc
-  - LD=i586-mingw32msvc-ld make -j3
+  - ./configure --enable-debug --host=x86_64-w64-mingw32
+  - make -j3
   - cd apps
-  - LD=i586-mingw32msvc-ld make test_ogrsf.exe
+  - make test_ogrsf.exe
   - cd ..
-  - ln -sf $PWD/.libs/libgdal-1.dll $HOME/.wine/drive_c/windows
-#  - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libgcc_s_sjlj-1.dll $HOME/.wine/drive_c/windows
-#  - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libstdc++-6.dll $HOME/.wine/drive_c/windows
+  - ln -s $PWD/.libs/libgdal-1.dll $HOME/.wine/drive_c/windows
+  - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libstdc++-6.dll  $HOME/.wine/drive_c/windows
+  - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libgcc_s_sjlj_1.dll  $HOME/.wine/drive_c/windows
   - ln -sf $PWD/../proj-4.8.0/src/.libs/libproj-0.dll $HOME/.wine/drive_c/windows
-  - wine apps/.libs/gdalinfo.exe  --version
-  - wget http://www.python.org/ftp/python/2.7.3/python-2.7.3.msi
-  - wine msiexec /i python-2.7.3.msi
-  - cd swig/python
-#  - sed "s/i586-mingw32msvc/i686-w64-mingw32/" < fallback_build_mingw32_under_unix.sh > tmp.sh
-#  - mv tmp.sh fallback_build_mingw32_under_unix.sh
-  - bash fallback_build_mingw32_under_unix.sh 
-  - cd ../..
 
 script:
-  - cd ../autotest
-# Does not work under wine
-  - rm gcore/gdal_api_proxy.py
-  - rm gcore/rfc30.py
-# Run all the Python autotests
-  - GDAL_DATA=$PWD/../gdal/data PYTHONPATH=$PWD/../gdal/swig/python/build/lib.win32-2.7 PATH=$PWD/../gdal:$PWD/../gdal/apps/.libs:$PWD:$PATH $HOME/.wine/drive_c/Python27/python.exe run_all.py
+  - wine64 apps/gdalinfo.exe --version
 
 notifications:
   email:
