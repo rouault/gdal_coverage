@@ -23,6 +23,7 @@ before_install:
 #  - mysql -e "GRANT ALL ON autotest.* TO 'travis'@'localhost';" -u root
 
 install:
+  - wine64 cmd /c dir
   - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libstdc++-6.dll  $HOME/.wine/drive_c/windows
   - ln -s /usr/lib/gcc/x86_64-w64-mingw32/4.6/libgcc_s_sjlj_1.dll  $HOME/.wine/drive_c/windows
 # build proj
