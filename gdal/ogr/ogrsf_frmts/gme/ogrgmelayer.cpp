@@ -82,7 +82,11 @@ int OGRGMELayer::TestCapability( const char * pszCap )
 {
     if( EQUAL(pszCap,OLCRandomRead) )
         return TRUE;
-    return OGRGMELayer::TestCapability(pszCap);
+    else if(EQUAL(pszCap,OLCStringsAsUTF8))
+        return TRUE;
+    else if(EQUAL(pszCap,OLCIgnoreFields))
+        return TRUE;
+    return FALSE;
 }
 
 /************************************************************************/
@@ -155,6 +159,7 @@ int OGRGMELayer::FetchDescribe()
             CPLAssert(EQUAL(osGeomColumnName,""));
             osGeomColumnName = oFieldDefn.GetNameRef();
             poFeatureDefn->SetGeomType(eFieldGeomType);
+            poFeatureDefn->GetGeomFieldDefn(0)->SetSpatialRef(poSRS);
         }
     }
 
@@ -195,6 +200,16 @@ void OGRGMELayer::GetPageOfFeatures()
     {
         osMoreOptions += "&pageToken=";
         osMoreOptions += osNextPageToken;
+    }
+    if (!osSelect.empty()) {
+        CPLDebug( "GME", "found select=%s", osSelect.c_str());
+        osMoreOptions += "&select=";
+        osMoreOptions += osSelect;
+    }
+    if (!osWhere.empty()) {
+        CPLDebug( "GME Layer", "found where=%s", osWhere.c_str());
+        osMoreOptions += "&where=";
+        osMoreOptions += osWhere;
     }
 
     CPLHTTPResult *psFeaturesResult = 
@@ -292,6 +307,7 @@ OGRFeature *OGRGMELayer::GetNextRawFeature()
 
     if (poGeometry != NULL) 
     {
+        poGeometry->assignSpatialReference(poSRS);
         poFeature->SetGeometryDirectly(poGeometry);
     }
 
@@ -343,4 +359,41 @@ OGRFeatureDefn * OGRGMELayer::GetLayerDefn()
     }
 
     return poFeatureDefn;
+}
+
+
+/************************************************************************/
+/*                        SetAttributeFilter()                          */
+/************************************************************************/
+
+OGRErr OGRGMELayer::SetAttributeFilter( const char *pszWhere )
+{
+    OGRErr eErr;
+    eErr = OGRLayer::SetAttributeFilter(pszWhere);
+    if( eErr == OGRERR_NONE ) {
+        if (pszWhere) {
+            char * pszEscaped = CPLEscapeString(pszWhere, -1, CPLES_URL);
+            osWhere = CPLString(pszEscaped);
+            CPLFree(pszEscaped);
+        }
+        else {
+            osWhere = "";
+        }
+    }
+    return eErr;
+}
+
+OGRErr OGRGMELayer::SetIgnoredFields(const char ** papszFields )
+{
+    osSelect = "";
+    OGRLayer::SetIgnoredFields(papszFields);
+
+    for (int iOGRField = 0; iOGRField < poFeatureDefn->GetFieldCount(); iOGRField++ ) 
+    {
+        if (!poFeatureDefn->GetFieldDefn(iOGRField)->IsIgnored()) {
+            if(osSelect.size() != 0)
+                osSelect += ",";
+            osSelect += poFeatureDefn->GetFieldDefn(iOGRField)->GetNameRef();
+	}
+    }
 }
