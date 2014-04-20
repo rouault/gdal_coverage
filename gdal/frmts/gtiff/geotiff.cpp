@@ -7015,13 +7015,13 @@ void GTiffDataset::SaveICCProfile(GTiffDataset *pDS, TIFF *hTIFF, char **papszPa
                 }
             }
             CSLDestroy( papszTokens );
+
+            if (bOutputWhitepoint)
+            {
+                TIFFSetField(hTIFF, TIFFTAG_WHITEPOINT, pWP);
+            }
         }
         
-        if (bOutputWhitepoint)
-        {
-            TIFFSetField(hTIFF, TIFFTAG_WHITEPOINT, pWP);
-        }
-
         /* Set transfer function metadata */
         char const *pszTFRed = NULL;
         char const *pszTFGreen = NULL;
@@ -8465,9 +8465,17 @@ TIFF *GTiffDataset::CreateLL( const char * pszFilename,
             TIFFSetField( hTIFF, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISWHITE );
         else if( EQUAL( pszValue, "PALETTE" ))
         {
-            TIFFSetField( hTIFF, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_PALETTE );
-            nSamplesAccountedFor = 1;
-            bForceColorTable = TRUE;
+            if( eType == GDT_Byte || eType == GDT_UInt16 )
+            {
+                TIFFSetField( hTIFF, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_PALETTE );
+                nSamplesAccountedFor = 1;
+                bForceColorTable = TRUE;
+            }
+            else
+            {
+                CPLError(CE_Warning, CPLE_AppDefined,
+                         "PHOTOMETRIC=PALETTE only compatible with Byte or UInt16");
+            }
         }
         else if( EQUAL( pszValue, "RGB" ))
         {

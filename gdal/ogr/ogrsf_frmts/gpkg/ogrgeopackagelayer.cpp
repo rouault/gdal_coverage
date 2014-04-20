@@ -39,7 +39,7 @@
 //
 OGRErr OGRGeoPackageLayer::SaveExtent()
 {
-    if ( ! m_bExtentChanged || ! m_poExtent ) 
+    if ( !m_poDS->IsUpdatable() || ! m_bExtentChanged || ! m_poExtent ) 
         return OGRERR_NONE;
 
     sqlite3* poDb = m_poDS->GetDatabaseHandle();
@@ -488,10 +488,10 @@ OGRErr OGRGeoPackageLayer::ReadTableDefinition()
         return err;        
     }
 
-    char *pszMinX = SQLResultGetValue(&oResultContents, 4, 0);
-    char *pszMinY = SQLResultGetValue(&oResultContents, 5, 0);
-    char *pszMaxX = SQLResultGetValue(&oResultContents, 6, 0);
-    char *pszMaxY = SQLResultGetValue(&oResultContents, 7, 0);
+    const char *pszMinX = SQLResultGetValue(&oResultContents, 4, 0);
+    const char *pszMinY = SQLResultGetValue(&oResultContents, 5, 0);
+    const char *pszMaxX = SQLResultGetValue(&oResultContents, 6, 0);
+    const char *pszMaxY = SQLResultGetValue(&oResultContents, 7, 0);
     
 	/* All the extrema have to be non-NULL for this to make sense */
     OGREnvelope oExtent;
@@ -537,7 +537,11 @@ OGRErr OGRGeoPackageLayer::ReadTableDefinition()
 
     if ( err != OGRERR_NONE || oResultTable.nRowCount == 0 )
     {
-        CPLError( CE_Failure, CPLE_AppDefined, "%s", oResultTable.pszErrMsg );
+        if( oResultTable.pszErrMsg != NULL )
+            CPLError( CE_Failure, CPLE_AppDefined, "%s", oResultTable.pszErrMsg );
+        else
+            CPLError( CE_Failure, CPLE_AppDefined, "Cannot find table %s", m_pszTableName );
+        err = OGRERR_FAILURE;
         SQLResultFree(&oResultGeomCols);
         SQLResultFree(&oResultTable);
         return err;
@@ -547,7 +551,7 @@ OGRErr OGRGeoPackageLayer::ReadTableDefinition()
     m_poFeatureDefn = new OGRFeatureDefn( m_pszTableName );
     m_poFeatureDefn->Reference();
     
-    char *pszGeomColsType = SQLResultGetValue(&oResultGeomCols, 2, 0);
+    const char *pszGeomColsType = SQLResultGetValue(&oResultGeomCols, 2, 0);
     int iSrsId = SQLResultGetValueAsInteger(&oResultGeomCols, 3, 0);
     int bHasZ = SQLResultGetValueAsInteger(&oResultGeomCols, 4, 0);
     int iRecord;
@@ -556,8 +560,8 @@ OGRErr OGRGeoPackageLayer::ReadTableDefinition()
     
     for ( iRecord = 0; iRecord < oResultTable.nRowCount; iRecord++ )
     {
-        char *pszName = SQLResultGetValue(&oResultTable, 1, iRecord);
-        char *pszType = SQLResultGetValue(&oResultTable, 2, iRecord);
+        const char *pszName = SQLResultGetValue(&oResultTable, 1, iRecord);
+        const char *pszType = SQLResultGetValue(&oResultTable, 2, iRecord);
         OGRBoolean bFid = SQLResultGetValueAsInteger(&oResultTable, 5, iRecord);
         OGRFieldType oType = GPkgFieldToOGR(pszType);
 
@@ -725,6 +729,10 @@ OGRGeoPackageLayer::~OGRGeoPackageLayer()
 
 OGRErr OGRGeoPackageLayer::CreateField( OGRFieldDefn *poField, int bApproxOK )
 {
+    if( !m_poDS->IsUpdatable() )
+    {
+        return OGRERR_FAILURE;
+    }
     
     if ( ! m_poFeatureDefn || ! m_pszTableName )
     {
@@ -752,6 +760,11 @@ OGRErr OGRGeoPackageLayer::CreateField( OGRFieldDefn *poField, int bApproxOK )
 
 OGRErr OGRGeoPackageLayer::CreateFeature( OGRFeature *poFeature )
 {
+    if( !m_poDS->IsUpdatable() )
+    {
+        return OGRERR_FAILURE;
+    }
+
     if ( ! m_poFeatureDefn || ! m_pszTableName )
     {
         CPLError(CE_Failure, CPLE_AppDefined, 
@@ -832,6 +845,11 @@ OGRErr OGRGeoPackageLayer::CreateFeature( OGRFeature *poFeature )
 
 OGRErr OGRGeoPackageLayer::SetFeature( OGRFeature *poFeature )
 {
+    if( !m_poDS->IsUpdatable() )
+    {
+        return OGRERR_FAILURE;
+    }
+    
     if ( ! m_poFeatureDefn || ! m_pszTableName )
     {
         CPLError(CE_Failure, CPLE_AppDefined, 
@@ -1084,6 +1102,11 @@ OGRFeature* OGRGeoPackageLayer::GetFeature(long nFID)
 
 OGRErr OGRGeoPackageLayer::DeleteFeature(long nFID)	
 {
+    if( !m_poDS->IsUpdatable() )
+    {
+        return OGRERR_FAILURE;
+    }
+    
     /* No FID, no answer. */
     if (nFID == OGRNullFID)
     {
@@ -1225,10 +1248,13 @@ int OGRGeoPackageLayer::TestCapability ( const char * pszCap )
 {
     if ( EQUAL(pszCap, OLCCreateField) ||
          EQUAL(pszCap, OLCSequentialWrite) ||
-         EQUAL(pszCap, OLCRandomRead) ||
          EQUAL(pszCap, OLCDeleteFeature) ||
-         EQUAL(pszCap, OLCRandomWrite) ||
-         EQUAL(pszCap, OLCTransactions) )
+         EQUAL(pszCap, OLCRandomWrite) )
+    {
+        return m_poDS->IsUpdatable();
+    }
+    else if ( EQUAL(pszCap, OLCRandomRead) ||
+              EQUAL(pszCap, OLCTransactions) )
     {
         return TRUE;
     }
