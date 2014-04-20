@@ -100,7 +100,7 @@ OGRErr SQLResultFree(SQLResult * poResult)
     return OGRERR_NONE;
 }
 
-char* SQLResultGetColumn(const SQLResult * poResult, int iColNum)
+const char* SQLResultGetColumn(const SQLResult * poResult, int iColNum)
 {
     if ( ! poResult ) 
         return NULL;
@@ -111,7 +111,7 @@ char* SQLResultGetColumn(const SQLResult * poResult, int iColNum)
     return poResult->papszResult[iColNum];
 }
 
-char* SQLResultGetValue(const SQLResult * poResult, int iColNum, int iRowNum)
+const char* SQLResultGetValue(const SQLResult * poResult, int iColNum, int iRowNum)
 {
     if ( ! poResult ) 
         return NULL;
@@ -559,7 +559,6 @@ OGRErr GPkgHeaderFromWKB(const GByte *pabyGpkg, GPkgHeader *poHeader)
 
 OGRGeometry* GPkgGeometryToOGR(GByte *pabyGpkg, size_t szGpkg, OGRSpatialReference *poSrs)
 {
-    CPLAssert( poSrs != NULL );
     CPLAssert( pabyGpkg != NULL );
     
     GPkgHeader oHeader;
