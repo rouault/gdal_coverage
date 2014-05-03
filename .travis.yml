@@ -21,7 +21,7 @@ install:
   - cd ..
 # build GDAL
   - cd gdal
-  - ./configure --prefix=/usr --enable-debug --with-jpeg12 --with-python
+  - ./configure --prefix=/usr --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal
   - make -j3
   - cd apps
   - make test_ogrsf
