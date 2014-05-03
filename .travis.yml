@@ -28,10 +28,10 @@ install:
   - cd ..
   - sudo make install
   - cd ../autotest/cpp
-  - gdal-config --version
-  - gdal-config --cflags
-  - cat /usr/include/gdal.h
-  - make -j3
+  - echo $PATH
+  - PATH=/usr/bin:$PATH gdal-config --version
+  - PATH=/usr/bin:$PATH gdal-config --cflags
+  - PATH=/usr/bin:$PATH make -j3
   - cd ../../gdal
 
 script:
