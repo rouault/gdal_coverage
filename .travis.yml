@@ -28,6 +28,9 @@ install:
   - cd ..
   - sudo make install
   - cd ../autotest/cpp
+  - gdal-config --version
+  - gdal-config --cflags
+  - cat /usr/include/gdal.h
   - make -j3
   - cd ../../gdal
 
