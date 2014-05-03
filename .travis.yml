@@ -33,6 +33,8 @@ install:
   - sudo ln -s /usr/bin /usr/local/Cellar/gdal/1.10.1_1
   - sudo ln -s /usr/lib /usr/local/Cellar/gdal/1.10.1_1
   - sudo ln -s /usr/include /usr/local/Cellar/gdal/1.10.1_1
+  - sudo mkdir /usr/local/Cellar/gdal/1.10.1_1/share
+  - sudo ln -s /usr/share/gdal /usr/local/Cellar/gdal/1.10.1_1/share
   - PATH=/usr/bin:$PATH gdal-config --version
   - PATH=/usr/bin:$PATH gdal-config --cflags
   - PATH=/usr/bin:$PATH make -j3
