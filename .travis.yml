@@ -46,8 +46,6 @@ script:
   - cd cpp
   - GDAL_SKIP=JP2ECW make quick_test
   - cd ..
-# Does not work under MacOS. FIXME
-  - rm ogr/ogr_osm.py
 # Run all the Python autotests
   - python run_all.py
 
