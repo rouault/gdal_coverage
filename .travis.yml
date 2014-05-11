@@ -9,11 +9,10 @@ before_install:
   - wget http://dl.google.com/android/ndk/android-ndk-r9d-linux-x86_64.tar.bz2
   - tar xjf android-ndk-r9d-linux-x86_64.tar.bz2
   - android-ndk-r9d/build/tools/make-standalone-toolchain.sh --platform=android-8 --install-dir=$HOME/android-8-toolchain
-  - export PATH=$HOME/android-8-toolchain/bin:$PATH
 
 install:
   - cd gdal
-  - CFLAGS="-mthumb" CXXFLAGS="-mthumb" LIBS="-lsupc++ -lstdc++" ./configure --host=arm-linux-androideabi
+  - PATH=$HOME/android-8-toolchain/bin:$PATH CFLAGS="-mthumb" CXXFLAGS="-mthumb" LIBS="-lsupc++ -lstdc++" ./configure --host=arm-linux-androideabi
   - make -j3
 
 script:
