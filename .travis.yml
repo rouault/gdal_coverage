@@ -14,6 +14,8 @@ install:
   - cd gdal
   - wget http://git.savannah.gnu.org/cgit/config.git/plain/config.guess -O config.guess
   - wget http://git.savannah.gnu.org/cgit/config.git/plain/config.sub -O config.sub
+  - unset CC
+  - unset CXX
   - PATH=$HOME/android-8-toolchain/bin:$PATH CFLAGS="-mthumb" CXXFLAGS="-mthumb" LIBS="-lsupc++ -lstdc++" ./configure --host=arm-linux-androideabi
   - make -j3
 
