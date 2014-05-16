@@ -492,20 +492,22 @@ def ogr_gpkg_12():
         return 'fail'
     gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
 
-
-    sql_lyr = gdaltest.gpkg_ds.ExecuteSQL('SELECT * FROM tbl_linestring_renamed LIMIT 1')
-    feat = sql_lyr.GetNextFeature()
-    if feat is None:
-        gdaltest.post_reason('fail')
-        return 'fail'
-    feat = sql_lyr.GetNextFeature()
-    if feat is not None:
-        gdaltest.post_reason('fail')
-        return 'fail'
-    if sql_lyr.GetFeatureCount() != 1:
-        gdaltest.post_reason('fail')
-        return 'fail'
-    gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
+    for sql in [ 'SELECT * FROM tbl_linestring_renamed LIMIT 1',
+                 'SELECT * FROM tbl_linestring_renamed ORDER BY fld_integer LIMIT 1',
+                 'SELECT * FROM tbl_linestring_renamed UNION ALL SELECT * FROM tbl_linestring_renamed ORDER BY fld_integer LIMIT 1' ]:
+        sql_lyr = gdaltest.gpkg_ds.ExecuteSQL(sql)
+        feat = sql_lyr.GetNextFeature()
+        if feat is None:
+            gdaltest.post_reason('fail')
+            return 'fail'
+        feat = sql_lyr.GetNextFeature()
+        if feat is not None:
+            gdaltest.post_reason('fail')
+            return 'fail'
+        if sql_lyr.GetFeatureCount() != 1:
+            gdaltest.post_reason('fail')
+            return 'fail'
+        gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
 
     sql_lyr = gdaltest.gpkg_ds.ExecuteSQL('SELECT sqlite_version()')
     feat = sql_lyr.GetNextFeature()
@@ -693,6 +695,56 @@ def ogr_gpkg_15():
     return 'success'
 
 ###############################################################################
+# Test unknown extensions
+
+def ogr_gpkg_16():
+
+    if gdaltest.gpkg_dr is None:
+        return 'skip'
+
+    ds = gdaltest.gpkg_dr.CreateDataSource('/vsimem/ogr_gpk_16.gpkg')
+    lyr = ds.CreateLayer('foo')
+    sql_lyr = ds.ExecuteSQL("INSERT INTO gpkg_extensions ( table_name, column_name, " + \
+        "extension_name, definition, scope ) VALUES ( 'foo', 'geom', 'myext', 'some ext', 'write-only' ) ")
+    ds = None
+    
+    # No warning since we open as read-only
+    ds = ogr.Open('/vsimem/ogr_gpk_16.gpkg')
+    ds = None
+    
+    # Warning since we open as read-write
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open('/vsimem/ogr_gpk_16.gpkg', update = 1)
+    gdal.PopErrorHandler()
+    if gdal.GetLastErrorMsg() == '':
+        gdaltest.post_reason('fail : warning expected')
+        return 'fail'
+
+    sql_lyr = ds.ExecuteSQL("UPDATE gpkg_extensions SET scope = 'read-write' WHERE extension_name = 'myext'")
+    ds = None
+
+    # Warning since we open as read-only
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open('/vsimem/ogr_gpk_16.gpkg')
+    gdal.PopErrorHandler()
+    if gdal.GetLastErrorMsg() == '':
+        gdaltest.post_reason('fail : warning expected')
+        return 'fail'
+
+    # and also as read-write
+    gdal.PushErrorHandler('CPLQuietErrorHandler')
+    ds = ogr.Open('/vsimem/ogr_gpk_16.gpkg', update = 1)
+    gdal.PopErrorHandler()
+    if gdal.GetLastErrorMsg() == '':
+        gdaltest.post_reason('fail : warning expected')
+        return 'fail'
+    ds = None
+
+    gdal.Unlink('/vsimem/ogr_gpk_16.gpkg')
+
+    return 'success'
+
+###############################################################################
 # Run test_ogrsf
 
 def ogr_gpkg_test_ogrsf():
@@ -749,6 +801,7 @@ gdaltest_list = [
     ogr_gpkg_13,
     ogr_gpkg_14,
     ogr_gpkg_15,
+    ogr_gpkg_16,
     ogr_gpkg_test_ogrsf,
     ogr_gpkg_cleanup,
 ]
