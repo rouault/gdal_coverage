@@ -130,6 +130,10 @@ char **VSIReadDirRecursive( const char *pszPathIn )
 
         for ( ; i < nCount; i++ )
         {
+            // Do not recurse up the tree.
+            if (EQUAL(".", papszFiles[i]) || EQUAL("..", papszFiles[i]))
+              continue;
+
             // build complete file name for stat
             osTemp1.clear();
             osTemp1.append( pszPath );
@@ -365,7 +369,7 @@ int VSIRmdir( const char * pszDirname )
  * 
  * Fetches status information about a filesystem object (file, directory, etc).
  * The returned information is placed in the VSIStatBufL structure.   For
- * portability only the st_size (size in bytes), and st_mode (file type). 
+ * portability, only use the st_size (size in bytes) and st_mode (file type).
  * This method is similar to VSIStat(), but will work on large files on 
  * systems where this requires special calls. 
  * 
@@ -396,7 +400,7 @@ int VSIStatL( const char * pszFilename, VSIStatBufL *psStatBuf )
  *
  * Fetches status information about a filesystem object (file, directory, etc).
  * The returned information is placed in the VSIStatBufL structure.   For
- * portability only the st_size (size in bytes), and st_mode (file type).
+ * portability, only use the st_size (size in bytes) and st_mode (file type).
  * This method is similar to VSIStat(), but will work on large files on
  * systems where this requires special calls.
  *
