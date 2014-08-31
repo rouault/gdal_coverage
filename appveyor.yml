@@ -1,0 +1,12 @@
+platform:
+- x86
+
+install:
+- SET PATH=c:\python27;%PATH%
+- call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
+- nmake /f makefile.vc MSVC_VER=1800
+
+build: off
+test: off
+test_script: pff
+deploy: Ooff
