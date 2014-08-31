@@ -7,9 +7,12 @@ install:
 - cd gdal
 - SET PATH=c:\python27;%PATH%
 - call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
-- nmake /f makefile.vc MSVC_VER=1800
+- nmake /f makefile.vc MSVC_VER=1800 DEBUG=1
+- cd swig\python
+- python setup.py build
+- cd ..\..
 
 build: off
 test: off
-test_script: pff
-deploy: Ooff
+test_script: off
+deploy: off
