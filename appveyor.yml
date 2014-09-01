@@ -16,7 +16,7 @@ install:
 - nmake /f makefile.vc test_ogrsf.exe MSVC_VER=1800 DEBUG=1 %WIN64_ARG%
 - cd ..
 - cd swig\python
-- python setup.py build
+- if "%platform%" == "x86" python setup.py build
 - cd ..\..
 
 build: off
