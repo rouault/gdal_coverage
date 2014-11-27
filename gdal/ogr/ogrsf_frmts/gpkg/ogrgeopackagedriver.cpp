@@ -42,6 +42,9 @@ static const size_t szGpkgIdPos = 68;
 
 static int OGRGeoPackageDriverIdentify( GDALOpenInfo* poOpenInfo )
 {
+    if( EQUALN(poOpenInfo->pszFilename, "GPKG:", 5) )
+        return TRUE;
+
     /* Requirement 3: File name has to end in "gpkg" */
     /* http://opengis.github.io/geopackage/#_file_extension_name */
     if( !EQUAL(CPLGetExtension(poOpenInfo->pszFilename), "GPKG") )
@@ -74,9 +77,9 @@ static GDALDataset *OGRGeoPackageDriverOpen( GDALOpenInfo* poOpenInfo )
     if( !OGRGeoPackageDriverIdentify(poOpenInfo) )
         return NULL;
 
-    OGRGeoPackageDataSource   *poDS = new OGRGeoPackageDataSource();
+    GDALGeoPackageDataset   *poDS = new GDALGeoPackageDataset();
 
-    if( !poDS->Open( poOpenInfo->pszFilename, poOpenInfo->eAccess == GA_Update ) )
+    if( !poDS->Open( poOpenInfo ) )
     {
         delete poDS;
         poDS = NULL;
@@ -90,7 +93,7 @@ static GDALDataset *OGRGeoPackageDriverOpen( GDALOpenInfo* poOpenInfo )
 /************************************************************************/
 
 static GDALDataset *OGRGeoPackageDriverCreate( const char * pszFilename,
-                                               CPL_UNUSED int nBands,
+                                               int nBands,
                                                CPL_UNUSED int nXSize,
                                                CPL_UNUSED int nYSize,
                                                CPL_UNUSED GDALDataType eDT,
@@ -98,6 +101,10 @@ static GDALDataset *OGRGeoPackageDriverCreate( const char * pszFilename,
 {
 	/* First, ensure there isn't any such file yet. */
     VSIStatBufL sStatBuf;
+    
+    /* Not supported for now */
+    if( nBands != 0 )
+        return NULL;
 
     if( VSIStatL( pszFilename, &sStatBuf ) == 0 )
     {
@@ -108,7 +115,7 @@ static GDALDataset *OGRGeoPackageDriverCreate( const char * pszFilename,
         return NULL;
     }
 	
-    OGRGeoPackageDataSource   *poDS = new OGRGeoPackageDataSource();
+    GDALGeoPackageDataset   *poDS = new GDALGeoPackageDataset();
 
     if( !poDS->Create( pszFilename, papszOptions ) )
     {
@@ -145,7 +152,10 @@ void RegisterOGRGeoPackage()
         poDriver = new GDALDriver();
 
         poDriver->SetDescription( "GPKG" );
+        poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
         poDriver->SetMetadataItem( GDAL_DCAP_VECTOR, "YES" );
+        poDriver->SetMetadataItem( GDAL_DMD_SUBDATASETS, "YES" );
+
         poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
                                    "GeoPackage" );
         poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "gpkg" );
