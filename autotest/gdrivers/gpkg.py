@@ -2396,26 +2396,29 @@ def gpkg_22(tile_drv_name = 'PNG'):
     out_ds = gdal.OpenEx('tmp/tmp.gpkg', open_options = ['BAND_COUNT=2'])
     got_cs = [out_ds.GetRasterBand(i+1).Checksum() for i in range(2)]
     if got_cs != expected_cs:
-        gdaltest.post_reason('fail')
-        print('Got %s, expected %s' % (str(got_cs), str(expected_cs)))
-        return 'fail'
+        if tile_drv_name != 'WEBP' or got_cs != [4899, 10807]:
+            gdaltest.post_reason('fail')
+            print('Got %s, expected %s' % (str(got_cs), str(expected_cs)))
+            return 'fail'
     out_ds = None
 
     out_ds = gdal.Open('tmp/tmp.gpkg')
     got_cs = [out_ds.GetRasterBand(i+1).Checksum() for i in range(4)]
     expected_cs = [ expected_cs[0], expected_cs[0], expected_cs[0], expected_cs[1] ]
     if got_cs != expected_cs:
-        gdaltest.post_reason('fail')
-        print('Got %s, expected %s' % (str(got_cs), str(expected_cs)))
-        return 'fail'
+        if tile_drv_name != 'WEBP' or got_cs != [4899, 4899, 4899, 10807]:
+            gdaltest.post_reason('fail')
+            print('Got %s, expected %s' % (str(got_cs), str(expected_cs)))
+            return 'fail'
     out_ds = None
 
     ds = gdal.OpenEx('tmp/tmp.gpkg', open_options = ['USE_TILE_EXTENT=YES'])
     got_cs = [ds.GetRasterBand(i+1).Checksum() for i in range(4)]
     if got_cs != clamped_expected_cs:
-        gdaltest.post_reason('fail')
-        print('Got %s, expected %s' % (str(got_cs), str(clamped_expected_cs)))
-        return 'fail'
+        if tile_drv_name != 'WEBP' or got_cs != [5266, 5266, 5266, 11580]:
+            gdaltest.post_reason('fail')
+            print('Got %s, expected %s' % (str(got_cs), str(clamped_expected_cs)))
+            return 'fail'
     ds = None
 
     os.remove('tmp/tmp.gpkg')
@@ -2506,6 +2509,36 @@ def gpkg_26():
         ds = None
 
         os.remove('tmp/tmp.gpkg')
+
+    # Test a few error cases
+    gdal.PushErrorHandler()
+    ds = gdaltest.gpkg_dr.Create('tmp/tmp.gpkg', 1, 1, 1, options = ['TILING_SCHEME=GoogleCRS84Quad', 'BLOCKSIZE=128'])
+    gdal.PopErrorHandler()
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    os.remove('tmp/tmp.gpkg')
+
+    ds = gdaltest.gpkg_dr.Create('tmp/tmp.gpkg', 1, 1, 1, options = ['TILING_SCHEME=GoogleCRS84Quad'])
+    gdal.PushErrorHandler()
+    ret = ds.SetGeoTransform([0,10,0,0,0,-10])
+    gdal.PopErrorHandler()
+    if ret == 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    srs = osr.SpatialReference()
+    srs.ImportFromEPSG(32630)
+    gdal.PushErrorHandler()
+    ret = ds.SetProjection(srs.ExportToWkt())
+    gdal.PopErrorHandler()
+    if ret == 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    gdal.PushErrorHandler()
+    ds = None
+    gdal.PopErrorHandler()
+
+    os.remove('tmp/tmp.gpkg')
 
     return 'success'
 
