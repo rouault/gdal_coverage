@@ -37,6 +37,10 @@ env:
 
 language: cpp
 
+python:
+  - "2.7"
+  - "3.4"
+
 # We use --without-libtool and --with-debug for faster build
 compiler:
   - gcc
@@ -176,7 +180,7 @@ after_success:
 - cd ../gdal
 - sudo cp ../coverage.py /usr/local/lib/python2.7/dist-packages/coveralls
 - echo "$TRAVIS_SECURE_ENV_VARS"
-- sh -c 'if test "$TRAVIS_SECURE_ENV_VARS" = "true"; then echo "run coverage"; ./run_code_coverage_upload.sh; fi'
+- sh -c 'if test "$TRAVIS_SECURE_ENV_VARS" = "true" -a "$TRAVIS_PYTHON_VERSION" = "2.7"; then echo "run coverage"; ./run_code_coverage_upload.sh; fi'
 #- coveralls --exclude swig
 
 notifications:
