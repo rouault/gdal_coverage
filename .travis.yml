@@ -2,6 +2,8 @@
 # with Travis-ci.org
 
 env:
+  - PYTHONPATH=/usr/lib/python3.2/site-packages
+
   global:
 #    - secure: "qSk1Cw+eGPKj4z4O9Fk+kjKM8nmEraKH659Sd2mIJMCj/YaZ2cX4lcojESc9\nFHE1qsLklwUmrzrIWkAirYY2HRGoxiltUda6lJBGcmApL3EM+Y9dl+CFwGM/\nV9G9xvffrWo1/f16GOP0AwzZFPAKQcM0nWCqzlsBr9DIFaH0Thg="
      - secure: "pKo155GCdudC6XB1VxnH1GqQtmux3rt1FAtCBAKMpKpw1MhJaazi2V2oc07o\ni3oChZ2YCrTGwSuPHSLb/6MjPmkXcbe7BRcSJlfVZLwQcFw/4DjgvtOzUIDU\nZWlloy/x1sJdAxlnKzdCMICjORDuA3InIAlqJm3PmtBKChFoBv0="
@@ -86,13 +88,13 @@ before_install:
   - cd ../..
   - sudo ldconfig
 # coverage
-  - sudo apt-get install -qq curlftpfs lcov
+#  - sudo apt-get install -qq curlftpfs lcov
 #  - sudo pip install cpp-coveralls --use-mirrors
-  - cd gdal
-  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/coverage_r27978.patch -O coverage.patch
-  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/filter_info.c
-  - patch -p0 < coverage.patch
-  - cd ..
+#  - cd gdal
+#  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/coverage_r27978.patch -O coverage.patch
+#  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/filter_info.c
+#  - patch -p0 < coverage.patch
+#  - cd ..
 
 # installing PostGIS 2 from Ubuntu PPA draws libgdal1.9 dependency. We must install ourselves
 # in /usr too to avoid gdal version conflict. Might be fragile however
@@ -104,16 +106,16 @@ install:
   - cd apps
   - make test_ogrsf
   - cd ..
-  - cd swig/java
-  - cat java.opt | sed "s/JAVA_HOME =.*/JAVA_HOME = \/usr\/lib\/jvm\/java-7-openjdk-amd64\//" > java.opt.tmp
-  - mv java.opt.tmp java.opt
-  - make
-  - cd ../..
-  - cd swig/perl
-  - make generate
-  - make
-  - cd ../..
-  - sudo rm -f /usr/lib/libgdal.so*
+#  - cd swig/java
+#  - cat java.opt | sed "s/JAVA_HOME =.*/JAVA_HOME = \/usr\/lib\/jvm\/java-7-openjdk-amd64\//" > java.opt.tmp
+#  - mv java.opt.tmp java.opt
+#  - make
+#  - cd ../..
+#  - cd swig/perl
+#  - make generate
+#  - make
+#  - cd ../..
+#  - sudo rm -f /usr/lib/libgdal.so*
   - sudo make install
   - sudo ldconfig
   - g++ -Wall -DDEBUG -fPIC -g ogr/ogrsf_frmts/null/ogrnulldriver.cpp  -shared -o ogr_NULL.so -L. -lgdal -Iport -Igcore -Iogr -Iogr/ogrsf_frmts
@@ -129,22 +131,22 @@ install:
 # Run it in isolation
 script:
 # Perl unit tests
-  - cd swig/perl
-  - make test
-  - cd ../..
+#  - cd swig/perl
+#  - make test
+#  - cd ../..
 # Java unit tests
 #  - cd swig/java
 #  - make test
 #  - cd ../..
 # CPP unit tests
   - cd ../autotest
-  - cd cpp
-  - GDAL_SKIP=JP2ECW make quick_test
+#  - cd cpp
+#  - GDAL_SKIP=JP2ECW make quick_test
 # Compile and test vsipreload
-  - make vsipreload.so
-  - LD_PRELOAD=./vsipreload.so gdalinfo /vsicurl/http://download.osgeo.org/gdal/data/ecw/spif83.ecw
-  - LD_PRELOAD=./vsipreload.so sqlite3  /vsicurl/http://download.osgeo.org/gdal/data/sqlite3/polygon.db "select * from polygon limit 10"
-  - cd ..
+#  - make vsipreload.so
+#  - LD_PRELOAD=./vsipreload.so gdalinfo /vsicurl/http://download.osgeo.org/gdal/data/ecw/spif83.ecw
+#  - LD_PRELOAD=./vsipreload.so sqlite3  /vsicurl/http://download.osgeo.org/gdal/data/sqlite3/polygon.db "select * from polygon limit 10"
+#  - cd ..
 # Download a sample file
   - mkdir -p ogr/tmp/cache/
   - cd ogr/tmp/cache/
