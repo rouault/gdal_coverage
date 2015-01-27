@@ -2,9 +2,8 @@
 # with Travis-ci.org
 
 env:
-  - PYTHONPATH=/usr/lib/python3.2/site-packages
-
   global:
+     - PYTHONPATH=/usr/lib/python3.2/site-packages
 #    - secure: "qSk1Cw+eGPKj4z4O9Fk+kjKM8nmEraKH659Sd2mIJMCj/YaZ2cX4lcojESc9\nFHE1qsLklwUmrzrIWkAirYY2HRGoxiltUda6lJBGcmApL3EM+Y9dl+CFwGM/\nV9G9xvffrWo1/f16GOP0AwzZFPAKQcM0nWCqzlsBr9DIFaH0Thg="
      - secure: "pKo155GCdudC6XB1VxnH1GqQtmux3rt1FAtCBAKMpKpw1MhJaazi2V2oc07o\ni3oChZ2YCrTGwSuPHSLb/6MjPmkXcbe7BRcSJlfVZLwQcFw/4DjgvtOzUIDU\nZWlloy/x1sJdAxlnKzdCMICjORDuA3InIAlqJm3PmtBKChFoBv0="
      - secure: "A99lzR/ATznrYU13SpYHwr4VbXStoR7vkQZITAXtL5j61+HEWwWh+TkK1Qch\nCI5HIV79rTp9r4iMB0H60e0+9qIOg600rPk18cgVAuyiZQ5979VgOBPrzzSl\nkvcWfXL/uJi3WgfrTaFr3bMSWwNZFKaXWt4096WQ1wWJraxpnz8="
