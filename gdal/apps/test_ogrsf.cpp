@@ -992,6 +992,14 @@ static int TestLayerErrorConditions( OGRLayer* poLyr )
         goto bye;
     }
 
+    // This should detect int overflow
+    if (LOG_ACTION(poLyr->GetFeature((GIntBig)INT_MAX + 1)) != NULL)
+    {
+        printf( "ERROR: GetFeature((GIntBig)INT_MAX + 1) should have returned NULL\n" );
+        bRet = FALSE;
+        goto bye;
+    }
+
 #if 0
     /* PG driver doesn't issue errors when the feature doesn't exist */
     /* So, not sure if emitting error is expected or not */
@@ -2621,7 +2629,7 @@ static int TestTransactions( OGRLayer *poLayer )
 
 {
     OGRFeature* poFeature = NULL;
-    int nInitialFeatureCount = LOG_ACTION(poLayer->GetFeatureCount());
+    GIntBig nInitialFeatureCount = LOG_ACTION(poLayer->GetFeatureCount());
 
     OGRErr eErr = LOG_ACTION(poLayer->StartTransaction());
     if (eErr == OGRERR_NONE)
