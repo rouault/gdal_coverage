@@ -9,6 +9,7 @@ compiler:
 
 install:
 # build proj
+  - brew info gdal
   - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz > proj-4.8.0.tar.gz
   - tar xvzf proj-4.8.0.tar.gz
   - cd proj-4.8.0/nad
