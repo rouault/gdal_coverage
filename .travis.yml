@@ -9,7 +9,7 @@ compiler:
 
 install:
 # build proj
-  - brew info gdal
+  - sudo brew uninstall gdal
   - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz > proj-4.8.0.tar.gz
   - tar xvzf proj-4.8.0.tar.gz
   - cd proj-4.8.0/nad
@@ -30,12 +30,12 @@ install:
   - sudo make install
   - cd ../autotest/cpp
   - echo $PATH
-  - sudo rm -rf /usr/local/Cellar/gdal/1.10.1_1/*
-  - sudo ln -s /usr/bin /usr/local/Cellar/gdal/1.10.1_1
-  - sudo ln -s /usr/lib /usr/local/Cellar/gdal/1.10.1_1
-  - sudo ln -s /usr/include /usr/local/Cellar/gdal/1.10.1_1
-  - sudo mkdir /usr/local/Cellar/gdal/1.10.1_1/share
-  - sudo ln -s /usr/share/gdal /usr/local/Cellar/gdal/1.10.1_1/share
+#  - sudo rm -rf /usr/local/Cellar/gdal/1.10.1_1/*
+#  - sudo ln -s /usr/bin /usr/local/Cellar/gdal/1.10.1_1
+#  - sudo ln -s /usr/lib /usr/local/Cellar/gdal/1.10.1_1
+#  - sudo ln -s /usr/include /usr/local/Cellar/gdal/1.10.1_1
+#  - sudo mkdir /usr/local/Cellar/gdal/1.10.1_1/share
+#  - sudo ln -s /usr/share/gdal /usr/local/Cellar/gdal/1.10.1_1/share
   - PATH=/usr/bin:$PATH gdal-config --version
   - PATH=/usr/bin:$PATH gdal-config --cflags
   - PATH=/usr/bin:$PATH make -j3
