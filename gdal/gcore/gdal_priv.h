@@ -500,6 +500,9 @@ class CPL_DLL GDALRasterBlock
     
     GDALRasterBlock     *poNext;
     GDALRasterBlock     *poPrevious;
+    
+    void        Touch_unlocked( void );
+    void        Detach_unlocked( void );
 
   public:
                 GDALRasterBlock( GDALRasterBand *, int, int );
@@ -938,6 +941,12 @@ class CPL_DLL GDALDriverManager : public GDALMajorObject
     int         nDrivers;
     GDALDriver  **papoDrivers;
     std::map<CPLString, GDALDriver*> oMapNameToDrivers;
+    
+    GDALDriver  *GetDriver_unlocked( int iDriver )
+            { return (iDriver >= 0 && iDriver < nDrivers) ? papoDrivers[iDriver] : NULL; }
+    
+    GDALDriver  *GetDriverByName_unlocked( const char * pszName )
+            { return oMapNameToDrivers[CPLString(pszName).toupper()]; }
     
  public:
                 GDALDriverManager();
