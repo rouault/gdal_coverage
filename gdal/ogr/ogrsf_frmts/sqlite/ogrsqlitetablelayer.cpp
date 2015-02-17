@@ -228,13 +228,15 @@ static OGRSQLiteGeomFormat GetGeomFormat( const char* pszGeomFormat )
 /*                         SetCreationParameters()                      */
 /************************************************************************/
 
-void OGRSQLiteTableLayer::SetCreationParameters( OGRwkbGeometryType eGeomType,
+void OGRSQLiteTableLayer::SetCreationParameters( const char *pszFIDColumnName,
+                                                 OGRwkbGeometryType eGeomType,
                                                  const char *pszGeomFormat,
+                                                 const char *pszGeometryName,
                                                  OGRSpatialReference *poSRS,
                                                  int nSRSId )
 
 {
-    pszFIDColumn = CPLStrdup("OGC_FID");
+    pszFIDColumn = CPLStrdup(pszFIDColumnName);
     poFeatureDefn = new OGRSQLiteFeatureDefn(pszTableName);
     poFeatureDefn->SetGeomType(wkbNone);
     poFeatureDefn->Reference();
@@ -244,9 +246,8 @@ void OGRSQLiteTableLayer::SetCreationParameters( OGRwkbGeometryType eGeomType,
         if( nSRSId == UNINITIALIZED_SRID )
             nSRSId = poDS->GetUndefinedSRID();
         OGRSQLiteGeomFormat eGeomFormat = GetGeomFormat(pszGeomFormat);
-        const char* pszGeomCol = ( eGeomFormat == OSGF_WKT ) ? "WKT_GEOMETRY" : "GEOMETRY";
         OGRSQLiteGeomFieldDefn* poGeomFieldDefn =
-            new OGRSQLiteGeomFieldDefn(pszGeomCol, -1);
+            new OGRSQLiteGeomFieldDefn(pszGeometryName, -1);
         poGeomFieldDefn->SetType(eGeomType);
         poGeomFieldDefn->nSRSId = nSRSId;
         poGeomFieldDefn->eGeomFormat = eGeomFormat;
