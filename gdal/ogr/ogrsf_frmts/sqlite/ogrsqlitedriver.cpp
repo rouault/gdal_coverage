@@ -249,6 +249,7 @@ void RegisterOGRSQLite()
 "    <Value>SPATIALITE</Value>"
 #endif
 "  </Option>"
+"  <Option name='GEOMETRY_NAME' type='string' description='Name of geometry column. Defaults to WKT_GEOMETRY for FORMAT=WKT or GEOMETRY otherwise'/>"
 "  <Option name='LAUNDER' type='boolean' description='Whether layer and field names will be laundered' default='YES'/>"
 #ifdef HAVE_SPATIALITE
 "  <Option name='SPATIAL_INDEX' type='boolean' description='Whether to create a spatial index for Spatialite databases' default='YES'/>"
@@ -257,6 +258,7 @@ void RegisterOGRSQLite()
 "  <Option name='SRID' type='int' description='Forced SRID of the layer'/>"
 "  <Option name='COMPRESS_COLUMNS' type='string' description='=column_name1[,column_name2, ...].  list of (String) columns that must be compressed with ZLib DEFLATE algorithm'/>"
 "  <Option name='OVERWRITE' type='boolean' description='Whether to overwrite an existing table with the layer name to be created' default='NO'/>"
+"  <Option name='FID' type='string' description='Name of the FID column to create' default='OGC_FID'/>"
 "</LayerCreationOptionList>");
         
         poDriver->SetMetadataItem( GDAL_DMD_CREATIONFIELDDATATYPES, "Integer Integer64 Real String Date DateTime Time Binary" );
