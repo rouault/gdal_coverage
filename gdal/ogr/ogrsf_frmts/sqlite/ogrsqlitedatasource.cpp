@@ -1921,6 +1921,17 @@ OGRSQLiteDataSource::ICreateLayer( const char * pszLayerNameIn,
         }
     }
 
+    CPLString osFIDColumnName;
+    const char* pszFIDColumnNameIn = CSLFetchNameValueDef(papszOptions, "FID", "OGC_FID");
+    if( CSLFetchBoolean(papszOptions,"LAUNDER", TRUE) )
+    {
+        char* pszFIDColumnName = LaunderName(pszFIDColumnNameIn);
+        osFIDColumnName = pszFIDColumnName;
+        CPLFree(pszFIDColumnName);
+    }
+    else
+        osFIDColumnName = pszFIDColumnNameIn;
+
     if( CSLFetchBoolean(papszOptions,"LAUNDER",TRUE) )
         pszLayerName = LaunderName( pszLayerNameIn );
     else
@@ -1944,6 +1955,24 @@ OGRSQLiteDataSource::ICreateLayer( const char * pszLayerNameIn,
                   pszGeomFormat );
         CPLFree( pszLayerName );
         return NULL;
+    }
+    
+    CPLString osGeometryName;
+    const char* pszGeometryNameIn = CSLFetchNameValue( papszOptions, "GEOMETRY_NAME" );
+    if( pszGeometryNameIn == NULL )
+    {
+        osGeometryName = ( EQUAL(pszGeomFormat,"WKT") ) ? "WKT_GEOMETRY" : "GEOMETRY";
+    }
+    else
+    {
+        if( CSLFetchBoolean(papszOptions,"LAUNDER", TRUE) )
+        {
+            char* pszGeometryName = LaunderName(pszGeometryNameIn);
+            osGeometryName = pszGeometryName;
+            CPLFree(pszGeometryName);
+        }
+        else
+            osGeometryName = pszGeometryNameIn;
     }
 
     if (bIsSpatiaLiteDB && !EQUAL(pszGeomFormat, "SpatiaLite") )
@@ -2061,7 +2090,8 @@ OGRSQLiteDataSource::ICreateLayer( const char * pszLayerNameIn,
     poLayer = new OGRSQLiteTableLayer( this );
 
     poLayer->Initialize( pszLayerName, FALSE, TRUE ) ;
-    poLayer->SetCreationParameters( eType, pszGeomFormat, poSRS, nSRSId );
+    poLayer->SetCreationParameters( osFIDColumnName, eType, pszGeomFormat,
+                                    osGeometryName, poSRS, nSRSId );
 
 /* -------------------------------------------------------------------- */
 /*      Add layer to data source layer list.                            */
