@@ -387,8 +387,10 @@ class OGRSQLiteTableLayer : public OGRSQLiteLayer
     CPLErr              Initialize( const char *pszTableName, 
                                     int bIsVirtualShapeIn,
                                     int bDeferredCreation);
-    void                SetCreationParameters( OGRwkbGeometryType eGeomType,
+    void                SetCreationParameters( const char *pszFIDColumnName,
+                                               OGRwkbGeometryType eGeomType,
                                                const char *pszGeomFormat,
+                                               const char *pszGeometryName,
                                                OGRSpatialReference *poSRS,
                                                int nSRSId );
     virtual const char* GetName();
