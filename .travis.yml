@@ -186,7 +186,7 @@ script:
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/libspatialite4.0dev_ubuntu12.04-64bit_srs_stripped.tar.gz
   - tar xzf libspatialite4.0dev_ubuntu12.04-64bit_srs_stripped.tar.gz
   - ln -s install-libspatialite-4.0dev/lib/libspatialite.so.5.0.1 libspatialite.so.3
-  - LD_LIBRARY_PATH=$PWD python ogr_sqlite.py
+  - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD python ogr_sqlite.py
   - cd ..
 
 after_success: 
