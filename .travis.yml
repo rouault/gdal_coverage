@@ -86,6 +86,7 @@ before_install:
   - ln -s libclntsh.so.11.1 libclntsh.so
   - ln -s libocci.so.11.1 libocci.so
   - ln -s . Lib 
+  - ln -s . lib 
   - cd .. 
   - sudo mv instantclient_11_2 /usr/.
   - sudo apt-get install libaio1
