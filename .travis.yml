@@ -77,6 +77,22 @@ before_install:
   - tar xzf install-openjpeg-2.0.0-ubuntu12.04-64bit.tar.gz
   - sudo cp -r install-openjpeg/include/* /usr/local/include
   - sudo cp -r install-openjpeg/lib/* /usr/local/lib
+# oracle stuff
+  - curl -L -o instantclient-sdk-linux.x64-11.2.0.4.0.zip "$INSTANT_SDK"
+  - curl -L -o instantclient-linux.x64-11.2.0.4.0.zip "$INSTANT_CLIENT"
+  - unzip instantclient-sdk-linux.x64-11.2.0.4.0.zip
+  - unzip instantclient-linux.x64-11.2.0.4.0.zip
+  - cd instantclient_11_2
+  - ln -s libclntsh.so.11.1 libclntsh.so
+  - ln -s libocci.so.11.1 libocci.so
+  - ln -s . Lib 
+  - cd .. 
+  - sudo mv instantclient_11_2 /usr/.
+  - sudo apt-get install libaio1
+  - export ORACLE_HOME=/usr/instantclient_11_2/
+  - export PATH=$PATH:/usr/instantclient_11_2/
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/instantclient_11_2/
+# end of oracle stuff
   - wget https://bitbucket.org/chchrsc/kealib/get/c6d36f3db5e4.zip
   - unzip c6d36f3db5e4.zip
   - cd chchrsc-kealib-c6d36f3db5e4/trunk
@@ -99,7 +115,7 @@ before_install:
 
 install:
   - cd gdal
-  - ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-python --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local
+  - ./configure --prefix=/usr --without-libtool --enable-debug --with-oci=/usr/instantclient_11_2 --with-jpeg12 --with-python --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local
   - make -j3
   - cd apps
   - make test_ogrsf
