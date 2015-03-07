@@ -1567,7 +1567,7 @@ void JP2OpenJPEGDataset::WriteGDALMetadataBox( VSILFILE* fp,
                                                char** papszOptions )
 {
     GDALJP2Box* poBox = GDALJP2Metadata::CreateGDALMultiDomainMetadataXMLBox(
-        poSrcDS, !CSLFetchBoolean(papszOptions, "MAIN_MD_DOMAIN_ONLY", FALSE));
+        poSrcDS, CSLFetchBoolean(papszOptions, "MAIN_MD_DOMAIN_ONLY", FALSE));
     if( poBox )
         WriteBox(fp, poBox);
     delete poBox;
@@ -1760,6 +1760,7 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
                      "Unsupported value for QUALITY: %s. Defaulting to single-layer, with quality=%.0f",
                      pszQuality, dfDefaultQuality);
         }
+        CSLDestroy(papszTokens);
     }
     if( adfRates.size() == 0 )
     {
