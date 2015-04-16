@@ -81,6 +81,9 @@ class TestTiffSRS:
             print(sr)
             print(sr2)
             return 'fail'
+        else:
+            if self.expected_fail:
+                print('Succeeded but expected fail...')
 
         return 'success'
 
@@ -215,8 +218,8 @@ tiff_srs_list = [ 2758, #tmerc
                   32661, #stere
                   3035, #laea
                   2062, #lcc 1SP
-                  [2065, True, True], #krovak
-                  [2066, False, True], #cass
+                  [2065, False, True], #krovak
+                  2066, #cass
                   2964, #aea
                   3410, #cea
                   3786, #eqc spherical, method=9823
@@ -238,6 +241,8 @@ tiff_srs_list = [ 2758, #tmerc
                   26720, # UTM NAD27 special case
                   32630, # UTM WGS84 north special case
                   32730, # UTM WGS84 south special case
+                  22700, # unknown datum 'Deir_ez_Zor'
+                  31491, # Germany Zone projection
 ]
 
 for item in tiff_srs_list:
