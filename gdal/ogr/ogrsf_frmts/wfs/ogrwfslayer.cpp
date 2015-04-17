@@ -345,15 +345,19 @@ OGRFeatureDefn* OGRWFSLayer::BuildLayerDefnFromFeatureClass(GMLFeatureClass* poC
             eFType = OFTString;
         else if( poProperty->GetType() == GMLPT_String )
             eFType = OFTString;
-        else if( poProperty->GetType() == GMLPT_Integer )
+        else if( poProperty->GetType() == GMLPT_Integer ||
+                 poProperty->GetType() == GMLPT_Boolean ||
+                 poProperty->GetType() == GMLPT_Short  )
             eFType = OFTInteger;
         else if( poProperty->GetType() == GMLPT_Integer64 )
             eFType = OFTInteger64;
-        else if( poProperty->GetType() == GMLPT_Real )
+        else if( poProperty->GetType() == GMLPT_Real ||
+                 poProperty->GetType() == GMLPT_Float )
             eFType = OFTReal;
         else if( poProperty->GetType() == GMLPT_StringList )
             eFType = OFTStringList;
-        else if( poProperty->GetType() == GMLPT_IntegerList )
+        else if( poProperty->GetType() == GMLPT_IntegerList ||
+                 poProperty->GetType() == GMLPT_BooleanList )
             eFType = OFTIntegerList;
         else if( poProperty->GetType() == GMLPT_Integer64List )
             eFType = OFTInteger64List;
@@ -369,6 +373,13 @@ OGRFeatureDefn* OGRWFSLayer::BuildLayerDefnFromFeatureClass(GMLFeatureClass* poC
             oField.SetWidth( poProperty->GetWidth() );
         if( poProperty->GetPrecision() > 0 )
             oField.SetPrecision( poProperty->GetPrecision() );
+        if( poProperty->GetType() == GMLPT_Boolean ||
+            poProperty->GetType() == GMLPT_BooleanList )
+            oField.SetSubType(OFSTBoolean);
+        else if( poProperty->GetType() == GMLPT_Short) 
+            oField.SetSubType(OFSTInt16);
+        else if( poProperty->GetType() == GMLPT_Float) 
+            oField.SetSubType(OFSTFloat32);
         oField.SetNullable(poProperty->IsNullable());
 
         poFDefn->AddFieldDefn( &oField );
@@ -717,6 +728,11 @@ GDALDataset* OGRWFSLayer::FetchGetFeature(int nRequestMaxFeatures)
     {
         const char* pszStreamingName = CPLSPrintf("/vsicurl_streaming/%s",
                                                     osURL.c_str());
+        if( strncmp(osURL, "/vsimem/", strlen("/vsimem/")) == 0 &&
+            CSLTestBoolean(CPLGetConfigOption("CPL_CURL_ENABLE_VSIMEM", "FALSE")) )
+        {
+            pszStreamingName = osURL.c_str();
+        }
 
         const char* const apszAllowedDrivers[] = { "GML", NULL };
         const char* apszOpenOptions[2] = { NULL, NULL };
