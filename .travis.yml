@@ -38,7 +38,7 @@ install:
   - cd apps
   - LD=i586-mingw32msvc-ld make test_ogrsf.exe
   - cd ..
-  - ln -sf $PWD/.libs/libgdal-1.dll $HOME/.wine/drive_c/windows
+  - ln -sf $PWD/.libs/libgdal-20.dll $HOME/.wine/drive_c/windows
 #  - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libgcc_s_sjlj-1.dll $HOME/.wine/drive_c/windows
 #  - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libstdc++-6.dll $HOME/.wine/drive_c/windows
   - ln -sf $PWD/../proj-4.8.0/src/.libs/libproj-0.dll $HOME/.wine/drive_c/windows
