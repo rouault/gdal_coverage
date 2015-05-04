@@ -44,7 +44,7 @@ install:
   - cd apps
   - make test_ogrsf.exe
   - cd ..
-  - ln -s $PWD/.libs/libgdal-1.dll $HOME/.wine/drive_c/windows
+  - ln -sf $PWD/.libs/libgdal-20.dll $HOME/.wine/drive_c/windows
   - ln -sf $PWD/../proj-4.8.0/src/.libs/libproj-0.dll $HOME/.wine/drive_c/windows
 # Python bindings
   - wget http://www.python.org/ftp/python/2.7.3/python-2.7.3.amd64.msi
