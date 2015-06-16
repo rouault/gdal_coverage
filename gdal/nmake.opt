@@ -179,7 +179,7 @@ STDCALL=YES
 # Version number embedded in DLL name. 
 # If GDAL version is X.Y.Z, VERSION = X * 100 + Y
 !IFNDEF VERSION
-VERSION =	200
+VERSION =	201
 !ENDIF
 
 # Comment the following out if you want PAM supported disabled
@@ -598,6 +598,15 @@ OCI_INCLUDE =	-I$(ORACLE_HOME)\oci\include
 # BOOST_LIB_PATH= c:\users\even\dev\boost_1_55_0_32bit\lib32-msvc-10.0
 # Boost library names must be edited to reflect the actual MSVC and Boost versions
 # MONGODB_LIBS = c:/users/even/dev/mongo-client-install/lib/libmongoclient.lib $(BOOST_LIB_PATH)\libboost_thread-vc100-mt-1_55.lib  $(BOOST_LIB_PATH)\libboost_thread-vc100-mt-s-1_55.lib $(BOOST_LIB_PATH)\libboost_system-vc100-mt-1_55.lib $(BOOST_LIB_PATH)\libboost_system-vc100-mt-s-1_55.lib $(BOOST_LIB_PATH)\libboost_date_time-vc100-mt-1_55.lib  $(BOOST_LIB_PATH)\libboost_date_time-vc100-mt-s-1_55.lib $(BOOST_LIB_PATH)\libboost_chrono-vc100-mt-1_55.lib $(BOOST_LIB_PATH)\libboost_chrono-vc100-mt-s-1_55.lib $(BOOST_LIB_PATH)\libboost_regex-vc100-mt-s-1_55.lib /nodefaultlib:msvcprt /nodefaultlib:libcmt
+
+# QHull configuration
+# QHULL_SETTING can be set to INTERNAL, EXTERNAL or NO
+# For external qhull, use qhull 2012
+!IFDEF QHULL_SETTING
+QHULL_SETTING = INTERNAL
+!ENDIF
+# To be defined if QHULL_SETTING=EXTERNAL
+# QHULL_INC = -I....
 
 
 # Any extra libraries needed on this platform?
