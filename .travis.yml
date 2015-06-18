@@ -20,7 +20,7 @@ before_install:
   - sudo apt-get install python-lxml
   - sudo apt-get install python-pip
 # Boost for Mongo
-  - sudo apt-get install libboost-regex-dev libboost-system-dev libboost-thread-dev
+#  - sudo apt-get install libboost-regex-dev libboost-system-dev libboost-thread-dev
   - sudo apt-get install gcc-4.8 g++-4.8
 #  - sudo pip install pyflakes
 #  - pyflakes autotest
@@ -37,7 +37,7 @@ before_install:
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/install-libecwj2-ubuntu12.04-64bit.tar.gz
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/install-libkml-r864-64bit.tar.gz
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/install-openjpeg-2.0.0-ubuntu12.04-64bit.tar.gz
-  - wget http://even.rouault.free.fr/mongo-cxx-1.0.2-install-ubuntu12.04-64bit.tar.gz
+#  - wget http://even.rouault.free.fr/mongo-cxx-1.0.2-install-ubuntu12.04-64bit.tar.gz
   - tar xzf MrSID_DSDK-8.5.0.3422-linux.x86-64.gcc44.tar.gz
   - sudo cp -r MrSID_DSDK-8.5.0.3422-linux.x86-64.gcc44/Raster_DSDK/include/* /usr/local/include
   - sudo cp -r MrSID_DSDK-8.5.0.3422-linux.x86-64.gcc44/Raster_DSDK/lib/* /usr/local/lib
@@ -55,9 +55,9 @@ before_install:
   - tar xzf install-openjpeg-2.0.0-ubuntu12.04-64bit.tar.gz
   - sudo cp -r install-openjpeg/include/* /usr/local/include
   - sudo cp -r install-openjpeg/lib/* /usr/local/lib
-  - tar xzf mongo-cxx-1.0.2-install-ubuntu12.04-64bit.tar.gz
-  - sudo cp -r mongo-cxx-1.0.2-install/include/* /usr/local/include
-  - sudo cp -r mongo-cxx-1.0.2-install/lib/* /usr/local/lib
+#  - tar xzf mongo-cxx-1.0.2-install-ubuntu12.04-64bit.tar.gz
+#  - sudo cp -r mongo-cxx-1.0.2-install/include/* /usr/local/include
+#  - sudo cp -r mongo-cxx-1.0.2-install/lib/* /usr/local/lib
   - wget https://bitbucket.org/chchrsc/kealib/get/c6d36f3db5e4.zip
   - unzip c6d36f3db5e4.zip
   - cd chchrsc-kealib-c6d36f3db5e4/trunk
