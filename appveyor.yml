@@ -21,6 +21,8 @@ install:
 
 build:
 
+build_script:
+
 test:
 
 test_script:
