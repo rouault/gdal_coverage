@@ -1495,7 +1495,8 @@ def ogr_mitab_30(update = 0):
             continue
         
         for i in range(2):
-            if lyr.SyncToDisk() != 0:
+            ret = lyr.SyncToDisk()
+            if ret != 0:
                 gdaltest.post_reason('fail')
                 return 'fail'
                 
