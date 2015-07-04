@@ -5,13 +5,20 @@ platform:
 shallow_clone: true
 
 install:
-- cd gdal
 - if "%platform%" == "x86" SET PATH=c:\python27;%PATH%
 - if "%platform%" == "x64" SET PATH=c:\Python27-x64;%PATH%
 - if "%platform%" == "x86" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
 - if "%platform%" == "x64" "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
 - if "%platform%" == "x64" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
 - if "%platform%" == "x64" set WIN64_ARG="WIN64=YES"
+- ps: Start-FileDownload http://download.osgeo.org/proj/proj-4.9.1.tar.gz
+- 7z x proj-4.9.1.tar.gz
+- 7z x proj-4.9.1.tar
+- cd proj-4.9.1
+- nmake /f makefile.vc
+- nmake /f makefile.vc install-all
+- cd ..
+- cd gdal
 - nmake /f makefile.vc MSVC_VER=1800 DEBUG=1 %WIN64_ARG%
 - cd apps
 - nmake /f makefile.vc test_ogrsf.exe MSVC_VER=1800 DEBUG=1 %WIN64_ARG%
@@ -30,7 +37,7 @@ build_script:
 
 test_script:
   - echo test_script
-  - SET PATH=%CD%\gdal;%CD%\gdal\apps;%PATH%
+  - SET PATH=%CD%\gdal;%CD%\gdal\apps;c:\proj\bin;%PATH%
   - SET GDAL_DATA=%CD%\gdal\data
   - cd autotest
   - python run_all.py
