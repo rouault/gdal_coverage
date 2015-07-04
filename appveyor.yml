@@ -19,13 +19,11 @@ install:
 - if "%platform%" == "x86" python setup.py build
 - cd ..\..
 
-build:
-
 build_script:
-
-test:
+  - echo build_script
 
 test_script:
+  - echo test_script
 
-deploy:
+deploy: off
 
