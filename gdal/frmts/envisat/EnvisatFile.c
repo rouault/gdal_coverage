@@ -611,6 +611,7 @@ static int EnvisatFile_RewriteHeader( EnvisatFile *self )
                    SEEK_SET ) != 0 )
         {
             SendError( "VSIFSeekL() failed in EnvisatFile_RewriteHeader()" );
+            CPLFree(dsd_text);
             return FAILURE;
         }
         
@@ -1834,6 +1835,7 @@ int S_NameValueList_Parse( const char *text, int text_offset,
         if( *entries == NULL )
         {
             *entry_count = 0;
+            CPLFree(entry);
             return FAILURE;
         }
 
