@@ -975,7 +975,7 @@ CPLErr netCDFRasterBand::CreateBandMetadata( int *paDimIds )
     int      nAtt=0;
 
     netCDFDataset *poDS = (netCDFDataset *) this->poDS;
-  
+
 /* -------------------------------------------------------------------- */
 /*      Compute all dimensions from Band number and save in Metadata    */
 /* -------------------------------------------------------------------- */
@@ -1014,19 +1014,21 @@ CPLErr netCDFRasterBand::CreateBandMetadata( int *paDimIds )
         else {
             result = (int) ( ( nLevel-Taken) % Sum );
         }
-        
-        strcpy(szVarName, 
+
+        strcpy(szVarName,
                poDS->papszDimName[paDimIds[panBandZPos[i]]] );
+
+        // TODO: Make sure all the status checks make sense.
 
         status=nc_inq_varid( cdfid, szVarName, &nVarID );
         if( status != NC_NOERR ) {
             /* Try to uppercase the first letter of the variable */
             /* Note: why is this needed? leaving for safety */
-            szVarName[0]=(char) toupper(szVarName[0]);
-            status=nc_inq_varid( cdfid, szVarName, &nVarID );
+            szVarName[0] = (char) toupper(szVarName[0]);
+            /* status = */nc_inq_varid( cdfid, szVarName, &nVarID );
         }
 
-        status = nc_inq_vartype( cdfid, nVarID, &nVarType );
+        /* status = */ nc_inq_vartype( cdfid, nVarID, &nVarType );
 
         nDims = 0;
         status = nc_inq_varndims( cdfid, nVarID, &nDims );
@@ -1037,41 +1039,41 @@ CPLErr netCDFRasterBand::CreateBandMetadata( int *paDimIds )
             switch( nVarType ) {
                 case NC_SHORT:
                     short sData;
-                    status =  nc_get_vara_short( cdfid, nVarID, 
+                    /* status = */ nc_get_vara_short( cdfid, nVarID,
                                                  start,
                                                  count, &sData );
                     sprintf( szMetaTemp,"%d", sData );
                     break;
                 case NC_INT:
                     int nData;
-                    status =  nc_get_vara_int( cdfid, nVarID, 
+                    /* status = */ nc_get_vara_int( cdfid, nVarID,
                                                start,
                                                count, &nData );
                     sprintf( szMetaTemp,"%d", nData );
                     break;
                 case NC_FLOAT:
                     float fData;
-                    status =  nc_get_vara_float( cdfid, nVarID, 
+                    /* status = */nc_get_vara_float( cdfid, nVarID,
                                                  start,
                                                  count, &fData );
                     CPLsprintf( szMetaTemp,"%.8g", fData );
                     break;
                 case NC_DOUBLE:
                     double dfData;
-                    status =  nc_get_vara_double( cdfid, nVarID, 
+                    /* status = */ nc_get_vara_double( cdfid, nVarID,
                                                   start,
                                                   count, &dfData);
                     CPLsprintf( szMetaTemp,"%.16g", dfData );
                     break;
-                default: 
-                    CPLDebug( "GDAL_netCDF", "invalid dim %s, type=%d", 
+                default:
+                    CPLDebug( "GDAL_netCDF", "invalid dim %s, type=%d",
                               szMetaTemp, nVarType);
                     break;
             }
         }
         else
             sprintf( szMetaTemp,"%d", result+1);
-	
+
 /* -------------------------------------------------------------------- */
 /*      Save dimension value                                            */
 /* -------------------------------------------------------------------- */
@@ -1819,7 +1821,6 @@ void netCDFDataset::SetProjectionFromVar( int nVarId )
     int          bGotGdalSRS = FALSE;
     int          bGotCfGT = FALSE;
     int          bGotGdalGT = FALSE;
-    int          bLookForWellKnownGCS = FALSE;  //this could be a Config Option
 
     /* These values from CF metadata */
     OGRSpatialReference oSRS;
@@ -3050,12 +3051,15 @@ void netCDFDataset::SetProjectionFromVar( int nVarId )
 /*     For example, WGS84 vs. GDA94 (EPSG:3577) - AEA in netcdf_cf.py   */
 /* -------------------------------------------------------------------- */
     /* disabled for now, but could be set in a config option */
-    bLookForWellKnownGCS = FALSE; 
+#if 0
+    int          bLookForWellKnownGCS = FALSE;  //this could be a Config Option
+
+    bLookForWellKnownGCS = FALSE;
     if ( bLookForWellKnownGCS && bGotCfSRS && ! bGotGdalSRS ) {
         /* ET - could use a more exhaustive method by scanning all EPSG codes in data/gcs.csv */
         /* as proposed by Even in the gdal-dev mailing list "help for comparing two WKT" */
         /* this code could be contributed to a new function */
-        /* OGRSpatialReference * OGRSpatialReference::FindMatchingGeogCS( const OGRSpatialReference *poOther ) */ 
+        /* OGRSpatialReference * OGRSpatialReference::FindMatchingGeogCS( const OGRSpatialReference *poOther ) */
         CPLDebug( "GDAL_netCDF", "Searching for Well-known GeogCS" );
         const char *pszWKGCSList[] = { "WGS84", "WGS72", "NAD27", "NAD83" };
         char *pszWKGCS = NULL;
@@ -3081,6 +3085,7 @@ void netCDFDataset::SetProjectionFromVar( int nVarId )
             }
         }
     }
+#endif
 }
 
 
