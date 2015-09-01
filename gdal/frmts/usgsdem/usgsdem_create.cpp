@@ -876,7 +876,10 @@ USGSDEM_LookupNTSByLoc( double dfULLong, double dfULLat,
            && (papszTokens = CSVReadParseLine( fpNTS )) != NULL )
     {
         if( CSLCount( papszTokens ) != 4 )
+        {
+            CSLDestroy( papszTokens );
             continue;
+        }
 
         if( ABS(dfULLong - CPLAtof(papszTokens[2])) < 0.01 
             && ABS(dfULLat - CPLAtof(papszTokens[3])) < 0.01 )
@@ -933,7 +936,10 @@ USGSDEM_LookupNTSByTile( const char *pszTile, char *pszName,
            && (papszTokens = CSVReadParseLine( fpNTS )) != NULL )
     {
         if( CSLCount( papszTokens ) != 4 )
+        {
+            CSLDestroy( papszTokens );
             continue;
+        }
 
         if( EQUAL(pszTile,papszTokens[0]) )
         {
