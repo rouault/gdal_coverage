@@ -173,6 +173,11 @@ OGRLayer * OGRElasticDataSource::ICreateLayer(const char * pszLayerName,
     if( strcmp(osLaunderedName.c_str(), pszLayerName) != 0 )
         CPLDebug("ES", "Laundered layer name to %s", osLaunderedName.c_str());
 
+    // Backup error state
+    CPLErr eLastErrorType = CPLGetLastErrorType();
+    int nLastErrorNo = CPLGetLastErrorNo();
+    CPLString osLastErrorMsg = CPLGetLastErrorMsg();
+
     // Check if the index exists
     int bIndexExists = FALSE;
     CPLPushErrorHandler(CPLQuietErrorHandler);
@@ -198,6 +203,9 @@ OGRLayer * OGRElasticDataSource::ICreateLayer(const char * pszLayerName,
                          !EQUALN((const char*)psResult->pabyData, "{}", 2);
         CPLHTTPDestroyResult(psResult);
     }
+    
+    // Restore error state
+    CPLErrorSetState( eLastErrorType, nLastErrorNo, osLastErrorMsg );
 
     if( m_bOverwrite || CSLFetchBoolean(papszOptions, "OVERWRITE", FALSE) )
     {
@@ -495,7 +503,8 @@ int OGRElasticDataSource::UploadFile(const CPLString &url, const CPLString &data
     CSLDestroy(papszOptions);
     if (psResult) {
         if( psResult->pszErrBuf != NULL ||
-            (psResult->pabyData && strncmp((const char*) psResult->pabyData, "{\"error\":", strlen("{\"error\":")) == 0) )
+            (psResult->pabyData && strncmp((const char*) psResult->pabyData, "{\"error\":", strlen("{\"error\":")) == 0) ||
+            (psResult->pabyData && strstr((const char*) psResult->pabyData, "\"errors\":true,") != NULL) )
         {
             bRet = FALSE;
             CPLError(CE_Failure, CPLE_AppDefined, "%s",
