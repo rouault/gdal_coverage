@@ -3899,7 +3899,7 @@ int LayerTranslator::Translate( TargetLayerInfo* psInfo,
                     /* This will correct the coordinate dimension to 3 */
                     OGRGeometry* poDupGeometry = poDstGeometry->clone();
                     poDstFeature->SetGeomFieldDirectly(iGeom, poDupGeometry);
-                    poDstGeometry = poDupGeometry;
+                    poDupGeometry = NULL;
                 }
 
                 if (nCoordDim == 2 || nCoordDim == 3)
@@ -3968,7 +3968,7 @@ int LayerTranslator::Translate( TargetLayerInfo* psInfo,
                     }
 
                     poDstFeature->SetGeomFieldDirectly(iGeom, poReprojectedGeom);
-                    poDstGeometry = poReprojectedGeom;
+                    poReprojectedGeom = NULL;
                 }
                 else if (poOutputSRS != NULL)
                 {
