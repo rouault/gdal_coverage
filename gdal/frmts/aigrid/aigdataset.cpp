@@ -978,6 +978,7 @@ static CPLErr AIGRename( const char *pszNewName, const char *pszOldName )
                       "Unable to create directory %s:\n%s",
                       osNewPath.c_str(),
                       VSIStrerror(errno) );
+            CSLDestroy(papszNewFileList);
             return CE_Failure;
         }
     }
@@ -999,13 +1000,19 @@ static CPLErr AIGRename( const char *pszNewName, const char *pszOldName )
                           papszFileList[i],
                           papszNewFileList[i],
                           VSIStrerror(errno) );
+                CSLDestroy(papszNewFileList);
                 return CE_Failure;
             }
         }
     }
 
     if( VSIStatL( osOldPath, &sStatBuf ) == 0 )
-        CPLUnlinkTree( osOldPath );
+    {
+        if ( CPLUnlinkTree( osOldPath ) != 0 )
+        {
+          CPLError( CE_Warning, CPLE_AppDefined, "Unable to cleanup old path.");
+        }
+    }
 
     CSLDestroy(papszFileList);
     CSLDestroy(papszNewFileList);
