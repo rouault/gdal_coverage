@@ -511,7 +511,8 @@ CPLErr	HFABand::LoadExternalBlockInfo()
 /*      Validity is determined from the validity bitmap.                */
 /* -------------------------------------------------------------------- */
     nBlockStart = poDMS->GetBigIntField( "layerStackDataOffset" );
-    nBlockSize = (nBlockXSize*nBlockYSize*HFAGetDataTypeBits(nDataType)+7) / 8;
+    nBlockSize = (nBlockXSize*static_cast<vsi_l_offset>(nBlockYSize)
+                  *HFAGetDataTypeBits(nDataType)+7) / 8;
 
     for( iBlock = 0; iBlock < nBlocks; iBlock++ )
     {
@@ -1332,16 +1333,22 @@ void HFABand::ReAllocBlock( int iBlock, int nSize )
     else
     {
         panBlockStart[iBlock] = HFAAllocateSpace( psInfo, nSize );
-	
+
         panBlockSize[iBlock] = nSize;
-	
+
         // need to re - write this info to the RasterDMS node
         HFAEntry	*poDMS = poNode->GetNamedChild( "RasterDMS" );
-	 	
+
+        if (!poDMS)
+        {
+            CPLError(CE_Failure, CPLE_FileIO, "Unable to load RasterDMS");
+            return;
+        }
+
         char	szVarName[64];
         sprintf( szVarName, "blockinfo[%d].offset", iBlock );
         poDMS->SetIntField( szVarName, (int) panBlockStart[iBlock] );
-		
+
         sprintf( szVarName, "blockinfo[%d].size", iBlock );
         poDMS->SetIntField( szVarName, panBlockSize[iBlock] );
     }
@@ -1356,9 +1363,6 @@ void HFABand::ReAllocBlock( int iBlock, int nSize )
 CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
 
 {
-    int		iBlock;
-    VSILFILE	*fpData;
-
     if( psInfo->eAccess == HFA_ReadOnly )
     {
         CPLError( CE_Failure, CPLE_NoWriteAccess,
@@ -1369,8 +1373,8 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
     if( LoadBlockInfo() != CE_None )
         return CE_Failure;
 
-    iBlock = nXBlock + nYBlock * nBlocksPerRow;
-    
+    const int iBlock = nXBlock + nYBlock * nBlocksPerRow;
+
 /* -------------------------------------------------------------------- */
 /*      For now we don't support write invalid uncompressed blocks.     */
 /*      To do so we will need logic to make space at the end of the     */
@@ -1392,7 +1396,8 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
 /* -------------------------------------------------------------------- */
 /*      Move to the location that the data sits.                        */
 /* -------------------------------------------------------------------- */
-    vsi_l_offset    nBlockOffset;
+    VSILFILE *fpData = NULL;
+    vsi_l_offset nBlockOffset = 0;
 
     // Calculate block offset in case we have spill file. Use predefined
     // block map otherwise.
@@ -1443,8 +1448,6 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
             /* Compensate for the header info */
             GUInt32 nDataOffset = nSizeCount + 13;
             int nTotalSize  = nSizeCount + nSizeValues + 13;
-     
-            //fprintf( stderr, "sizecount = %d sizevalues = %d min = %d numruns = %d numbits = %d\n", nSizeCount, nSizeValues, nMin, nNumRuns, (int)nNumBits );
 
             // Allocate space for the compressed block and seek to it.
             ReAllocBlock( iBlock, nTotalSize );
@@ -1502,13 +1505,19 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
             panBlockFlag[iBlock] ^= BFLG_COMPRESSED;
             // alloc more space for the uncompressed block
             ReAllocBlock( iBlock, nInBlockSize );
-			 
+
             nBlockOffset = panBlockStart[iBlock];
             nBlockSize = panBlockSize[iBlock];
 
             /* Need to change the RasterDMS entry */
             HFAEntry	*poDMS = poNode->GetNamedChild( "RasterDMS" );
- 	
+
+            if (!poDMS)
+            {
+                CPLError(CE_Failure, CPLE_FileIO, "Unable to load RasterDMS");
+                return CE_Failure;
+            }
+
             char	szVarName[64];
             sprintf( szVarName, "blockinfo[%d].compressionType", iBlock );
             poDMS->SetIntField( szVarName, 0 );
@@ -1522,13 +1531,19 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
             char	szVarName[64];
             HFAEntry	*poDMS = poNode->GetNamedChild( "RasterDMS" );
 
+            if (!poDMS)
+            {
+                CPLError(CE_Failure, CPLE_FileIO, "Unable to load RasterDMS");
+                return CE_Failure;
+            }
+
             sprintf( szVarName, "blockinfo[%d].logvalid", iBlock );
             poDMS->SetStringField( szVarName, "true" );
 
             panBlockFlag[iBlock] |= BFLG_VALID;
         }
     }
- 
+
 /* ==================================================================== */
 /*      Uncompressed TILE handling.                                     */
 /* ==================================================================== */
@@ -1652,26 +1667,23 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
 /*                                                                      */
 /*      Return the Layer Name                                           */
 /************************************************************************/
- 
+
 const char * HFABand::GetBandName()
 {
     if( strlen(poNode->GetName()) > 0 )
         return( poNode->GetName() );
-    else
-    {
-        int iBand; 
-        for( iBand = 0; iBand < psInfo->nBands; iBand++ )
-        {
-            if( psInfo->papoBand[iBand] == this )
-            {
-                osOverName.Printf( "Layer_%d", iBand+1 );
-                return osOverName;
-            }
-        }
 
-        osOverName.Printf( "Layer_%x", poNode->GetFilePos() );
-        return osOverName;
+    for( int iBand = 0; iBand < psInfo->nBands; iBand++ )
+    {
+        if( psInfo->papoBand[iBand] == this )
+        {
+            osOverName.Printf( "Layer_%d", iBand+1 );
+            return osOverName;
+        }
     }
+
+    osOverName.Printf( "Layer_%x", poNode->GetFilePos() );
+    return osOverName;
 }
 
 /************************************************************************/
