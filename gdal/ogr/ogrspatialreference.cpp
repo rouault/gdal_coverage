@@ -790,25 +790,24 @@ OGRErr OGRSpatialReference::SetNode( const char * pszNodePath,
                                      const char * pszNewNodeValue )
 
 {
-    char        **papszPathTokens;
-    int         i;
-    OGR_SRSNode *poNode;
-
-    papszPathTokens = CSLTokenizeStringComplex(pszNodePath, "|", TRUE, FALSE);
+    char **papszPathTokens = CSLTokenizeStringComplex(pszNodePath, "|", TRUE, FALSE);
 
     if( CSLCount( papszPathTokens ) < 1 )
+    {
+        CSLDestroy(papszPathTokens);
         return OGRERR_FAILURE;
+    }
 
     if( GetRoot() == NULL || !EQUAL(papszPathTokens[0],GetRoot()->GetValue()) )
     {
         SetRoot( new OGR_SRSNode( papszPathTokens[0] ) );
     }
 
-    poNode = GetRoot();
-    for( i = 1; papszPathTokens[i] != NULL; i++ )
+    OGR_SRSNode *poNode = GetRoot();
+    for( int i = 1; papszPathTokens[i] != NULL; i++ )
     {
-        int     j;
-        
+        int j;
+
         for( j = 0; j < poNode->GetChildCount(); j++ )
         {
             if( EQUAL(poNode->GetChild( j )->GetValue(),papszPathTokens[i]) )
@@ -6682,28 +6681,25 @@ int OSRIsSame( OGRSpatialReferenceH hSRS1, OGRSpatialReferenceH hSRS2 )
  */ 
 
 OGRErr OGRSpatialReference::SetTOWGS84( double dfDX, double dfDY, double dfDZ,
-                                        double dfEX, double dfEY, double dfEZ, 
+                                        double dfEX, double dfEY, double dfEZ,
                                         double dfPPM )
 
 {
-    OGR_SRSNode     *poDatum, *poTOWGS84;
-    int             iPosition;
-    char            szValue[64];
-
-    poDatum = GetAttrNode( "DATUM" );
+    OGR_SRSNode *poDatum = GetAttrNode( "DATUM" );
     if( poDatum == NULL )
         return OGRERR_FAILURE;
-    
+
     if( poDatum->FindChild( "TOWGS84" ) != -1 )
         poDatum->DestroyChild( poDatum->FindChild( "TOWGS84" ) );
 
-    iPosition = poDatum->GetChildCount();
+    int iPosition = poDatum->GetChildCount();
     if( poDatum->FindChild("AUTHORITY") != -1 )
     {
         iPosition = poDatum->FindChild("AUTHORITY");
     }
 
-    poTOWGS84 = new OGR_SRSNode("TOWGS84");
+    OGR_SRSNode *poTOWGS84 = new OGR_SRSNode("TOWGS84");
+    char szValue[64];
 
     OGRPrintDouble( szValue, dfDX );
     poTOWGS84->AddChild( new OGR_SRSNode( szValue ) );
