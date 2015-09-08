@@ -108,15 +108,15 @@ querying the LAYERS metadata domain (Poppler and PDFium).</li>
 Since GDAL 2.0, above configuration options are also available as open options.
 
 <ul>
-<li><p><b>RENDERING_OPTIONS</b>=[RASTER,VECTOR,TEXT / RASTER,VECTOR / RASTER,TEXT / RASTER / VECTOR,TEXT / VECTOR / TEXT]</p>:
-same as GDAL_PDF_RENDERING_OPTIONS configuration option</li>
-<li><p><b>DPI</b>=value</p>: same as GDAL_PDF_DPI configuration option</li>
-<li><p><b>USER_PWD</b>=password</p>: same as GDAL_USER_PWD configuration option</li>
-<li><p><b>PDF_LIB</b>=[POPPLER/PODOFO/PDFIUM]: only available for builds with multiple backends./li>
-<li><p><b>LAYERS</b>=string: list of layers (comma separated) to turn ON. Same as GDAL_PDF_LAYERS configuration option</li>
-<li><p><b>GDAL_PDF_LAYERS_OFF</b>=string: list of layers (comma separated) to turn OFF. Same as GDAL_PDF_LAYERS_OFF configuration option</li>
-<li><p><b>BANDS</b>=3 or 4. Same as GDAL_PDF_BANDS configuration option</li>
-<li><p><b>NEATLINE</b>=name of neatline. Same as GDAL_PDF_NEATLINE configuration option</li>
+<li><p><b>RENDERING_OPTIONS</b>=[RASTER,VECTOR,TEXT / RASTER,VECTOR / RASTER,TEXT / RASTER / VECTOR,TEXT / VECTOR / TEXT]:
+same as GDAL_PDF_RENDERING_OPTIONS configuration option</p></li>
+<li><p><b>DPI</b>=value: same as GDAL_PDF_DPI configuration option</p></li>
+<li><p><b>USER_PWD</b>=password: same as GDAL_USER_PWD configuration option</p></li>
+<li><p><b>PDF_LIB</b>=[POPPLER/PODOFO/PDFIUM]: only available for builds with multiple backends.</p></li>
+<li><p><b>LAYERS</b>=string: list of layers (comma separated) to turn ON. Same as GDAL_PDF_LAYERS configuration option</p></li>
+<li><p><b>GDAL_PDF_LAYERS_OFF</b>=string: list of layers (comma separated) to turn OFF. Same as GDAL_PDF_LAYERS_OFF configuration option</p></li>
+<li><p><b>BANDS</b>=3 or 4. Same as GDAL_PDF_BANDS configuration option</p></li>
+<li><p><b>NEATLINE</b>=name of neatline. Same as GDAL_PDF_NEATLINE configuration option</p></li>
 </ul>
 
 <h2>LAYERS Metadata domain</h2>
@@ -366,7 +366,7 @@ A <a href="https://github.com/rouault/pdfium/tree/build">build repository</a> is
 with a few scripts that can be used as a template to build PDFium for Linux/MacOSX/Windows.
 Those forked versions remove the dependency to the V8 JavaScript engine,
 and have also a few changes to avoid symbol clashes, on Linux, with libjpeg and libopenjpeg.
-Building the PDF driver has a GDAL plugin is also a way of avoiding such issues.
+Building the PDF driver as a GDAL plugin is also a way of avoiding such issues.
 PDFium build requires a C++11 compatible compiler, as well as for building GDAL itself
 against PDFium. Successfully tested versions are GCC 4.7.0
 (previous versions aren't compatible) and Visual Studio 12 / VS2013.
