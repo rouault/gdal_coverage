@@ -96,20 +96,20 @@ int DGNTestOpen( GByte *pabyHeader, int nByteCount )
 DGNHandle DGNOpen( const char * pszFilename, int bUpdate )
 
 {
-    DGNInfo     *psDGN;
-    FILE        *fp;
 
 /* -------------------------------------------------------------------- */
 /*      Open the file.                                                  */
 /* -------------------------------------------------------------------- */
+    FILE *fp;
+
     if( bUpdate )
         fp = VSIFOpen( pszFilename, "rb+" );
     else
         fp = VSIFOpen( pszFilename, "rb" );
     if( fp == NULL )
     {
-        CPLError( CE_Failure, CPLE_OpenFailed, 
-                  "Unable to open `%s' for read access.\n", 
+        CPLError( CE_Failure, CPLE_OpenFailed,
+                  "Unable to open `%s' for read access.\n",
                   pszFilename );
         return NULL;
     }
@@ -117,13 +117,12 @@ DGNHandle DGNOpen( const char * pszFilename, int bUpdate )
 /* -------------------------------------------------------------------- */
 /*      Verify the format ... add later.                                */
 /* -------------------------------------------------------------------- */
-    GByte       abyHeader[512];
-
-    VSIFRead( abyHeader, 1, sizeof(abyHeader), fp );
-    if( !DGNTestOpen( abyHeader, sizeof(abyHeader) ) )
+    GByte abyHeader[512];
+    const size_t nHeaderBytes = VSIFRead( abyHeader, 1, sizeof(abyHeader), fp );
+    if( !DGNTestOpen( abyHeader, nHeaderBytes ) )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
-                  "File `%s' does not have expected DGN header.\n", 
+                  "File `%s' does not have expected DGN header.\n",
                   pszFilename );
         VSIFClose( fp );
         return NULL;
@@ -134,7 +133,7 @@ DGNHandle DGNOpen( const char * pszFilename, int bUpdate )
 /* -------------------------------------------------------------------- */
 /*      Create the info structure.                                      */
 /* -------------------------------------------------------------------- */
-    psDGN = (DGNInfo *) CPLCalloc(sizeof(DGNInfo),1);
+    DGNInfo *psDGN = (DGNInfo *) CPLCalloc(sizeof(DGNInfo),1);
     psDGN->fp = fp;
     psDGN->next_element_id = 0;
 
@@ -142,7 +141,7 @@ DGNHandle DGNOpen( const char * pszFilename, int bUpdate )
     psDGN->scale = 1.0;
     psDGN->origin_x = 0.0;
     psDGN->origin_y = 0.0;
-    psDGN->origin_z = 0.0;                                             
+    psDGN->origin_z = 0.0;
 
     psDGN->index_built = FALSE;
     psDGN->element_count = 0;
