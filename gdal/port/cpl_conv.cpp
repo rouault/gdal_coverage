@@ -348,7 +348,11 @@ char *CPLFGets( char *pszBuffer, int nBufferSize, FILE * fp )
         if( chCheck != 10 )
         {
             // unget the character.
-            VSIFSeek( fp, nOriginalOffset+nActuallyRead, SEEK_SET );
+            if (VSIFSeek( fp, nOriginalOffset+nActuallyRead, SEEK_SET ) == -1)
+            {
+                CPLError( CE_Failure, CPLE_FileIO,
+                          "Unable to unget a character");
+            }
         }
     }
 
@@ -356,13 +360,13 @@ char *CPLFGets( char *pszBuffer, int nBufferSize, FILE * fp )
 /*      Trim off \n, \r or \r\n if it appears at the end.  We don't     */
 /*      need to do any "seeking" since we want the newline eaten.       */
 /* -------------------------------------------------------------------- */
-    if( nActuallyRead > 1 
-        && pszBuffer[nActuallyRead-1] == 10 
+    if( nActuallyRead > 1
+        && pszBuffer[nActuallyRead-1] == 10
         && pszBuffer[nActuallyRead-2] == 13 )
     {
         pszBuffer[nActuallyRead-2] = '\0';
     }
-    else if( pszBuffer[nActuallyRead-1] == 10 
+    else if( pszBuffer[nActuallyRead-1] == 10
              || pszBuffer[nActuallyRead-1] == 13 )
     {
         pszBuffer[nActuallyRead-1] = '\0';
@@ -1626,11 +1630,11 @@ CPLGetConfigOption( const char *pszKey, const char *pszDefault )
         pszResult = CSLFetchNameValue( (char **) papszConfigOptions, pszKey );
     }
 
-#if !defined(WIN32CE) 
+#if !defined(WIN32CE)
     if( pszResult == NULL )
         pszResult = getenv( pszKey );
 #endif
-    
+
     if( pszResult == NULL )
         return pszDefault;
     else
@@ -1937,10 +1941,14 @@ const char *CPLDecToDMS( double dfAngle, const char * pszAxis,
         pszHemisphere = "N";
 
     char szFormat[30];
-    CPLsprintf( szFormat, "%%3dd%%2d\'%%%d.%df\"%s", nPrecision+3, nPrecision, pszHemisphere );
+    CPLsnprintf( szFormat, sizeof(szFormat),
+                 "%%3dd%%2d\'%%%d.%df\"%s",
+                 nPrecision+3, nPrecision, pszHemisphere );
 
     static CPL_THREADLOCAL char szBuffer[50] = { 0 };
-    CPLsprintf( szBuffer, szFormat, nDegrees, nMinutes, dfSeconds );
+    CPLsnprintf( szBuffer, sizeof(szBuffer),
+                 szFormat,
+                 nDegrees, nMinutes, dfSeconds );
 
     return( szBuffer );
 }
@@ -2772,13 +2780,12 @@ int CPLCheckForFile( char *pszFilename, char **papszSiblingFiles )
 /*      of pszFilename too all entries.                                 */
 /* -------------------------------------------------------------------- */
     CPLString osFileOnly = CPLGetFilename( pszFilename );
-    int i;
 
-    for( i = 0; papszSiblingFiles[i] != NULL; i++ )
+    for( int i = 0; papszSiblingFiles[i] != NULL; i++ )
     {
         if( EQUAL(papszSiblingFiles[i],osFileOnly) )
         {
-            strcpy( pszFilename + strlen(pszFilename) - strlen(osFileOnly), 
+            strcpy( pszFilename + strlen(pszFilename) - strlen(osFileOnly),
                     papszSiblingFiles[i] );
             return TRUE;
         }
