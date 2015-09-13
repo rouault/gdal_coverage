@@ -2419,7 +2419,6 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
 /* -------------------------------------------------------------------- */
     const char *pszPROJ4Datum = NULL;
     const OGR_SRSNode *poTOWGS84 = GetAttrNode( "TOWGS84" );
-    char  szTOWGS84[256];
     int nEPSGDatum = -1;
     int nEPSGGeogCS = -1;
     const char *pszProj4Grids = GetExtension( "DATUM", "PROJ4_GRIDS" );
@@ -2507,14 +2506,16 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
             std::vector<CPLString> asBursaTransform;
             if( EPSGGetWGS84Transform( nEPSGGeogCS, asBursaTransform ) )
             {
-                CPLsprintf( szTOWGS84, "+towgs84=%s,%s,%s,%s,%s,%s,%s",
-                         asBursaTransform[0].c_str(),
-                         asBursaTransform[1].c_str(),
-                         asBursaTransform[2].c_str(),
-                         asBursaTransform[3].c_str(),
-                         asBursaTransform[4].c_str(),
-                         asBursaTransform[5].c_str(),
-                         asBursaTransform[6].c_str() );
+                char szTOWGS84[256];
+                CPLsnprintf( szTOWGS84, sizeof(szTOWGS84),
+                             "+towgs84=%s,%s,%s,%s,%s,%s,%s",
+                             asBursaTransform[0].c_str(),
+                             asBursaTransform[1].c_str(),
+                             asBursaTransform[2].c_str(),
+                             asBursaTransform[3].c_str(),
+                             asBursaTransform[4].c_str(),
+                             asBursaTransform[5].c_str(),
+                             asBursaTransform[6].c_str() );
                 SAFE_PROJ4_STRCAT( szEllipseDef );
                 szEllipseDef[0] = '\0';
 
@@ -2541,11 +2542,10 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
 /* -------------------------------------------------------------------- */
 /*      Is there prime meridian info to apply?                          */
 /* -------------------------------------------------------------------- */
-    if( poPRIMEM != NULL && poPRIMEM->GetChildCount() >= 2 
+    if( poPRIMEM != NULL && poPRIMEM->GetChildCount() >= 2
         && CPLAtof(poPRIMEM->GetChild(1)->GetValue()) != 0.0 )
     {
         const char *pszAuthority = GetAuthorityName( "PRIMEM" );
-        char szPMValue[128];
         int  nCode = -1;
 
         if( pszAuthority != NULL && EQUAL(pszAuthority,"EPSG") )
@@ -2557,20 +2557,21 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
         if (psProj4PM == NULL)
             psProj4PM = OGRGetProj4PMFromVal(dfFromGreenwich);
 
+        char szPMValue[128];
         if (psProj4PM != NULL)
         {
             strcpy( szPMValue, psProj4PM->pszProj4PMName );
         }
         else
         {
-            CPLsprintf( szPMValue, "%.16g", dfFromGreenwich );
+            CPLsnprintf( szPMValue, sizeof(szPMValue), "%.16g", dfFromGreenwich );
         }
 
         SAFE_PROJ4_STRCAT( "+pm=" );
         SAFE_PROJ4_STRCAT( szPMValue );
         SAFE_PROJ4_STRCAT( " " );
     }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Handle linear units.                                            */
 /* -------------------------------------------------------------------- */
