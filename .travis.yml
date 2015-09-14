@@ -62,8 +62,8 @@ before_install:
   - tar xjf install-gcc-5.2.0.tar.bz2
   - export PATH=$PWD/install-gcc-5.2.0/bin:$PATH
   - export LD_LIBRARY_PATH=$PWD/install-gcc-5.2.0/lib64
-#  - export PRELOAD=$PWD/install-gcc-5.2.0/lib64/libasan.so.2.0.0:$PWD/install-gcc-5.2.0/lib64/libubsan.so.0.0.0
-  - export PRELOAD=$PWD/install-gcc-5.2.0/lib64/libubsan.so.0.0.0
+  - export PRELOAD=$PWD/install-gcc-5.2.0/lib64/libasan.so.2.0.0:$PWD/install-gcc-5.2.0/lib64/libubsan.so.0.0.0
+#  - export PRELOAD=$PWD/install-gcc-5.2.0/lib64/libubsan.so.0.0.0
   - export ASAN_OPTIONS=allocator_may_return_null=1 
   - sudo ldconfig
 
@@ -75,13 +75,13 @@ before_install:
 install:
   - cd gdal
 #  --with-fgdb=/usr/local  --with-mongocxx=/usr/local  --with-java   --with-mdb --with-jvm-lib-add-rpath --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local   --with-libkml
-  - CPPFLAGS="-DMAKE_SANITIZE_HAPPY -fsanitize=undefined " LDFLAGS="-fsanitize=undefined " ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-poppler --without-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-epsilon --with-gta --with-ecw=/usr/local --with-openjpeg=/usr/local --with-libtiff=internal --with-rename-internal-libtiff-symbols --with-hide-internal-symbols --with-gnm
+  - CPPFLAGS="-DMAKE_SANITIZE_HAPPY -fsanitize=undefined -fsanitize=address" LDFLAGS="-fsanitize=undefined -fsanitize=address" ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-poppler --without-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-epsilon --with-gta --with-ecw=/usr/local --with-openjpeg=/usr/local --with-libtiff=internal --with-rename-internal-libtiff-symbols --with-hide-internal-symbols --with-gnm
   - make -j3
   - cd apps
   - make test_ogrsf
   - cd ..
   - cd swig/python
-  - CPPFLAGS="-fsanitize=undefined " python setup.py build
+  - CPPFLAGS="-fsanitize=undefined -fsanitize=address" python setup.py build
   - cd ../..
 #  - cd swig/java
 #  - cat java.opt | sed "s/JAVA_HOME =.*/JAVA_HOME = \/usr\/lib\/jvm\/java-7-openjdk-amd64\//" > java.opt.tmp
@@ -145,7 +145,7 @@ script:
   - mv ogr_pgeo.* disabled
   - cd ..
 # Run all the Python autotests
-  - SKIP_VIRTUALMEM=YES LD_PRELOAD=$PRELOAD python run_all.py
+  - SKIP_VIRTUALMEM=YES LD_PRELOAD=$PRELOAD python run_all.py -run_as_external
 # A bit messy, but force testing with libspatialite 4.0dev (that has been patched a bit to remove any hard-coded SRS definition so it is very small)
 #  - cd ogr
 #  - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/libspatialite4.0dev_ubuntu12.04-64bit_srs_stripped.tar.gz
