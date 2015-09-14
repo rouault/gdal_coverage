@@ -155,8 +155,8 @@ script:
 #  - cd ..
 
 notifications:
-    email:
-        on_failure: change
+  email:
+    on_failure: change
 
 #  email:
 #    recipients:
