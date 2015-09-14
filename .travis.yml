@@ -155,6 +155,9 @@ script:
 #  - cd ..
 
 notifications:
+    email:
+        on_failure: change
+
 #  email:
 #    recipients:
 #      - gdal-commits@lists.osgeo.org
