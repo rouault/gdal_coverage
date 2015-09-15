@@ -35,16 +35,15 @@ CPL_CVSID("$Id$");
 /*                             SDTS_IREF()                              */
 /************************************************************************/
 
-SDTS_IREF::SDTS_IREF()
-
+SDTS_IREF::SDTS_IREF() :
+    nDefaultSADRFormat(0),
+    dfXScale(1.0),
+    dfYScale(1.0),
+    dfXOffset(0.0),
+    dfYOffset(0.0),
+    dfXRes(1.0),
+    dfYRes(1.0)
 {
-    dfXScale = 1.0;
-    dfYScale = 1.0;
-    dfXOffset = 0.0;
-    dfYOffset = 0.0;
-    dfXRes = 1.0;
-    dfYRes = 1.0;
-
     pszXAxisName = CPLStrdup("");
     pszYAxisName = CPLStrdup("");
     pszCoordinateFormat = CPLStrdup("");
@@ -71,18 +70,17 @@ int SDTS_IREF::Read( const char * pszFilename )
 
 {
     DDFModule   oIREFFile;
-    DDFRecord   *poRecord;
 
 /* -------------------------------------------------------------------- */
 /*      Open the file, and read the header.                             */
 /* -------------------------------------------------------------------- */
     if( !oIREFFile.Open( pszFilename ) )
         return FALSE;
-    
+
 /* -------------------------------------------------------------------- */
 /*      Read the first record, and verify that this is an IREF record.  */
 /* -------------------------------------------------------------------- */
-    poRecord = oIREFFile.ReadRecord();
+    DDFRecord *poRecord = oIREFFile.ReadRecord();
     if( poRecord == NULL )
         return FALSE;
 
@@ -285,4 +283,3 @@ int SDTS_IREF::GetSADR( DDFField * poField, int nVertices,
     
     return TRUE;
 }
-
