@@ -46,13 +46,13 @@ OGRMySQLDataSource::OGRMySQLDataSource() :
     papoLayers(NULL),
     nLayers(0),
     pszName(NULL),
-    bDSUpdate(FALSE)
+    bDSUpdate(FALSE),
     nSoftTransactionLevel(0),
     hConn(0),
     nKnownSRID(0),
     panSRID(NULL),
     papoSRS(NULL),
-    poLongResultLayer = NULL;
+    poLongResultLayer(NULL)
 { }
 
 /************************************************************************/
