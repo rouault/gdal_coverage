@@ -1051,7 +1051,7 @@ CPLErr netCDFRasterBand::CreateBandMetadata( int *paDimIds )
                     /* status = */nc_get_vara_float( cdfid, nVarID,
                                                  start,
                                                  count, &fData );
-                    CPLsprintf( szMetaTemp,"%.8g", fData );
+                    CPLsnprintf( szMetaTemp, sizeof(szMetaTemp), "%.8g", fData );
                     break;
                 case NC_DOUBLE:
                     double dfData;
@@ -1508,13 +1508,13 @@ CPLErr netCDFRasterBand::IWriteBlock( CPL_UNUSED int nBlockXOff,
 /*                           netCDFDataset()                            */
 /************************************************************************/
 
-netCDFDataset::netCDFDataset()
-
+netCDFDataset::netCDFDataset() :
+    bChunking(FALSE)
 {
     /* basic dataset vars */
     cdfid            = -1;
     papszSubDatasets = NULL;
-    papszMetadata    = NULL;	
+    papszMetadata    = NULL;
     bBottomUp        = TRUE;
     nFormat          = NCDF_FORMAT_NONE;
     bIsGdalFile      = FALSE;
@@ -3590,15 +3590,15 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
 
         /*  Optional GDAL custom projection tags */
         if ( bWriteGDALTags == TRUE ) {
-            
+
             *szGeoTransform = '\0';
             for( int i=0; i<6; i++ ) {
-                CPLsprintf( szTemp, "%.16g ",
+                CPLsnprintf( szTemp, sizeof(szTemp), "%.16g ",
                          adfGeoTransform[i] );
                 strcat( szGeoTransform, szTemp );
             }
             CPLDebug( "GDAL_netCDF", "szGeoTranform = %s", szGeoTransform );
-            
+
             // if ( strlen(pszProj4Defn) > 0 ) {
             //     nc_put_att_text( cdfid, NCDFVarID, "proj4",
             //                      strlen( pszProj4Defn ), pszProj4Defn );
@@ -6495,7 +6495,7 @@ CPLErr NCDFGetAttr1( int nCdfId, int nVarId, const char *pszAttrName,
             nc_get_att_double( nCdfId, nVarId, pszAttrName, pdfTemp );
             dfValue = pdfTemp[0];
             for(m=0; m < nAttrLen-1; m++) {
-                CPLsprintf( szTemp, "%.16g,", pdfTemp[m] );
+                CPLsnprintf( szTemp, sizeof(szTemp), "%.16g,", pdfTemp[m] );
                 NCDFSafeStrcat(&pszAttrValue, szTemp, &nAttrValueSize);
             }
             CPLsprintf( szTemp, "%.16g", pdfTemp[m] );
@@ -6582,12 +6582,12 @@ CPLErr NCDFPutAttr( int nCdfId, int nVarId,
                 /* test for float instead of double */
                 /* strtof() is C89, which is not available in MSVC */
                 /* see if we loose precision if we cast to float and write to char* */
-                fValue = (float)dfValue; 
-                CPLsprintf( szTemp,"%.8g",fValue); 
+                fValue = float(dfValue);
+                CPLsnprintf( szTemp, sizeof(szTemp), "%.8g",fValue);
                 if ( EQUAL(szTemp, papszValues[i] ) )
                     nTmpAttrType = NC_FLOAT;
                 else
-                    nTmpAttrType = NC_DOUBLE;                   
+                    nTmpAttrType = NC_DOUBLE;
             }
         }
         if ( nTmpAttrType > nAttrType )
@@ -6731,7 +6731,7 @@ CPLErr NCDFGet1DVar( int nCdfId, int nVarId, char **pszValue )
             pfTemp = (float *) CPLCalloc( nVarLen, sizeof( float ) );
             nc_get_vara_float( nCdfId, nVarId, start, count, pfTemp );
             for(m=0; m < nVarLen-1; m++) {
-                CPLsprintf( szTemp, "%.8g,", pfTemp[m] );
+              CPLsnprintf( szTemp, sizeof(szTemp), "%.8g,", pfTemp[m] );
                 NCDFSafeStrcat(&pszVarValue, szTemp, &nVarValueSize);
             }
             CPLsprintf( szTemp, "%.8g", pfTemp[m] );
