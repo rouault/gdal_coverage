@@ -333,19 +333,20 @@ CPLErr BTRasterBand::SetUnitType(const char* psz)
 /*                             BTDataset()                              */
 /************************************************************************/
 
-BTDataset::BTDataset()
+BTDataset::BTDataset() :
+    fpImage(NULL),
+    bGeoTransformValid(FALSE),
+    pszProjection(NULL),
+    nVersionCode(0),
+    bHeaderModified(FALSE),
+    m_fVscale(0.0)
 {
-    fpImage = NULL;
-    bGeoTransformValid = FALSE;
     adfGeoTransform[0] = 0.0;
     adfGeoTransform[1] = 1.0;
     adfGeoTransform[2] = 0.0;
     adfGeoTransform[3] = 0.0;
     adfGeoTransform[4] = 0.0;
     adfGeoTransform[5] = 1.0;
-    pszProjection = NULL;
-
-    bHeaderModified = FALSE;
 }
 
 /************************************************************************/
@@ -518,9 +519,7 @@ CPLErr BTDataset::SetProjection( const char *pszNewProjection )
 /*      Write out the projection to a .prj file.                        */
 /* -------------------------------------------------------------------- */
     const char  *pszPrjFile = CPLResetExtension( GetDescription(), "prj" );
-    VSILFILE * fp;
-
-    fp = VSIFOpenL( pszPrjFile, "wt" );
+    VSILFILE * fp = VSIFOpenL( pszPrjFile, "wt" );
     if( fp != NULL )
     {
         VSIFPrintfL( fp, "%s\n", pszProjection );
@@ -557,9 +556,7 @@ GDALDataset *BTDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Create the dataset.                                             */
 /* -------------------------------------------------------------------- */
-    BTDataset  *poDS;
-
-    poDS = new BTDataset();
+    BTDataset  *poDS = new BTDataset();
  
     memcpy( poDS->abyHeader, poOpenInfo->pabyHeader, 256 );
 
@@ -841,9 +838,7 @@ GDALDataset *BTDataset::Create( const char * pszFilename,
 /* -------------------------------------------------------------------- */
 /*      Try to create the file.                                         */
 /* -------------------------------------------------------------------- */
-    VSILFILE        *fp;
-
-    fp = VSIFOpenL( pszFilename, "wb" );
+    VSILFILE *fp = VSIFOpenL( pszFilename, "wb" );
 
     if( fp == NULL )
     {
