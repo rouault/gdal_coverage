@@ -32,10 +32,10 @@
  * and other NASA data systems. Refer to Chapter 12 of "PDS Standards
  * Reference" at http://pds.jpl.nasa.gov/tools/standards-reference.shtml for
  * further details about ODL.
- * 
+ *
  * This is also known as PVL (Parameter Value Language) which is written
  * about at http://www.orrery.us/node/44 where it notes:
- * 
+ *
  * The PVL syntax that the PDS uses is specified by the Consultative Committee 
  * for Space Data Systems in their Blue Book publication: "Parameter Value 
  * Language Specification (CCSD0006 and CCSD0008)", June 2000 
@@ -47,10 +47,10 @@
  * --
  * also of interest, on PDS ODL:
  *  http://pds.jpl.nasa.gov/documents/sr/Chapter12.pdf
- *  
+ *
  ****************************************************************************/
 
-#include "cpl_string.h" 
+#include "cpl_string.h"
 #include "nasakeywordhandler.h"
 
 /************************************************************************/
@@ -63,10 +63,10 @@
 /*                         NASAKeywordHandler()                         */
 /************************************************************************/
 
-NASAKeywordHandler::NASAKeywordHandler()
-
+NASAKeywordHandler::NASAKeywordHandler() :
+    papszKeywordList(NULL),
+    pszHeaderNext(NULL)
 {
-    papszKeywordList = NULL;
 }
 
 /************************************************************************/
@@ -93,7 +93,7 @@ int NASAKeywordHandler::Ingest( VSILFILE *fp, int nOffset )
     if( VSIFSeekL( fp, nOffset, SEEK_SET ) != 0 )
         return FALSE;
 
-    for( ; TRUE; ) 
+    for( ; true; )
     {
         const char *pszCheck;
         char szChunk[513];
@@ -135,7 +135,7 @@ int NASAKeywordHandler::ReadGroup( const char *pszPathPrefix )
 {
     CPLString osName, osValue;
 
-    for( ; TRUE; )
+    for( ; true; )
     {
         if( !ReadPair( osName, osValue ) )
             return FALSE;
@@ -190,11 +190,11 @@ int NASAKeywordHandler::ReadPair( CPLString &osName, CPLString &osValue )
         else
             return FALSE;
     }
-    
+
     pszHeaderNext++;
-    
+
     SkipWhite();
-    
+
     osValue = "";
 
     // Handle value lists like:     Name   = (Red, Red)
@@ -233,7 +233,7 @@ int NASAKeywordHandler::ReadPair( CPLString &osName, CPLString &osValue )
             return FALSE;
 
     }
-        
+
     SkipWhite();
 
     // No units keyword?   
@@ -242,20 +242,20 @@ int NASAKeywordHandler::ReadPair( CPLString &osName, CPLString &osValue )
 
     // Append units keyword.  For lines that like like this:
     //  MAP_RESOLUTION               = 4.0 <PIXEL/DEGREE>
-    
+
     CPLString osWord;
-    
+
     osValue += " ";
-    
+
     while( ReadWord( osWord ) )
     {
         SkipWhite();
-        
+
         osValue += osWord;
         if( osWord[strlen(osWord)-1] == '>' )
             break;
     }
-    
+
     return TRUE;
 }
 
@@ -345,7 +345,7 @@ int NASAKeywordHandler::ReadWord( CPLString &osWord )
             SkipWhite();
         }
     }
-    
+
     return TRUE;
 }
 
@@ -357,13 +357,13 @@ int NASAKeywordHandler::ReadWord( CPLString &osWord )
 void NASAKeywordHandler::SkipWhite()
 
 {
-    for( ; TRUE; )
+    for( ; true; )
     {
         // Skip C style comments 
         if( *pszHeaderNext == '/' && pszHeaderNext[1] == '*' )
         {
             pszHeaderNext += 2;
-            
+
             while( *pszHeaderNext != '\0' 
                    && (*pszHeaderNext != '*' 
                        || pszHeaderNext[1] != '/' ) )
@@ -407,7 +407,7 @@ void NASAKeywordHandler::SkipWhite()
             pszHeaderNext++; 
             continue;
         }
-        
+
         // not white space, return. 
         return;
     }
@@ -421,13 +421,12 @@ const char *NASAKeywordHandler::GetKeyword( const char *pszPath,
                                             const char *pszDefault )
 
 {
-    const char *pszResult;
+    const char *pszResult = CSLFetchNameValue( papszKeywordList, pszPath );
 
-    pszResult = CSLFetchNameValue( papszKeywordList, pszPath );
     if( pszResult == NULL )
         return pszDefault;
-    else
-        return pszResult;
+
+    return pszResult;
 }
 
 /************************************************************************/
@@ -438,4 +437,3 @@ char **NASAKeywordHandler::GetKeywordList()
 {
     return papszKeywordList;
 }
-
