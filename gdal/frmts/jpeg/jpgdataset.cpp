@@ -121,11 +121,17 @@ void JPGAddICCProfile( struct jpeg_compress_struct *pInfo,
                        void (*p_jpeg_write_m_header) (j_compress_ptr cinfo, int marker, unsigned int datalen),
                        void (*p_jpeg_write_m_byte) (j_compress_ptr cinfo, int val));
 
-typedef struct
+typedef struct GDALJPEGErrorStruct
 {
     jmp_buf     setjmp_buffer;
     int         bNonFatalErrorEncountered;
     void      (*p_previous_emit_message)(j_common_ptr cinfo, int msg_level);
+    GDALJPEGErrorStruct() :
+        bNonFatalErrorEncountered(FALSE),
+        p_previous_emit_message(NULL)
+    {
+        memset(&setjmp_buffer, 0, sizeof(setjmp_buffer));
+    }
 } GDALJPEGErrorStruct;
 
 /************************************************************************/
@@ -213,7 +219,7 @@ protected:
     CPLString osWldFilename;
 
     virtual int         CloseDependentDatasets();
-    
+
     virtual CPLErr IBuildOverviews( const char *, int, int *,
                                     int, int *, GDALProgressFunc, void * );
 
@@ -1144,61 +1150,49 @@ int JPGRasterBand::GetOverviewCount()
 /************************************************************************/
 
 JPGDatasetCommon::JPGDatasetCommon() :
+    nScaleFactor(1),
+    bHasInitInternalOverviews(FALSE),
+    nInternalOverviewsCurrent(0),
+    nInternalOverviewsToFree(0),
+    papoInternalOverviews(NULL),
+    pszProjection(NULL),
+    bGeoTransformValid(FALSE),
+    nGCPCount(0),
+    pasGCPList(NULL),
+    fpImage(NULL),
     nSubfileOffset(0),
+    nLoadedScanline(-1),
+    pabyScanline(NULL),
+    bHasReadEXIFMetadata(FALSE),
+    bHasReadXMPMetadata(FALSE),
+    bHasReadICCMetadata(FALSE),
+    papszMetadata(NULL),
+    papszSubDatasets(NULL),
     bigendian(1),
-    bSwabflag(FALSE)
+    nExifOffset(-1),
+    nInterOffset(-1),
+    nGPSOffset(-1),
+    bSwabflag(FALSE),
+    nTiffDirStart(-1),
+    nTIFFHEADER(-1),
+    bHasDoneJpegCreateDecompress(FALSE),
+    bHasDoneJpegStartDecompress(FALSE),
+    bHasCheckedForMask(FALSE),
+    poMaskBand(NULL),
+    pabyBitMask(NULL),
+    bMaskLSBOrder(TRUE),
+    pabyCMask(NULL),
+    nCMaskSize(0),
+    eGDALColorSpace(JCS_UNKNOWN),
+    bIsSubfile(FALSE),
+    bHasTriedLoadWorldFileOrTab(FALSE)
 {
-  // TODO: How should sErrorStruct.setjmp_buffer be initialized?
-    fpImage = NULL;
-
-    nScaleFactor = 1;
-    bHasInitInternalOverviews = FALSE;
-    nInternalOverviewsCurrent = 0;
-    nInternalOverviewsToFree = 0;
-    papoInternalOverviews = NULL;
-
-    pabyScanline = NULL;
-    nLoadedScanline = -1;
-
-    bHasReadEXIFMetadata = FALSE;
-    bHasReadXMPMetadata = FALSE;
-    bHasReadICCMetadata = FALSE;
-    papszMetadata   = NULL;
-    papszSubDatasets= NULL;
-    nExifOffset     = -1;
-    nInterOffset    = -1;
-    nGPSOffset      = -1;
-    nTiffDirStart   = -1;
-    nTIFFHEADER     = -1;
-
-    pszProjection = NULL;
-    bGeoTransformValid = FALSE;
     adfGeoTransform[0] = 0.0;
     adfGeoTransform[1] = 1.0;
     adfGeoTransform[2] = 0.0;
     adfGeoTransform[3] = 0.0;
     adfGeoTransform[4] = 0.0;
     adfGeoTransform[5] = 1.0;
-    nGCPCount = 0;
-    pasGCPList = NULL;
-
-    bHasDoneJpegCreateDecompress = FALSE;
-    bHasDoneJpegStartDecompress = FALSE;
-
-    bHasCheckedForMask = FALSE;
-    poMaskBand = NULL;
-    pabyBitMask = NULL;
-    bMaskLSBOrder = TRUE;
-    pabyCMask = NULL;
-    nCMaskSize = 0;
-
-    eGDALColorSpace = JCS_UNKNOWN;
-
-    bIsSubfile = FALSE;
-    bHasTriedLoadWorldFileOrTab = FALSE;
-
-    sErrorStruct.bNonFatalErrorEncountered = FALSE;
-    sErrorStruct.p_previous_emit_message = NULL;
 }
 
 /************************************************************************/
@@ -1542,10 +1536,37 @@ void JPGDatasetCommon::FlushCache()
 /*                            JPGDataset()                              */
 /************************************************************************/
 
-JPGDataset::JPGDataset()
-
+JPGDataset::JPGDataset() :
+    nQLevel(0)
 {
     sDInfo.data_precision = 8;
+
+    sDInfo.unread_marker = 0;
+    sDInfo.master = 0;
+    sDInfo.main = 0;
+    sDInfo.coef = 0;
+    sDInfo.post = 0;
+    sDInfo.inputctl = 0;
+    sDInfo.marker = 0;
+    sDInfo.entropy = 0;
+    sDInfo.idct = 0;
+    sDInfo.upsample = 0;
+    sDInfo.cconvert = 0;
+    sDInfo.cquantize = 0;
+
+    sJErr.error_exit = 0;
+    sJErr.emit_message = 0;
+    sJErr.output_message = 0;
+    sJErr.format_message = 0;
+    sJErr.reset_error_mgr = 0;
+    sJErr.msg_code = 0;
+    sJErr.trace_level = 0;
+    sJErr.num_warnings = 0;
+    sJErr.jpeg_message_table = 0;
+    sJErr.last_jpeg_message = 0;
+    sJErr.addon_message_table = 0;
+    sJErr.first_addon_message = 0;
+    sJErr.last_addon_message = 0;
 }
 
 /************************************************************************/
@@ -1988,12 +2009,18 @@ CPLErr JPGDatasetCommon::IRasterIO( GDALRWFlag eRWFlag,
                               int nXOff, int nYOff, int nXSize, int nYSize,
                               void *pData, int nBufXSize, int nBufYSize, 
                               GDALDataType eBufType,
-                              int nBandCount, int *panBandMap, 
+                              int nBandCount, int *panBandMap,
                               GSpacing nPixelSpace, GSpacing nLineSpace,
                               GSpacing nBandSpace,
                               GDALRasterIOExtraArg* psExtraArg )
 
 {
+    // Coverity says that we cannot pass a nullptr to IRasterIO.
+    if (panBandMap == NULL)
+    {
+      return CE_Failure;
+    }
+
     if((eRWFlag == GF_Read) &&
        (nBandCount == 3) &&
        (nBands == 3) &&
@@ -2008,16 +2035,13 @@ CPLErr JPGDatasetCommon::IRasterIO( GDALRWFlag eRWFlag,
        GetOutColorSpace() != JCS_YCCK && GetOutColorSpace() != JCS_CMYK )
     {
         Restart();
-        int y;
-        CPLErr tmpError;
-        int x;
 
         // Pixel interleaved case
         if( nBandSpace == 1 )
         {
-            for(y = 0; y < nYSize; ++y)
+            for(int y = 0; y < nYSize; ++y)
             {
-                tmpError = LoadScanline(y);
+                CPLErr tmpError = LoadScanline(y);
                 if(tmpError != CE_None) return tmpError;
 
                 if( nPixelSpace == 3 )
@@ -2027,7 +2051,7 @@ CPLErr JPGDatasetCommon::IRasterIO( GDALRWFlag eRWFlag,
                 }
                 else
                 {
-                    for(x = 0; x < nXSize; ++x)
+                    for(int x = 0; x < nXSize; ++x)
                     {
                         memcpy(&(((GByte*)pData)[(y*nLineSpace) + (x*nPixelSpace)]), 
                                (const GByte*)&(pabyScanline[x*3]), 3);
@@ -2037,11 +2061,11 @@ CPLErr JPGDatasetCommon::IRasterIO( GDALRWFlag eRWFlag,
         }
         else
         {
-            for(y = 0; y < nYSize; ++y)
+            for(int y = 0; y < nYSize; ++y)
             {
-                tmpError = LoadScanline(y);
+                CPLErr tmpError = LoadScanline(y);
                 if(tmpError != CE_None) return tmpError;
-                for(x = 0; x < nXSize; ++x)
+                for(int x = 0; x < nXSize; ++x)
                 {
                     ((GByte*)pData)[(y*nLineSpace) + (x*nPixelSpace)] = pabyScanline[x*3];
                     ((GByte*)pData)[(y*nLineSpace) + (x*nPixelSpace) + nBandSpace] = pabyScanline[x*3+1];
@@ -2054,8 +2078,8 @@ CPLErr JPGDatasetCommon::IRasterIO( GDALRWFlag eRWFlag,
     }
 
     return GDALPamDataset::IRasterIO(eRWFlag, nXOff, nYOff, nXSize, nYSize,
-                                     pData, nBufXSize, nBufYSize, eBufType, 
-                                     nBandCount, panBandMap, 
+                                     pData, nBufXSize, nBufYSize, eBufType,
+                                     nBandCount, panBandMap,
                                      nPixelSpace, nLineSpace, nBandSpace,
                                      psExtraArg);
 }
