@@ -66,9 +66,8 @@ CPLWriteFct(void *buffer, size_t size, size_t nmemb, void *reqInfo)
 
 {
     CPLHTTPResult *psResult = (CPLHTTPResult *) reqInfo;
-    int  nNewSize;
 
-    nNewSize = psResult->nDataLen + nmemb*size + 1;
+    int  nNewSize = psResult->nDataLen + nmemb*size + 1;
     if( nNewSize > psResult->nDataAlloc )
     {
         psResult->nDataAlloc = (int) (nNewSize * 1.25 + 100);
@@ -125,7 +124,13 @@ static size_t CPLHdrWriteFct(void *buffer, size_t size, size_t nmemb, void *reqI
  * @param papszOptions option list as a NULL-terminated array of strings. May be NULL.
  *                     The following options are handled :
  * <ul>
- * <li>TIMEOUT=val, where val is in seconds</li>
+ * <li>TIMEOUT=val, where val is in seconds. This is the maximum delay for the whole
+ *     request to complete before being aborted.</li>
+ * <li>LOW_SPEED_TIME=val, where val is in seconds. This is the maximum time where the
+ *      transfer speed should be below the LOW_SPEED_LIMIT (if not specified 1b/s),
+ *      before the transfer to be considered too slow and aborted. (GDAL >= 2.1)</li>
+ * <li>LOW_SPEED_LIMIT=val, where val is in bytes/second. See LOW_SPEED_TIME. Has only
+ *     effect if LOW_SPEED_TIME is specified too. (GDAL >= 2.1)</li>
  * <li>HEADERS=val, where val is an extra header to use when getting a web page.
  *                  For example "Accept: application/x-ogcwkt"
  * <li>HTTPAUTH=[BASIC/NTLM/GSSNEGOTIATE/ANY] to specify an authentication scheme to use.
@@ -145,9 +150,11 @@ static size_t CPLHdrWriteFct(void *buffer, size_t size, size_t nmemb, void *reqI
  *                 Default is 30. (GDAL >= 2.0)
  * </ul>
  *
- * Alternatively, if not defined in the papszOptions arguments, the PROXY,  
- * PROXYUSERPWD, PROXYAUTH, NETRC, MAX_RETRY and RETRY_DELAY values are searched in the configuration 
- * options named GDAL_HTTP_PROXY, GDAL_HTTP_PROXYUSERPWD, GDAL_PROXY_AUTH, 
+ * Alternatively, if not defined in the papszOptions arguments, the TIMEOUT,
+ * LOW_SPEED_TIME, LOW_SPEED_LIMIT, PROXY, PROXYUSERPWD, PROXYAUTH, NETRC,
+ * MAX_RETRY and RETRY_DELAY values are searched in the configuration 
+ * options named GDAL_HTTP_TIMEOUT, GDAL_HTTP_LOW_SPEED_TIME, GDAL_HTTP_LOW_SPEED_LIMIT,
+ * GDAL_HTTP_PROXY, GDAL_HTTP_PROXYUSERPWD, GDAL_PROXY_AUTH, 
  * GDAL_HTTP_NETRC, GDAL_HTTP_MAX_RETRY and GDAL_HTTP_RETRY_DELAY.
  *
  * @return a CPLHTTPResult* structure that must be freed by 
@@ -594,6 +601,20 @@ void CPLHTTPSetOptions(CURL *http_handle, char** papszOptions)
         pszTimeout = CPLGetConfigOption("GDAL_HTTP_TIMEOUT", NULL);
     if( pszTimeout != NULL )
         curl_easy_setopt(http_handle, CURLOPT_TIMEOUT, atoi(pszTimeout) );
+    
+    /* Set low speed time and limit.*/
+    const char *pszLowSpeedTime = CSLFetchNameValue( papszOptions, "LOW_SPEED_TIME" );
+    if (pszLowSpeedTime == NULL)
+        pszLowSpeedTime = CPLGetConfigOption("GDAL_HTTP_LOW_SPEED_TIME", NULL);
+    if( pszLowSpeedTime != NULL )
+    {
+        curl_easy_setopt(http_handle, CURLOPT_LOW_SPEED_TIME, atoi(pszLowSpeedTime) );
+
+        const char *pszLowSpeedLimit = CSLFetchNameValue( papszOptions, "LOW_SPEED_LIMIT" );
+        if (pszLowSpeedLimit == NULL)
+            pszLowSpeedLimit = CPLGetConfigOption("GDAL_HTTP_LOW_SPEED_LIMIT", "1");
+        curl_easy_setopt(http_handle, CURLOPT_LOW_SPEED_LIMIT, atoi(pszLowSpeedLimit) );
+    }
 
     /* Disable some SSL verification */
     const char *pszUnsafeSSL = CSLFetchNameValue( papszOptions, "UNSAFESSL" );
@@ -720,13 +741,12 @@ void CPLHTTPDestroyResult( CPLHTTPResult *psResult )
         CPLFree( psResult->pszContentType );
         CSLDestroy( psResult->papszHeaders );
 
-        int i;
-        for(i=0;i<psResult->nMimePartCount;i++)
+        for(int i=0;i<psResult->nMimePartCount;i++)
         {
             CSLDestroy( psResult->pasMimePart[i].papszHeaders );
         }
         CPLFree(psResult->pasMimePart);
-        
+
         CPLFree( psResult );
     }
 }
@@ -769,7 +789,7 @@ int CPLHTTPParseMultipartMime( CPLHTTPResult *psResult )
     }
 
     CPLString osBoundary;
-    char **papszTokens = 
+    char **papszTokens =
         CSLTokenizeStringComplex( pszBound + 9, "\n ;", 
                                   TRUE, FALSE );
 
@@ -780,7 +800,7 @@ int CPLHTTPParseMultipartMime( CPLHTTPResult *psResult )
         CSLDestroy( papszTokens );
         return FALSE;
     }
-    
+
     osBoundary = "--";
     osBoundary += papszTokens[0];
     CSLDestroy( papszTokens );
@@ -869,7 +889,7 @@ int CPLHTTPParseMultipartMime( CPLHTTPResult *psResult )
             pszNext++;
             nBytesAvail--;
         }
-        
+
         if( nBytesAvail == 0 )
         {
             CPLError(CE_Failure, CPLE_AppDefined,
