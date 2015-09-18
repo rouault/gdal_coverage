@@ -772,21 +772,21 @@ double GSAGRasterBand::GetMaximum( int *pbSuccess )
 /*                             GSAGDataset()                            */
 /************************************************************************/
 
-GSAGDataset::GSAGDataset( const char *pszEOL )
-
+GSAGDataset::GSAGDataset( const char *pszEOL ) :
+    fp(NULL),
+    nMinMaxZOffset(0)
 {
     if( pszEOL == NULL || EQUAL(pszEOL, "") )
     {
 	CPLDebug( "GSAG", "GSAGDataset() created with invalid EOL string.\n" );
-	this->szEOL[0] = '\x0D';
-	this->szEOL[1] = '\x0A';
-	this->szEOL[2] = '\0';
+	szEOL[0] = '\x0D';
+	szEOL[1] = '\x0A';
+	szEOL[2] = '\0';
+        return;
     }
-    else
-    {
-        strncpy(this->szEOL, pszEOL, sizeof(this->szEOL));
-	this->szEOL[sizeof(this->szEOL) - 1] = '\0';
-    }
+
+    strncpy(szEOL, pszEOL, sizeof(szEOL));
+    szEOL[sizeof(this->szEOL) - 1] = '\0';
 }
 
 /************************************************************************/
@@ -863,7 +863,7 @@ GDALDataset *GSAGDataset::Open( GDALOpenInfo * poOpenInfo )
 	delete poDS;
         return NULL;
     }
- 
+
 /* -------------------------------------------------------------------- */
 /*      Read the header.                                                */
 /* -------------------------------------------------------------------- */
@@ -880,7 +880,8 @@ GDALDataset *GSAGDataset::Open( GDALOpenInfo * poOpenInfo )
 	if( pabyHeader == NULL )
 	{
 	    CPLError( CE_Failure, CPLE_OutOfMemory,
-		      "Unable to open dataset, unable to header buffer.\n" );
+		      "Unable to open dataset, unable to malloc header buffer.\n" );
+            delete poDS;
 	    return NULL;
 	}
 
