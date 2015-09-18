@@ -2499,6 +2499,7 @@ void NITFDataset::InitializeNITFMetadata()
     {
         CPLError(CE_Failure, CPLE_AppDefined, 
                  "Failed to encode NITF file header!");
+        CPLFree(encodedHeader);
         return;
     }
 
@@ -2517,7 +2518,7 @@ void NITFDataset::InitializeNITFMetadata()
     // Get the image subheader length.
 
     int nImageSubheaderLen = 0;
-    
+
     for( int i = 0; i < psFile->nSegmentCount; ++i )
     {
         if (strncmp(psFile->pasSegmentInfo[i].szSegmentType, "IM", 2) == 0)
@@ -2536,17 +2537,18 @@ void NITFDataset::InitializeNITFMetadata()
     if( nImageSubheaderLen > 0 )
     {
         char *encodedImageSubheader = CPLBase64Encode(nImageSubheaderLen,(GByte*) psImage->pachHeader);
-    
-        if( encodedImageSubheader == NULL || strlen(encodedImageSubheader) ==0 )
+
+        if( encodedImageSubheader == NULL || strlen(encodedImageSubheader) == 0 )
         {
-            CPLError(CE_Failure, CPLE_AppDefined, 
+            CPLError(CE_Failure, CPLE_AppDefined,
                      "Failed to encode image subheader!");
+            CPLFree( encodedImageSubheader );
             return;
         }
 
         // The length of the image subheader plus a space is append to the beginning of the encoded string so
         // that we can recover the actual length of the image subheader when we decode it.
-      
+
         char buffer[20];
 
         sprintf(buffer, "%d", nImageSubheaderLen);
@@ -4916,7 +4918,6 @@ static int NITFWriteCGMSegments( const char *pszFilename, char **papszList)
 
         memset(achGSH, ' ', sizeof(achGSH));
 
-
         PLACE( achGSH+ 0, SY , "SY" );
         PLACE( achGSH+ 2, SID ,CPLSPrintf("%010d", i) );
         PLACE( achGSH+ 12, SNAME , "DEFAULT NAME        " );
@@ -4932,6 +4933,7 @@ static int NITFWriteCGMSegments( const char *pszFilename, char **papszList)
         PLACE( achGSH+240, SCOLOR, "C" );
         PLACE( achGSH+241, SBAND2, "0000000000" );
         PLACE( achGSH+251, SRES2, "00" );
+        // coverity[buffer_size] - No need to be a NUL terminated string.
         PLACE( achGSH+253, SXSHDL, "00000" );
 
         // Move to the end of the file
@@ -5214,6 +5216,7 @@ static void NITFWriteTextSegments( const char *pszFilename,
             PLACE( achTSH+106, TSCLAS        , "U"                           );
             PLACE( achTSH+273, ENCRYP        , "0"                           );
             PLACE( achTSH+274, TXTFMT        , "STA"                         );
+            // coverity[buffer_size] - No need to be a NUL terminated string.
             PLACE( achTSH+277, TXSHDL        , "00000"                       );
         }
 
@@ -5234,7 +5237,7 @@ static void NITFWriteTextSegments( const char *pszFilename,
         }
 
         VSIFWriteL( pszTextToWrite, 1, nTextLength, fpVSIL );
-        
+
 /* -------------------------------------------------------------------- */
 /*      Update the subheader and data size info in the file header.     */
 /* -------------------------------------------------------------------- */
