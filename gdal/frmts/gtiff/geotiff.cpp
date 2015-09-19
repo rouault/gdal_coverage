@@ -122,7 +122,7 @@ static int IsPowerOfTwo(unsigned int i)
 
 void GTIFFGetOverviewBlockSize(int* pnBlockXSize, int* pnBlockYSize)
 {
-    static int bHasWarned = FALSE;
+    static bool bHasWarned = false;
     const char* pszVal = CPLGetConfigOption("GDAL_TIFF_OVR_BLOCKSIZE", "128");
     int nOvrBlockSize = atoi(pszVal);
     if (nOvrBlockSize < 64 || nOvrBlockSize > 4096 ||
@@ -134,7 +134,7 @@ void GTIFFGetOverviewBlockSize(int* pnBlockXSize, int* pnBlockYSize)
                     "Wrong value for GDAL_TIFF_OVR_BLOCKSIZE : %s. "
                     "Should be a power of 2 between 64 and 4096. Defaulting to 128",
                     pszVal);
-            bHasWarned = TRUE;
+            bHasWarned = true;
         }
         nOvrBlockSize = 128;
     }
@@ -874,8 +874,7 @@ void    GTIFFSetJpegQuality(GDALDatasetH hGTIFFDS, int nJpegQuality)
 
     poDS->ScanDirectories();
 
-    int i;
-    for(i=0;i<poDS->nOverviewCount;i++)
+    for(int i=0;i<poDS->nOverviewCount;i++)
         poDS->papoOverviewDS[i]->nJpegQuality = nJpegQuality;
 }
 
@@ -7588,14 +7587,14 @@ void GTiffDataset::WriteGeoTIFFInfo()
 
 {
     bool bPixelIsPoint = false;
-    int  bPointGeoIgnore = FALSE;
+    bool bPointGeoIgnore = false;
 
-    if( GetMetadataItem( GDALMD_AREA_OR_POINT ) 
+    if( GetMetadataItem( GDALMD_AREA_OR_POINT )
         && EQUAL(GetMetadataItem(GDALMD_AREA_OR_POINT),
                  GDALMD_AOP_POINT) )
     {
         bPixelIsPoint = true;
-        bPointGeoIgnore = 
+        bPointGeoIgnore =
             CSLTestBoolean( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
                                                "FALSE") );
     }
@@ -9898,9 +9897,8 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
                                  char** papszSiblingFiles )
 
 {
-    uint32	nXSize, nYSize;
-    int		bTreatAsBitmap = FALSE;
-    int         bTreatAsOdd = FALSE;
+    bool bTreatAsBitmap = false;
+    bool bTreatAsOdd = false;
 
     this->eAccess = eAccess;
 
@@ -9919,6 +9917,7 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
 /* -------------------------------------------------------------------- */
 /*      Capture some information from the file that is of interest.     */
 /* -------------------------------------------------------------------- */
+    uint32	nXSize, nYSize;
     TIFFGetField( hTIFF, TIFFTAG_IMAGEWIDTH, &nXSize );
     TIFFGetField( hTIFF, TIFFTAG_IMAGELENGTH, &nYSize );
     nRasterXSize = nXSize;
@@ -9928,22 +9927,22 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
         nBands = 1;
     else
         nBands = nSamplesPerPixel;
-    
+
     if( !TIFFGetField(hTIFF, TIFFTAG_BITSPERSAMPLE, &(nBitsPerSample)) )
         nBitsPerSample = 1;
-    
+
     if( !TIFFGetField( hTIFF, TIFFTAG_PLANARCONFIG, &(nPlanarConfig) ) )
         nPlanarConfig = PLANARCONFIG_CONTIG;
-    
+
     if( !TIFFGetField( hTIFF, TIFFTAG_PHOTOMETRIC, &(nPhotometric) ) )
         nPhotometric = PHOTOMETRIC_MINISBLACK;
-    
+
     if( !TIFFGetField( hTIFF, TIFFTAG_SAMPLEFORMAT, &(nSampleFormat) ) )
         nSampleFormat = SAMPLEFORMAT_UINT;
-    
+
     if( !TIFFGetField( hTIFF, TIFFTAG_COMPRESSION, &(nCompression) ) )
         nCompression = COMPRESSION_NONE;
-    
+
 #if defined(TIFFLIB_VERSION) && TIFFLIB_VERSION > 20031007 /* 3.6.0 */
     if (nCompression != COMPRESSION_NONE &&
         !TIFFIsCODECConfigured(nCompression))
@@ -10008,11 +10007,11 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
 /* -------------------------------------------------------------------- */
     if( nBitsPerSample == 1 && nBands == 1 )
     {
-        bTreatAsBitmap = TRUE;
+        bTreatAsBitmap = true;
 
         // Lets treat large "one row" bitmaps using the scanline api.
-        if( !TIFFIsTiled(hTIFF) 
-            && nBlockYSize == nYSize 
+        if( !TIFFIsTiled(hTIFF)
+            && nBlockYSize == nYSize
             && nYSize > 2000 )
             bTreatAsSplitBitmap = TRUE;
     }
@@ -10021,12 +10020,12 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
 /*      Should we treat this via the RGBA interface?                    */
 /* -------------------------------------------------------------------- */
     if( bAllowRGBAInterface &&
-        !bTreatAsBitmap && !(nBitsPerSample > 8) 
+        !bTreatAsBitmap && !(nBitsPerSample > 8)
         && (nPhotometric == PHOTOMETRIC_CIELAB ||
             nPhotometric == PHOTOMETRIC_LOGL ||
             nPhotometric == PHOTOMETRIC_LOGLUV ||
             nPhotometric == PHOTOMETRIC_SEPARATED ||
-            ( nPhotometric == PHOTOMETRIC_YCBCR 
+            ( nPhotometric == PHOTOMETRIC_YCBCR
               && nCompression != COMPRESSION_JPEG )) )
     {
         char	szMessage[1024];
@@ -10088,22 +10087,22 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
 #endif
             bTreatAsSplit = TRUE;
     }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Should we treat this via the odd bits interface?                */
 /* -------------------------------------------------------------------- */
     if ( nSampleFormat == SAMPLEFORMAT_IEEEFP )
     {
         if ( nBitsPerSample == 16 || nBitsPerSample == 24 )
-            bTreatAsOdd = TRUE;
+            bTreatAsOdd = true;
     }
     else if ( !bTreatAsRGBA && !bTreatAsBitmap
               && nBitsPerSample != 8
               && nBitsPerSample != 16
               && nBitsPerSample != 32
-              && nBitsPerSample != 64 
+              && nBitsPerSample != 64
               && nBitsPerSample != 128 )
-        bTreatAsOdd = TRUE;
+        bTreatAsOdd = true;
 
     int bMinIsWhite = nPhotometric == PHOTOMETRIC_MINISWHITE;
 
@@ -10133,14 +10132,13 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
         if( nBitsPerSample <= 16 && nPhotometric == PHOTOMETRIC_MINISWHITE )
         {
             GDALColorEntry  oEntry;
-            int		    iColor, nColorCount;
-            
-            poColorTable = new GDALColorTable();
-            nColorCount = 1 << nBitsPerSample;
 
-            for ( iColor = 0; iColor < nColorCount; iColor++ )
+            poColorTable = new GDALColorTable();
+            const int nColorCount = 1 << nBitsPerSample;
+
+            for ( int iColor = 0; iColor < nColorCount; iColor++ )
             {
-            oEntry.c1 = oEntry.c2 = oEntry.c3 = (short) 
+            oEntry.c1 = oEntry.c2 = oEntry.c3 = (short)
                         ((255 * (nColorCount - 1 - iColor)) / (nColorCount-1));
             oEntry.c4 = 255;
             poColorTable->SetColorEntry( iColor, &oEntry );
@@ -10153,12 +10151,12 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
     }
     else
     {
-        int	nColorCount, nMaxColor = 0;
+        int nMaxColor = 0;
         GDALColorEntry oEntry;
 
         poColorTable = new GDALColorTable();
 
-        nColorCount = 1 << nBitsPerSample;
+        const int nColorCount = 1 << nBitsPerSample;
 
         for( int iColor = nColorCount - 1; iColor >= 0; iColor-- )
         {
@@ -10180,19 +10178,19 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
         if( nMaxColor > 0 && nMaxColor < 256 )
         {
             CPLDebug( "GTiff", "TIFF ColorTable seems to be improperly scaled, fixing up." );
-            
+
             for( int iColor = nColorCount - 1; iColor >= 0; iColor-- )
             {
                 oEntry.c1 = panRed[iColor];
                 oEntry.c2 = panGreen[iColor];
                 oEntry.c3 = panBlue[iColor];
                 oEntry.c4 = (bNoDataSet && (int)dfNoDataValue == iColor) ? 0 : 255;
-                
+
                 poColorTable->SetColorEntry( iColor, &oEntry );
             }
         }
     }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Create band information objects.                                */
 /* -------------------------------------------------------------------- */
@@ -10229,10 +10227,9 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
         uint16	nCount;
         bool    bPixelIsPoint = false;
         short nRasterType;
-        GTIF	*psGTIF;
-        int     bPointGeoIgnore = FALSE;
+        bool bPointGeoIgnore = false;
 
-        psGTIF = GTIFNew( hTIFF ); // I wonder how expensive this is?
+        GTIF	*psGTIF = GTIFNew( hTIFF ); // I wonder how expensive this is?
 
         if( psGTIF )
         {
@@ -12510,14 +12507,14 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /*      Are we addressing PixelIsPoint mode?                            */
 /* -------------------------------------------------------------------- */
     bool bPixelIsPoint = false;
-    int  bPointGeoIgnore = FALSE;
+    bool bPointGeoIgnore = false;
 
     if( poSrcDS->GetMetadataItem( GDALMD_AREA_OR_POINT ) 
         && EQUAL(poSrcDS->GetMetadataItem(GDALMD_AREA_OR_POINT),
                  GDALMD_AOP_POINT) )
     {
         bPixelIsPoint = true;
-        bPointGeoIgnore = 
+        bPointGeoIgnore =
             CSLTestBoolean( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
                                                "FALSE") );
     }
@@ -12527,7 +12524,7 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
     const char *pszProjection = NULL;
     double      adfGeoTransform[6];
-    
+
     if( poSrcDS->GetGeoTransform( adfGeoTransform ) == CE_None
         && (adfGeoTransform[0] != 0.0 || adfGeoTransform[1] != 1.0
             || adfGeoTransform[2] != 0.0 || adfGeoTransform[3] != 0.0
@@ -12546,20 +12543,20 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
                 adfPixelScale[2] = 0.0;
 
                 TIFFSetField( hTIFF, TIFFTAG_GEOPIXELSCALE, 3, adfPixelScale );
-            
+
                 adfTiePoints[0] = 0.0;
                 adfTiePoints[1] = 0.0;
                 adfTiePoints[2] = 0.0;
                 adfTiePoints[3] = adfGeoTransform[0];
                 adfTiePoints[4] = adfGeoTransform[3];
                 adfTiePoints[5] = 0.0;
-                
+
                 if( bPixelIsPoint && !bPointGeoIgnore )
                 {
                     adfTiePoints[3] += adfGeoTransform[1] * 0.5 + adfGeoTransform[2] * 0.5;
                     adfTiePoints[4] += adfGeoTransform[4] * 0.5 + adfGeoTransform[5] * 0.5;
                 }
-	    
+
                 TIFFSetField( hTIFF, TIFFTAG_GEOTIEPOINTS, 6, adfTiePoints );
             }
             else
@@ -12575,7 +12572,7 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
                 adfMatrix[5] = adfGeoTransform[5];
                 adfMatrix[7] = adfGeoTransform[3];
                 adfMatrix[15] = 1.0;
-                
+
                 if( bPixelIsPoint && !bPointGeoIgnore )
                 {
                     adfMatrix[3] += adfGeoTransform[1] * 0.5 + adfGeoTransform[2] * 0.5;
@@ -12584,7 +12581,7 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 
                 TIFFSetField( hTIFF, TIFFTAG_GEOTRANSMATRIX, 16, adfMatrix );
             }
-            
+
             pszProjection = poSrcDS->GetProjectionRef();
         }
 
@@ -14046,13 +14043,15 @@ void GDALRegister_GTiff()
 {
     if( GDALGetDriverByName( "GTiff" ) == NULL )
     {
-        GDALDriver	*poDriver;
         char szCreateOptions[5000];
         char szOptionalCompressItems[500];
-        int bHasJPEG = FALSE, bHasLZW = FALSE, bHasDEFLATE = FALSE, bHasLZMA = FALSE;
+        bool bHasJPEG = false;
+        bool bHasLZW = false;
+        bool bHasDEFLATE = false;
+        bool bHasLZMA = false;
 
-        poDriver = new GDALDriver();
-        
+        GDALDriver *poDriver = new GDALDriver();
+
 /* -------------------------------------------------------------------- */
 /*      Determine which compression codecs are available that we        */
 /*      want to advertise.  If we are using an old libtiff we won't     */
@@ -14067,7 +14066,7 @@ void GDALRegister_GTiff()
                 "       <Value>JPEG</Value>"
                 "       <Value>LZW</Value>"
                 "       <Value>DEFLATE</Value>" );
-        bHasLZW = bHasDEFLATE = TRUE;
+        bHasLZW = bHasDEFLATE = true;
 #else
         TIFFCodec	*c, *codecs = TIFFGetConfiguredCODECs();
 
@@ -14078,7 +14077,7 @@ void GDALRegister_GTiff()
                         "       <Value>PACKBITS</Value>" );
             else if( c->scheme == COMPRESSION_JPEG )
             {
-                bHasJPEG = TRUE;
+                bHasJPEG = true;
                 strcat( szOptionalCompressItems,
                         "       <Value>JPEG</Value>" );
             }
@@ -14105,13 +14104,13 @@ void GDALRegister_GTiff()
                         "       <Value>CCITTFAX4</Value>" );
             else if( c->scheme == COMPRESSION_LZMA )
             {
-                bHasLZMA = TRUE;
+                bHasLZMA = true;
                 strcat( szOptionalCompressItems,
                         "       <Value>LZMA</Value>" );
             }
         }
         _TIFFfree( codecs );
-#endif        
+#endif
 
 /* -------------------------------------------------------------------- */
 /*      Build full creation option list.                                */
