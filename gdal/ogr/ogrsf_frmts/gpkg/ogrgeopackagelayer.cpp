@@ -100,7 +100,7 @@ void OGRGeoPackageLayer::ClearStatement()
 OGRFeature *OGRGeoPackageLayer::GetNextFeature()
 
 {
-    for( ; TRUE; )
+    for( ; true; )
     {
         OGRFeature      *poFeature;
 
@@ -320,8 +320,7 @@ void OGRGeoPackageLayer::BuildFeatureDefn( const char *pszLayerName,
 
     panFieldOrdinals = (int *) CPLMalloc( sizeof(int) * nRawColumns );
 
-    int iCol;
-    for( iCol = 0; iCol < nRawColumns; iCol++ )
+    for( int iCol = 0; iCol < nRawColumns; iCol++ )
     {
         OGRFieldDefn    oField( OGRSQLiteParamsUnquote(sqlite3_column_name( hStmt, iCol )),
                                 OFTString );
@@ -419,11 +418,16 @@ void OGRGeoPackageLayer::BuildFeatureDefn( const char *pszLayerName,
                         poSRS->Dereference();
                     }
                     delete poGeom;
+                    poGeom = NULL;
 
                     m_poFeatureDefn->AddGeomFieldDefn(&oGeomField);
                     iGeomCol = iCol;
                     continue;
                 }
+                // Unlikely to have poGeom be valid, but just in case, check
+                // if we need to delete it.
+                if (poGeom != NULL)
+                    delete poGeom;
             }
         }
 
