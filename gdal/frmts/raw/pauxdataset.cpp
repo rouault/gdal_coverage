@@ -219,22 +219,22 @@ double PAuxRasterBand::GetNoDataValue( int *pbSuccess )
 CPLErr PAuxRasterBand::SetNoDataValue( double dfNewValue )
 
 {
-    PAuxDataset *poPDS = (PAuxDataset *) poDS;
-    char	szTarget[128];
-    char	szValue[128];
-
     if( GetAccess() == GA_ReadOnly )
     {
-        CPLError( CE_Failure, CPLE_NoWriteAccess, 
+        CPLError( CE_Failure, CPLE_NoWriteAccess,
                   "Can't update readonly dataset." );
         return CE_Failure;
     }
 
-    sprintf( szTarget, "METADATA_IMG_%d_NO_DATA_VALUE", nBand );
-    CPLsprintf( szValue, "%24.12f", dfNewValue );
-    poPDS->papszAuxLines = 
+    char szTarget[128];
+    char szValue[128];
+    snprintf( szTarget, sizeof(szTarget), "METADATA_IMG_%d_NO_DATA_VALUE", nBand );
+    CPLsnprintf( szValue, sizeof(szValue), "%24.12f", dfNewValue );
+
+    PAuxDataset *poPDS = (PAuxDataset *) poDS;
+    poPDS->papszAuxLines =
         CSLSetNameValue( poPDS->papszAuxLines, szTarget, szValue );
-    
+
     poPDS->bAuxUpdated = TRUE;
 
     return CE_None;
@@ -250,17 +250,16 @@ CPLErr PAuxRasterBand::SetNoDataValue( double dfNewValue )
 void PAuxRasterBand::SetDescription( const char *pszNewDescription )
 
 {
-    PAuxDataset *poPDS = (PAuxDataset *) poDS;
-
     if( GetAccess() == GA_Update )
     {
         char	szTarget[128];
-
         sprintf( szTarget, "ChanDesc-%d", nBand );
-        poPDS->papszAuxLines = 
-            CSLSetNameValue( poPDS->papszAuxLines, 
+
+        PAuxDataset *poPDS = (PAuxDataset *) poDS;
+        poPDS->papszAuxLines =
+            CSLSetNameValue( poPDS->papszAuxLines,
                              szTarget, pszNewDescription  );
-    
+
         poPDS->bAuxUpdated = TRUE;
     }
 
@@ -570,33 +569,33 @@ CPLErr PAuxDataset::SetGeoTransform( double * padfGeoTransform )
     char	szLoRightX[128];
     char	szLoRightY[128];
 
-    if( ABS(padfGeoTransform[0]) < 181 
+    if( ABS(padfGeoTransform[0]) < 181
         && ABS(padfGeoTransform[1]) < 1 )
     {
-        CPLsprintf( szUpLeftX, "%.12f", padfGeoTransform[0] );
-        CPLsprintf( szUpLeftY, "%.12f", padfGeoTransform[3] );
-        CPLsprintf( szLoRightX, "%.12f", 
+        CPLsnprintf( szUpLeftX, sizeof(szUpLeftX), "%.12f", padfGeoTransform[0] );
+        CPLsnprintf( szUpLeftY, sizeof(szUpLeftY), "%.12f", padfGeoTransform[3] );
+        CPLsnprintf( szLoRightX, sizeof(szLoRightX), "%.12f",
                padfGeoTransform[0] + padfGeoTransform[1] * GetRasterXSize() );
-        CPLsprintf( szLoRightY, "%.12f", 
+        CPLsnprintf( szLoRightY, sizeof(szLoRightY), "%.12f",
                padfGeoTransform[3] + padfGeoTransform[5] * GetRasterYSize() );
     }
     else
     {
-        CPLsprintf( szUpLeftX, "%.3f", padfGeoTransform[0] );
-        CPLsprintf( szUpLeftY, "%.3f", padfGeoTransform[3] );
-        CPLsprintf( szLoRightX, "%.3f", 
+        CPLsnprintf( szUpLeftX, sizeof(szUpLeftX), "%.3f", padfGeoTransform[0] );
+        CPLsnprintf( szUpLeftY, sizeof(szUpLeftY), "%.3f", padfGeoTransform[3] );
+        CPLsnprintf( szLoRightX, sizeof(szLoRightX), "%.3f",
                padfGeoTransform[0] + padfGeoTransform[1] * GetRasterXSize() );
-        CPLsprintf( szLoRightY, "%.3f", 
+        CPLsnprintf( szLoRightY, sizeof(szLoRightY), "%.3f",
                padfGeoTransform[3] + padfGeoTransform[5] * GetRasterYSize() );
     }
-        
-    papszAuxLines = CSLSetNameValue( papszAuxLines, 
+
+    papszAuxLines = CSLSetNameValue( papszAuxLines,
                                      "UpLeftX", szUpLeftX );
-    papszAuxLines = CSLSetNameValue( papszAuxLines, 
+    papszAuxLines = CSLSetNameValue( papszAuxLines,
                                      "UpLeftY", szUpLeftY );
-    papszAuxLines = CSLSetNameValue( papszAuxLines, 
+    papszAuxLines = CSLSetNameValue( papszAuxLines,
                                      "LoRightX", szLoRightX );
-    papszAuxLines = CSLSetNameValue( papszAuxLines, 
+    papszAuxLines = CSLSetNameValue( papszAuxLines,
                                      "LoRightY", szLoRightY );
 
     bAuxUpdated = TRUE;
