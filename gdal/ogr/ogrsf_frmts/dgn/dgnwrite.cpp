@@ -103,7 +103,7 @@ int DGNResizeElement( DGNHandle hDGN, DGNElemCore *psElement, int nNewSize )
     {
         int nOldFLoc = VSIFTell( psDGN->fp );
         unsigned char abyLeader[2];
-        
+
         if( VSIFSeek( psDGN->fp, psElement->offset, SEEK_SET ) != 0
             || VSIFRead( abyLeader, sizeof(abyLeader), 1, psDGN->fp ) != 1 )
         {
@@ -114,7 +114,7 @@ int DGNResizeElement( DGNHandle hDGN, DGNElemCore *psElement, int nNewSize )
         }
 
         abyLeader[1] |= 0x80;
-        
+
         if( VSIFSeek( psDGN->fp, psElement->offset, SEEK_SET ) != 0
             || VSIFWrite( abyLeader, sizeof(abyLeader), 1, psDGN->fp ) != 1 )
         {
@@ -193,8 +193,6 @@ int DGNWriteElement( DGNHandle hDGN, DGNElemCore *psElement )
 /* ==================================================================== */
     if( psElement->offset == -1 )
     {
-        int nJunk;
-
         // We must have an index, in order to properly assign the 
         // element id of the newly written element.  Ensure it is built.
         if( !psDGN->index_built )
@@ -204,6 +202,7 @@ int DGNWriteElement( DGNHandle hDGN, DGNElemCore *psElement )
         if( !DGNGotoElement( hDGN, psDGN->element_count-1 ) )
             return FALSE;
 
+        int nJunk;
         if( !DGNLoadRawElement( psDGN, &nJunk, &nJunk ) )
             return FALSE;
 
@@ -215,16 +214,14 @@ int DGNWriteElement( DGNHandle hDGN, DGNElemCore *psElement )
         if( psDGN->element_count == psDGN->max_element_count )
         {
             psDGN->max_element_count += 500;
-            
+
             psDGN->element_index = (DGNElementInfo *) 
                 CPLRealloc( psDGN->element_index, 
                             psDGN->max_element_count * sizeof(DGNElementInfo));
         }
 
         // Set up the element info
-        DGNElementInfo *psInfo;
-        
-        psInfo = psDGN->element_index + psDGN->element_count;
+        DGNElementInfo *psInfo = psDGN->element_index + psDGN->element_count;
         psInfo->level = (unsigned char) psElement->level;
         psInfo->type = (unsigned char) psElement->type;
         psInfo->stype = (unsigned char) psElement->stype;
@@ -1223,7 +1220,8 @@ DGNCreateArcElem( DGNHandle hDGN, int nType,
 
     DGNWriteBounds( psDGN, psCore, &sMin, &sMax );
 
-    CPLFree(psArc);
+    // TODO: Coverity wants to free psArc, but that crashes.  CID 1074360
+    // CPLFree(psArc);
     return psCore;
 }
 
@@ -1370,10 +1368,10 @@ DGNCreateConeElem( DGNHandle hDGN,
 //     sMax.z = psCone->center_2.z;
 
     DGNWriteBounds( psDGN, psCore, &sMin, &sMax );
-    
+
     return psCore;
 }
-                                 
+
 /************************************************************************/
 /*                         DGNCreateTextElem()                          */
 /************************************************************************/
@@ -1610,7 +1608,8 @@ DGNCreateColorTableElem( DGNHandle hDGN, int nScreenFlag,
 /* -------------------------------------------------------------------- */
     DGNUpdateElemCoreExtended( hDGN, psCore );
 
-    CPLFree(psCT);
+    // TODO: Coverity wants a free, but it crashes.  CID 1074357
+    // CPLFree(psCT);
     return psCore;
 }
 
@@ -1694,7 +1693,8 @@ DGNCreateComplexHeaderElem( DGNHandle hDGN, int nType,
 /* -------------------------------------------------------------------- */
     DGNAddRawAttrLink( hDGN, psCore, 8, abyRawZeroLinkage );
 
-    CPLFree(psCH);
+    // TODO: Coverity wants to free psCH, but that crashes.   CID 1074358
+    // CPLFree(psCH);
     return psCore;
 }
 
@@ -1871,7 +1871,8 @@ DGNCreateSolidHeaderElem( DGNHandle hDGN, int nType, int nSurfType,
     unsigned char abyRawZeroLinkage[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     DGNAddRawAttrLink( hDGN, psCore, 8, abyRawZeroLinkage );
 
-    CPLFree(psCH);
+    // TODO: Refactor to not leak.
+    // CPLFree(psCH);
     return psCore;
 }
 
@@ -2129,7 +2130,8 @@ DGNCreateCellHeaderElem( DGNHandle hDGN, int nTotLength, const char *pszName,
 /* -------------------------------------------------------------------- */
     DGNUpdateElemCoreExtended( hDGN, psCore );
 
-    CPLFree(psCH);
+    // TODO: Coverity wants to free psCH, but that crashes.  CID 1074359
+    // CPLFree(psCH);
     return psCore;
 }
 
