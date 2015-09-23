@@ -1222,10 +1222,11 @@ DGNCreateArcElem( DGNHandle hDGN, int nType,
     sMax.z = dfOriginZ + MAX(dfPrimaryAxis,dfSecondaryAxis);
 
     DGNWriteBounds( psDGN, psCore, &sMin, &sMax );
-    
+
+    CPLFree(psArc);
     return psCore;
 }
-                                 
+
 /************************************************************************/
 /*                          DGNCreateConeElem()                         */
 /************************************************************************/
@@ -1608,7 +1609,8 @@ DGNCreateColorTableElem( DGNHandle hDGN, int nScreenFlag,
 /*      Set the core raw data.                                          */
 /* -------------------------------------------------------------------- */
     DGNUpdateElemCoreExtended( hDGN, psCore );
-    
+
+    CPLFree(psCT);
     return psCore;
 }
 
@@ -1691,7 +1693,8 @@ DGNCreateComplexHeaderElem( DGNHandle hDGN, int nType,
 /*      add a dummy bit of attribute data to fill out the length.       */
 /* -------------------------------------------------------------------- */
     DGNAddRawAttrLink( hDGN, psCore, 8, abyRawZeroLinkage );
-    
+
+    CPLFree(psCH);
     return psCore;
 }
 
@@ -2125,7 +2128,8 @@ DGNCreateCellHeaderElem( DGNHandle hDGN, int nTotLength, const char *pszName,
 /*      Set the core raw data.                                          */
 /* -------------------------------------------------------------------- */
     DGNUpdateElemCoreExtended( hDGN, psCore );
-    
+
+    CPLFree(psCH);
     return psCore;
 }
 
