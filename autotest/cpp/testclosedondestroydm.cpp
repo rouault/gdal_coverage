@@ -2,12 +2,13 @@
 #include <cpl_string.h>
 #include <gdal.h>
 #include <gdal_alg.h>
+#include <cassert>
 
-static void OpenJPEG2000(const char* /* pszFilename */)
+static void OpenJPEG2000(const char* pszFilename)
 {
     const char* const apszDrivers[] = {"JP2ECW", "JP2OpenJPEG", "JPEG2000" , "JP2MrSID", "JP2KAK" };
     GDALDriverH aphDrivers[5];
-    /* GDALDatasetH hDS; */
+    GDALDatasetH hDS;
     int i, j;
 
     for(i=0;i<5;i++)
@@ -24,8 +25,8 @@ static void OpenJPEG2000(const char* /* pszFilename */)
             GDALDeregisterDriver(aphDrivers[j]);
         }
 
-        /* TODO: What was the point of the open call? */
-        /* hDS = GDALOpen(pszFilename, GA_ReadOnly); */
+        hDS = GDALOpen(pszFilename, GA_ReadOnly);
+        assert( hDS != NULL );
         for(j=0;j<5;j++)
         {
             if( i == j || aphDrivers[j] == NULL )
@@ -35,7 +36,7 @@ static void OpenJPEG2000(const char* /* pszFilename */)
     }
 }
 
-int main(int /* argc */, char* /* argv */ [])
+int main(int /* argc*/ , char* /* argv */[])
 {
     int nOvrLevel;
     int nBandNum;
@@ -179,7 +180,7 @@ int main(int /* argc */, char* /* argv */ [])
     hDS = GDALOpen("RASTERLITE:../gdrivers/data/rasterlite_pyramids.sqlite,table=test,level=1", GA_ReadOnly);
 
     OpenJPEG2000("../gdrivers/data/rgbwcmyk01_YeGeo_kakadu.jp2");
-
+    
     hDS = GDALOpen("../gdrivers/tmp/cache/Europe 2001_OZF.map", GA_ReadOnly);
 
     CPLDebug("TEST","Call GDALDestroyDriverManager()");
