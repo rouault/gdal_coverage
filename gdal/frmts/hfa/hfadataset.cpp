@@ -5034,10 +5034,10 @@ CPLErr HFADataset::ReadProjection()
         CPLFree( pszProjection );
         pszProjection = NULL;
         oSRS.exportToWkt( &pszProjection );
-        
+
         return CE_None;
     }
-    
+
     CPLFree( pszPE_COORDSYS );
 
     if( pszProjection != NULL )
@@ -5045,7 +5045,7 @@ CPLErr HFADataset::ReadProjection()
     else
     {
         pszProjection = CPLStrdup("");
-        return CE_Failure;					
+        return CE_Failure;
     }
 }
 
@@ -5058,13 +5058,11 @@ CPLErr HFADataset::IBuildOverviews( const char *pszResampling,
                                     int nListBands, int *panBandList,
                                     GDALProgressFunc pfnProgress, 
                                     void * pProgressData )
-    
-{
-    int i;
 
+{
     if( GetAccess() == GA_ReadOnly )
     {
-        for( i = 0; i < nListBands; i++ )
+        for( int i = 0; i < nListBands; i++ )
         {
             if (HFAGetOverviewCount(hHFA, panBandList[i]) > 0)
             {
@@ -5080,27 +5078,25 @@ CPLErr HFADataset::IBuildOverviews( const char *pszResampling,
                                              pfnProgress, pProgressData );
     }
 
-    for( i = 0; i < nListBands; i++ )
+    for( int i = 0; i < nListBands; i++ )
     {
-        CPLErr eErr;
-        GDALRasterBand *poBand;
-
         void* pScaledProgressData = GDALCreateScaledProgress(
                 i * 1.0 / nListBands, (i + 1) * 1.0 / nListBands,
                 pfnProgress, pProgressData);
 
-        poBand = GetRasterBand( panBandList[i] );
-        
+        GDALRasterBand *poBand = GetRasterBand( panBandList[i] );
+
         //GetRasterBand can return NULL
         if(poBand == NULL)
         {
             CPLError(CE_Failure, CPLE_ObjectNull,
-                        "GetRasterBand failed");        
-            return CE_Failure; 
+                        "GetRasterBand failed");
+            GDALDestroyScaledProgress(pScaledProgressData);
+            return CE_Failure;
         }
-        
-        eErr = 
-            poBand->BuildOverviews( pszResampling, nOverviews, panOverviewList,
+
+        CPLErr eErr
+            = poBand->BuildOverviews( pszResampling, nOverviews, panOverviewList,
                                     GDALScaledProgress, pScaledProgressData );
 
         GDALDestroyScaledProgress(pScaledProgressData);
@@ -5136,9 +5132,6 @@ int HFADataset::Identify( GDALOpenInfo * poOpenInfo )
 GDALDataset *HFADataset::Open( GDALOpenInfo * poOpenInfo )
 
 {
-    HFAHandle	hHFA;
-    int		i;
-
 /* -------------------------------------------------------------------- */
 /*      Verify that this is a HFA file.                                 */
 /* -------------------------------------------------------------------- */
@@ -5148,6 +5141,8 @@ GDALDataset *HFADataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Open the file.                                                  */
 /* -------------------------------------------------------------------- */
+    HFAHandle	hHFA;
+
     if( poOpenInfo->eAccess == GA_Update )
         hHFA = HFAOpen( poOpenInfo->pszFilename, "r+" );
     else
@@ -5159,9 +5154,7 @@ GDALDataset *HFADataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Create a corresponding GDALDataset.                             */
 /* -------------------------------------------------------------------- */
-    HFADataset 	*poDS;
-
-    poDS = new HFADataset();
+    HFADataset 	*poDS = new HFADataset();
 
     poDS->hHFA = hHFA;
     poDS->eAccess = poOpenInfo->eAccess;
@@ -5231,7 +5224,7 @@ GDALDataset *HFADataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Create band information objects.                                */
 /* -------------------------------------------------------------------- */
-    for( i = 0; i < poDS->nBands; i++ )
+    for( int i = 0; i < poDS->nBands; i++ )
     {
         poDS->SetBand( i+1, new HFARasterBand( poDS, i+1, -1 ) );
     }
@@ -5242,7 +5235,7 @@ GDALDataset *HFADataset::Open( GDALOpenInfo * poOpenInfo )
 /*      now to ensure that the bands are properly setup before          */
 /*      interacting with PAM.                                           */
 /* -------------------------------------------------------------------- */
-    for( i = 0; i < poDS->nBands; i++ )
+    for( int i = 0; i < poDS->nBands; i++ )
     {
         HFARasterBand *poBand = (HFARasterBand *) poDS->GetRasterBand( i+1 );
 
@@ -5252,7 +5245,7 @@ GDALDataset *HFADataset::Open( GDALOpenInfo * poOpenInfo )
             poBand->SetMetadata( papszMD );
             CSLDestroy( papszMD );
         }
-        
+
         poBand->ReadAuxMetadata();
         poBand->ReadHistogramMetadata();
     }
@@ -5289,11 +5282,11 @@ GDALDataset *HFADataset::Open( GDALOpenInfo * poOpenInfo )
 /*      Check for external overviews.                                   */
 /* -------------------------------------------------------------------- */
     poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename );
-    
+
 /* -------------------------------------------------------------------- */
 /*      Clear dirty metadata flags.                                     */
 /* -------------------------------------------------------------------- */
-    for( i = 0; i < poDS->nBands; i++ )
+    for( int i = 0; i < poDS->nBands; i++ )
     {
         HFARasterBand *poBand = (HFARasterBand *) poDS->GetRasterBand( i+1 );
         poBand->bMetadataDirty = FALSE;
