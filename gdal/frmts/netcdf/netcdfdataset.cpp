@@ -1040,14 +1040,14 @@ CPLErr netCDFRasterBand::CreateBandMetadata( int *paDimIds )
                     /* status = */ nc_get_vara_short( cdfid, nVarID,
                                                  start,
                                                  count, &sData );
-                    sprintf( szMetaTemp,"%d", sData );
+                    snprintf( szMetaTemp, sizeof(szMetaTemp), "%d", sData );
                     break;
                 case NC_INT:
                     int nData;
                     /* status = */ nc_get_vara_int( cdfid, nVarID,
                                                start,
                                                count, &nData );
-                    sprintf( szMetaTemp,"%d", nData );
+                    snprintf( szMetaTemp, sizeof(szMetaTemp), "%d", nData );
                     break;
                 case NC_FLOAT:
                     float fData;
@@ -1061,7 +1061,7 @@ CPLErr netCDFRasterBand::CreateBandMetadata( int *paDimIds )
                     /* status = */ nc_get_vara_double( cdfid, nVarID,
                                                   start,
                                                   count, &dfData);
-                    CPLsprintf( szMetaTemp,"%.16g", dfData );
+                    CPLsnprintf( szMetaTemp, sizeof(szMetaTemp), "%.16g", dfData );
                     break;
                 default:
                     CPLDebug( "GDAL_netCDF", "invalid dim %s, type=%d",
@@ -6501,7 +6501,7 @@ CPLErr NCDFGetAttr1( int nCdfId, int nVarId, const char *pszAttrName,
                 CPLsnprintf( szTemp, sizeof(szTemp), "%.16g,", pdfTemp[m] );
                 NCDFSafeStrcat(&pszAttrValue, szTemp, &nAttrValueSize);
             }
-            CPLsprintf( szTemp, "%.16g", pdfTemp[m] );
+            CPLsnprintf( szTemp, sizeof(szTemp), "%.16g", pdfTemp[m] );
             NCDFSafeStrcat(&pszAttrValue, szTemp, &nAttrValueSize);
             CPLFree(pdfTemp);
             break;
@@ -6746,7 +6746,7 @@ CPLErr NCDFGet1DVar( int nCdfId, int nVarId, char **pszValue )
             pdfTemp = (double *) CPLCalloc(nVarLen, sizeof(double));
             nc_get_vara_double( nCdfId, nVarId, start, count, pdfTemp );
             for(m=0; m < nVarLen-1; m++) {
-                CPLsprintf( szTemp, "%.16g,", pdfTemp[m] );
+              CPLsnprintf( szTemp, sizeof(szTemp), "%.16g,", pdfTemp[m] );
                 NCDFSafeStrcat(&pszVarValue, szTemp, &nVarValueSize);
             }
             CPLsprintf( szTemp, "%.16g", pdfTemp[m] );
