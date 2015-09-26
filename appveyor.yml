@@ -40,6 +40,9 @@ test_script:
   - SET PATH=%CD%\gdal;%CD%\gdal\apps;c:\proj\bin;%PATH%
   - SET GDAL_DATA=%CD%\gdal\data
   - cd autotest
+  - cd cpp
+  - nmake /f makefile.vc check MSVC_VER=1800 %WIN64_ARG%
+  - cd ..
   - python run_all.py
 
 deploy: off
