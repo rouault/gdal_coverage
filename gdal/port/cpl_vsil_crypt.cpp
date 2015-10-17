@@ -29,17 +29,6 @@
 
 #include "cpl_vsi_virtual.h"
 
-/* Increase Major in case of backward incompatible changes */
-static const int VSICRYPT_CURRENT_MAJOR = 1;
-static const int VSICRYPT_CURRENT_MINOR = 0;
-static const char VSICRYPT_SIGNATURE[] = "VSICRYPT";  // Must be 8 chars.
-
-static const char VSICRYPT_PREFIX_WITHOUT_SLASH[] = "/vsicrypt";
-static const char VSICRYPT_PREFIX[] = "/vsicrypt/";
-
-static const unsigned int VSICRYPT_READ = 0x1;
-static const unsigned int VSICRYPT_WRITE = 0x2;
-
 CPL_C_START
 void CPL_DLL VSIInstallCryptFileHandler(void);
 void CPL_DLL VSISetCryptKey(const GByte* pabyKey, int nKeySize);
@@ -47,7 +36,19 @@ CPL_C_END
 
 CPL_CVSID("$Id$");
 
+static const char VSICRYPT_PREFIX[] = "/vsicrypt/";
+
 #if defined(HAVE_CRYPTOPP) || defined(DOXYGEN_SKIP)
+
+/* Increase Major in case of backward incompatible changes */
+static const int VSICRYPT_CURRENT_MAJOR = 1;
+static const int VSICRYPT_CURRENT_MINOR = 0;
+static const char VSICRYPT_SIGNATURE[] = "VSICRYPT";  // Must be 8 chars.
+
+static const char VSICRYPT_PREFIX_WITHOUT_SLASH[] = "/vsicrypt";
+
+static const unsigned int VSICRYPT_READ = 0x1;
+static const unsigned int VSICRYPT_WRITE = 0x2;
 
 /* Begin of crypto++ headers */
 
