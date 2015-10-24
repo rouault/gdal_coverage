@@ -870,9 +870,9 @@ GDALDataset *ISIS2Dataset::Create(const char* pszFilename,
     const char *pszInterleaving = "(SAMPLE,LINE,BAND)";
     const char *pszInterleavingParam = CSLFetchNameValue( papszParmList, "INTERLEAVE" );
     if ( pszInterleavingParam ) {
-        if ( EQUALN( pszInterleavingParam, "bip", 3 ) )
+        if ( STARTS_WITH_CI(pszInterleavingParam, "bip") )
             pszInterleaving = "(BAND,SAMPLE,LINE)";
-        else if ( EQUALN( pszInterleavingParam, "bil", 3 ) )
+        else if ( STARTS_WITH_CI(pszInterleavingParam, "bil") )
             pszInterleaving = "(SAMPLE,BAND,LINE)";
         else
             pszInterleaving = "(SAMPLE,LINE,BAND)";
@@ -883,10 +883,10 @@ GDALDataset *ISIS2Dataset::Create(const char* pszFilename,
     /* check if labeling method is set : check the all three first chars */
     const char *pszLabelingMethod = CSLFetchNameValue( papszParmList, "LABELING_METHOD" );
     if ( pszLabelingMethod ){
-        if ( EQUALN( pszLabelingMethod, "detached", 3 ) ){
+        if ( STARTS_WITH_CI( pszLabelingMethod, "det" /* "detached" */ ) ){
             bAttachedLabelingMethod = false;
         }
-        if ( EQUALN( pszLabelingMethod, "attached", 3 ) ){
+        if ( STARTS_WITH_CI( pszLabelingMethod, "att" /* attached" */ ) ){
             bAttachedLabelingMethod = true;
         }
     }
