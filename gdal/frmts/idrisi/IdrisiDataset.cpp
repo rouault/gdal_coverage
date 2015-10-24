@@ -812,11 +812,11 @@ GDALDataset *IdrisiDataset::Open( GDALOpenInfo *poOpenInfo )
         poDS->pszUnitType = CPLStrdup( "unspecified" );
     else
     {
-        if( EQUALN( pszValueUnit, "meter", 4 ) )
+        if( STARTS_WITH_CI( pszValueUnit, "meter" ) )
         {
             poDS->pszUnitType = CPLStrdup( "m" );
         }
-        else if( EQUALN( pszValueUnit, "feet", 4 ) )
+        else if( STARTS_WITH_CI(pszValueUnit, "feet") )
         {
             poDS->pszUnitType = CPLStrdup( "ft" );
         }
@@ -2069,7 +2069,7 @@ CPLErr IdrisiRasterBand::SetDefaultRAT( const GDALRasterAttributeTable *poRAT )
     {
         for( int i = 0; i < poRAT->GetColumnCount(); i++ )
         {
-            if EQUALN( "Value", poRAT->GetNameOfCol( i ), 5 ) 
+            if STARTS_WITH_CI(poRAT->GetNameOfCol( i ), "Value") 
             {
                 iValue = i;
                 break;
@@ -2095,17 +2095,17 @@ CPLErr IdrisiRasterBand::SetDefaultRAT( const GDALRasterAttributeTable *poRAT )
         {
             for( int i = 0; i < poRAT->GetColumnCount(); i++ )
             {
-                if EQUALN( "Class_Name", poRAT->GetNameOfCol( i ), 10 )
+                if STARTS_WITH_CI(poRAT->GetNameOfCol( i ), "Class_Name")
                 {
                     iName = i;
                     break;
                 }
-                else if EQUALN( "Categor", poRAT->GetNameOfCol( i ), 7 )
+                else if STARTS_WITH_CI(poRAT->GetNameOfCol( i ), "Categor")
                 {
                     iName = i;
                     break;
                 }
-                else if EQUALN( "Name",  poRAT->GetNameOfCol( i ), 4 )
+                else if STARTS_WITH_CI(poRAT->GetNameOfCol( i ), "Name")
                 {
                     iName = i;
                     break;
@@ -2548,8 +2548,8 @@ CPLErr IdrisiGeoReference2Wkt( const char* pszFilename,
         //  Is it a WGS84 equivalent?
         // ----------------------------------------------------------------------
 
-        if( ( EQUALN( pszEllipsoid, "WGS", 3 ) ) &&( strstr( pszEllipsoid, "84" ) ) &&
-            ( EQUALN( pszDatum, "WGS", 3 ) )     &&( strstr( pszDatum, "84" ) ) &&
+        if( ( STARTS_WITH_CI(pszEllipsoid, "WGS") ) &&( strstr( pszEllipsoid, "84" ) ) &&
+            ( STARTS_WITH_CI(pszDatum, "WGS") )     &&( strstr( pszDatum, "84" ) ) &&
             ( adfToWGS84[0] == 0.0 ) &&( adfToWGS84[1] == 0.0 ) &&( adfToWGS84[2] == 0.0 ) )
         {
             nEPSG = 4326;
@@ -2647,7 +2647,7 @@ CPLErr IdrisiGeoReference2Wkt( const char* pszFilename,
     {
         oSRS.SetTM( dfCenterLat, dfCenterLong, dfScale, dfFalseEasting, dfFalseNorthing );
     }
-    else if EQUALN( pszProjName, "Gauss-Kruger", 9 )
+    else if EQUAL( pszProjName, "Gauss-Kruger" )
     {
         oSRS.SetTM( dfCenterLat, dfCenterLong, dfScale, dfFalseEasting, dfFalseNorthing );
     }
@@ -2655,7 +2655,7 @@ CPLErr IdrisiGeoReference2Wkt( const char* pszFilename,
     {
         oSRS.SetLCC( dfStdP1, dfStdP2, dfCenterLat, dfCenterLong, dfFalseEasting, dfFalseNorthing );
     }
-    else if( EQUALN( pszProjName, "Plate Carr" "\xE9" "e", 10 ) ) /* 'eacute' in ISO-8859-1 */
+    else if( EQUAL( pszProjName, "Plate Carr" "\xE9" "e" ) ) /* 'eacute' in ISO-8859-1 */
     {
         oSRS.SetEquirectangular( dfCenterLat, dfCenterLong, dfFalseEasting, dfFalseNorthing );
     }
@@ -2667,23 +2667,23 @@ CPLErr IdrisiGeoReference2Wkt( const char* pszFilename,
         oSRS.SetProjParm( SRS_PP_FALSE_EASTING,       dfFalseEasting );
         oSRS.SetProjParm( SRS_PP_FALSE_NORTHING,      dfFalseNorthing );
     }
-    else if( EQUALN( pszProjName, "Lambert North Polar Azimuthal Equal Area", 15 ) ||
-        EQUALN( pszProjName, "Lambert South Polar Azimuthal Equal Area", 15 ) ||
-        EQUALN( pszProjName, "Lambert Transverse Azimuthal Equal Area", 15 ) ||
-        EQUALN( pszProjName, "Lambert Oblique Polar Azimuthal Equal Area", 15 ) )
+    else if( EQUAL( pszProjName, "Lambert North Polar Azimuthal Equal Area" ) ||
+        EQUAL( pszProjName, "Lambert South Polar Azimuthal Equal Area" ) ||
+        EQUAL( pszProjName, "Lambert Transverse Azimuthal Equal Area" ) ||
+        EQUAL( pszProjName, "Lambert Oblique Polar Azimuthal Equal Area" ) )
     {
         oSRS.SetLAEA( dfCenterLat, dfCenterLong, dfFalseEasting, dfFalseNorthing );
     }
-    else if( EQUALN( pszProjName, "North Polar Stereographic", 15 ) ||
-        EQUALN( pszProjName, "South Polar Stereographic", 15 ) )
+    else if( EQUAL( pszProjName, "North Polar Stereographic" ) ||
+        EQUAL( pszProjName, "South Polar Stereographic" ) )
     {
         oSRS.SetPS( dfCenterLat, dfCenterLong, dfScale, dfFalseEasting, dfFalseNorthing );
     }
-    else if( EQUALN( pszProjName, "Transverse Stereographic", 15 ) )
+    else if( EQUAL( pszProjName, "Transverse Stereographic" ) )
     {
         oSRS.SetStereographic( dfCenterLat, dfCenterLong, dfScale, dfFalseEasting, dfFalseNorthing );
     }
-    else if( EQUALN( pszProjName, "Oblique Stereographic", 15 ) )
+    else if( EQUAL( pszProjName, "Oblique Stereographic" ) )
     {
         oSRS.SetOS( dfCenterLat, dfCenterLong, dfScale, dfFalseEasting, dfFalseNorthing );
     }
@@ -2807,8 +2807,8 @@ CPLErr IdrisiDataset::Wkt2GeoReference( const char *pszProjString,
                     nGCSCode = atoi( oSRS.GetAuthorityCode( "GEOGCS" ) );
                 }
         if( ( nGCSCode == 4326 ) ||( 
-                ( EQUALN( pszSpheroid, "WGS", 3 ) ) &&( strstr( pszSpheroid, "84" ) ) &&
-                ( EQUALN( pszDatum, "WGS", 3 ) )    &&( strstr( pszDatum, "84" ) ) ) )
+                ( STARTS_WITH_CI(pszSpheroid, "WGS") ) &&( strstr( pszSpheroid, "84" ) ) &&
+                ( STARTS_WITH_CI(pszDatum, "WGS") )    &&( strstr( pszDatum, "84" ) ) ) )
         {
             *pszRefSystem = CPLStrdup( rstLATLONG );
             *pszRefUnit   = CPLStrdup( rstDEGREE );
