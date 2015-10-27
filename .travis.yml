@@ -48,7 +48,8 @@ script:
   - GDAL_SKIP=JP2ECW make quick_test
   - cd ..
 # Run all the Python autotests
-  - make -j test
+#  - make -j test
+  - python run_all.py
 
 notifications:
   email:
