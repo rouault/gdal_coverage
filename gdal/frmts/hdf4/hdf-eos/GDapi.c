@@ -6820,7 +6820,7 @@ GDrs2ll(int32 projcode, float64 projparm[],
 |                                                                             |
 |  END_PROLOG                                                                 |
 -----------------------------------------------------------------------------*/
-float64
+static float64
 lamazDxDtheta(float64 parms[])
 {
     float64         snTheta, sn2Theta, snTheta1, csTheta1, csLamda;
@@ -6867,7 +6867,7 @@ lamazDxDtheta(float64 parms[])
 |                                                                             |
 |  END_PROLOG                                                                 |
 -----------------------------------------------------------------------------*/
-float64
+static float64
 lamazDxDlamda(float64 parms[])
 {
     float64         snTheta, csTheta, snTheta1, csTheta1, csLamda;
@@ -6915,7 +6915,7 @@ lamazDxDlamda(float64 parms[])
 |                                                                             |
 |  END_PROLOG                                                                 |
 -----------------------------------------------------------------------------*/
-float64
+static float64
 lamazDyDtheta(float64 parms[])
 {
     float64         snTheta, csTheta, snTheta1, csTheta1, csLamda;
@@ -6965,7 +6965,7 @@ lamazDyDtheta(float64 parms[])
 |                                                                             |
 |  END_PROLOG                                                                 |
 -----------------------------------------------------------------------------*/
-float64
+static float64
 homDyDtheta(float64 parms[])
 {
     float64         tnTheta, tnTheta1, snLamda;
@@ -7045,11 +7045,12 @@ GDtangentpnts(int32 projcode, float64 projparm[], float64 cornerlon[],
     float64         orgLat;	/* Latitude of origin */
     float64         dpi;	/* Double precision pi */
 
+#if 0
     float64         lamazDxDtheta();	/* Lambert Azimuthal Dx/Dtheta */
     float64         lamazDxDlamda();	/* Lambert Azimuthal Dx/Dlamda */
     float64         lamazDyDtheta();	/* Lambert Azimuthal Dy/Dtheta */
     float64         homDyDtheta();	/* Oblique Mercator  Dy/Dtheta */
-
+#endif
 
     /* Conpute pi (double precsion) */
     /* ---------------------------- */
@@ -10383,7 +10384,7 @@ Alexis Zubrow
 ********************************************************/
 
 intn
-GDsettilecache(int32 gridID, char *fieldname, int32 maxcache, int32 cachecode)
+GDsettilecache(int32 gridID, char *fieldname, int32 maxcache, CPL_UNUSED int32 cachecode)
 {
 
     intn            status = 0;	/* routine return status variable */
@@ -10640,7 +10641,7 @@ static intn GDll2mm_cea(int32 projcode,int32 zonecode, int32 spherecode,
 		 float64 projparm[],
 		 int32 xdimsize, int32 ydimsize,
 		 float64 upleftpt[], float64 lowrightpt[], int32 npnts,
-		 float64 lon[],float64 lat[],
+		 CPL_UNUSED float64 lon[],CPL_UNUSED float64 lat[],
 		 float64 x[],float64 y[], float64 *scaleX,float64 *scaleY)
 {
     intn            status = 0;	/* routine return status variable */
@@ -10768,8 +10769,8 @@ static intn GDll2mm_cea(int32 projcode,int32 zonecode, int32 spherecode,
 -----------------------------------------------------------------------------*/
 static intn GDmm2ll_cea(int32 projcode,int32 zonecode, int32 spherecode,
 		 float64 projparm[],
-		 int32 xdimsize, int32 ydimsize,
-		 float64 upleftpt[], float64 lowrightpt[], int32 npnts,
+		 CPL_UNUSED int32 xdimsize, CPL_UNUSED int32 ydimsize,
+		 CPL_UNUSED float64 upleftpt[], CPL_UNUSED float64 lowrightpt[], int32 npnts,
 		 float64 x[], float64 y[], 
 		 float64 longitude[], float64 latitude[])
 {
