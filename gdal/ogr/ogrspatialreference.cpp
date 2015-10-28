@@ -44,8 +44,10 @@ CPL_CVSID("$Id$");
 #undef WKT_LONGITUDE_RELATIVE_TO_PM
 
 /************************************************************************/
-/*                           OGRPrintDouble()                           */
+/*                           OGRsnPrintDouble()                         */
 /************************************************************************/
+
+void OGRsnPrintDouble( char * pszStrBuf, size_t size, double dfValue );
 
 void OGRsnPrintDouble( char * pszStrBuf, size_t size, double dfValue )
 
