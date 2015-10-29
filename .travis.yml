@@ -16,7 +16,7 @@ install:
   - unset CXX
   - export PATH=$HOME/android-8-toolchain/bin:$PATH
   - CFLAGS="-mthumb" CXXFLAGS="-mthumb" LIBS="-lsupc++ -lstdc++" ./configure --host=arm-linux-androideabi
-  - make -j3
+  - make USER_DEFS="-Wall -Werror" -j3
 
 script:
   - echo "finished"
