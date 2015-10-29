@@ -1,11 +1,11 @@
 /******************************************************************************
  *
- * Project:  rasdaman Driver
- * Purpose:  Implement Rasdaman GDAL driver 
- * Author:   Constantin Jucovschi, jucovschi@yahoo.com
+ * Project:  GDAL 
+ * Purpose:  Includes JP2KAK SDK headers
+ * Author:   Even Rouault <even dot rouault at spatialys dot com>
  *
  ******************************************************************************
- * Copyright (c) 2010, Constantin Jucovschi
+ * Copyright (c) 2015, Even Rouault <even dot rouault at spatialys dot com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -24,25 +24,45 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- ******************************************************************************/
+ *****************************************************************************/
 
-#ifndef _RASDAMAN_DATASET_H_
-#define _RASDAMAN_DATASET_H_
-#include "gdal.h"
+#ifndef JP2KAK_HEADERS_H
+#define JP2KAK_HEADERS_H
 
-void CPL_DLL CPL_STDCALL GDALRegister_RASDAMAN();
-
-#define __EXECUTABLE__
-#define EARLY_TEMPLATE
+#include "cpl_port.h"
 
 #ifdef HAVE_GCC_SYSTEM_HEADER
 #pragma GCC system_header
 #endif
 
-#include "raslib/template_inst.hh"
-#include "raslib/structuretype.hh"
-#include "raslib/type.hh"
+#include "jp2_local.h"
 
-#include "rasodmg/database.hh"
+// Kakadu core includes
+#include "kdu_elementary.h"
+#include "kdu_messaging.h"
+#include "kdu_params.h"
+#include "kdu_compressed.h"
+#include "kdu_sample_processing.h"
+#include "kdu_stripe_decompressor.h"
+#include "kdu_arch.h"
+
+// Application level includes
+#include "kdu_file_io.h"
+#include "jp2.h"
+
+// ROI related.
+#include "kdu_roi_processing.h"
+#include "kdu_image.h"
+#include "roi_sources.h"
+
+// I don't think JPIP support currently works due to changes in 
+// classes like kdu_window ... some fixing required if someone wants it.
+// #define USE_JPIP
+
+#ifdef USE_JPIP
+#  include "kdu_client.h" 
+#else
+#  define kdu_client void
+#endif
 
 #endif

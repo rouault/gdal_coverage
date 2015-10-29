@@ -1,11 +1,11 @@
 /******************************************************************************
  *
- * Project:  rasdaman Driver
- * Purpose:  Implement Rasdaman GDAL driver 
- * Author:   Constantin Jucovschi, jucovschi@yahoo.com
+ * Project:  GDAL 
+ * Purpose:  Includes MongoDB C++ SDK headers
+ * Author:   Even Rouault <even dot rouault at spatialys dot com>
  *
  ******************************************************************************
- * Copyright (c) 2010, Constantin Jucovschi
+ * Copyright (c) 2015, Even Rouault <even dot rouault at spatialys dot com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -24,25 +24,22 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- ******************************************************************************/
+ *****************************************************************************/
 
-#ifndef _RASDAMAN_DATASET_H_
-#define _RASDAMAN_DATASET_H_
-#include "gdal.h"
+#ifndef MONGOCXX_HEADERS_H
+#define MONGOCXX_HEADERS_H
 
-void CPL_DLL CPL_STDCALL GDALRegister_RASDAMAN();
-
-#define __EXECUTABLE__
-#define EARLY_TEMPLATE
+#include "cpl_port.h"
 
 #ifdef HAVE_GCC_SYSTEM_HEADER
 #pragma GCC system_header
 #endif
 
-#include "raslib/template_inst.hh"
-#include "raslib/structuretype.hh"
-#include "raslib/type.hh"
-
-#include "rasodmg/database.hh"
+#ifdef WIN32
+#include <winsock2.h>
+#undef min
+#undef max
+#endif
+#include "mongo/client/dbclient.h" // for the driver
 
 #endif
