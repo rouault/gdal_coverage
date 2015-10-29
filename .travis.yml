@@ -40,9 +40,9 @@ install:
 # build GDAL
   - cd gdal
   - CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ ./configure --enable-debug --host=x86_64-w64-mingw32
-  - make -j3
+  - make USER_DEFS="-Wall -Werror" -j3
   - cd apps
-  - make test_ogrsf.exe
+  - make USER_DEFS="-Wall -Werror" test_ogrsf.exe
   - cd ..
   - ln -sf $PWD/.libs/libgdal-20.dll $HOME/.wine/drive_c/windows
   - ln -sf $PWD/../proj-4.8.0/src/.libs/libproj-0.dll $HOME/.wine/drive_c/windows
