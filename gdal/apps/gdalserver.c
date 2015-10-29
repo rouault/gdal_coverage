@@ -256,14 +256,14 @@ int RunServer(const char* pszApplication,
         CPLSpawnedProcess* psProcess;
         CPL_FILE_HANDLE fin, fout;
         CPL_PID nPid;
-        SOCKET nConnSocket;
+        CPL_SOCKET nConnSocket;
         char szReady[5];
         int bOK = TRUE;
         const char* apszArgs[] = { NULL, "-newconnection", NULL };
 
         apszArgs[0] = pszApplication;
         nConnSocket = accept(nListenSocket, &sockAddr, &nLen);
-        if( nConnSocket == SOCKET_ERROR )
+        if( nConnSocket == (CPL_SOCKET)SOCKET_ERROR )
         {
             fprintf(stderr, "accept() function failed with error: %d\n", WSAGetLastError());
             closesocket(nListenSocket);
