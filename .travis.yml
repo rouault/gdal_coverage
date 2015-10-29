@@ -23,9 +23,9 @@ install:
 # build GDAL
   - cd gdal
   - ./configure --prefix=/usr --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal
-  - make USER_DEFS="-Wall -Werror" -j3
+  - make USER_DEFS="-Wextra -Werror" -j3
   - cd apps
-  - make USER_DEFS="-Wall -Werror" test_ogrsf
+  - make USER_DEFS="-Wextra -Werror" test_ogrsf
   - cd ..
   - sudo make install
   - cd ../autotest/cpp
