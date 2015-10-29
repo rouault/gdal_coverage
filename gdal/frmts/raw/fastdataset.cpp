@@ -38,10 +38,10 @@ CPL_C_START
 void	GDALRegister_FAST(void);
 CPL_C_END
 
-static const int ADM_STD_HEADER_SIZE = 4608;  // XXX: Format specification says it
+// static const int ADM_STD_HEADER_SIZE = 4608;  // XXX: Format specification says it
 static const int ADM_HEADER_SIZE = 5000;  // should be 4608, but some vendors
                                           // ship broken large datasets.
-static const int ADM_MIN_HEADER_SIZE = 1536;  // ...and sometimes it can be
+static const size_t ADM_MIN_HEADER_SIZE = 1536;  // ...and sometimes it can be
                                               // even 1/3 of standard size
 
 #define ACQUISITION_DATE        "ACQUISITION DATE"
