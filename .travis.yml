@@ -34,9 +34,9 @@ install:
 # build GDAL
   - cd gdal
   - CC=i586-mingw32msvc-gcc CXX=i586-mingw32msvc-g++ ./configure --enable-debug --host=i586-mingw32msvc
-  - LD=i586-mingw32msvc-ld make -j3
+  - LD=i586-mingw32msvc-ld make USER_DEFS="-Wall -Werror" -j3
   - cd apps
-  - LD=i586-mingw32msvc-ld make test_ogrsf.exe
+  - LD=i586-mingw32msvc-ld make USER_DEFS="-Wall -Werror" test_ogrsf.exe
   - cd ..
   - ln -sf $PWD/.libs/libgdal-20.dll $HOME/.wine/drive_c/windows
 #  - ln -sf /usr/lib/gcc/i686-w64-mingw32/4.6/libgcc_s_sjlj-1.dll $HOME/.wine/drive_c/windows
