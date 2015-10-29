@@ -1,7 +1,7 @@
 /******************************************************************************
  *
- * Project:  GDAL 
- * Purpose:  Includes MG4Lida headers
+ * Project:  FileGDB
+ * Purpose:  Import FileGDB SDK headers
  * Author:   Even Rouault <even dot rouault at spatialys dot com>
  *
  ******************************************************************************
@@ -26,8 +26,8 @@
  * DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
-#ifndef MG4LIDAR_HEADERS_H
-#define MG4LIDAR_HEADERS_H
+#ifndef FILEGDBSDK_HEADERS_H
+#define FILEGDBSDK_HEADERS_H
 
 #include "cpl_port.h"
 
@@ -35,9 +35,7 @@
 #pragma GCC system_header
 #endif
 
-#include "lidar/MG4PointReader.h"
-#include "lidar/FileIO.h"
-#include "lidar/Error.h"
-#include "lidar/Version.h"
+/* FGDB API headers */
+#include "FileGDBAPI.h"
 
 #endif
