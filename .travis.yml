@@ -76,9 +76,9 @@ install:
   - cd gdal
 #  --with-fgdb=/usr/local  --with-mongocxx=/usr/local  --with-java   --with-mdb --with-jvm-lib-add-rpath --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local   --with-libkml
   - CPPFLAGS="-DMAKE_SANITIZE_HAPPY -fsanitize=undefined -fsanitize=address" LDFLAGS="-fsanitize=undefined -fsanitize=address" ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-poppler --without-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-epsilon --with-gta --with-ecw=/usr/local --with-openjpeg=/usr/local --with-libtiff=internal --with-rename-internal-libtiff-symbols --with-hide-internal-symbols --with-gnm
-  - make -j3
+  - make USER_DEFS="-Werror" -j3
   - cd apps
-  - make test_ogrsf
+  - make USER_DEFS="-Werror" test_ogrsf
   - cd ..
   - cd swig/python
   - CPPFLAGS="-fsanitize=undefined -fsanitize=address" python setup.py build
