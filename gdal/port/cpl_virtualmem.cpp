@@ -38,6 +38,8 @@
 #include "cpl_atomic_ops.h"
 #include "cpl_conv.h"
 
+#include <assert.h>
+
 #if defined(__linux) && defined(CPL_MULTIPROC_PTHREAD)
 #define HAVE_VIRTUAL_MEM_VMA
 #endif
@@ -78,7 +80,6 @@ struct CPLVirtualMem
 #include <sys/select.h> /* select */
 #include <sys/stat.h>   /* open() */
 #include <sys/types.h>  /* open() */
-#include <assert.h>
 #include <errno.h>
 #include <fcntl.h>      /* open() */
 #include <signal.h>     /* sigaction */
