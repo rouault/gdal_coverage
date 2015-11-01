@@ -8,7 +8,9 @@ before_install:
   - tar xJf  gcc-linaro-5.1-2015.08-x86_64_armeb-linux-gnueabihf.tar.xz
 
 install:
-  - export PATH=$PWD/gcc-linaro-5.1-2015.08-x86_64_armeb-linux-gnueabihf/bin
+  - export PATH=$PWD/gcc-linaro-5.1-2015.08-x86_64_armeb-linux-gnueabihf/bin:$PATH
+  - unset CC
+  - unset CXX
   - cd gdal
   - ./configure --host=armeb-linux-gnueabihf --without-libtool
   - make USER_DEFS="-Werror" -j3
