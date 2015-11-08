@@ -695,9 +695,10 @@ static CPLErr UncompressBlock( GByte *pabyCData, int nSrcBytes,
         return CE_Failure;
     }
 
-    if (nNumBits > INT_MAX / nNumRuns ||
-        nNumBits * nNumRuns > INT_MAX - 7 ||
-        (nNumBits * nNumRuns + 7)/8 > INT_MAX - nDataOffset)
+    if (nNumRuns != 0 &&
+        (nNumBits > INT_MAX / nNumRuns ||
+         nNumBits * nNumRuns > INT_MAX - 7 ||
+         (nNumBits * nNumRuns + 7)/8 > INT_MAX - nDataOffset) )
     {
         CPLError(CE_Failure, CPLE_AppDefined,
                  "Integer overflow : nDataOffset + (nNumBits * nNumRuns + 7)/8");
@@ -812,7 +813,8 @@ static CPLErr UncompressBlock( GByte *pabyCData, int nSrcBytes,
 /* -------------------------------------------------------------------- */
 /*      Now apply to the output buffer in a type specific way.          */
 /* -------------------------------------------------------------------- */
-        if( nPixelsOutput + nRepeatCount > nMaxPixels )
+        if( nRepeatCount > INT_MAX - nPixelsOutput ||
+            nPixelsOutput + nRepeatCount > nMaxPixels )
         {
             CPLDebug("HFA", "Repeat count too big : %d", nRepeatCount);
             nRepeatCount = nMaxPixels - nPixelsOutput;
