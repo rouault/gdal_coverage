@@ -29,6 +29,12 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#if defined(_WIN32)
+// min/max are defined here on Windows, so block them.
+// TODO: Move this to someplace more appropriate.
+#  define NOMINMAX
+#endif
+
 #include <string.h>
 #include <math.h>
 #include "cpl_multiproc.h"
@@ -48,6 +54,7 @@
 #include "nasakeywordhandler.h"
 
 #include <algorithm>
+
 
 CPL_CVSID("$Id$");
 
