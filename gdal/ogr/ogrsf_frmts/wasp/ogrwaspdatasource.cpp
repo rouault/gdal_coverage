@@ -92,7 +92,7 @@ OGRErr OGRWAsPDataSource::Load(bool bSilent)
         if (!bSilent) CPLError( CE_Failure, CPLE_NotSupported, "layer already loaded");
         return OGRERR_FAILURE;
     }
-    /* Parse the first line of the file in case it'a a spatial ref*/
+    /* Parse the first line of the file in case it's a spatial ref*/
     const char * pszLine = CPLReadLine2L( hFile, 1024, NULL );
     if ( !pszLine )
     {
@@ -227,12 +227,12 @@ OGRLayer *OGRWAsPDataSource::ICreateLayer(const char *pszName,
     const CPLString sFields( pszFields ? pszFields : "" );
     if ( ! sFields.empty() )
     {
-        /* parse the coma separated list of fields */
-        const size_t iComa = sFields.find(',');
-        if ( std::string::npos != iComa )
+        /* parse the comma separated list of fields */
+        const size_t iComma = sFields.find(',');
+        if ( std::string::npos != iComma )
         {
-            sFirstField = sFields.substr(0, iComa); 
-            sSecondField = sFields.substr( iComa + 1 );
+            sFirstField = sFields.substr(0, iComma);
+            sSecondField = sFields.substr( iComma + 1 );
         }
         else
         {
