@@ -121,8 +121,70 @@ ALTERED_DESTROY(OGRGeometryShadow, OGRc, delete_Geometry)
 package Geo::OGR;
 our $VERSION = '2.0100'; # this needs to be the same as that in gdal_perl.i
 
+sub Driver {
+    Geo::GDAL::Driver(@_);
+}
+*GetDriver = *Driver;
 
+sub GetDriverNames {
+    my @names;
+    for my $i (0..Geo::GDAL::GetDriverCount()-1) {
+        my $driver = Geo::GDAL::_GetDriver($i);
+        push @names, $driver->Name if $driver->TestCapability('VECTOR');
+    }
+    return @names;
+}
+*DriverNames = *GetDriverNames;
 
+sub Drivers {
+    my @drivers;
+    for my $i (0..GetDriverCount()-1) {
+        my $driver = Geo::GDAL::_GetDriver($i);
+        push @drivers, $driver if $driver->TestCapability('VECTOR');
+    }
+    return @drivers;
+}
+
+sub Open {
+    my @p = @_; # name, update
+    my @flags = qw/VECTOR/;
+    push @flags, qw/UPDATE/ if $p[1];
+    Geo::GDAL::OpenEx($p[0], \@flags);
+}
+
+sub OpenShared {
+    my @p = @_; # name, update
+    my @flags = qw/VECTOR SHARED/;
+    push @flags, qw/UPDATE/ if $p[1];
+    Geo::GDAL::OpenEx($p[0], \@flags);
+}
+
+package Geo::OGR::Driver;
+
+sub Create {
+    my ($self, @p) = @_; # name, options
+    Geo::GDAL::Create($self, $p[0], 0, 0, 0, 0, $p[1]); # path, w, h, bands, type, options
+}
+
+sub Copy {
+    my ($self, @p) = @_; # src, name, options
+    my $strict = 1; # the default in bindings
+    $strict = 0 if $p[2] && $p[2]->{STRICT} eq 'NO';
+    Geo::GDAL::Copy($self, $p[1], $p[0], $strict, $p[2], $p[3], $p[4]); # path, src, strict, options, cb, cb_data
+}
+
+sub Open {
+    my $self = shift;
+    my @p = @_; # name, update
+    my @flags = qw/VECTOR/;
+    push @flags, qw/UPDATE/ if $p[1];
+    Geo::GDAL::OpenEx($p[0], \@flags, [$self->Name()]);
+}
+
+package Geo::OGR::DataSource;
+
+*Open = *Geo::OGR::Open;
+*OpenShared = *Geo::OGR::OpenShared;
 
 package Geo::OGR::Layer;
 use strict;
@@ -147,9 +209,9 @@ sub DESTROY {
         $self = tied(%{$_[0]});
         return unless defined $self;
     }
-    if ($Geo::OGR::DataSource::RESULT_SET{$self}) {
-        $Geo::OGR::DataSource::LAYERS{$self}->_ReleaseResultSet($self);
-        delete $Geo::OGR::DataSource::RESULT_SET{$self}
+    if ($Geo::GDAL::Dataset::RESULT_SET{$self}) {
+        $Geo::GDAL::Dataset::LAYERS{$self}->_ReleaseResultSet($self);
+        delete $Geo::GDAL::Dataset::RESULT_SET{$self}
     }
     delete $ITERATORS{$self};
     if (exists $OWNER{$self}) {
@@ -160,7 +222,7 @@ sub DESTROY {
 
 sub RELEASE_PARENTS {
     my $self = shift;
-    delete $Geo::OGR::DataSource::LAYERS{$self};
+    delete $Geo::GDAL::Dataset::LAYERS{$self};
 }
 
 sub Capabilities {
@@ -180,7 +242,7 @@ sub TestCapability {
 
 sub GetDataSource {
     my $self = shift;
-    return $Geo::OGR::DataSource::LAYERS{$self};
+    return $Geo::GDAL::Dataset::LAYERS{$self};
 }
 *DataSource = *GetDataSource;
 
@@ -1745,30 +1807,4 @@ sub RELEASE_PARENTS {
 *ByteOrders = *Geo::OGR::Geometry::ByteOrders;
 *GeometryTypes = *Geo::OGR::Geometry::GeometryTypes;
 
-sub GetDriverNames {
-    my @names;
-    for my $i (0..GetDriverCount()-1) {
-        push @names, _GetDriver($i)->Name;
-    }
-    return @names;
-}
-
-sub Drivers {
-    my @drivers;
-    for my $i (0..GetDriverCount()-1) {
-        push @drivers, _GetDriver($i);
-    }
-    return @drivers;
-}
-
-sub GetDriver {
-    my($name) = @_;
-    $name = 0 unless defined $name;
-    my $driver;
-    $driver = _GetDriver($name) if $name =~ /^\d+$/; # is the name an index to driver list?
-    $driver = GetDriverByName("$name") unless $driver;
-    return $driver if $driver;
-    confess "Driver not found: '$name'. Maybe support for it was not built in?";
-}
-*Driver = *GetDriver;
 %}
