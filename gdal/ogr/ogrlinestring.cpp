@@ -325,11 +325,9 @@ void OGRSimpleCurve::setNumPoints( int nNewPointCount, int bZeroizeNewContent )
     if( nNewPointCount > nPointCount )
     {
         OGRRawPoint* paoNewPoints = (OGRRawPoint *)
-            VSIRealloc(paoPoints, sizeof(OGRRawPoint) * nNewPointCount);
+            VSI_REALLOC_VERBOSE(paoPoints, sizeof(OGRRawPoint) * nNewPointCount);
         if (paoNewPoints == NULL)
         {
-            CPLError(CE_Failure, CPLE_OutOfMemory,
-                     "Could not allocate array for %d points", nNewPointCount);
             return;
         }
         paoPoints = paoNewPoints;
@@ -341,11 +339,9 @@ void OGRSimpleCurve::setNumPoints( int nNewPointCount, int bZeroizeNewContent )
         if( getCoordinateDimension() == 3 )
         {
             double* padfNewZ = (double *)
-                VSIRealloc( padfZ, sizeof(double)*nNewPointCount );
+                VSI_REALLOC_VERBOSE( padfZ, sizeof(double)*nNewPointCount );
             if (padfNewZ == NULL)
             {
-                CPLError(CE_Failure, CPLE_OutOfMemory,
-                     "Could not allocate array for %d points", nNewPointCount);
                 return;
             }
             padfZ = padfNewZ;
@@ -1109,7 +1105,7 @@ OGRErr OGRSimpleCurve::exportToWkt( char ** ppszDstText,
 /* -------------------------------------------------------------------- */
 /*      General case.                                                   */
 /* -------------------------------------------------------------------- */
-    *ppszDstText = (char *) VSIMalloc( nMaxString );
+    *ppszDstText = (char *) VSI_MALLOC_VERBOSE( nMaxString );
     if( *ppszDstText == NULL )
         return OGRERR_NOT_ENOUGH_MEMORY;
 
@@ -1644,8 +1640,8 @@ OGRErr OGRSimpleCurve::transform( OGRCoordinateTransformation *poCT )
 /*   or keeping intact the original geometry if only full reprojection  */
 /*   allowed.                                                           */
 /* -------------------------------------------------------------------- */
-    xyz = (double *) VSIMalloc(sizeof(double) * nPointCount * 3);
-    pabSuccess = (int *) VSICalloc(sizeof(int), nPointCount);
+    xyz = (double *) VSI_MALLOC_VERBOSE(sizeof(double) * nPointCount * 3);
+    pabSuccess = (int *) VSI_CALLOC_VERBOSE(sizeof(int), nPointCount);
     if( xyz == NULL || pabSuccess == NULL )
     {
         VSIFree(xyz);
