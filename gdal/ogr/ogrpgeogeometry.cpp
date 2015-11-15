@@ -279,7 +279,9 @@ OGRErr OGRWriteToShapeBin( OGRGeometry *poGeom,
 /* -------------------------------------------------------------------- */
     if ( ! poGeom || poGeom->IsEmpty() )
     {
-        *ppabyShape = (GByte*)VSIMalloc(nShpSize);
+        *ppabyShape = (GByte*)VSI_MALLOC_VERBOSE(nShpSize);
+        if( *ppabyShape == NULL )
+            return OGRERR_FAILURE;
         GUInt32 zero = SHPT_NULL;
         memcpy(*ppabyShape, &zero, nShpSize);
         *pnBytes = nShpSize;
@@ -401,7 +403,7 @@ OGRErr OGRWriteToShapeBin( OGRGeometry *poGeom,
     }
 
     /* Allocate our shape buffer */
-    *ppabyShape = (GByte*)VSIMalloc(nShpSize);
+    *ppabyShape = (GByte*)VSI_MALLOC_VERBOSE(nShpSize);
     if ( ! *ppabyShape )
         return OGRERR_FAILURE;
 
@@ -1125,12 +1127,9 @@ OGRErr OGRCreateFromShapeBin( GByte *pabyShape,
         if (nCompressedSize + 12 == nBytes &&
             nUncompressedSize > 0)
         {
-            GByte* pabyUncompressedBuffer = (GByte*)VSIMalloc(nUncompressedSize);
+            GByte* pabyUncompressedBuffer = (GByte*)VSI_MALLOC_VERBOSE(nUncompressedSize);
             if (pabyUncompressedBuffer == NULL)
             {
-                CPLError(CE_Failure, CPLE_OutOfMemory,
-                         "Cannot allocate %d bytes to uncompress zlib buffer",
-                         nUncompressedSize);
                 return OGRERR_FAILURE;
             }
 
@@ -1269,11 +1268,9 @@ OGRErr OGRCreateFromShapeBin( GByte *pabyShape,
             return OGRERR_FAILURE;
         }
 
-        panPartStart = (GInt32 *) VSICalloc(nParts,sizeof(GInt32));
+        panPartStart = (GInt32 *) VSI_CALLOC_VERBOSE(nParts,sizeof(GInt32));
         if (panPartStart == NULL)
         {
-            CPLError(CE_Failure, CPLE_OutOfMemory,
-                     "Not enough memory for shape (nPoints=%d, nParts=%d)", nPoints, nParts);
             return OGRERR_FAILURE;
         }
 
@@ -1312,11 +1309,9 @@ OGRErr OGRCreateFromShapeBin( GByte *pabyShape,
 /* -------------------------------------------------------------------- */
         if( bIsMultiPatch )
         {
-            panPartType = (GInt32 *) VSICalloc(nParts,sizeof(GInt32));
+            panPartType = (GInt32 *) VSI_CALLOC_VERBOSE(nParts,sizeof(GInt32));
             if (panPartType == NULL)
             {
-                CPLError(CE_Failure, CPLE_OutOfMemory,
-                        "Not enough memory for panPartType for shape (nPoints=%d, nParts=%d)", nPoints, nParts);
                 CPLFree(panPartStart);
                 return OGRERR_FAILURE;
             }
@@ -1332,9 +1327,9 @@ OGRErr OGRCreateFromShapeBin( GByte *pabyShape,
 /* -------------------------------------------------------------------- */
 /*      Copy out the vertices from the record.                          */
 /* -------------------------------------------------------------------- */
-        double *padfX = (double *) VSIMalloc(sizeof(double)*nPoints);
-        double *padfY = (double *) VSIMalloc(sizeof(double)*nPoints);
-        double *padfZ = (double *) VSICalloc(sizeof(double),nPoints);
+        double *padfX = (double *) VSI_MALLOC_VERBOSE(sizeof(double)*nPoints);
+        double *padfY = (double *) VSI_MALLOC_VERBOSE(sizeof(double)*nPoints);
+        double *padfZ = (double *) VSI_CALLOC_VERBOSE(sizeof(double),nPoints);
         if (padfX == NULL || padfY == NULL || padfZ == NULL)
         {
             CPLFree( panPartStart );
@@ -1342,8 +1337,6 @@ OGRErr OGRCreateFromShapeBin( GByte *pabyShape,
             CPLFree( padfX );
             CPLFree( padfY );
             CPLFree( padfZ );
-            CPLError(CE_Failure, CPLE_OutOfMemory,
-                     "Not enough memory for shape (nPoints=%d, nParts=%d)", nPoints, nParts);
             return OGRERR_FAILURE;
         }
 
