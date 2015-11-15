@@ -22,11 +22,12 @@
 ## @ignore GetLastErrorType
 
 ## @ignore do_confess
+## @ignore last_error
+## @ignore error
 
-## @sub error
-# Return and clear the stack of GDAL error messages.
-# @return in list context the chomped stack, in scalar context
-# the chomped stack joined with newlines.
+## @sub $errstr
+# Clear the error stack and return all generated GDAL error messages in one (possibly multiline) string.
+# @return the chomped error stack joined with newlines.
 
 ## @ignore GeneralCmdLineProcessor
 
@@ -433,13 +434,13 @@ sub traverse {
 # \endcode
 # @param name Raster dataset string (typically a filename).
 # @param access Access type, either 'ReadOnly' (the default) or 'Update'.
-# @return a new Geo::GDAL::Dataset object.
+# @return a new Geo::GDAL::Dataset object or undef.
 
 ## @sub Geo::GDAL::Dataset OpenShared($name, $access = 'ReadOnly')
 # Open a raster dataset in shared mode.
 # @param name Raster dataset string (typically a filename).
 # @param access Access type, either 'ReadOnly' (the default) or 'Update'.
-# @return a new Geo::GDAL::Dataset object.
+# @return a new Geo::GDAL::Dataset object or undef.
 
 ## @sub Geo::GDAL::Dataset OpenEx($name, $open_flags = [], $allowed_drivers = [], $open_options = {}, $sibling_files = [])
 # The generic dataset open method, used internally by all Open and OpenShared methods.
