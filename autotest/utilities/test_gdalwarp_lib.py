@@ -864,6 +864,58 @@ def test_gdalwarp_lib_123():
     return 'success'
 
 ###############################################################################
+# Test warping to dataset with existing nodata
+
+def test_gdalwarp_lib_124():
+
+    src_ds = gdal.GetDriverByName('MEM').Create('', 2, 2)
+    src_ds.SetGeoTransform([10,1,0,10,0,-1])
+    src_ds.GetRasterBand(1).SetNoDataValue(12)
+    src_ds.GetRasterBand(1).Fill(12)
+
+    out_ds = gdal.GetDriverByName('MEM').Create('', 2, 2)
+    out_ds.SetGeoTransform([10,1,0,10,0,-1])
+    out_ds.GetRasterBand(1).SetNoDataValue(21)
+    out_ds.GetRasterBand(1).Fill(21)
+    expected_cs = out_ds.GetRasterBand(1).Checksum()
+
+    gdal.Warp(out_ds, src_ds, format = 'MEM')
+
+    cs = out_ds.GetRasterBand(1).Checksum()
+    if cs != expected_cs:
+        gdaltest.post_reason('Bad checksum')
+        print(cs)
+        print(expected_cs)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test that statistics are not propagated
+
+def test_gdalwarp_lib_125():
+
+    for i in range(3):
+
+        src_ds_1 = gdal.GetDriverByName('MEM').Create('', 2, 2)
+        src_ds_1.SetGeoTransform([10,1,0,10,0,-1])
+        if i == 1 or i == 3:
+            src_ds_1.GetRasterBand(1).SetMetadataItem('STATISTICS_MINIUM', '5')
+
+        src_ds_2 = gdal.GetDriverByName('MEM').Create('', 2, 2)
+        src_ds_2.SetGeoTransform([10,1,0,10,0,-1])
+        if i == 2 or i == 3:
+            src_ds_2.GetRasterBand(1).SetMetadataItem('STATISTICS_MINIUM', '5')
+
+        out_ds = gdal.Warp('', [ src_ds_1, src_ds_2 ], format = 'MEM')
+
+        if out_ds.GetRasterBand(1).GetMetadataItem('STATISTICS_MINIUM') is not None:
+            print(i)
+            return 'fail'
+
+    return 'success'
+
+###############################################################################
 # Cleanup
 
 def test_gdalwarp_lib_cleanup():
@@ -934,6 +986,8 @@ gdaltest_list = [
     test_gdalwarp_lib_121,
     test_gdalwarp_lib_122,
     test_gdalwarp_lib_123,
+    test_gdalwarp_lib_124,
+    test_gdalwarp_lib_125,
     test_gdalwarp_lib_cleanup,
     ]
 
