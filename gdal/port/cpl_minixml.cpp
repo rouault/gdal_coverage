@@ -486,16 +486,17 @@ static bool PushNode( ParseContext *psContext, CPLXMLNode *psNode )
 {
     if( psContext->nStackMaxSize <= psContext->nStackSize )
     {
-        psContext->nStackMaxSize += 10;
-
-        if (psContext->nStackMaxSize >= (int)(INT_MAX / sizeof(StackContext)))
+        /* Somewhat arbitrary number... */
+        if (psContext->nStackMaxSize >= 10000)
         {
-            CPLError(CE_Failure, CPLE_OutOfMemory,
-                 "Out of memory allocating %d*%d bytes", (int)sizeof(StackContext), psContext->nStackMaxSize);
+            CPLError(CE_Failure, CPLE_NotSupported,
+                 "XML element depth beyond 10000. Giving up");
             VSIFree(psContext->papsStack);
             psContext->papsStack = NULL;
             return false;
         }
+        psContext->nStackMaxSize += 10;
+
         StackContext* papsStack;
         papsStack = (StackContext *)VSIRealloc(psContext->papsStack,
                     sizeof(StackContext) * psContext->nStackMaxSize);
@@ -509,6 +510,11 @@ static bool PushNode( ParseContext *psContext, CPLXMLNode *psNode )
         }
         psContext->papsStack = papsStack;
     }
+#ifdef DEBUG
+    // To make Coverity happy, but cannot happen
+    if( psContext->papsStack == NULL )
+        return false;
+#endif
 
     psContext->papsStack[psContext->nStackSize].psFirstNode = psNode;
     psContext->papsStack[psContext->nStackSize].psLastChild = NULL;
