@@ -105,7 +105,7 @@ void DDFFieldDefn::AddSubfield( DDFSubfieldDefn *poNewSFDefn,
         _formatControls = CPLStrdup( "()" );
     }
     
-    int nOldLen = strlen(_formatControls);
+    int nOldLen = static_cast<int>(strlen(_formatControls));
     
     char *pszNewFormatControls = (char *) 
         CPLMalloc(nOldLen+3+strlen(poNewSFDefn->GetFormat()));
@@ -178,9 +178,9 @@ int DDFFieldDefn::GenerateDDREntry( char **ppachData,
                                     int *pnLength )
 
 {
-    *pnLength = 9 + strlen(_fieldName) + 1 
+    *pnLength = static_cast<int>(9 + strlen(_fieldName) + 1 
         + strlen(_arrayDescr) + 1
-        + strlen(_formatControls) + 1;
+        + strlen(_formatControls) + 1);
 
     if( strlen(_formatControls) == 0 )
         *pnLength -= 1;
@@ -563,9 +563,9 @@ char *DDFFieldDefn::ExtractSubstring( const char * pszSrc )
 char *DDFFieldDefn::ExpandFormat( const char * pszSrc )
 
 {
-    int         nDestMax = 32;
+    size_t      nDestMax = 32;
     char       *pszDest = (char *) CPLMalloc(nDestMax+1);
-    int         iSrc, iDst;
+    size_t      iSrc, iDst;
     int         nRepeat = 0;
 
     iSrc = 0;
@@ -583,8 +583,7 @@ char *DDFFieldDefn::ExpandFormat( const char * pszSrc )
             char       *pszContents = ExtractSubstring( pszSrc+iSrc );
             char       *pszExpandedContents = ExpandFormat( pszContents );
 
-            if( (int) (strlen(pszExpandedContents) + strlen(pszDest) + 1)
-                > nDestMax )
+            if( strlen(pszExpandedContents) + strlen(pszDest) + 1 > nDestMax )
             {
                 nDestMax = 2 * (strlen(pszExpandedContents) + strlen(pszDest));
                 pszDest = (char *) CPLRealloc(pszDest,nDestMax+1);
@@ -615,8 +614,7 @@ char *DDFFieldDefn::ExpandFormat( const char * pszSrc )
                 
             for( int i = 0; i < nRepeat; i++ )
             {
-                if( (int) (strlen(pszExpandedContents) + strlen(pszDest) + 1 + 1)
-                    > nDestMax )
+                if( strlen(pszExpandedContents) + strlen(pszDest) + 1 + 1 > nDestMax )
                 {
                     nDestMax = 
                         2 * (strlen(pszExpandedContents) + strlen(pszDest) + 1);
