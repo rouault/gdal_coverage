@@ -79,10 +79,10 @@ OGRGMLLayer::OGRGMLLayer( const char * pszName,
 
     /* Compatibility option. Not advertized, because hopefully won't be needed */
     /* Just put here in provision... */
-    bUseOldFIDFormat = CSLTestBoolean(CPLGetConfigOption("GML_USE_OLD_FID_FORMAT", "FALSE")) != FALSE;
+    bUseOldFIDFormat = CPL_TO_BOOL(CSLTestBoolean(CPLGetConfigOption("GML_USE_OLD_FID_FORMAT", "FALSE")));
 
     /* Must be in synced in OGR_G_CreateFromGML(), OGRGMLLayer::OGRGMLLayer() and GMLReader::GMLReader() */
-    bFaceHoleNegative = CSLTestBoolean(CPLGetConfigOption("GML_FACE_HOLE_NEGATIVE", "NO")) != FALSE;
+    bFaceHoleNegative = CPL_TO_BOOL(CSLTestBoolean(CPLGetConfigOption("GML_FACE_HOLE_NEGATIVE", "NO")));
 
 }
 
@@ -226,7 +226,7 @@ OGRFeature *OGRGMLLayer::GetNextFeature()
         else if( iNextGMLId == 0 )
         {
             int j = 0;
-            i = strlen( pszGML_FID )-1;
+            i = static_cast<int>(strlen( pszGML_FID ))-1;
             while( i >= 0 && pszGML_FID[i] >= '0'
                           && pszGML_FID[i] <= '9' && j<20)
                 i--, j++;
@@ -253,7 +253,7 @@ OGRFeature *OGRGMLLayer::GetNextFeature()
         {
             const char* pszFIDPrefix_notnull = pszFIDPrefix;
             if (pszFIDPrefix_notnull == NULL) pszFIDPrefix_notnull = "";
-            int nLenPrefix = strlen(pszFIDPrefix_notnull);
+            int nLenPrefix = static_cast<int>(strlen(pszFIDPrefix_notnull));
 
             if(  strncmp(pszGML_FID, pszFIDPrefix_notnull, nLenPrefix) == 0 &&
                  strlen(pszGML_FID+nLenPrefix) < 20 &&
