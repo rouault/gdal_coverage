@@ -1085,8 +1085,8 @@ OGRErr OGRSimpleCurve::exportToWkt( char ** ppszDstText,
                                    OGRwkbVariant eWkbVariant ) const
 
 {
-    int         nMaxString = nPointCount * 40 * 3 + 25;
-    int         nRetLen = 0;
+    size_t      nMaxString = static_cast<size_t>(nPointCount) * 40 * 3 + 25;
+    size_t      nRetLen = 0;
 
 /* -------------------------------------------------------------------- */
 /*      Handle special empty case.                                      */
@@ -1116,13 +1116,14 @@ OGRErr OGRSimpleCurve::exportToWkt( char ** ppszDstText,
 
     for( int i = 0; i < nPointCount; i++ )
     {
-        if( nMaxString <= (int) strlen(*ppszDstText+nRetLen) + 32 + nRetLen )
+        if( nMaxString <= strlen(*ppszDstText+nRetLen) + 32 + nRetLen )
         {
             CPLDebug( "OGR", 
                       "OGRSimpleCurve::exportToWkt() ... buffer overflow.\n"
                       "nMaxString=%d, strlen(*ppszDstText) = %d, i=%d\n"
                       "*ppszDstText = %s", 
-                      nMaxString, (int) strlen(*ppszDstText), i, *ppszDstText );
+                      static_cast<int>(nMaxString),
+                      static_cast<int>(strlen(*ppszDstText)), i, *ppszDstText );
 
             VSIFree( *ppszDstText );
             *ppszDstText = NULL;
