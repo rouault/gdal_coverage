@@ -5123,7 +5123,7 @@ static void GWKAverageOrModeThread( void* pData)
                     if ( nCount > 0 )
                     {
                         std::sort(dfValuesTmp.begin(), dfValuesTmp.end());
-                        int quantIdx = std::ceil(quant * dfValuesTmp.size() - 1);
+                        int quantIdx = static_cast<int>(std::ceil(quant * dfValuesTmp.size() - 1));
                         dfValueReal = dfValuesTmp[quantIdx];
 
                         dfBandDensity = 1;
