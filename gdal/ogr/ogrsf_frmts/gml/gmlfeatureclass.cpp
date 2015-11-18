@@ -60,7 +60,7 @@ GMLFeatureClass::GMLFeatureClass( const char *pszName ) :
     m_bSRSNameConsistent(true)
 {
     m_pszName = CPLStrdup( pszName );
-    n_nNameLen = strlen( m_pszName );
+    n_nNameLen = static_cast<int>(strlen( m_pszName ));
 }
 
 /************************************************************************/
@@ -267,7 +267,7 @@ void GMLFeatureClass::SetElementName( const char *pszElementName )
 {
     CPLFree( m_pszElementName );
     m_pszElementName = CPLStrdup( pszElementName );
-    n_nElementNameLen = strlen(pszElementName);
+    n_nElementNameLen = static_cast<int>(strlen(pszElementName));
 }
 
 /************************************************************************/
@@ -447,7 +447,7 @@ bool GMLFeatureClass::InitializeFromXML( CPLXMLNode *psRoot )
 /* -------------------------------------------------------------------- */
     CPLFree( m_pszName );
     m_pszName = CPLStrdup( CPLGetXMLValue( psRoot, "Name", NULL ) );
-    n_nNameLen = strlen(m_pszName);
+    n_nNameLen = static_cast<int>(strlen(m_pszName));
 
     SetElementName( CPLGetXMLValue( psRoot, "ElementPath", m_pszName ) );
 
@@ -472,7 +472,7 @@ bool GMLFeatureClass::InitializeFromXML( CPLXMLNode *psRoot )
             const char *pszName = CPLGetXMLValue( psThis, "Name", "" );
             const char *pszElementPath = CPLGetXMLValue( psThis, "ElementPath", "" );
             const char *pszType = CPLGetXMLValue( psThis, "Type", NULL );
-            bool bNullable = CSLTestBoolean(CPLGetXMLValue( psThis, "Nullable", "true") ) != FALSE;
+            bool bNullable = CPL_TO_BOOL(CSLTestBoolean(CPLGetXMLValue( psThis, "Nullable", "true") ));
             nGeomType = wkbUnknown;
             if( pszType != NULL && !EQUAL(pszType, "0") )
             {
@@ -618,7 +618,7 @@ bool GMLFeatureClass::InitializeFromXML( CPLXMLNode *psRoot )
             const char *pszType = CPLGetXMLValue( psThis, "Type", "Untyped" );
             const char *pszSubType = CPLGetXMLValue( psThis, "Subtype", "" );
             const char *pszCondition = CPLGetXMLValue( psThis, "Condition", NULL );
-            bool bNullable = CSLTestBoolean(CPLGetXMLValue( psThis, "Nullable", "true") ) != FALSE;
+            bool bNullable = CPL_TO_BOOL(CSLTestBoolean(CPLGetXMLValue( psThis, "Nullable", "true") ));
             GMLPropertyDefn *poPDefn;
 
             if( pszName == NULL )
