@@ -8,10 +8,11 @@ compiler:
   - clang
 
 before_install:
-  - export LC_ALL=en_US
   - export chroot="$PWD"/buildroot.i386
   - mkdir -p "$chroot$PWD"
+  - sudo apt-get update
   - sudo apt-get install -y debootstrap
+  - export LC_ALL=en_US
   - sudo i386 debootstrap --arch=i386 precise "$chroot"
   - sudo mount --rbind "$PWD" "$chroot$PWD"
   - sudo mount --rbind /dev/pts "$chroot/dev/pts"
