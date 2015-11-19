@@ -39,14 +39,14 @@ install:
   - sudo i386 chroot "$chroot" sh -c "rm -f /usr/lib/libgdal.so*"
   - sudo i386 chroot "$chroot" sh -c "cd $PWD/gdal && make install"
   - sudo i386 chroot "$chroot" sh -c "sudo ldconfig"
-  - sudo i386 chroot "$chroot" sh -c "cd autotest/cpp && make -j3"
+  - sudo i386 chroot "$chroot" sh -c "cd $PWD/autotest/cpp && make -j3"
 
 script:
-  - sudo i386 chroot "$chroot" sh -c "cd autotest/cpp && make quick_test"
+  - sudo i386 chroot "$chroot" sh -c "cd $PWD/autotest/cpp && make quick_test"
 # Compile and test vsipreload
-  - sudo i386 chroot "$chroot" sh -c "cd autotest/cpp && make vsipreload.so"
+  - sudo i386 chroot "$chroot" sh -c "cd $PWD/autotest/cpp && make vsipreload.so"
 # Run all the Python autotests
-  - sudo i386 chroot "$chroot" sh -c "cd autotest && python run_all.py"
+  - sudo i386 chroot "$chroot" sh -c "cd $PWD/autotest && python run_all.py"
 
 notifications:
   email:
