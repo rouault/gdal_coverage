@@ -662,7 +662,7 @@ SchemaPtr OGRLIBKMLDataSource::FindSchema (
     }
 
 
-    else if ( ( pszPound = strchr ( (char *)pszSchemaUrl, '#' ) ) ) {
+    else if ( ( pszPound = strchr ( (char *)pszSchemaUrl, '#' ) ) != NULL ) {
         pszFile = CPLStrdup ( pszSchemaUrl );
         pszID = CPLStrdup ( pszPound + 1 );
         pszPound = strchr ( pszFile, '#' );
@@ -1290,9 +1290,9 @@ int OGRLIBKMLDataSource::OpenDir (
     int bUpdate )
 {
 
-    char **papszDirList = NULL;
+    char **papszDirList = VSIReadDir ( pszFilename );
 
-    if ( !( papszDirList = VSIReadDir ( pszFilename ) ) )
+    if ( papszDirList == NULL )
         return FALSE;
 
     /***** create a SRS *****/
@@ -1533,11 +1533,11 @@ void OGRLIBKMLDataSource::SetCommonOptions(ContainerPtr poKmlContainer,
 
     const char* pszVisibilility = CSLFetchNameValue(papszOptions, "VISIBILITY");
     if( pszVisibilility != NULL )
-        poKmlContainer->set_visibility(CSLTestBoolean(pszVisibilility));
+        poKmlContainer->set_visibility(CPL_TO_BOOL(CSLTestBoolean(pszVisibilility)));
 
     const char* pszOpen = CSLFetchNameValue(papszOptions, "OPEN");
     if( pszOpen != NULL )
-        poKmlContainer->set_open(CSLTestBoolean(pszOpen));
+        poKmlContainer->set_open(CPL_TO_BOOL(CSLTestBoolean(pszOpen)));
 
     const char* pszSnippet = CSLFetchNameValue(papszOptions, "SNIPPET");
     if( pszSnippet != NULL )
