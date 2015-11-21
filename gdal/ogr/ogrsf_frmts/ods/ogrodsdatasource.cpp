@@ -475,7 +475,7 @@ static void SetField(OGRFeature* poFeature,
             sscanf(pszValue + 2, "%02d%c%02d%c%02d%c",
                    &nHour, &c, &nMinute, &c, &nSecond, &c) == 6)
         {
-            poFeature->SetField(i, 0, 0, 0, nHour, nMinute, nSecond, 0);
+            poFeature->SetField(i, 0, 0, 0, nHour, nMinute, static_cast<float>(nSecond), 0);
         }
         /* bug with kspread 2.1.2 ? */
         /* ex PT121234M56S */
@@ -484,7 +484,7 @@ static void SetField(OGRFeature* poFeature,
                         &nHour, &nHourRepeated, &nMinute, &c, &nSecond, &c) == 6 &&
                  nHour == nHourRepeated)
         {
-            poFeature->SetField(i, 0, 0, 0, nHour, nMinute, nSecond, 0);
+            poFeature->SetField(i, 0, 0, 0, nHour, nMinute, static_cast<float>(nSecond), 0);
         }
     }
     else if (eType == OFTDate || eType == OFTDateTime)
@@ -1567,7 +1567,7 @@ void OGRODSDataSource::FlushCache()
     }
     CSLDestroy(papszOptions);
     if( CPLWriteFileInZip(hZIP, "application/vnd.oasis.opendocument.spreadsheet",
-                      strlen("application/vnd.oasis.opendocument.spreadsheet")) != CE_None )
+                          static_cast<int>(strlen("application/vnd.oasis.opendocument.spreadsheet"))) != CE_None )
     {
         CPLCloseZip(hZIP);
         return;
