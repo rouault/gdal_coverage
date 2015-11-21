@@ -156,15 +156,15 @@ GDALDataset* GDALCreateOverviewDataset(GDALDataset* poMainDS, int nOvrLevel,
 /*                        GDALOverviewDataset()                         */
 /************************************************************************/
 
-GDALOverviewDataset::GDALOverviewDataset(GDALDataset* poMainDS,
-                                         int nOvrLevel,
-                                         int bThisLevelOnly,
-                                         int bOwnDS)
+GDALOverviewDataset::GDALOverviewDataset(GDALDataset* poMainDSIn,
+                                         int nOvrLevelIn,
+                                         int bThisLevelOnlyIn,
+                                         int bOwnDSIn)
 {
-    this->poMainDS = poMainDS;
-    this->nOvrLevel = nOvrLevel;
-    this->bOwnDS = bOwnDS;
-    this->bThisLevelOnly = bThisLevelOnly;
+    poMainDS = poMainDSIn;
+    nOvrLevel = nOvrLevelIn;
+    bOwnDS = bOwnDSIn;
+    bThisLevelOnly = bThisLevelOnlyIn;
     eAccess = poMainDS->GetAccess();
     nRasterXSize = poMainDS->GetRasterBand(1)->GetOverview(nOvrLevel)->GetXSize();
     nRasterYSize = poMainDS->GetRasterBand(1)->GetOverview(nOvrLevel)->GetYSize();
@@ -506,13 +506,13 @@ const char *GDALOverviewDataset::GetMetadataItem( const char * pszName,
 /*                          GDALOverviewBand()                          */
 /************************************************************************/
 
-GDALOverviewBand::GDALOverviewBand(GDALOverviewDataset* poDS, int nBand)
+GDALOverviewBand::GDALOverviewBand(GDALOverviewDataset* poDSIn, int nBandIn)
 {
-    this->poDS = poDS;
-    this->nBand = nBand;
-    poUnderlyingBand = poDS->poMainDS->GetRasterBand(nBand)->GetOverview(poDS->nOvrLevel);
-    nRasterXSize = poDS->nRasterXSize;
-    nRasterYSize = poDS->nRasterYSize;
+    poDS = poDSIn;
+    nBand = nBandIn;
+    poUnderlyingBand = poDSIn->poMainDS->GetRasterBand(nBand)->GetOverview(poDSIn->nOvrLevel);
+    nRasterXSize = poDSIn->nRasterXSize;
+    nRasterYSize = poDSIn->nRasterYSize;
     eDataType = poUnderlyingBand->GetRasterDataType();
     poUnderlyingBand->GetBlockSize(&nBlockXSize, &nBlockYSize);
 }
