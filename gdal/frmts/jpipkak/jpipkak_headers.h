@@ -1,15 +1,11 @@
 /******************************************************************************
- * $Id$
  *
- * Project:  GeoTIFF Driver
- * Purpose:  Implement system hook functions for libtiff on top of CPL/VSI,
- *           including > 2GB support.  Based on tif_unix.c from libtiff
- *           distribution.
- * Author:   Frank Warmerdam, warmerdam@pobox.com
+ * Project:  GDAL 
+ * Purpose:  Includes JP2KAK SDK headers
+ * Author:   Even Rouault <even dot rouault at spatialys dot com>
  *
  ******************************************************************************
- * Copyright (c) 2005, Frank Warmerdam, warmerdam@pobox.com
- * Copyright (c) 2010, Even Rouault <even dot rouault at mines-paris dot org>
+ * Copyright (c) 2015, Even Rouault <even dot rouault at spatialys dot com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -28,24 +24,19 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
- ****************************************************************************/
+ *****************************************************************************/
 
-#ifndef TIFVSI_H_INCLUDED
-#define TIFVSI_H_INCLUDED
+#ifndef JPIPKAK_HEADERS_H
+#define JPIPKAK_HEADERS_H
 
 #include "cpl_port.h"
 
-#ifdef HAVE_GCC_DIAGNOSTIC_PUSH
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-id-macro"
-#endif
-#include "tiffio.h"
-#ifdef HAVE_GCC_DIAGNOSTIC_PUSH
-#pragma GCC diagnostic pop
+#ifdef HAVE_GCC_SYSTEM_HEADER
+#pragma GCC system_header
 #endif
 
-TIFF* VSI_TIFFOpen(const char* name, const char* mode, VSILFILE* fp);
-VSILFILE* VSI_TIFFGetVSILFile(thandle_t th);
-int VSI_TIFFFlushBufferedWrite(thandle_t th);
+#include "kdu_cache.h"
+#include "kdu_region_decompressor.h"
+#include "kdu_file_io.h"
 
-#endif // TIFVSI_H_INCLUDED
+#endif /* JPIPKAK_HEADERS_H */
