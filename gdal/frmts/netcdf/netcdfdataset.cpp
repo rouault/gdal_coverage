@@ -641,10 +641,10 @@ netCDFRasterBand::netCDFRasterBand( netCDFDataset *poNCDFDS,
     }
 
     /* set default nodata */
+    double dfNoData = NCDFGetDefaultNoDataValue( nc_datatype );
 #ifdef NCDF_DEBUG
     CPLDebug( "GDAL_netCDF", "SetNoDataValue(%f) default", dfNoData );
 #endif
-    double dfNoData = NCDFGetDefaultNoDataValue( nc_datatype );
     SetNoDataValue( dfNoData );
 }
 
@@ -2599,18 +2599,12 @@ void netCDFDataset::SetProjectionFromVar( int nVarId )
         /* check units for x and y */
         if( oSRS.IsProjected( ) ) {
             snprintf(szTemp,sizeof(szTemp), "%s#units", poDS->papszDimName[nXDimID]);
-            pszValue = CSLFetchNameValue( poDS->papszMetadata, 
+            const char *pszUnitsX = CSLFetchNameValue( poDS->papszMetadata, 
                                           szTemp );
-            const char *pszUnitsX = NULL;
-            if( pszValue != NULL ) 
-                pszUnitsX = pszValue;
 
             snprintf(szTemp,sizeof(szTemp), "%s#units", poDS->papszDimName[nYDimID]);
-            pszValue = CSLFetchNameValue( poDS->papszMetadata, 
+            const char *pszUnitsY = CSLFetchNameValue( poDS->papszMetadata, 
                                           szTemp );
-            const char *pszUnitsY = NULL;
-            if( pszValue != NULL )
-                pszUnitsY = pszValue;
 
             /* TODO: what to do if units are not equal in X and Y */
             if ( (pszUnitsX != NULL) && (pszUnitsY != NULL) && 
@@ -3280,9 +3274,9 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
             hDS_Y = GDALOpenShared( pszDSName, GA_ReadOnly );
 
         if ( hDS_X != NULL && hDS_Y != NULL ) {
-            nBand = MAX(1,atoi(CSLFetchNameValue( papszGeolocationInfo, "X_BAND" )));
+            nBand = MAX(1,atoi(CSLFetchNameValueDef( papszGeolocationInfo, "X_BAND", "0" )));
             hBand_X = GDALGetRasterBand( hDS_X, nBand );
-            nBand = MAX(1,atoi(CSLFetchNameValue( papszGeolocationInfo, "Y_BAND" )));
+            nBand = MAX(1,atoi(CSLFetchNameValueDef( papszGeolocationInfo, "Y_BAND", "0" )));
             hBand_Y = GDALGetRasterBand( hDS_Y, nBand );
 
             /* if geoloc bands are found do basic vaidation based on their dimensions */
@@ -3362,7 +3356,7 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
     else
     {
         /* files without a Datum will not have a grid_mapping variable and geographic information */
-        bWriteGridMapping = CPL_TO_BOOL(bIsGeographic);
+        bWriteGridMapping = bIsGeographic;
 
         bWriteGDALTags = CPL_TO_BOOL(CSLFetchBoolean( papszCreationOptions, "WRITE_GDAL_TAGS", bWriteGridMapping ));
         if ( bWriteGDALTags )
@@ -3667,8 +3661,6 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
         CPLFree( panLatDims );
         CPLFree( panLonDims );
     }
-
-    pfnProgress( 0.50, NULL, pProgressData );
 
 /* -------------------------------------------------------------------- */
 /*      Get projection values                                           */
@@ -5187,9 +5179,7 @@ netCDFDataset::Create( const char * pszFilename,
     /* TODO should this only be done in Create() */
     poDS->bSignedData = true;
     const char *pszValue  =
-        CSLFetchNameValue( papszOptions, "PIXELTYPE" );
-    if( pszValue == NULL )
-        pszValue = "";
+        CSLFetchNameValueDef( papszOptions, "PIXELTYPE", "" );
     if( eType == GDT_Byte && ( ! EQUAL(pszValue,"SIGNEDBYTE") ) )
         poDS->bSignedData = false;
 
@@ -5431,7 +5421,7 @@ netCDFDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         poDS->SetProjection( pszWKT );
         /* now we can call AddProjectionVars() directly */
         poDS->bSetGeoTransform = bGotGeoTransform;
-        pScaledProgress = GDALCreateScaledProgress( 0.20, 0.50, pfnProgress, 
+        pScaledProgress = GDALCreateScaledProgress( 0.1, 0.25, pfnProgress, 
                                                     pProgressData );
         poDS->AddProjectionVars( GDALScaledProgress, pScaledProgress );
         /* save X,Y dim positions */
@@ -6006,7 +5996,7 @@ static void NCDFAddHistory(int fpImage, const char *pszAddHist, const char *pszO
     strcat(pszNewHist, pszAddHist);
 
     // int disableHistory = FALSE;
-    if ( /* ! disableHistory && */ pszNewHist )
+    //if ( !disableHistory )
     {
         if ( ! EQUAL(pszOldHist,"") )
             strcat(pszNewHist, "\n");
