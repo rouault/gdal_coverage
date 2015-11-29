@@ -1436,6 +1436,109 @@ def netcdf_40():
     return netcdf_test_copy( 'data/bug5291.nc', 0, None, 'tmp/netcdf_40.nc' )
 
 ###############################################################################
+# Test support for georeferenced file without CF convention
+
+def netcdf_41():
+
+    if gdaltest.netcdf_drv is None:
+        return 'skip'
+
+    with gdaltest.error_handler():
+        ds = gdal.Open('data/byte_no_cf.nc')
+    if ds.GetGeoTransform() != (440720, 60, 0, 3751320, 0, -60):
+        gdaltest.post_reason('failure')
+        print(ds.GetGeoTransform())
+        return 'fail'
+    if ds.GetProjectionRef().find('26711') < 0:
+        gdaltest.post_reason('failure')
+        print(ds.GetGeoTransform())
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test writing & reading GEOLOCATION array
+
+def netcdf_42():
+
+    if gdaltest.netcdf_drv is None:
+        return 'skip'
+
+    src_ds = gdal.GetDriverByName('MEM').Create('', 60, 39, 1)
+    src_ds.SetMetadata( [
+  'LINE_OFFSET=0',
+  'LINE_STEP=1',
+  'PIXEL_OFFSET=0',
+  'PIXEL_STEP=1',
+  'SRS=GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],TOWGS84[0,0,0,0,0,0,0],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9108"]],AXIS["Lat",NORTH],AXIS["Long",EAST],AUTHORITY["EPSG","4326"]]',
+  'X_BAND=1',
+  'X_DATASET=../gcore/data/sstgeo.tif',
+  'Y_BAND=2',
+  'Y_DATASET=../gcore/data/sstgeo.tif'], 'GEOLOCATION' )
+    sr = osr.SpatialReference()
+    sr.ImportFromEPSG(32631)
+    src_ds.SetProjection(sr.ExportToWkt())
+
+    gdaltest.netcdf_drv.CreateCopy('tmp/netcdf_42.nc', src_ds)
+
+    ds = gdal.Open('tmp/netcdf_42.nc')
+    if ds.GetMetadata('GEOLOCATION') != {
+        'LINE_OFFSET': '0',
+        'X_DATASET': 'NETCDF:"tmp/netcdf_42.nc":lon',
+        'PIXEL_STEP': '1',
+        'SRS': 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
+        'PIXEL_OFFSET': '0',
+        'X_BAND': '1',
+        'LINE_STEP': '1',
+        'Y_DATASET': 'NETCDF:"tmp/netcdf_42.nc":lat',
+        'Y_BAND': '1'}:
+        gdaltest.post_reason('failure')
+        print(ds.GetMetadata('GEOLOCATION'))
+        return 'fail'
+
+    ds = gdal.Open('NETCDF:"tmp/netcdf_42.nc":lon')
+    if ds.GetRasterBand(1).Checksum() != 36043:
+        gdaltest.post_reason('failure')
+        print(ds.GetRasterBand(1).Checksum())
+        return 'fail'
+
+    ds = gdal.Open('NETCDF:"tmp/netcdf_42.nc":lat')
+    if ds.GetRasterBand(1).Checksum() != 33501:
+        gdaltest.post_reason('failure')
+        print(ds.GetRasterBand(1).Checksum())
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test reading GEOLOCATION array from geotransform (non default)
+
+def netcdf_43():
+
+    if gdaltest.netcdf_drv is None:
+        return 'skip'
+
+    src_ds = gdal.Open('data/byte.tif')
+    gdaltest.netcdf_drv.CreateCopy('tmp/netcdf_43.nc', src_ds, options = ['WRITE_LONLAT=YES'] )
+
+    ds = gdal.Open('tmp/netcdf_43.nc')
+    if ds.GetMetadata('GEOLOCATION') != {
+        'LINE_OFFSET': '0',
+        'X_DATASET': 'NETCDF:"tmp/netcdf_43.nc":lon',
+        'PIXEL_STEP': '1',
+        'SRS': 'GEOGCS["WGS 84",DATUM["WGS_1984",SPHEROID["WGS 84",6378137,298.257223563,AUTHORITY["EPSG","7030"]],AUTHORITY["EPSG","6326"]],PRIMEM["Greenwich",0,AUTHORITY["EPSG","8901"]],UNIT["degree",0.0174532925199433,AUTHORITY["EPSG","9122"]],AUTHORITY["EPSG","4326"]]',
+        'PIXEL_OFFSET': '0',
+        'X_BAND': '1',
+        'LINE_STEP': '1',
+        'Y_DATASET': 'NETCDF:"tmp/netcdf_43.nc":lat',
+        'Y_BAND': '1'}:
+        gdaltest.post_reason('failure')
+        print(ds.GetMetadata('GEOLOCATION'))
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
 
 ###############################################################################
 # main tests list
@@ -1480,7 +1583,10 @@ gdaltest_list = [
     netcdf_37,
     netcdf_38,
     netcdf_39,
-    netcdf_40
+    netcdf_40,
+    netcdf_41,
+    netcdf_42,
+    netcdf_43,
  ]
 
 ###############################################################################
