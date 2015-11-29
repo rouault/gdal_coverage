@@ -4505,7 +4505,7 @@ GDALDataset *netCDFDataset::Open( GDALOpenInfo * poOpenInfo )
     if( nc_inq_ndims( cdfid, &dim_count ) != NC_NOERR || dim_count < 2 )
     {
         CPLError( CE_Warning, CPLE_AppDefined, 
-                  "%s is a netCDF file, but not in GMT configuration.",
+                  "%s is a netCDF file, but without any dimensions >= 2.",
                   poOpenInfo->pszFilename );
 
         nc_close( cdfid );
@@ -4757,7 +4757,6 @@ GDALDataset *netCDFDataset::Open( GDALOpenInfo * poOpenInfo )
     size_t xdim;
     poDS->nXDimID = paDimIds[nd-1];
     nc_inq_dimlen ( cdfid, poDS->nXDimID, &xdim );
-    poDS->nRasterXSize = static_cast<int>(xdim);
 
 /* -------------------------------------------------------------------- */
 /*      Get Y dimension information                                     */
@@ -4765,6 +4764,22 @@ GDALDataset *netCDFDataset::Open( GDALOpenInfo * poOpenInfo )
     size_t ydim;
     poDS->nYDimID = paDimIds[nd-2];
     nc_inq_dimlen ( cdfid, poDS->nYDimID, &ydim );
+    
+    if( xdim > INT_MAX || ydim > INT_MAX )
+    {
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "Invalid raster dimensions: " CPL_FRMT_GUIB "x" CPL_FRMT_GUIB,
+                 static_cast<GUIntBig>(xdim),
+                 static_cast<GUIntBig>(ydim));
+        CPLFree( paDimIds );
+        CPLFree( panBandDimPos );
+        CPLReleaseMutex(hNCMutex); // Release mutex otherwise we'll deadlock with GDALDataset own mutex
+        delete poDS;
+        CPLAcquireMutex(hNCMutex, 1000.0);
+        return NULL;
+    }
+    
+    poDS->nRasterXSize = static_cast<int>(xdim);
     poDS->nRasterYSize = static_cast<int>(ydim);
 
     unsigned int k = 0;
@@ -4886,23 +4901,31 @@ GDALDataset *netCDFDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Create bands                                                    */
 /* -------------------------------------------------------------------- */
-    int i = 0;  // TODO: Give i a better name.  Is it != nTotLevCount?
+
+    /* Arbitrary threshold */
+    int nMaxBandCount = atoi(CPLGetConfigOption("GDAL_MAX_BAND_COUNT", "32768"));
+    if( nMaxBandCount <= 0 )
+        nMaxBandCount = 32768;
+    if( nTotLevCount > static_cast<unsigned int>(nMaxBandCount) )
+    {
+        CPLError(CE_Warning, CPLE_AppDefined,
+                 "Limiting number of bands to %d instead of %u",
+                 nMaxBandCount,
+                 static_cast<unsigned int>(nTotLevCount));
+        nTotLevCount = static_cast<unsigned int>(nMaxBandCount);
+    }
     for ( unsigned int lev = 0; lev < nTotLevCount ; lev++ ) {
         netCDFRasterBand *poBand =
             new netCDFRasterBand(poDS, var, nDim, lev,
                                  panBandZLev, panBandDimPos, 
-                                 paDimIds, i+1 );
-        poDS->SetBand( i+1, poBand );
-        i++;
+                                 paDimIds, lev+1 );
+        poDS->SetBand( lev+1, poBand );
     }
 
     CPLFree( paDimIds );
     CPLFree( panBandDimPos );
     if ( panBandZLev )
         CPLFree( panBandZLev );
-
-    poDS->nBands = i;
-
     // Handle angular geographic coordinates here
 
 /* -------------------------------------------------------------------- */
