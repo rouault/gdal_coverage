@@ -1790,7 +1790,6 @@ void netCDFDataset::SetProjectionFromVar( int nVarId )
     /* These values from GDAL metadata */
     const char *pszWKT = NULL;
     const char *pszGeoTransform = NULL;
-    char **papszGeoTransform = NULL;
 
     netCDFDataset * poDS = this; /* perhaps this should be removed for clarity */
 
@@ -2870,18 +2869,16 @@ void netCDFDataset::SetProjectionFromVar( int nVarId )
 
                 if( pszGeoTransform != NULL ) {
 
-                    bGotGdalGT = true;
-
-                    papszGeoTransform = CSLTokenizeString2( pszGeoTransform,
+                    char** papszGeoTransform = CSLTokenizeString2( pszGeoTransform,
                                                             " ", 
                                                             CSLT_HONOURSTRINGS );
-                    adfTempGeoTransform[0] = CPLAtof( papszGeoTransform[0] );
-                    adfTempGeoTransform[1] = CPLAtof( papszGeoTransform[1] );
-                    adfTempGeoTransform[2] = CPLAtof( papszGeoTransform[2] );
-                    adfTempGeoTransform[3] = CPLAtof( papszGeoTransform[3] );
-                    adfTempGeoTransform[4] = CPLAtof( papszGeoTransform[4] );
-                    adfTempGeoTransform[5] = CPLAtof( papszGeoTransform[5] );
-
+                    if( CSLCount(papszGeoTransform) == 6 )
+                    {
+                        bGotGdalGT = true;
+                        for(int i=0;i<6;i++)
+                            adfTempGeoTransform[i] = CPLAtof( papszGeoTransform[i] );
+                    }
+                    CSLDestroy( papszGeoTransform );
 /* -------------------------------------------------------------------- */
 /*      Look for corner array values                                    */
 /* -------------------------------------------------------------------- */
@@ -2944,7 +2941,6 @@ void netCDFDataset::SetProjectionFromVar( int nVarId )
                             - (adfTempGeoTransform[5] / 2);
                     }
                 } // (pszGeoTransform != NULL)
-                CSLDestroy( papszGeoTransform );
 
                 if ( bGotGdalSRS && ! bGotGdalGT )
                     CPLDebug( "GDAL_netCDF",
@@ -3255,7 +3251,7 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
         bIsGeographic = TRUE;
 
     CPLDebug( "GDAL_netCDF", "SetProjection, WKT now = [%s]\nprojected: %d geographic: %d", 
-              pszProjection,bIsProjected,bIsGeographic );
+              pszProjection ? pszProjection : "(null)",bIsProjected,bIsGeographic );
 
     if ( ! bSetGeoTransform )
         CPLDebug( "GDAL_netCDF", "netCDFDataset::AddProjectionVars() called, "
@@ -3284,7 +3280,7 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
             hBand_Y = GDALGetRasterBand( hDS_Y, nBand );
 
             /* if geoloc bands are found do basic vaidation based on their dimensions */
-            if ( hDS_X != NULL && hDS_Y != NULL ) {
+            if ( hBand_X != NULL && hBand_Y != NULL ) {
 
                 int nXSize_XBand = GDALGetRasterXSize( hDS_X );
                 int nYSize_XBand = GDALGetRasterYSize( hDS_X );
@@ -3845,8 +3841,8 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
         }
 
         /* Free the srs and transform objects */
-        if ( poLatLonSRS != NULL ) CPLFree( poLatLonSRS );
-        if ( poTransform != NULL ) CPLFree( poTransform );
+        if ( poLatLonSRS != NULL ) delete poLatLonSRS;
+        if ( poTransform != NULL ) delete poTransform;
 
         /* Free data */
         CPLFree( padXVal );
@@ -3941,8 +3937,10 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
     }// not projected 
 
     /* close geoloc datasets */
-    if ( bHasGeoloc ) {
+    if( hDS_X != NULL ) {
         GDALClose( hDS_X ); 
+    }
+    if( hDS_Y != NULL ) {
         GDALClose( hDS_Y ); 
     }
 
