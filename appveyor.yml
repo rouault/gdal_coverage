@@ -12,6 +12,7 @@ install:
 - if "%platform%" == "x86" call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat"
 - if "%platform%" == "x64" "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
 - if "%platform%" == "x64" call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
+- if "%platform%" == "x64" SET PATH="C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\BIN\amd64";%PATH%
 - if "%platform%" == "x64" set WIN64_ARG="WIN64=YES"
 - ps: Start-FileDownload http://download.osgeo.org/proj/proj-4.9.1.tar.gz
 - 7z x proj-4.9.1.tar.gz
@@ -21,9 +22,9 @@ install:
 - nmake /f makefile.vc install-all
 - cd ..
 - cd gdal
-- nmake /f makefile.vc MSVC_VER=1900 DEBUG=1 %WIN64_ARG% USER_DEFS=/WX
+- nmake /f makefile.vc MSVC_VER=1900 DEBUG=1 %WIN64_ARG% USER_DEFS="/wd4458 /wd4456 /WX"
 - cd apps
-- nmake /f makefile.vc test_ogrsf.exe MSVC_VER=1900 DEBUG=1 %WIN64_ARG% USER_DEFS=/WX
+- nmake /f makefile.vc test_ogrsf.exe MSVC_VER=1900 DEBUG=1 %WIN64_ARG% USER_DEFS="/wd4458 /wd4456 /WX"
 - cd ..
 - cd swig\python
 - python setup.py build
