@@ -1190,23 +1190,29 @@ def ogr_geojson_26():
     
     feature = lyr.GetNextFeature()
     if feature.GetFID() != 1:
+        gdaltest.post_reason('fail')
         feature.DumpReadable()
         return 'fail'
     if feature.GetField("intvalue") != 1:
+        gdaltest.post_reason('fail')
         feature.DumpReadable()
         return 'fail'
     if feature.GetField("int64") != 1234567890123:
+        gdaltest.post_reason('fail')
         feature.DumpReadable()
         return 'fail'
 
     feature = lyr.GetNextFeature()
     if feature.GetFID() != 1234567890123:
+        gdaltest.post_reason('fail')
         feature.DumpReadable()
         return 'fail'
     if feature.GetField("intvalue") != 1234567890123:
+        gdaltest.post_reason('fail')
         feature.DumpReadable()
         return 'fail'
     if feature.GetField("intlist") != [1, 1234567890123]:
+        gdaltest.post_reason('fail')
         feature.DumpReadable()
         return 'fail'
 
@@ -2208,6 +2214,116 @@ def ogr_geojson_45():
 
     return 'success'
 
+###############################################################################
+# Test that writing JSon content as value of a string field is serialized as it
+
+def ogr_geojson_46():
+    if gdaltest.geojson_drv is None:
+        return 'skip'
+
+    ds = ogr.GetDriverByName('GeoJSON').CreateDataSource('/vsimem/ogr_geojson_46.json')
+    lyr = ds.CreateLayer('test' )
+    lyr.CreateField(ogr.FieldDefn('myprop'))
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['myprop'] = '{ "a": "b" }'
+    lyr.CreateFeature(f)
+    ds = None
+
+    fp = gdal.VSIFOpenL('/vsimem/ogr_geojson_46.json', 'rb')
+    data = gdal.VSIFReadL(1, 10000, fp).decode('ascii')
+    gdal.VSIFCloseL(fp)
+
+    gdal.Unlink('/vsimem/ogr_geojson_46.json')
+
+    if data.find('{ "myprop": { "a": "b" } }') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test update support
+
+def ogr_geojson_47():
+    if gdaltest.geojson_drv is None:
+        return 'skip'
+
+    #ERROR 6: Update from inline definition not supported
+    with gdaltest.error_handler():
+        ds = ogr.Open('{"type": "FeatureCollection", "features":[]}', update = 1)
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    gdal.FileFromMemBuffer('/vsimem/ogr_geojson_47.json',
+"""{"type": "FeatureCollection", "foo": "bar",
+    "features":[ { "type": "Feature", "bar": "baz", "properties": { "myprop": "myvalue" }, "geometry": null } ]}""")
+
+    # Test read support
+    ds = ogr.Open('/vsimem/ogr_geojson_47.json', update = 1)
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    f.SetField("myprop", "another_value")
+    lyr.SetFeature(f)
+    ds = None
+
+    fp = gdal.VSIFOpenL('/vsimem/ogr_geojson_47.json', 'rb')
+    if fp is not None:
+        data = gdal.VSIFReadL(1, 10000, fp).decode('ascii')
+        gdal.VSIFCloseL(fp)
+    else:
+        data = None
+
+    gdal.Unlink('/vsimem/ogr_geojson_47.json')
+
+    # we don't want crs if there's no in the source
+    if data.find('"foo": "bar"') < 0 or data.find('"bar": "baz"') < 0 or \
+       data.find('crs') >= 0 or \
+       data.find('"myprop": "another_value"') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test update support with file that has a single feature not in a FeatureCollection
+
+def ogr_geojson_48():
+    if gdaltest.geojson_drv is None:
+        return 'skip'
+
+    gdal.FileFromMemBuffer('/vsimem/ogr_geojson_48.json',
+"""{ "type": "Feature", "bar": "baz", "properties": { "myprop": "myvalue" }, "geometry": null }""")
+
+    # Test read support
+    ds = ogr.Open('/vsimem/ogr_geojson_48.json', update = 1)
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    f.SetField("myprop", "another_value")
+    lyr.SetFeature(f)
+    ds = None
+
+    fp = gdal.VSIFOpenL('/vsimem/ogr_geojson_48.json', 'rb')
+    if fp is not None:
+        data = gdal.VSIFReadL(1, 10000, fp).decode('ascii')
+        gdal.VSIFCloseL(fp)
+    else:
+        data = None
+
+    gdal.Unlink('/vsimem/ogr_geojson_48.json')
+
+    # we don't want crs if there's no in the source
+    if data.find('"bar": "baz"') < 0 or \
+       data.find('crs') >= 0 or \
+       data.find('FeatureCollection') >= 0 or \
+       data.find('"myprop": "another_value"') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    return 'success'
 
 ###############################################################################
 
@@ -2291,6 +2407,9 @@ gdaltest_list = [
     ogr_geojson_43,
     ogr_geojson_44,
     ogr_geojson_45,
+    ogr_geojson_46,
+    ogr_geojson_47,
+    ogr_geojson_48,
     ogr_geojson_cleanup ]
 
 if __name__ == '__main__':
