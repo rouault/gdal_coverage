@@ -31,7 +31,7 @@ install:
 - python setup.py install
 - cd ..\..
 - cd ..\autotest\cpp
-- nmake /f makefile.vc MSVC_VER=1800 %WIN64_ARG%
+- nmake /f makefile.vc MSVC_VER=1900 %WIN64_ARG%
 - cd ..\..
 
 
