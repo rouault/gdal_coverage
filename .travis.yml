@@ -123,6 +123,7 @@ script:
   - unzip PGeoTest.zip
   - cd ../../..
 # Run ogr_fgdb.py in isolation from the rest
+  - export PYTHONPATH=/usr/lib/python2.7/dist-packages
   - cd ogr
   - python ogr_fgdb.py
   - mkdir disabled
