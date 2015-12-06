@@ -51,7 +51,7 @@ CPL_C_END
 int WritePeStringIfNeeded(OGRSpatialReference* poSRS, HFAHandle hHFA);
 void ClearSR(HFAHandle hHFA);
 
-static const char *apszDatumMap[] = {
+static const char * const apszDatumMap[] = {
     /* Imagine name, WKT name */
     "NAD27", "North_American_Datum_1927",
     "NAD83", "North_American_Datum_1983",
@@ -61,7 +61,7 @@ static const char *apszDatumMap[] = {
     NULL, NULL
 };
 
-static const char *apszUnitMap[] = {
+static const char * const apszUnitMap[] = {
     "meters", "1.0",
     "meter", "1.0",
     "m", "1.0",
@@ -2098,7 +2098,7 @@ void HFARasterBand::ReadAuxMetadata()
 
     HFABand *poBand = hHFA->papoBand[nBand-1];
 
-    const char ** pszAuxMetaData = GetHFAAuxMetaDataList();
+    const char * const * pszAuxMetaData = GetHFAAuxMetaDataList();
     for( int i = 0; pszAuxMetaData[i] != NULL; i += 4 )
     {
         HFAEntry *poEntry;
