@@ -28,9 +28,9 @@ before_install:
   - psql -c "drop database if exists autotest" -U postgres
   - psql -c "create database autotest" -U postgres
   - psql -c "create extension postgis" -d autotest -U postgres
-  - mysql -e "create database autotest;"
-  - mysql -e "GRANT ALL ON autotest.* TO 'root'@'localhost';" -u root
-  - mysql -e "GRANT ALL ON autotest.* TO 'travis'@'localhost';" -u root
+#  - mysql -e "create database autotest;"
+#  - mysql -e "GRANT ALL ON autotest.* TO 'root'@'localhost';" -u root
+#  - mysql -e "GRANT ALL ON autotest.* TO 'travis'@'localhost';" -u root
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/FileGDB_API_1_2-64.tar.gz
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/MrSID_DSDK-8.5.0.3422-linux.x86-64.gcc44.tar.gz
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/install-libecwj2-ubuntu12.04-64bit.tar.gz
