@@ -16,11 +16,11 @@ before_install:
   - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
   - sudo add-apt-repository -y ppa:marlam/gta
   - sudo apt-get update
-  - sudo apt-get install python-numpy postgis postgresql-9.3 postgresql-client-9.3 postgresql-9.3-postgis-2.1 postgresql-9.3-postgis-2.1-scripts libpq-dev libpng12-dev libjpeg-dev libgif-dev liblzma-dev libgeos-dev libcurl4-gnutls-dev libproj-dev libxml2-dev libexpat-dev libxerces-c-dev libnetcdf-dev netcdf-bin libpoppler-dev libspatialite-dev gpsbabel swig libhdf4-alt-dev libhdf5-serial-dev libpodofo-dev poppler-utils libfreexl-dev unixodbc-dev libwebp-dev openjdk-7-jdk libepsilon-dev libgta-dev liblcms2-2 libpcre3-dev mercurial cmake libcrypto++-dev
-  - sudo apt-get install python-lxml
-  - sudo apt-get install python-pip
+  - sudo apt-get install -y python-numpy postgis postgresql-9.3 postgresql-client-9.3 postgresql-9.3-postgis-2.1 postgresql-9.3-postgis-2.1-scripts libpq-dev libpng12-dev libjpeg-dev libgif-dev liblzma-dev libgeos-dev libcurl4-gnutls-dev libproj-dev libxml2-dev libexpat-dev libxerces-c-dev libnetcdf-dev netcdf-bin libpoppler-dev libspatialite-dev gpsbabel swig libhdf4-alt-dev libhdf5-serial-dev libpodofo-dev poppler-utils libfreexl-dev unixodbc-dev libwebp-dev openjdk-7-jdk libepsilon-dev libgta-dev liblcms2-2 libpcre3-dev mercurial cmake libcrypto++-dev
+  - sudo apt-get install -y python-lxml
+  - sudo apt-get install -y python-pip
 # Boost for Mongo
-  - sudo apt-get install libboost-regex-dev libboost-system-dev libboost-thread-dev
+  - sudo apt-get install -y libboost-regex-dev libboost-system-dev libboost-thread-dev
   - sudo pip install pyflakes
   - pyflakes autotest
   - pyflakes gdal/swig/python/scripts
