@@ -197,6 +197,10 @@ TABFeature::TABFeature(OGRFeatureDefn *poDefnIn):
     m_nYMax = 0;
     m_nComprOrgX = 0;
     m_nComprOrgY = 0;
+    m_dXMin = 0;
+    m_dYMin = 0;
+    m_dXMax = 0;
+    m_dYMax = 0;
 }
 
 /**********************************************************************
@@ -897,14 +901,14 @@ int TABFeature::WriteGeometryToMAPFile(TABMAPFile * /* poMapFile*/,
  **********************************************************************/
 void TABFeature::DumpMID(FILE *fpOut /*=NULL*/)
 {
-    OGRFeatureDefn      *poDefn = GetDefnRef();
+    OGRFeatureDefn      *l_poDefn = GetDefnRef();
 
     if (fpOut == NULL)
         fpOut = stdout;
 
     for( int iField = 0; iField < GetFieldCount(); iField++ )
     {
-        OGRFieldDefn    *poFDefn = poDefn->GetFieldDefn(iField);
+        OGRFieldDefn    *poFDefn = l_poDefn->GetFieldDefn(iField);
         
         fprintf( fpOut, "  %s (%s) = %s\n",
                  poFDefn->GetNameRef(),
@@ -7330,7 +7334,7 @@ int TABCollection::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
     /*-----------------------------------------------------------------
      * PLine Component
      *----------------------------------------------------------------*/
-    if(poCollHdr->m_nNumPLineSections > 0)
+    if(poCoordBlock != NULL && poCollHdr->m_nNumPLineSections > 0)
     {
         //
         // Build fake coord section header to pass to TABPolyline::ReadGeom..()

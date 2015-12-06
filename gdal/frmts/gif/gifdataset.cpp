@@ -97,9 +97,9 @@ class GIFRasterBand : public GIFAbstractRasterBand
 /*                           GIFRasterBand()                            */
 /************************************************************************/
 
-GIFRasterBand::GIFRasterBand( GIFDataset *poDS, int nBand, 
+GIFRasterBand::GIFRasterBand( GIFDataset *poDSIn, int nBandIn, 
                               SavedImage *psSavedImage, int nBackground ) :
-                GIFAbstractRasterBand(poDS, nBand, psSavedImage, nBackground, FALSE)
+                GIFAbstractRasterBand(poDSIn, nBandIn, psSavedImage, nBackground, FALSE)
 
 {
 }
@@ -447,6 +447,14 @@ GIFDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     if( poBand->GetColorTable() == NULL )
     {
         psGifCT = GifMakeMapObject( 256, NULL );
+        if( psGifCT == NULL )
+        {
+            CPLError(CE_Failure, CPLE_AppDefined,
+                     "Cannot allocate color table");
+            GIFAbstractDataset::myEGifCloseFile(hGifFile);
+            VSIFCloseL( fp );
+            return NULL;
+        }
         for( int iColor = 0; iColor < 256; iColor++ )
         {
             psGifCT->Colors[iColor].Red = (GifByteType) iColor;
@@ -457,12 +465,20 @@ GIFDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     else
     {
         GDALColorTable	*poCT = poBand->GetColorTable();
-        int nFullCount = 1;
+        int nFullCount = 2;
 
         while( nFullCount < poCT->GetColorEntryCount() )
             nFullCount = nFullCount * 2;
 
         psGifCT = GifMakeMapObject( nFullCount, NULL );
+        if( psGifCT == NULL )
+        {
+            CPLError(CE_Failure, CPLE_AppDefined,
+                     "Cannot allocate color table");
+            GIFAbstractDataset::myEGifCloseFile(hGifFile);
+            VSIFCloseL( fp );
+            return NULL;
+        }
         int iColor = 0;
         for( ; iColor < poCT->GetColorEntryCount(); iColor++ )
         {
@@ -614,9 +630,9 @@ GIFDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
     if( CSLFetchBoolean( papszOptions, "WORLDFILE", FALSE ) )
     {
-    	double      adfGeoTransform[6];
+        double      adfGeoTransform[6];
 
-	if( poSrcDS->GetGeoTransform( adfGeoTransform ) == CE_None )
+        if( poSrcDS->GetGeoTransform( adfGeoTransform ) == CE_None )
             GDALWriteWorldFile( pszFilename, "wld", adfGeoTransform );
     }
 
@@ -624,7 +640,7 @@ GIFDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /*      Re-open dataset, and copy any auxiliary pam information.         */
 /* -------------------------------------------------------------------- */
 
-    /* If outputing to stdout, we can't reopen it, so we'll return */
+    /* If writing to stdout, we can't reopen it, so return */
     /* a fake dataset to make the caller happy */
     CPLPushErrorHandler(CPLQuietErrorHandler);
     poDS = (GDALPamDataset*) GDALOpen(pszFilename, GA_ReadOnly);

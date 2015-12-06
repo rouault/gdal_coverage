@@ -800,10 +800,10 @@ int JPGDatasetCommon::EXIFInit(VSILFILE *fp)
 /*                            JPGMaskBand()                             */
 /************************************************************************/
 
-JPGMaskBand::JPGMaskBand( JPGDataset *poDS )
+JPGMaskBand::JPGMaskBand( JPGDataset *poDSIn )
 
 {
-    this->poDS = poDS;
+    this->poDS = poDSIn;
     nBand = 0;
 
     nRasterXSize = poDS->GetRasterXSize();
@@ -864,18 +864,18 @@ CPLErr JPGMaskBand::IReadBlock( CPL_UNUSED int nBlockX, int nBlockY, void *pImag
 /*                           JPGRasterBand()                            */
 /************************************************************************/
 
-JPGRasterBand::JPGRasterBand( JPGDatasetCommon *poDS, int nBand )
+JPGRasterBand::JPGRasterBand( JPGDatasetCommon *poDSIn, int nBandIn )
 
 {
-    this->poDS = poGDS = poDS;
+    this->poDS = poGDS = poDSIn;
 
-    this->nBand = nBand;
-    if( poDS->GetDataPrecision() == 12 )
+    this->nBand = nBandIn;
+    if( poDSIn->GetDataPrecision() == 12 )
         eDataType = GDT_UInt16;
     else
         eDataType = GDT_Byte;
 
-    nBlockXSize = poDS->nRasterXSize;;
+    nBlockXSize = poDSIn->nRasterXSize;
     nBlockYSize = 1;
 
     GDALMajorObject::SetMetadataItem("COMPRESSION","JPEG","IMAGE_STRUCTURE");
@@ -3545,7 +3545,7 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /*      Re-open dataset, and copy any auxiliary pam information.         */
 /* -------------------------------------------------------------------- */
 
-    /* If outputing to stdout, we can't reopen it, so we'll return */
+    /* If writing to stdout, we can't reopen it, so return */
     /* a fake dataset to make the caller happy */
     if( CSLTestBoolean(CPLGetConfigOption("GDAL_OPEN_AFTER_COPY", "YES")) )
     {

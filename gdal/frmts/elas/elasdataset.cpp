@@ -43,7 +43,7 @@ CPL_C_END
 typedef struct ELASHeader {
     ELASHeader();
 
-    GInt32	NBIH;	/* bytes in header, normaly 1024 */
+    GInt32      NBIH;   /* bytes in header, normally 1024 */
     GInt32      NBPR;	/* bytes per data record (all bands of scanline) */
     GInt32	IL;	/* initial line - normally 1 */
     GInt32	LL;	/* last line */
@@ -172,15 +172,15 @@ class ELASRasterBand : public GDALPamRasterBand
 /*                           ELASRasterBand()                            */
 /************************************************************************/
 
-ELASRasterBand::ELASRasterBand( ELASDataset *poDS, int nBand )
+ELASRasterBand::ELASRasterBand( ELASDataset *poDSIn, int nBandIn )
 
 {
-    this->poDS = poDS;
-    this->nBand = nBand;
+    this->poDS = poDSIn;
+    this->nBand = nBandIn;
 
-    this->eAccess = poDS->eAccess;
+    this->eAccess = poDSIn->eAccess;
 
-    eDataType = poDS->eRasterDataType;
+    eDataType = poDSIn->eRasterDataType;
 
     nBlockXSize = poDS->GetRasterXSize();
     nBlockYSize = 1;

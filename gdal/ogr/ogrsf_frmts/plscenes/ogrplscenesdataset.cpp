@@ -423,7 +423,7 @@ GDALDataset* OGRPLScenesDataset::OpenRasterScene(GDALOpenInfo* poOpenInfo,
                                         sizeof(OGRPLScenesLayer*) * (nLayers + 1));
             papoLayers[nLayers ++] = poLayer;
 
-            /* Attach scene matadata */
+            /* Attach scene metadata. */
             poLayer->SetAttributeFilter(CPLSPrintf("id = '%s'", osScene.c_str()));
             OGRFeature* poFeat = poLayer->GetNextFeature();
             if( poFeat )
@@ -445,7 +445,7 @@ GDALDataset* OGRPLScenesDataset::OpenRasterScene(GDALOpenInfo* poOpenInfo,
             delete poFeat;
         }
     }
-    
+
     if( bUseVSICURL )
     {
         CPLSetThreadLocalConfigOption("CPL_VSIL_CURL_USE_HEAD",
@@ -533,14 +533,14 @@ GDALDataset* OGRPLScenesDataset::Open(GDALOpenInfo* poOpenInfo)
         {
             const char* pszSceneType = it.key;
             const char* pszSceneTypeURL = json_object_get_string(it.val);
-            json_object* poObj = NULL;
+            json_object* poObj2 = NULL;
             if( !EQUAL(pszSceneType, "ortho") )
-                poObj = poDS->RunRequest( (CPLString(pszSceneTypeURL) + CPLString("?count=10")).c_str() );
+                poObj2 = poDS->RunRequest( (CPLString(pszSceneTypeURL) + CPLString("?count=10")).c_str() );
 
-            OGRPLScenesLayer* poLayer = new OGRPLScenesLayer(poDS, pszSceneType, pszSceneTypeURL, poObj);
+            OGRPLScenesLayer* poLayer = new OGRPLScenesLayer(poDS, pszSceneType, pszSceneTypeURL, poObj2);
 
-            if( poObj )
-                json_object_put(poObj);
+            if( poObj2 )
+                json_object_put(poObj2);
 
             poDS->papoLayers = (OGRPLScenesLayer**) CPLRealloc(poDS->papoLayers,
                                         sizeof(OGRPLScenesLayer*) * (poDS->nLayers + 1));

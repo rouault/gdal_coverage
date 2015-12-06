@@ -632,8 +632,6 @@ int OGRSQLiteBaseDataSource::OpenOrCreateDB(int flagsIn, int bRegisterOGR2SQLite
     if (pszSqliteJournal != NULL)
     {
         char* pszErrMsg = NULL;
-        char **papszResult;
-        int nRowCount, nColCount;
 
         const char* pszSQL = CPLSPrintf("PRAGMA journal_mode = %s",
                                         pszSqliteJournal);
@@ -658,8 +656,6 @@ int OGRSQLiteBaseDataSource::OpenOrCreateDB(int flagsIn, int bRegisterOGR2SQLite
         for(int i=0; papszTokens[i] != NULL; i++ )
         {
             char* pszErrMsg = NULL;
-            char **papszResult;
-            int nRowCount, nColCount;
 
             const char* pszSQL = CPLSPrintf("PRAGMA %s", papszTokens[i]);
 
@@ -825,7 +821,7 @@ int OGRSQLiteDataSource::Create( const char * pszNameIn, char **papszOptions )
     }
 
 /* -------------------------------------------------------------------- */
-/*      Optionnaly initialize the content of the spatial_ref_sys table  */
+/*      Optionally initialize the content of the spatial_ref_sys table  */
 /*      with the EPSG database                                          */
 /* -------------------------------------------------------------------- */
     if ( (bSpatialite || bMetadata) &&

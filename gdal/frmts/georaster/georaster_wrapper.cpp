@@ -630,7 +630,7 @@ GeoRasterWrapper* GeoRasterWrapper::Open( const char* pszStringId, bool bUpdate 
 
 bool GeoRasterWrapper::Create( char* pszDescription,
                                char* pszInsert,
-                               bool bUpdate )
+                               bool bUpdateIn )
 {
     CPLString sValues;
     CPLString sFormat;
@@ -677,7 +677,7 @@ bool GeoRasterWrapper::Create( char* pszDescription,
 
     char szDescription[OWTEXT];
 
-    if( bUpdate == false )
+    if( bUpdateIn == false )
     {
 
         if ( pszDescription  )
@@ -868,7 +868,7 @@ bool GeoRasterWrapper::Create( char* pszDescription,
 
     OWStatement* poStmt;
 
-    if( ! bUpdate )
+    if( ! bUpdateIn )
     {
         poStmt = poConnection->CreateStatement( CPLSPrintf(
             "DECLARE\n"
@@ -908,7 +908,7 @@ bool GeoRasterWrapper::Create( char* pszDescription,
 
     CPLString sCommand;
 
-    if( bUpdate )
+    if( bUpdateIn )
     {
         sCommand = CPLSPrintf(
             "SELECT %s INTO GR1 FROM %s%s T WHERE %s FOR UPDATE;",
@@ -2842,14 +2842,14 @@ bool GeoRasterWrapper::SetNoData( int nLayer, const char* pszValue )
 
     char szRDT[OWCODE];
     char szNoData[OWTEXT];
-    
+
     strcpy( szRDT, sDataTable.c_str() );
     strcpy( szNoData, pszValue );
 
     int nRID = nRasterId;
 
     // ------------------------------------------------------------
-    //  Write the in memory XML metada to avoid lossing other changes
+    //  Write the in memory XML metadata to avoid losing other changes.
     // ------------------------------------------------------------
 
     char* pszMetadata = CPLSerializeXMLTree( phMetadata );
@@ -2861,7 +2861,7 @@ bool GeoRasterWrapper::SetNoData( int nLayer, const char* pszValue )
 
     OCILobLocator* phLocatorR = NULL;
     OCILobLocator* phLocatorW = NULL;
-    
+
     OWStatement* poStmt = poConnection->CreateStatement( CPLSPrintf(
         "DECLARE\n"
         "  GR1 sdo_georaster;\n"

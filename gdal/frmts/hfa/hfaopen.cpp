@@ -151,7 +151,7 @@ HFAHandle HFAOpen( const char * pszFilename, const char * pszAccess )
         CPLError( CE_Failure, CPLE_AppDefined,
                   "Attempt to read 16 byte header failed for\n%s.",
                   pszFilename );
-
+        VSIFCloseL(fp);
         return NULL;
     }
 
@@ -160,7 +160,7 @@ HFAHandle HFAOpen( const char * pszFilename, const char * pszAccess )
         CPLError( CE_Failure, CPLE_AppDefined,
                   "File %s is not an Imagine HFA file ... header wrong.",
                   pszFilename );
-
+        VSIFCloseL(fp);
         return NULL;
     }
 
@@ -208,7 +208,11 @@ HFAHandle HFAOpen( const char * pszFilename, const char * pszAccess )
 /* -------------------------------------------------------------------- */
     bRet &= VSIFSeekL( fp, 0, SEEK_END ) >= 0;
     if( !bRet )
+    {
+        VSIFCloseL(fp);
+        CPLFree(psInfo);
         return NULL;
+    }
     psInfo->nEndOfFile = (GUInt32) VSIFTellL( fp );
 
 /* -------------------------------------------------------------------- */
@@ -217,6 +221,7 @@ HFAHandle HFAOpen( const char * pszFilename, const char * pszAccess )
     psInfo->poRoot = HFAEntry::New( psInfo, psInfo->nRootPos, NULL, NULL );
     if( psInfo->poRoot == NULL )
     {
+        VSIFCloseL(fp);
         CPLFree(psInfo);
         return NULL;
     }
@@ -2548,12 +2553,12 @@ char ** HFAGetMetadata( HFAHandle hHFA, int nBand )
         columnDataPtr = poColumn->GetIntField( "columnDataPtr" );
         if( columnDataPtr == 0 )
             continue;
-            
+
 /* -------------------------------------------------------------------- */
-/*      read up to nMaxNumChars bytes from the indicated location.      */
+/*      Read up to nMaxNumChars bytes from the indicated location.      */
 /*      allocate required space temporarily                             */
-/*      nMaxNumChars should have been set by GDAL orginally so we should*/
-/*      trust it, but who knows...                                      */
+/*      nMaxNumChars should have been set by GDAL originally so we      */
+/*      should trust it, but who knows...                               */
 /* -------------------------------------------------------------------- */
         int nMaxNumChars = poColumn->GetIntField( "maxNumChars" );
 
@@ -3008,7 +3013,7 @@ const char *HFAGetIGEFilename( HFAHandle hHFA )
                 {
                     CPLString osExtension = CPLGetExtension(pszRawFilename);
                     CPLString osBasename = CPLGetBasename(hHFA->pszFilename);
-                    CPLString osFullFilename = 
+                    osFullFilename = 
                         CPLFormFilename( hHFA->pszPath, osBasename, 
                                          osExtension );
 

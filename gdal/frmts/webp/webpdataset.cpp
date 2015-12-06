@@ -103,7 +103,7 @@ class WEBPRasterBand : public GDALPamRasterBand
 /*                          WEBPRasterBand()                            */
 /************************************************************************/
 
-WEBPRasterBand::WEBPRasterBand( WEBPDataset *poDSIn, CPL_UNUSED int nBand )
+WEBPRasterBand::WEBPRasterBand( WEBPDataset *poDSIn, int )
 {
     poDS = poDSIn;
 
@@ -228,11 +228,11 @@ char  **WEBPDataset::GetMetadata( const char * pszDomain )
                 if (strcmp(szHeader, "VP8X") != 0 || nChunkSize < 10)
                     break;
 
-                int nFlags;
-                if (VSIFReadL(&nFlags, 1, 4, fpImage) != 4)
+                int l_nFlags;
+                if (VSIFReadL(&l_nFlags, 1, 4, fpImage) != 4)
                     break;
-                CPL_LSBPTR32(&nFlags);
-                if ((nFlags & 8) == 0)
+                CPL_LSBPTR32(&l_nFlags);
+                if ((l_nFlags & 8) == 0)
                     break;
 
                 VSIFSeekL(fpImage, nChunkSize - 4, SEEK_CUR);
@@ -839,11 +839,11 @@ WEBPDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     }
 
 /* -------------------------------------------------------------------- */
-/*      Re-open dataset, and copy any auxiliary pam information.         */
+/*      Re-open dataset, and copy any auxiliary pam information.        */
 /* -------------------------------------------------------------------- */
     GDALOpenInfo oOpenInfo(pszFilename, GA_ReadOnly);
 
-    /* If outputing to stdout, we can't reopen it, so we'll return */
+    /* If writing to stdout, we can't reopen it, so return */
     /* a fake dataset to make the caller happy */
     CPLPushErrorHandler(CPLQuietErrorHandler);
     WEBPDataset *poDS

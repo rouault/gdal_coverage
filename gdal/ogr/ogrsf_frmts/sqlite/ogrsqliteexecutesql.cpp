@@ -57,18 +57,18 @@ class OGRSQLiteExecuteSQLLayer: public OGRSQLiteSelectLayer
 /*                         OGRSQLiteExecuteSQLLayer()                   */
 /************************************************************************/
 
-OGRSQLiteExecuteSQLLayer::OGRSQLiteExecuteSQLLayer(char* pszTmpDBName,
-                                                   OGRSQLiteDataSource* poDS,
+OGRSQLiteExecuteSQLLayer::OGRSQLiteExecuteSQLLayer(char* pszTmpDBNameIn,
+                                                   OGRSQLiteDataSource* poDSIn,
                                                    CPLString osSQL,
-                                                   sqlite3_stmt * hStmt,
+                                                   sqlite3_stmt * hStmtIn,
                                                    int bUseStatementForGetNextFeature,
                                                    int bEmptyLayer ) :
 
-                               OGRSQLiteSelectLayer(poDS, osSQL, hStmt,
+                               OGRSQLiteSelectLayer(poDSIn, osSQL, hStmtIn,
                                                     bUseStatementForGetNextFeature,
                                                     bEmptyLayer, TRUE)
 {
-    this->pszTmpDBName = pszTmpDBName;
+    this->pszTmpDBName = pszTmpDBNameIn;
 }
 
 /************************************************************************/
@@ -644,9 +644,9 @@ int OGR2SQLITEDealWithSpatialColumn(OGRLayer* poLayer,
     rc = sqlite3_exec( hDB, osSQL.c_str(), NULL, NULL, NULL );
     if( rc != SQLITE_OK )
     {
-        CPLDebug("SQLITE",
-                    "Error occured during spatial index creation : %s",
-                    sqlite3_errmsg(hDB));
+        CPLDebug( "SQLITE",
+                  "Error occurred during spatial index creation : %s",
+                  sqlite3_errmsg(hDB));
     }
 #else //  ENABLE_VIRTUAL_OGR_SPATIAL_INDEX
     rc = sqlite3_exec( hDB, "BEGIN", NULL, NULL, NULL );
@@ -700,9 +700,9 @@ int OGR2SQLITEDealWithSpatialColumn(OGRLayer* poLayer,
         rc = sqlite3_exec( hDB, "COMMIT", NULL, NULL, NULL );
     else
     {
-        CPLDebug("SQLITE",
-                    "Error occured during spatial index creation : %s",
-                    sqlite3_errmsg(hDB));
+        CPLDebug( "SQLITE",
+                  "Error occurred during spatial index creation : %s",
+                  sqlite3_errmsg(hDB));
         rc = sqlite3_exec( hDB, "ROLLBACK", NULL, NULL, NULL );
     }
 #endif //  ENABLE_VIRTUAL_OGR_SPATIAL_INDEX
@@ -743,8 +743,8 @@ OGRLayer * OGRSQLiteExecuteSQL( GDALDataset* poDS,
 #ifdef HAVE_SPATIALITE
 
 /* -------------------------------------------------------------------- */
-/*      Creating an empty spatialite DB (with spatial_ref_sys populated */
-/*      has a non-neglectable cost. So at the first attempt, let's make */
+/*      Creating an empty SpatiaLite DB (with spatial_ref_sys populated */
+/*      has a significant cost. So at the first attempt, let's make     */
 /*      one and cache it for later use.                                 */
 /* -------------------------------------------------------------------- */
 #if 1
@@ -759,7 +759,9 @@ OGRLayer * OGRSQLiteExecuteSQL( GDALDataset* poDS,
         {
             bTried = TRUE;
             char* pszCachedFilename = (char*) CPLMalloc(256);
-            sprintf(pszCachedFilename, "/vsimem/ogr2sqlite/reference_%p.db",pszCachedFilename);
+            // TODO: Is this sprintf safe?
+            sprintf(pszCachedFilename, "/vsimem/ogr2sqlite/reference_%p.db",
+                    pszCachedFilename);
             char** papszOptions = CSLAddString(NULL, "SPATIALITE=YES");
             OGRSQLiteDataSource* poCachedDS = new OGRSQLiteDataSource();
             nRet = poCachedDS->Create( pszCachedFilename, papszOptions );

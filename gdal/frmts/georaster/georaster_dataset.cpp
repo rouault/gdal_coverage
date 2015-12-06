@@ -645,9 +645,8 @@ GDALDataset *GeoRasterDataset::Create( const char *pszFilename,
             return NULL;
         }
 
-        /* There is a limite on how big a compressed block can be.
-         */
-        if( ( poGRW->nColumnBlockSize * 
+        // There is a limit on how big a compressed block can be.
+        if( ( poGRW->nColumnBlockSize *
               poGRW->nRowBlockSize *
               poGRW->nBandBlockSize *
               ( GDALGetDataTypeSize( eType ) / 8 ) ) > ( 50 * 1024 * 1024 ) )
@@ -2249,10 +2248,8 @@ CPLErr GeoRasterDataset::IBuildOverviews( const char* pszResampling,
 //                                                             CreateMaskBand()
 //  ---------------------------------------------------------------------------
 
-CPLErr GeoRasterDataset::CreateMaskBand( int nFlags )
+CPLErr GeoRasterDataset::CreateMaskBand( int /*nFlags*/ )
 {
-    (void) nFlags;
-
     if( ! poGeoRaster->InitializeMask( DEFAULT_BMP_MASK,
             poGeoRaster->nRowBlockSize,
             poGeoRaster->nColumnBlockSize,

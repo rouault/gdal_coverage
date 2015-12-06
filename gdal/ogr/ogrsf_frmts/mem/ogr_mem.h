@@ -33,26 +33,41 @@
 
 #include "ogrsf_frmts.h"
 
+#include <map>
+
 /************************************************************************/
 /*                             OGRMemLayer                              */
 /************************************************************************/
 class OGRMemDataSource;
 
+class IOGRMemLayerFeatureIterator;
+
 class OGRMemLayer : public OGRLayer
 {
-    OGRFeatureDefn     *poFeatureDefn;
+    typedef std::map<GIntBig, OGRFeature*>           FeatureMap;
+    typedef std::map<GIntBig, OGRFeature*>::iterator FeatureIterator;
 
-    GIntBig             nFeatureCount;
-    GIntBig             nMaxFeatureCount;
-    OGRFeature        **papoFeatures;
+    OGRFeatureDefn     *m_poFeatureDefn;
 
-    GIntBig             iNextReadFID;
-    GIntBig             iNextCreateFID;
+    GIntBig             m_nFeatureCount;
 
-    int                 bUpdatable;
-    int                 bAdvertizeUTF8;
+    GIntBig             m_iNextReadFID;
+    GIntBig             m_nMaxFeatureCount; // max size of papoFeatures
+    OGRFeature        **m_papoFeatures;
+    int                 m_bHasHoles;
 
-    int                 bHasHoles;
+    FeatureMap          m_oMapFeatures;
+    FeatureIterator     m_oMapFeaturesIter;
+
+    GIntBig             m_iNextCreateFID;
+
+    int                 m_bUpdatable;
+    int                 m_bAdvertizeUTF8;
+
+    bool                m_bUpdated;
+
+    // only use it in the lifetime of a function where the list of features doesn't change
+    IOGRMemLayerFeatureIterator* GetIterator();
 
   public:
                         OGRMemLayer( const char * pszName,
@@ -69,7 +84,7 @@ class OGRMemLayer : public OGRLayer
     OGRErr              ICreateFeature( OGRFeature *poFeature );
     virtual OGRErr      DeleteFeature( GIntBig nFID );
 
-    OGRFeatureDefn *    GetLayerDefn() { return poFeatureDefn; }
+    OGRFeatureDefn *    GetLayerDefn() { return m_poFeatureDefn; }
 
     GIntBig             GetFeatureCount( int );
 
@@ -83,10 +98,13 @@ class OGRMemLayer : public OGRLayer
 
     int                 TestCapability( const char * );
 
-    void                SetUpdatable(int bUpdatableIn) { bUpdatable = bUpdatableIn; }
-    void                SetAdvertizeUTF8(int bAdvertizeUTF8In) { bAdvertizeUTF8 = bAdvertizeUTF8In; }
+    void                SetUpdatable(int bUpdatableIn) { m_bUpdatable = bUpdatableIn; }
+    void                SetAdvertizeUTF8(int bAdvertizeUTF8In) { m_bAdvertizeUTF8 = bAdvertizeUTF8In; }
 
-    GIntBig             GetNextReadFID() { return iNextReadFID; }
+    bool                HasBeenUpdated() const { return m_bUpdated; }
+    void                SetUpdated(bool bUpdated) { m_bUpdated = bUpdated; }
+
+    GIntBig             GetNextReadFID() { return m_iNextReadFID; }
 };
 
 /************************************************************************/

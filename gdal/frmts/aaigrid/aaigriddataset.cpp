@@ -151,19 +151,19 @@ class AAIGRasterBand : public GDALPamRasterBand
 /*                           AAIGRasterBand()                            */
 /************************************************************************/
 
-AAIGRasterBand::AAIGRasterBand( AAIGDataset *poDS, int nDataStart )
+AAIGRasterBand::AAIGRasterBand( AAIGDataset *poDSIn, int nDataStart )
 
 {
-    this->poDS = poDS;
+    this->poDS = poDSIn;
 
     nBand = 1;
-    eDataType = poDS->eDataType;
+    eDataType = poDSIn->eDataType;
 
-    nBlockXSize = poDS->nRasterXSize;
+    nBlockXSize = poDSIn->nRasterXSize;
     nBlockYSize = 1;
 
     panLineOffset = 
-        (GUIntBig *) VSI_CALLOC_VERBOSE( poDS->nRasterYSize, sizeof(GUIntBig) );
+        (GUIntBig *) VSI_CALLOC_VERBOSE( poDSIn->nRasterYSize, sizeof(GUIntBig) );
     if (panLineOffset == NULL)
     {
         return;
@@ -828,6 +828,7 @@ GDALDataset *AAIGDataset::CommonOpen( GDALOpenInfo * poOpenInfo,
         if( VSIFSeekL( poDS->fp, nStartOfData, SEEK_SET ) < 0 )
         {
             delete poDS;
+            VSIFree( pabyChunk );
             return NULL;
         }
 
@@ -1229,12 +1230,12 @@ GDALDataset * AAIGDataset::CreateCopy(
         CPLFree( pszBasename );
         CPLFree( pszPrjFilename );
     }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Re-open dataset, and copy any auxiliary pam information.         */
 /* -------------------------------------------------------------------- */
 
-    /* If outputing to stdout, we can't reopen it, so we'll return */
+    /* If writing to stdout, we can't reopen it, so return */
     /* a fake dataset to make the caller happy */
     CPLPushErrorHandler(CPLQuietErrorHandler);
     GDALPamDataset* poDS = (GDALPamDataset*) GDALOpen(pszFilename, GA_ReadOnly);

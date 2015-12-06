@@ -204,11 +204,11 @@ int FGdbLayer::EditIndexesForFIDHack(const char* pszRadixTablename)
 
     CPLString osGDBTablX = CPLResetExtension(pszRadixTablename, "gdbtablx");
     CPLString osNewGDBTablX = CPLResetExtension(pszRadixTablename, "gdbtablx.new");
-    
+
     if( !EditGDBTablX(osGDBTablX, osNewGDBTablX) )
     {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                         "Error occured when editing %s", osNewGDBTablX.c_str());
+        CPLError( CE_Failure, CPLE_AppDefined,
+                  "Error occurred when editing %s", osNewGDBTablX.c_str());
         VSIUnlink(osNewGDBTablX);
         return FALSE;
     }
@@ -226,8 +226,8 @@ int FGdbLayer::EditIndexesForFIDHack(const char* pszRadixTablename)
             CPLString osIndex(CPLFormFilename(osDirectory, *papszIter, NULL));
             if( !EditATXOrSPX(osIndex) )
             {
-                CPLError(CE_Failure, CPLE_AppDefined,
-                         "Error occured when editing %s", osIndex.c_str());
+                CPLError( CE_Failure, CPLE_AppDefined,
+                          "Error occurred when editing %s", osIndex.c_str());
                 bRet = FALSE;
             }
         }
@@ -3431,7 +3431,6 @@ OGRFeature *FGdbLayer::GetFeature( GIntBig oid )
 
 GIntBig FGdbLayer::GetFeatureCount( CPL_UNUSED int bForce )
 {
-    long           hr;
     int32          rowCount = 0;
     
     if( m_pTable == NULL )
@@ -3468,6 +3467,7 @@ GIntBig FGdbLayer::GetFeatureCount( CPL_UNUSED int bForce )
         return nFeatures;
     }
 
+    long hr;
     if (FAILED(hr = m_pTable->GetRowCount(rowCount)))
     {
         GDBErr(hr, "Failed counting rows");

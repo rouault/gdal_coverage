@@ -100,12 +100,12 @@ public:
 /*                          FITSRasterBand()                           */
 /************************************************************************/
 
-FITSRasterBand::FITSRasterBand(FITSDataset *poDS, int nBand) {
+FITSRasterBand::FITSRasterBand(FITSDataset *poDSIn, int nBandIn) {
 
-  this->poDS = poDS;
-  this->nBand = nBand;
-  eDataType = poDS->gdalDataType;
-  nBlockXSize = poDS->nRasterXSize;;
+  this->poDS = poDSIn;
+  this->nBand = nBandIn;
+  eDataType = poDSIn->gdalDataType;
+  nBlockXSize = poDSIn->nRasterXSize;;
   nBlockYSize = 1;
 }
 
@@ -439,7 +439,7 @@ CPLErr FITSDataset::Init(fitsfile* hFITS_, bool isExistingFile_) {
 	// Value string ends in "&", so use long string conventions
 	char* longString = 0;
 	fits_read_key_longstr(hFITS, key, &longString, 0, &status);
-	// Note that read_key_longst already strips quotes
+        // Note that read_key_longstr already strips quotes
 	if (status) {
 	  CPLError(CE_Failure, CPLE_AppDefined,
 		   "Error while reading long string for key %s from "

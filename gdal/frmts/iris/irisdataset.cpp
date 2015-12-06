@@ -168,10 +168,10 @@ public:
 /*                           IRISRasterBand()                           */
 /************************************************************************/
 
-IRISRasterBand::IRISRasterBand( IRISDataset *poDS, int nBand )
+IRISRasterBand::IRISRasterBand( IRISDataset *poDSIn, int nBandIn )
 {
-    this->poDS = poDS;
-    this->nBand = nBand;
+    this->poDS = poDSIn;
+    this->nBand = nBandIn;
     eDataType = GDT_Float32;
     nBlockXSize = poDS->GetRasterXSize();
     nBlockYSize = 1;
@@ -929,6 +929,7 @@ GDALDataset *IRISDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Create band information objects.                                */
 /* -------------------------------------------------------------------- */
+    /* coverity[tainted_data] */
     for (int iBandNum = 1; iBandNum <= nNumBands; iBandNum++) {
         poDS->SetBand( iBandNum, new IRISRasterBand( poDS, iBandNum ));
 

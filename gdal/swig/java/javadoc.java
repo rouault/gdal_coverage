@@ -190,7 +190,7 @@ public class gdal:public static int SetErrorHandler()
  * The msg_class argument can have the value gdalconst.CE_Warning indicating that the
  * message is an informational warning, gdalconst.CE_Failure indicating that the
  * action failed, but that normal recover mechanisms will be used or
- * CE_Fatal meaning that a fatal error has occured, and that Error()
+ * CE_Fatal meaning that a fatal error has occurred, and that Error()
  * should not return.  
  * <p>
  * The default behaviour of Error() is to report errors to stderr,
@@ -11382,7 +11382,7 @@ public class SpatialReference:public int SetGeogCS(String pszGeogName, String ps
  * This can be computed from the semi minor axis as 
  * 1/f = 1.0 / (1.0 - semiminor/semimajor).
  *
- * @param pszPMName the name of the prime merdidian (not to serve as a key)
+ * @param pszPMName the name of the prime meridian (not to serve as a key)
  * If this is null a default value of "Greenwich" will be used. 
  * 
  * @param dfPMOffset the longitude of greenwich relative to this prime
