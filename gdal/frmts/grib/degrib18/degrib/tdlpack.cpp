@@ -3408,7 +3408,7 @@ static void shiftGroup (sInt4 *Data,
          /* See if that affects any of the previous groups. */
          for (j = i + 1; j < numGroup; j++) {
             if (group[j].num != 0) {
-               G1.start = G1.start;
+               /*G1.start = G1. start;*/ /* self-assignment... */
                G1.num = group[i - 1].num + group[j].num;
                G1.min = (group[i - 1].min < group[j].min) ?
                      group[i - 1].min : group[j].min;
@@ -3913,7 +3913,7 @@ static int GroupPack (double *Src, sInt4 **Dst, sInt4 numData,
       li_secMiss = (sInt4) (*secMiss * SCALE_MISSING + .5);
    }
 
-   /* Reason this is after TDL_ScaleData is we don't want to reoder the
+   /* Reason this is after TDL_ScaleData is we don't want to reorder the
     * caller's copy of the data. */
    if (f_grid) {
       TDL_ReorderGrid (Data, NX, NY);
