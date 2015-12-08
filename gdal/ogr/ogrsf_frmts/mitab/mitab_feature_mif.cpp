@@ -400,7 +400,7 @@ int TABFeature::WriteRecordToMIDFile(MIDDATAFile *fp)
               {
                   GetFieldAsDateTime(iField, &nYear, &nMonth, &nDay,
                                      &nHour, &nMin, &fSec, &nTZFlag);
-                  sprintf(szBuffer, "%2.2d%2.2d%2.2d%3.3d", nHour, nMin,
+                  snprintf(szBuffer, sizeof(szBuffer), "%2.2d%2.2d%2.2d%3.3d", nHour, nMin,
                           (int)fSec, OGR_GET_MS(fSec));
               }
               fp->WriteLine("%s",szBuffer);
@@ -416,7 +416,7 @@ int TABFeature::WriteRecordToMIDFile(MIDDATAFile *fp)
               {
                   GetFieldAsDateTime(iField, &nYear, &nMonth, &nDay,
                                      &nHour, &nMin, &fSec, &nTZFlag);
-                  sprintf(szBuffer, "%4.4d%2.2d%2.2d", nYear, nMonth, nDay);
+                  snprintf(szBuffer, sizeof(szBuffer), "%4.4d%2.2d%2.2d", nYear, nMonth, nDay);
               }
               fp->WriteLine("%s",szBuffer);
               break;
@@ -431,7 +431,7 @@ int TABFeature::WriteRecordToMIDFile(MIDDATAFile *fp)
               {
                   GetFieldAsDateTime(iField, &nYear, &nMonth, &nDay,
                                      &nHour, &nMin, &fSec, &nTZFlag);
-                  sprintf(szBuffer, "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%3.3d", 
+                  snprintf(szBuffer, sizeof(szBuffer), "%4.4d%2.2d%2.2d%2.2d%2.2d%2.2d%3.3d", 
                           nYear, nMonth, nDay, nHour, nMin,
                           (int)fSec, OGR_GET_MS(fSec));
               }
@@ -786,7 +786,10 @@ int TABPolyline::ReadGeometryFromMIFFile(MIDDATAFile *fp)
     if (STARTS_WITH_CI(papszToken[0], "LINE"))
     {
         if (CSLCount(papszToken) != 5)
+        {
+          CSLDestroy(papszToken);
           return -1;
+        }
 
         poLine = new OGRLineString();
         poLine->setNumPoints(2);
