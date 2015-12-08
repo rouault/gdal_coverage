@@ -74,12 +74,13 @@ OGRFeature::OGRFeature( OGRFeatureDefn * poDefnIn ) :
     papoGeometries = (OGRGeometry **) VSI_CALLOC_VERBOSE( poDefn->GetGeomFieldCount(),
                                         sizeof(OGRGeometry*) );
 
-    if( pauFields == NULL && poDefn->GetFieldCount() != 0 )
-        return;
-    for( int i = 0; i < poDefn->GetFieldCount(); i++ )
+    if( pauFields != NULL )
     {
-        pauFields[i].Set.nMarker1 = OGRUnsetMarker;
-        pauFields[i].Set.nMarker2 = OGRUnsetMarker;
+        for( int i = 0; i < poDefn->GetFieldCount(); i++ )
+        {
+            pauFields[i].Set.nMarker1 = OGRUnsetMarker;
+            pauFields[i].Set.nMarker2 = OGRUnsetMarker;
+        }
     }
 }
 
@@ -2689,7 +2690,7 @@ void OGRFeature::SetField( int iField, int nValue )
     {
         char    szTempBuffer[64];
 
-        sprintf( szTempBuffer, "%d", nValue );
+        snprintf( szTempBuffer, sizeof(szTempBuffer), "%d", nValue );
 
         if( IsFieldSet( iField) )
             CPLFree( pauFields[iField].String );
@@ -2705,7 +2706,7 @@ void OGRFeature::SetField( int iField, int nValue )
     {
         char    szTempBuffer[64];
 
-        sprintf( szTempBuffer, "%d", nValue );
+        snprintf( szTempBuffer, sizeof(szTempBuffer), "%d", nValue );
         char   *apszValues[2];
         apszValues[0] = szTempBuffer;
         apszValues[1] = NULL;
@@ -2819,7 +2820,7 @@ void OGRFeature::SetField( int iField, GIntBig nValue )
     {
         char    szTempBuffer[64];
 
-        sprintf( szTempBuffer, CPL_FRMT_GIB, nValue );
+        snprintf( szTempBuffer, sizeof(szTempBuffer), CPL_FRMT_GIB, nValue );
 
         if( IsFieldSet( iField) )
             CPLFree( pauFields[iField].String );
@@ -2835,7 +2836,7 @@ void OGRFeature::SetField( int iField, GIntBig nValue )
     {
         char    szTempBuffer[64];
 
-        sprintf( szTempBuffer, CPL_FRMT_GIB, nValue );
+        snprintf( szTempBuffer, sizeof(szTempBuffer), CPL_FRMT_GIB, nValue );
         char   *apszValues[2];
         apszValues[0] = szTempBuffer;
         apszValues[1] = NULL;
