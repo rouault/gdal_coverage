@@ -82,15 +82,8 @@ int OGRBNADataSource::TestCapability( const char * pszCap )
 {
     if( EQUAL(pszCap,ODsCCreateLayer) )
         return TRUE;
-#if 0
-    // TODO: Is this really false for both?
-    else if( EQUAL(pszCap,ODsCDeleteLayer) )
-        return FALSE;
-    else
-        return FALSE;
-#else
+
     return FALSE;
-#endif
 }
 
 /************************************************************************/
@@ -111,9 +104,9 @@ OGRLayer *OGRBNADataSource::GetLayer( int iLayer )
 /************************************************************************/
 
 OGRLayer * OGRBNADataSource::ICreateLayer( const char * pszLayerName,
-                                           CPL_UNUSED OGRSpatialReference *poSRS,
+                                           OGRSpatialReference * /*poSRS */,
                                            OGRwkbGeometryType eType,
-                                           CPL_UNUSED char ** papszOptions )
+                                           char ** /* papszOptions */ )
 {
     BNAFeatureType bnaFeatureType;
 
