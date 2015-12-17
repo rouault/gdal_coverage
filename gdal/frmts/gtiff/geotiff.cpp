@@ -459,7 +459,7 @@ class GTiffDataset : public GDALPamDataset
 
     CPLErr	   OpenOffset( TIFF *, GTiffDataset **ppoActiveDSRef, 
                                toff_t nDirOffset, int bBaseIn, GDALAccess, 
-                               int bAllowRGBAInterface = TRUE, int bReadGeoTransform = FALSE);
+                               int bAllowRGBAInterface = TRUE, bool bReadGeoTransform = false);
 
     static GDALDataset *OpenDir( GDALOpenInfo * );
     static GDALDataset *Open( GDALOpenInfo * );
@@ -1001,6 +1001,16 @@ public:
                                                int *pnPixelSpace,
                                                GIntBig *pnLineSpace,
                                                char **papszOptions );
+
+    virtual CPLErr  GetHistogram( double dfMin, double dfMax,
+                          int nBuckets, GUIntBig * panHistogram,
+                          int bIncludeOutOfRange, int bApproxOK,
+                          GDALProgressFunc, void *pProgressData );
+
+    virtual CPLErr GetDefaultHistogram( double *pdfMin, double *pdfMax,
+                                        int *pnBuckets, GUIntBig ** ppanHistogram,
+                                        int bForce,
+                                        GDALProgressFunc, void *pProgressData);
 };
 
 /************************************************************************/
@@ -1484,6 +1494,39 @@ CPLVirtualMem* GTiffRasterBand::GetVirtualMemAuto( GDALRWFlag eRWFlag,
     CPLDebug("GTiff", "GetVirtualMemAuto(): Defaulting to base implementation");
     return GDALRasterBand::GetVirtualMemAuto(eRWFlag, pnPixelSpace,
                                              pnLineSpace, papszOptions);
+}
+
+/************************************************************************/
+/*                           GetHistogram()                             */
+/************************************************************************/
+
+CPLErr  GTiffRasterBand::GetHistogram( double dfMin, double dfMax,
+                          int nBuckets, GUIntBig * panHistogram,
+                          int bIncludeOutOfRange, int bApproxOK,
+                          GDALProgressFunc pfnProgress, void *pProgressData )
+{
+    poGDS->LoadGeoreferencingAndPamIfNeeded();
+    return GDALPamRasterBand::GetHistogram(dfMin, dfMax, nBuckets, panHistogram,
+                                           bIncludeOutOfRange, bApproxOK,
+                                           pfnProgress, pProgressData);
+}
+
+/************************************************************************/
+/*                       GetDefaultHistogram()                          */
+/************************************************************************/
+
+CPLErr GTiffRasterBand::GetDefaultHistogram( double *pdfMin, double *pdfMax,
+                                             int *pnBuckets,
+                                             GUIntBig ** ppanHistogram,
+                                             int bForce,
+                                             GDALProgressFunc pfnProgress,
+                                             void *pProgressData )
+{
+    poGDS->LoadGeoreferencingAndPamIfNeeded();
+    return GDALPamRasterBand::GetDefaultHistogram(pdfMin, pdfMax,
+                                                  pnBuckets, ppanHistogram,
+                                                  bForce,
+                                                  pfnProgress, pProgressData);
 }
 
 /************************************************************************/
@@ -9894,7 +9937,7 @@ GDALDataset *GTiffDataset::Open( GDALOpenInfo * poOpenInfo )
     if( poDS->OpenOffset( hTIFF, &(poDS->poActiveDS),
                           TIFFCurrentDirOffset(hTIFF), TRUE,
                           poOpenInfo->eAccess, 
-                          bAllowRGBAInterface, TRUE) != CE_None )
+                          bAllowRGBAInterface, true) != CE_None )
     {
         delete poDS;
         return NULL;
@@ -10406,7 +10449,7 @@ GDALDataset *GTiffDataset::OpenDir( GDALOpenInfo * poOpenInfo )
 
     if( poDS->OpenOffset( hTIFF, &(poDS->poActiveDS),
                           nOffset, FALSE, GA_ReadOnly,
-                          bAllowRGBAInterface, TRUE ) != CE_None )
+                          bAllowRGBAInterface, true ) != CE_None )
     {
         delete poDS;
         return NULL;
@@ -10802,7 +10845,7 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
                                  toff_t nDirOffsetIn, 
 				 int bBaseIn, GDALAccess eAccessIn,
                                  int bAllowRGBAInterface,
-                                 int bReadGeoTransform )
+                                 bool bReadGeoTransform )
 
 {
     bool bTreatAsBitmap = false;
@@ -11585,8 +11628,18 @@ void GTiffDataset::LoadGeoreferencingAndPamIfNeeded()
 /* -------------------------------------------------------------------- */
 /*      Initialize any PAM information.                                 */
 /* -------------------------------------------------------------------- */
+        CPLAssert(!bColorProfileMetadataChanged);
+        CPLAssert(!bMetadataChanged);
+        CPLAssert(!bGeoTIFFInfoChanged);
+        CPLAssert(!bNoDataChanged);
+
         TryLoadXML( GetSiblingFiles() );
         ApplyPamInfo();
+
+        bColorProfileMetadataChanged = FALSE;
+        bMetadataChanged = FALSE;
+        bGeoTIFFInfoChanged = FALSE;
+        bNoDataChanged = FALSE;
 
         int i;
         for(i=1;i<=nBands;i++)
