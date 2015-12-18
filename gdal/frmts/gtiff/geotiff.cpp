@@ -36,14 +36,23 @@
 #define _GNU_SOURCE
 #endif
 
+#include "cpl_port.h"  // Must be first.
+
+#include <set>
+
+#include "cpl_csv.h"
+#include "cpl_minixml.h"
+#include "cpl_multiproc.h"
+#include "cpl_string.h"
+#include "cpl_vsi_virtual.h"
+#include "cpl_worker_thread_pool.h"
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
+
 #define CPL_SERV_H_INCLUDED
 
 #include "xtiffio.h"
 #include "geovalues.h"
-#include "cpl_string.h"
-#include "cpl_csv.h"
-#include "cpl_minixml.h"
 #include "gt_overview.h"
 #include "ogr_spatialref.h"
 #include "tif_float.h"
@@ -52,13 +61,9 @@
 #include "gt_wkt_srs.h"
 #include "gt_wkt_srs_priv.h"
 #include "tifvsi.h"
-#include "cpl_multiproc.h"
 #include "cplkeywordparser.h"
 #include "gt_jpeg_copy.h"
-#include "cpl_vsi_virtual.h"
-#include <set>
 #include "gdal_mdreader.h"
-#include "cpl_worker_thread_pool.h"
 
 #ifdef INTERNAL_LIBTIFF
 #include "tiffiop.h"
@@ -6710,7 +6715,7 @@ void GTiffDataset::InitCompressionThreads(char** papszOptions)
                     // (if using TIFFWriteEncodedStrip/Tile first, TIFFWriteBufferSetup()
                     // is automatically called)
                     // This should likely rather fixed in libtiff itself...
-                    TIFFWriteBufferSetup(hTIFF, NULL, (size_t)-1);
+                    TIFFWriteBufferSetup(hTIFF, NULL, -1);
                 }
             }
         }

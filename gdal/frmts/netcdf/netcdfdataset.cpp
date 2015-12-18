@@ -32,6 +32,7 @@
 
 #include "cpl_error.h"
 #include "cpl_multiproc.h"
+#include "gdal_frmts.h"
 #include "netcdfdataset.h"
 
 #include <map> //for NCDFWriteProjAttribs()
@@ -5223,7 +5224,7 @@ netCDFDataset::Create( const char * pszFilename,
 
 
 template <class T>
-CPLErr  NCDFCopyBand( GDALRasterBand *poSrcBand, GDALRasterBand *poDstBand,
+static CPLErr  NCDFCopyBand( GDALRasterBand *poSrcBand, GDALRasterBand *poDstBand,
                       int nXSize, int nYSize,
                       GDALProgressFunc pfnProgress, void * pProgressData )
 {
