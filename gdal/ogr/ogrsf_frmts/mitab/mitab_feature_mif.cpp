@@ -2128,8 +2128,7 @@ int TABMultiPoint::ReadGeometryFromMIFFile(MIDDATAFile *fp)
     // Get each point and add them to the multipoint feature
     for(i=0; i<nNumPoint; i++)
     {
-        pszLine = fp->GetLine();
-        papszToken = CSLTokenizeString2(fp->GetLastLine(), 
+        papszToken = CSLTokenizeString2(fp->GetLine(), 
                                         " \t", CSLT_HONOURSTRINGS);
         if (CSLCount(papszToken) !=2)
         {
@@ -2281,6 +2280,7 @@ int TABCollection::ReadGeometryFromMIFFile(MIDDATAFile *fp)
 
         if (STARTS_WITH_CI(pszLine, "REGION"))
         {
+            delete m_poRegion;
             m_poRegion = new TABRegion(GetDefnRef());
             if (m_poRegion->ReadGeometryFromMIFFile(fp) != 0)
             {
@@ -2294,6 +2294,7 @@ int TABCollection::ReadGeometryFromMIFFile(MIDDATAFile *fp)
         else if (STARTS_WITH_CI(pszLine, "LINE") ||
                  STARTS_WITH_CI(pszLine, "PLINE"))
         {
+            delete m_poPline;
             m_poPline = new TABPolyline(GetDefnRef());
             if (m_poPline->ReadGeometryFromMIFFile(fp) != 0)
             {
@@ -2306,6 +2307,7 @@ int TABCollection::ReadGeometryFromMIFFile(MIDDATAFile *fp)
         }
         else if (STARTS_WITH_CI(pszLine, "MULTIPOINT"))
         {
+            delete m_poMpoint;
             m_poMpoint = new TABMultiPoint(GetDefnRef());
             if (m_poMpoint->ReadGeometryFromMIFFile(fp) != 0)
             {
