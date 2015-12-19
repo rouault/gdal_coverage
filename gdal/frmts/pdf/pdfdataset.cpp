@@ -4263,7 +4263,7 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
     {
         /* Sanity check to validate page count */
         if( iPage != nPages )
-            poPagePodofo = poDocPodofo->GetPage(nPages - 1);
+            CPL_IGNORE_RET_VAL( poDocPodofo->GetPage(nPages - 1) );
 
         poPagePodofo = poDocPodofo->GetPage(iPage - 1);
     }
@@ -5716,8 +5716,8 @@ int PDFDataset::ParseProjDict(GDALPDFDictionary* poProjDict)
     {
 #ifdef not_supported
         if (poProjDict->Get("StandardParallelOne") == NULL)
-        {
 #endif
+        {
         double dfCenterLat = Get(poProjDict, "OriginLatitude");
         double dfCenterLong = Get(poProjDict, "CentralMeridian");
         double dfScale = Get(poProjDict, "ScaleFactor");
@@ -5726,8 +5726,8 @@ int PDFDataset::ParseProjDict(GDALPDFDictionary* poProjDict)
         oSRS.SetMercator( dfCenterLat, dfCenterLong,
                           dfScale,
                           dfFalseEasting, dfFalseNorthing );
-#ifdef not_supported
         }
+#ifdef not_supported
         else
         {
             double dfStdP1 = Get(poProjDict, "StandardParallelOne");
