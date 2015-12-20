@@ -2270,13 +2270,13 @@ OGRGeometry* OGROSMDataSource::BuildMultiPolygon(OSMRelation* psRelation,
             OGRPolygon* poSuperPoly = (OGRPolygon* ) hPoly;
             for(i = 0; i < 1 + (unsigned int)poSuperPoly->getNumInteriorRings(); i++)
             {
-                OGRPolygon* poPoly = new OGRPolygon();
                 OGRLinearRing* poRing =  (i == 0) ? poSuperPoly->getExteriorRing() :
                                                     poSuperPoly->getInteriorRing(i - 1);
                 if( poRing != NULL && poRing->getNumPoints() >= 4 &&
                     poRing->getX(0) == poRing->getX(poRing->getNumPoints() -1) &&
                     poRing->getY(0) == poRing->getY(poRing->getNumPoints() -1) )
                 {
+                    OGRPolygon* poPoly = new OGRPolygon();
                     poPoly->addRing( poRing );
                     papoPolygons[nPolys ++] = poPoly;
                 }
@@ -3070,7 +3070,6 @@ int OGROSMDataSource::SetCacheSize()
                       "Unrecognized value for PRAGMA cache_size : %s",
                       pszErrMsg );
             sqlite3_free( pszErrMsg );
-            rc = SQLITE_OK;
         }
     }
     return TRUE;
