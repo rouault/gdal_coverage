@@ -72,7 +72,9 @@ typedef struct _curve_data
 /************************************************************************/
 /*                               Usage()                                */
 /************************************************************************/
-static void Usage(const char* pszAdditionalMsg, int bShort = TRUE)
+static void Usage(const char* pszAdditionalMsg, int bShort = TRUE) CPL_NO_RETURN;
+
+static void Usage(const char* pszAdditionalMsg, int bShort)
 {
     OGRSFDriverRegistrar        *poR = OGRSFDriverRegistrar::GetRegistrar();
 
@@ -425,8 +427,10 @@ static OGRErr CreateSubline(OGRLayer* const poPkLayer,
     pFeature = poPkLayer->GetNextFeature();
     if (NULL != pFeature)
     {
-        dfBeg = pFeature->GetFieldAsDouble(FIELD_START);
-        dfEnd = pFeature->GetFieldAsDouble(FIELD_FINISH);
+        // FIXME: Clang Static Analyzer rightly found that the following
+        // code is dead
+        /*dfBeg = pFeature->GetFieldAsDouble(FIELD_START);
+        dfEnd = pFeature->GetFieldAsDouble(FIELD_FINISH);*/
         OGRFeature::DestroyFeature(pFeature);
     }
     else
