@@ -28,6 +28,7 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "gdal_frmts.h"
 #include "gdal_priv.h"
 #include "ogr_spatialref.h"
 
@@ -35,10 +36,6 @@
 using namespace msg_native_format;
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void   GDALRegister_MSGN(void);
-CPL_C_END
 
 typedef enum {
     MODE_VISIR,     // Visible and Infrared bands (1 through 11) in 10-bit raw mode
@@ -127,7 +124,7 @@ MSGNRasterBand::MSGNRasterBand( MSGNDataset *poDSIn, int nBandIn , open_mode_typ
     this->orig_band_no = orig_band_noIn;
     this->band_in_file = band_in_fileIn;
 
-    sprintf(band_description, "band %02d", orig_band_no);
+    snprintf(band_description, sizeof(band_description), "band %02d", orig_band_no);
 
     if (mode != MODE_RAD) {
         eDataType = GDT_UInt16;
@@ -167,7 +164,7 @@ CPLErr MSGNRasterBand::IReadBlock( CPL_UNUSED int nBlockXOff,
 
     char       *pszRecord;
 
-    unsigned int data_length =  bytes_per_line + sizeof(SUB_VISIRLINE);
+    unsigned int data_length =  bytes_per_line + (unsigned int)sizeof(SUB_VISIRLINE);
     unsigned int data_offset = 0;
 
     if (open_mode != MODE_HRV) {
@@ -508,12 +505,12 @@ GDALDataset *MSGNDataset::Open( GDALOpenInfo * poOpenInfo )
 
     poDS->SetMetadataItem("Radiometric parameters format", "offset slope");
     for (i=1; i < band_count; i++) {
-        sprintf(tagname, "ch%02d_cal", band_map[i]);
-        sprintf(field, "%.12e %.12e", cal[band_map[i]-1].cal_offset, cal[band_map[i]-1].cal_slope);
+        snprintf(tagname, sizeof(tagname), "ch%02d_cal", band_map[i]);
+        CPLsnprintf(field, sizeof(field), "%.12e %.12e", cal[band_map[i]-1].cal_offset, cal[band_map[i]-1].cal_slope);
         poDS->SetMetadataItem(tagname, field);
     }
 
-    sprintf(field, "%04d%02d%02d/%02d:%02d",
+    snprintf(field, sizeof(field), "%04d%02d%02d/%02d:%02d",
         poDS->msg_reader_core->get_year(),
         poDS->msg_reader_core->get_month(),
         poDS->msg_reader_core->get_day(),
@@ -522,7 +519,7 @@ GDALDataset *MSGNDataset::Open( GDALOpenInfo * poOpenInfo )
     );
     poDS->SetMetadataItem("Date/Time", field);
 
-    sprintf(field, "%d %d",
+    snprintf(field, sizeof(field), "%d %d",
          poDS->msg_reader_core->get_line_start(),
          poDS->msg_reader_core->get_col_start()
     );
@@ -536,28 +533,25 @@ GDALDataset *MSGNDataset::Open( GDALOpenInfo * poOpenInfo )
 }
 
 /************************************************************************/
-/*                          GDALRegister_MSGN()                          */
+/*                          GDALRegister_MSGN()                         */
 /************************************************************************/
 
 void GDALRegister_MSGN()
 
 {
-    GDALDriver *poDriver;
+    if( GDALGetDriverByName( "MSGN" ) != NULL )
+        return;
 
-    if( GDALGetDriverByName( "MSGN" ) == NULL )
-    {
-        poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
-        poDriver->SetDescription( "MSGN" );
-        poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
-        poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
-                                   "EUMETSAT Archive native (.nat)" );
-        poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                                   "frmt_msgn.html" );
-        poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "nat" );
+    poDriver->SetDescription( "MSGN" );
+    poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
+    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
+                               "EUMETSAT Archive native (.nat)" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_msgn.html" );
+    poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "nat" );
 
-        poDriver->pfnOpen = MSGNDataset::Open;
+    poDriver->pfnOpen = MSGNDataset::Open;
 
-        GetGDALDriverManager()->RegisterDriver( poDriver );
-    }
+    GetGDALDriverManager()->RegisterDriver( poDriver );
 }

@@ -245,7 +245,7 @@ int ILI1Reader::ReadTable(CPL_UNUSED const char *layername) {
           for (fIndex=1; fIndex<CSLCount(tokens); fIndex++)
           {
             char szFieldName[32];
-            sprintf(szFieldName, "Field%02d", fIndex);
+            snprintf(szFieldName, sizeof(szFieldName), "Field%02d", fIndex);
             OGRFieldDefn oFieldDefn(szFieldName, OFTString);
             featureDef->AddFieldDefn(&oFieldDefn);
           }
@@ -422,15 +422,18 @@ void ILI1Reader::ReadGeom(char **stgeom, int geomIdx, OGRwkbGeometryType eType, 
       {
         if (!ogrLine->IsEmpty()) {
           ogrCurve->addCurveDirectly(ogrLine);
+          ogrLine = NULL;
         }
         if (!ogrCurve->IsEmpty()) {
           if (ogrMultiLine)
           {
             ogrMultiLine->addGeometryDirectly(ogrCurve);
+            ogrCurve = NULL;
           }
           if (ogrPoly)
           {
             ogrPoly->addRingDirectly(ogrCurve);
+            ogrCurve = NULL;
           }
         }
         end = TRUE;
@@ -459,24 +462,30 @@ void ILI1Reader::ReadGeom(char **stgeom, int geomIdx, OGRwkbGeometryType eType, 
       CSLDestroy(tokens);
     }
 
+    delete ogrLine;
+
     //Set feature geometry
     if (eType == wkbMultiCurve)
     {
       feature->SetGeomFieldDirectly(geomIdx, ogrMultiLine);
+      delete ogrCurve;
     }
     else if (eType == wkbMultiLineString)
     {
       feature->SetGeomFieldDirectly(geomIdx, ogrMultiLine->getLinearGeometry());
       delete ogrMultiLine;
+      delete ogrCurve;
     }
     else if (eType == wkbCurvePolygon)
     {
       feature->SetGeomFieldDirectly(geomIdx, ogrPoly);
+      delete ogrCurve;
     }
     else if (eType == wkbPolygon)
     {
       feature->SetGeomFieldDirectly(geomIdx, ogrPoly->getLinearGeometry());
       delete ogrPoly;
+      delete ogrCurve;
     }
     else
     {

@@ -429,7 +429,6 @@ void    OGRXPlaneAptReader::ParseRunwayTaxiwayV810Record()
     int eSurfaceCode, eShoulderCode, eMarkings;
     double dfSmoothness;
     double adfVisualGlidePathAngle[2];
-    int bHasDistanceRemainingSigns;
 
     RET_IF_FAIL(assertMinCol(15));
 
@@ -441,9 +440,13 @@ void    OGRXPlaneAptReader::ParseRunwayTaxiwayV810Record()
     adfDisplacedThresholdLength[0] = atoi(papszTokens[6]) * FEET_TO_METER;
     if (strchr(papszTokens[6], '.') != NULL)
         adfDisplacedThresholdLength[1] = atoi(strchr(papszTokens[6], '.') + 1) * FEET_TO_METER;
+    else
+        adfDisplacedThresholdLength[1] = 0;
     adfStopwayLength[0] = atoi(papszTokens[7]) * FEET_TO_METER;
     if (strchr(papszTokens[7], '.') != NULL)
         adfStopwayLength[1] = atoi(strchr(papszTokens[7], '.') + 1) * FEET_TO_METER;
+    else
+        adfStopwayLength[1] = 0;
     RET_IF_FAIL(readDouble(&dfWidth, 8, "width"));
     dfWidth *= FEET_TO_METER;
     if (strlen(papszTokens[9]) == 6)
@@ -466,7 +469,7 @@ void    OGRXPlaneAptReader::ParseRunwayTaxiwayV810Record()
     eShoulderCode = atoi(papszTokens[11]);
     eMarkings = atoi(papszTokens[12]);
     RET_IF_FAIL(readDoubleWithBounds(&dfSmoothness, 13, "runway smoothness", 0., 1.));
-    bHasDistanceRemainingSigns = atoi(papszTokens[14]);
+    bool bHasDistanceRemainingSigns = CPL_TO_BOOL(atoi(papszTokens[14]));
     if (nTokens == 16)
     {
         adfVisualGlidePathAngle[0] = atoi(papszTokens[15]) / 100.;
@@ -525,17 +528,14 @@ void    OGRXPlaneAptReader::ParseRunwayTaxiwayV810Record()
             dfLonFirstRwy = adfLon[0];
             bRunwayFound = TRUE;
         }
-        
+
         if (nAPTType == APT_SEAPLANE_HEADER || eSurfaceCode == 13)
         {
             /* Special case for water-runways. No special record in V8.10 */
             OGRFeature* apoWaterRunwayThreshold[2] = {NULL, NULL};
-            int bBuoys;
-            int i;
+            bool bBuoys = true;
 
-            bBuoys = TRUE;
-
-            for(i=0;i<2;i++)
+            for( int i=0;i<2;i++)
             {
                 if (poWaterRunwayThresholdLayer)
                 {
@@ -602,7 +602,7 @@ void    OGRXPlaneAptReader::ParseRunwayTaxiwayV810Record()
                                         (aeRunwayLightingCode[0] >= 2 && aeRunwayLightingCode[0] <= 5) ? "Yes" : "None" /* pszEdgeLighting */,
                                         bHasDistanceRemainingSigns);
             }
-            
+
             if (poStopwayLayer)
             {
                 for(int i=0;i<2;i++)
@@ -644,7 +644,7 @@ void    OGRXPlaneAptReader::ParseRunwayTaxiwayV810Record()
             dfLonFirstRwy = dfLon;
             bRunwayFound = TRUE;
         }
-        
+
         if (poHelipadLayer)
         {
             poHelipadLayer->AddFeature(osAptICAO, osHelipadName, dfLat, dfLon,
@@ -684,12 +684,9 @@ void OGRXPlaneAptReader::ParseRunwayRecord()
     double dfWidth;
     int eSurfaceCode, eShoulderCode;
     double dfSmoothness;
-    int bHasCenterLineLights, bHasDistanceRemainingSigns;
     int eEdgeLighting;
-    int nCurToken;
     int nRwy = 0;
     double adfLat[2], adfLon[2];
-    OGRFeature* apoRunwayThreshold[2] = { NULL, NULL };
     double dfLength;
     CPLString aosRunwayId[2];
     double adfDisplacedThresholdLength[2];
@@ -701,26 +698,20 @@ void OGRXPlaneAptReader::ParseRunwayRecord()
     eSurfaceCode = atoi(papszTokens[2]);
     eShoulderCode = atoi(papszTokens[3]);
     RET_IF_FAIL(readDoubleWithBounds(&dfSmoothness, 4, "runway smoothness", 0., 1.));
-    bHasCenterLineLights = atoi(papszTokens[5]);
+    bool bHasCenterLineLights = CPL_TO_BOOL(atoi(papszTokens[5]));
     eEdgeLighting = atoi(papszTokens[6]);
-    bHasDistanceRemainingSigns = atoi(papszTokens[7]);
+    bool bHasDistanceRemainingSigns = CPL_TO_BOOL(atoi(papszTokens[7]));
 
-    for( nRwy=0, nCurToken = 8 ; nRwy<=1 ; nRwy++, nCurToken += 9 )
+    for( nRwy=0; nRwy<=1 ; nRwy++ )
     {
         double dfLat, dfLon;
-        int eMarkings, eApproachLightingCode, eREIL;
-        int bHasTouchdownLights;
 
-        aosRunwayId[nRwy] = papszTokens[nCurToken + 0]; /* for example : 08, 24R, or xxx */
-        RET_IF_FAIL(readLatLon(&dfLat, &dfLon, nCurToken + 1));
+        aosRunwayId[nRwy] = papszTokens[8 + 9*nRwy + 0]; /* for example : 08, 24R, or xxx */
+        RET_IF_FAIL(readLatLon(&dfLat, &dfLon, 8 + 9*nRwy + 1));
         adfLat[nRwy] = dfLat; 
         adfLon[nRwy] = dfLon;
-        RET_IF_FAIL(readDouble(&adfDisplacedThresholdLength[nRwy], nCurToken + 3, "displaced threshold length"));
-        RET_IF_FAIL(readDouble(&adfStopwayLength[nRwy], nCurToken + 4, "stopway/blastpad/over-run length"));
-        eMarkings = atoi(papszTokens[nCurToken + 5]);
-        eApproachLightingCode = atoi(papszTokens[nCurToken + 6]);
-        bHasTouchdownLights = atoi(papszTokens[nCurToken + 7]);
-        eREIL = atoi(papszTokens[nCurToken + 8]);
+        RET_IF_FAIL(readDouble(&adfDisplacedThresholdLength[nRwy], 8 + 9*nRwy + 3, "displaced threshold length"));
+        RET_IF_FAIL(readDouble(&adfStopwayLength[nRwy], 8 + 9*nRwy + 4, "stopway/blastpad/over-run length"));
 
         if (!bRunwayFound)
         {
@@ -728,13 +719,23 @@ void OGRXPlaneAptReader::ParseRunwayRecord()
             dfLonFirstRwy = dfLon;
             bRunwayFound = TRUE;
         }
+    }
 
-        if (poRunwayThresholdLayer)
+    dfLength = OGRXPlane_Distance(adfLat[0], adfLon[0], adfLat[1], adfLon[1]);
+    if (poRunwayThresholdLayer)
+    {
+        OGRFeature* apoRunwayThreshold[2] = { NULL, NULL };
+        for( nRwy=0; nRwy<=1 ; nRwy++ )
         {
+            const int eMarkings = atoi(papszTokens[8 + 9*nRwy + 5]);
+            const int eApproachLightingCode = atoi(papszTokens[8 + 9*nRwy + 6]);
+            const bool bHasTouchdownLights = CPL_TO_BOOL(atoi(papszTokens[8 + 9*nRwy + 7]));
+            const int eREIL = atoi(papszTokens[8 + 9*nRwy + 8]);
+
             apoRunwayThreshold[nRwy] =
                 poRunwayThresholdLayer->AddFeature  
                     (osAptICAO, aosRunwayId[nRwy],
-                    dfLat, dfLon, dfWidth,
+                    adfLat[nRwy], adfLon[nRwy], dfWidth,
                     RunwaySurfaceEnumeration.GetText(eSurfaceCode),
                     RunwayShoulderEnumeration.GetText(eShoulderCode),
                     dfSmoothness, bHasCenterLineLights,
@@ -745,11 +746,6 @@ void OGRXPlaneAptReader::ParseRunwayRecord()
                     bHasTouchdownLights,
                     RunwayREILEnumeration.GetText(eREIL));
         }
-    }
-
-    dfLength = OGRXPlane_Distance(adfLat[0], adfLon[0], adfLat[1], adfLon[1]);
-    if (poRunwayThresholdLayer)
-    {
         poRunwayThresholdLayer->SetRunwayLengthAndHeading(apoRunwayThreshold[0], dfLength,
                                     OGRXPlane_Track(adfLat[0], adfLon[0], adfLat[1], adfLon[1]));
         poRunwayThresholdLayer->SetRunwayLengthAndHeading(apoRunwayThreshold[1], dfLength,
@@ -771,7 +767,7 @@ void OGRXPlaneAptReader::ParseRunwayRecord()
                                     RunwayEdgeLightingEnumeration.GetText(eEdgeLighting),
                                     bHasDistanceRemainingSigns);
     }
-            
+
     if (poStopwayLayer)
     {
         for(int i=0;i<2;i++)
@@ -794,35 +790,31 @@ void OGRXPlaneAptReader::ParseRunwayRecord()
 void OGRXPlaneAptReader::ParseWaterRunwayRecord()
 {
     double adfLat[2], adfLon[2];
-    OGRFeature* apoWaterRunwayThreshold[2] = {NULL, NULL};
     double dfWidth, dfLength;
-    int bBuoys;
     CPLString aosRunwayId[2];
-    int i;
 
     RET_IF_FAIL(assertMinCol(9));
 
     RET_IF_FAIL(readDouble(&dfWidth, 1, "runway width"));
-    bBuoys = atoi(papszTokens[2]);
+    bool bBuoys = CPL_TO_BOOL(atoi(papszTokens[2]));
 
-    for(i=0;i<2;i++)
+    for( int i=0;i<2;i++)
     {
         aosRunwayId[i] = papszTokens[3 + 3*i];
         RET_IF_FAIL(readLatLon(&adfLat[i], &adfLon[i], 4 + 3*i));
-
-        if (poWaterRunwayThresholdLayer)
-        {
-            apoWaterRunwayThreshold[i] =
-                poWaterRunwayThresholdLayer->AddFeature  
-                    (osAptICAO, aosRunwayId[i], adfLat[i], adfLon[i], dfWidth, bBuoys);
-        }
-
     }
 
     dfLength = OGRXPlane_Distance(adfLat[0], adfLon[0], adfLat[1], adfLon[1]);
 
     if (poWaterRunwayThresholdLayer)
     {
+        OGRFeature* apoWaterRunwayThreshold[2] = {NULL, NULL};
+        for( int i=0;i<2;i++)
+        {
+            apoWaterRunwayThreshold[i] =
+                poWaterRunwayThresholdLayer->AddFeature  
+                    (osAptICAO, aosRunwayId[i], adfLat[i], adfLon[i], dfWidth, bBuoys);
+        }
         poWaterRunwayThresholdLayer->SetRunwayLengthAndHeading(apoWaterRunwayThreshold[0], dfLength,
                                     OGRXPlane_Track(adfLat[0], adfLon[0], adfLat[1], adfLon[1]));
         poWaterRunwayThresholdLayer->SetRunwayLengthAndHeading(apoWaterRunwayThreshold[1], dfLength,
@@ -969,7 +961,7 @@ OGRGeometry* OGRXPlaneAptReader::FixPolygonTopology(OGRPolygon& polygon)
         CPLDebug("XPLANE", "Discarded degenerated polygon at line %d", nLineNumber);
         return NULL;
     }
-        
+
     for(int i=0;i<poPolygon->getNumInteriorRings();i++)
     {
         OGRLinearRing* poInternalRing = poPolygon->getInteriorRing(i);
@@ -988,7 +980,7 @@ OGRGeometry* OGRXPlaneAptReader::FixPolygonTopology(OGRPolygon& polygon)
             i --;
             continue;
         }
-        
+
         int nOutside = 0;
         int jOutside = -1;
         for(int j=0;j<poInternalRing->getNumPoints();j++)
@@ -1008,17 +1000,17 @@ OGRGeometry* OGRXPlaneAptReader::FixPolygonTopology(OGRPolygon& polygon)
             OGRPoint pt;
             poInternalRing->getPoint(j, &pt);
             OGRPoint newPt;
-            int bSuccess = FALSE;
-            for(int k=-1;k<=1 && !bSuccess;k+=2)
+            bool bSuccess = false;
+            for( int k=-1; k<=1 && !bSuccess; k+=2 )
             {
-                for(int l=-1;l<=1 && !bSuccess;l+=2)
+                for( int l=-1; l<=1 && !bSuccess; l+=2 )
                 {
                     newPt.setX(pt.getX() + k * 1e-7);
                     newPt.setY(pt.getY() + l * 1e-7);
                     if (poExternalRing->isPointInRing(&newPt))
                     {
                         poInternalRing->setPoint(j, newPt.getX(), newPt.getY());
-                        bSuccess = TRUE;
+                        bSuccess = true;
                     }
                 }
             }
@@ -1065,11 +1057,11 @@ int OGRXPlaneAptReader::ParsePolygonalGeometry(OGRGeometry** ppoGeom)
     double dfLatBezier = 0., dfLonBezier = 0.;
     double dfFirstLatBezier = 0., dfFirstLonBezier = 0.;
     double dfLastLatBezier = 0., dfLastLonBezier = 0.;
-    int bIsFirst = TRUE;
-    int bFirstIsBezier = TRUE;
-    /* int bLastIsValid = FALSE; */
-    int bLastIsBezier = FALSE;
-    int bLastPartIsClosed = FALSE;
+    bool bIsFirst = true;
+    bool bFirstIsBezier = true;
+    // bool bLastIsValid = false;
+    bool bLastIsBezier = false;
+    bool bLastPartIsClosed = false;
     const char* pszLine;
     OGRPolygon polygon;
 
@@ -1123,7 +1115,7 @@ int OGRXPlaneAptReader::ParsePolygonalGeometry(OGRGeometry** ppoGeom)
                 linearRing.addPoint(dfLon, dfLat);
 
             bLastPartIsClosed = FALSE;
-            bLastIsBezier = FALSE;
+            bLastIsBezier = false;
         }
         else if (nType == APT_NODE_WITH_BEZIER)
         {
@@ -1150,7 +1142,7 @@ int OGRXPlaneAptReader::ParsePolygonalGeometry(OGRGeometry** ppoGeom)
             }
 
             bLastPartIsClosed = FALSE;
-            bLastIsBezier = TRUE;
+            bLastIsBezier = true;
             dfLastLatBezier = dfLatBezier;
             dfLastLonBezier = dfLonBezier;
         }
@@ -1182,7 +1174,7 @@ int OGRXPlaneAptReader::ParsePolygonalGeometry(OGRGeometry** ppoGeom)
             linearRing.empty();
 
             bLastPartIsClosed = TRUE;
-            bLastIsBezier = FALSE;
+            bLastIsBezier = false;
         }
         else if (nType == APT_NODE_CLOSE_WITH_BEZIER)
         {
@@ -1395,11 +1387,11 @@ int OGRXPlaneAptReader::ParseLinearGeometry(OGRMultiLineString& multilinestring,
     double dfLatBezier = 0., dfLonBezier = 0.;
     double dfFirstLatBezier = 0., dfFirstLonBezier = 0.;
     double dfLastLatBezier = 0., dfLastLonBezier = 0.;
-    int bIsFirst = TRUE;
-    int bFirstIsBezier = TRUE;
-    /* int bLastIsValid = FALSE; */
-    int bLastIsBezier = FALSE;
-    int bLastPartIsClosedOrEnded = FALSE;
+    bool bIsFirst = true;
+    bool bFirstIsBezier = true;
+    // bool bLastIsValid = false;
+    bool bLastIsBezier = false;
+    bool bLastPartIsClosedOrEnded = false;
     const char* pszLine;
 
     OGRLineString lineString;
@@ -1414,7 +1406,7 @@ int OGRXPlaneAptReader::ParseLinearGeometry(OGRMultiLineString& multilinestring,
 
         if (nTokens == 1 && strcmp(papszTokens[0], "99") == 0)
         {
-            if (bLastPartIsClosedOrEnded == FALSE)
+            if( !bLastPartIsClosedOrEnded )
             {
                 CPLDebug("XPlane", "Line %d : Unexpected token when reading a linear feature : %d",
                         nLineNumber, nType);
@@ -1453,8 +1445,8 @@ int OGRXPlaneAptReader::ParseLinearGeometry(OGRMultiLineString& multilinestring,
             else
                 lineString.addPoint(dfLon, dfLat);
 
-            bLastPartIsClosedOrEnded = FALSE;
-            bLastIsBezier = FALSE;
+            bLastPartIsClosedOrEnded = false;
+            bLastIsBezier = false;
         }
         else if (nType == APT_NODE_WITH_BEZIER)
         {
@@ -1481,7 +1473,7 @@ int OGRXPlaneAptReader::ParseLinearGeometry(OGRMultiLineString& multilinestring,
             }
 
             bLastPartIsClosedOrEnded = FALSE;
-            bLastIsBezier = TRUE;
+            bLastIsBezier = true;
             dfLastLatBezier = dfLatBezier;
             dfLastLonBezier = dfLonBezier;
         }
@@ -1521,7 +1513,7 @@ int OGRXPlaneAptReader::ParseLinearGeometry(OGRMultiLineString& multilinestring,
             lineString.empty();
 
             bLastPartIsClosedOrEnded = TRUE;
-            bLastIsBezier = FALSE;
+            bLastIsBezier = false;
         }
         else if (nType == APT_NODE_CLOSE_WITH_BEZIER || nType == APT_NODE_END_WITH_BEZIER)
         {
@@ -1585,7 +1577,8 @@ int OGRXPlaneAptReader::ParseLinearGeometry(OGRMultiLineString& multilinestring,
             lineString.empty();
 
             bLastPartIsClosedOrEnded = TRUE;
-            bLastIsBezier = FALSE; /* we don't want to draw an arc between two parts */
+            // Do not want to draw an arc between two parts.
+            bLastIsBezier = false;
         }
         else
         {
@@ -1747,8 +1740,9 @@ void OGRXPlaneAptReader::ParseLightBeaconRecord()
     osName = readStringUntilEnd(4);
 
     if (poAPTLightBeaconLayer)
-        poAPTLightBeaconLayer->AddFeature(osAptICAO, osName, dfLat, dfLon,
-                                            APTLightBeaconColorEnumeration.GetText(eColor));
+        poAPTLightBeaconLayer->AddFeature(
+            osAptICAO, osName, dfLat, dfLon,
+            APTLightBeaconColorEnumeration.GetText(eColor));
 }
 
 /************************************************************************/
@@ -1757,19 +1751,17 @@ void OGRXPlaneAptReader::ParseLightBeaconRecord()
 
 void OGRXPlaneAptReader::ParseWindsockRecord()
 {
-    double dfLat, dfLon;
-    int bIsIllumnited;
-    CPLString osName;
-
     RET_IF_FAIL(assertMinCol(4));
 
+    double dfLat, dfLon;
     RET_IF_FAIL(readLatLon(&dfLat, &dfLon, 1));
-    bIsIllumnited = atoi(papszTokens[3]);
-    osName = readStringUntilEnd(4);
+
+    bool bIsIllumnited = CPL_TO_BOOL(atoi(papszTokens[3]));
+    CPLString osName = readStringUntilEnd(4);
 
     if (poAPTWindsockLayer)
         poAPTWindsockLayer->AddFeature(osAptICAO, osName, dfLat, dfLon,
-                                        bIsIllumnited);
+                                       bIsIllumnited);
 }
 
 /************************************************************************/
@@ -1867,7 +1859,7 @@ OGRXPlaneAPTLayer::OGRXPlaneAPTLayer() : OGRXPlaneLayer("APT")
     OGRFieldDefn oType("type", OFTInteger );
     oType.SetWidth( 1 );
     poFeatureDefn->AddFieldDefn( &oType );
-    
+
     OGRFieldDefn oFieldElev("elevation_m", OFTReal );
     oFieldElev.SetWidth( 8 );
     oFieldElev.SetPrecision( 2 );
@@ -2179,16 +2171,15 @@ OGRFeature*
     double dfTrack12 = OGRXPlane_Track(dfLat1, dfLon1, dfLat2, dfLon2);
     double dfTrack21 = OGRXPlane_Track(dfLat2, dfLon2, dfLat1, dfLon1);
     double adfLat[4], adfLon[4];
-    
+
     OGRXPlane_ExtendPosition(dfLat1, dfLon1, dfWidth / 2, dfTrack12 - 90, &adfLat[0], &adfLon[0]);
     OGRXPlane_ExtendPosition(dfLat2, dfLon2, dfWidth / 2, dfTrack21 + 90, &adfLat[1], &adfLon[1]);
     OGRXPlane_ExtendPosition(dfLat2, dfLon2, dfWidth / 2, dfTrack21 - 90, &adfLat[2], &adfLon[2]);
     OGRXPlane_ExtendPosition(dfLat1, dfLon1, dfWidth / 2, dfTrack12 + 90, &adfLat[3], &adfLon[3]);
-    
+
     OGRLinearRing* linearRing = new OGRLinearRing();
     linearRing->setNumPoints(5);
-    int i;
-    for(i=0;i<4;i++)
+    for( int i=0; i < 4; i++ )
         linearRing->setPoint(i, adfLon[i], adfLat[i]);
     linearRing->setPoint(4, adfLon[0], adfLat[0]);
     OGRPolygon* polygon = new OGRPolygon();
@@ -2260,18 +2251,17 @@ OGRFeature*
 
     double dfLat2, dfLon2;
     double adfLat[4], adfLon[4];
-    
+
     OGRXPlane_ExtendPosition(dfLatThreshold, dfLonThreshold, dfStopwayLength, 180 + dfRunwayHeading, &dfLat2, &dfLon2);
-    
+
     OGRXPlane_ExtendPosition(dfLatThreshold, dfLonThreshold, dfWidth / 2, dfRunwayHeading - 90, &adfLat[0], &adfLon[0]);
     OGRXPlane_ExtendPosition(dfLat2, dfLon2, dfWidth / 2, dfRunwayHeading - 90, &adfLat[1], &adfLon[1]);
     OGRXPlane_ExtendPosition(dfLat2, dfLon2, dfWidth / 2, dfRunwayHeading + 90, &adfLat[2], &adfLon[2]);
     OGRXPlane_ExtendPosition(dfLatThreshold, dfLonThreshold, dfWidth / 2, dfRunwayHeading + 90, &adfLat[3], &adfLon[3]);
-    
+
     OGRLinearRing* linearRing = new OGRLinearRing();
     linearRing->setNumPoints(5);
-    int i;
-    for(i=0;i<4;i++)
+    for( int i=0; i<4; i++ )
         linearRing->setPoint(i, adfLon[i], adfLat[i]);
     linearRing->setPoint(4, adfLon[0], adfLat[0]);
     OGRPolygon* polygon = new OGRPolygon();
@@ -2420,16 +2410,15 @@ OGRFeature*
     double dfTrack12 = OGRXPlane_Track(dfLat1, dfLon1, dfLat2, dfLon2);
     double dfTrack21 = OGRXPlane_Track(dfLat2, dfLon2, dfLat1, dfLon1);
     double adfLat[4], adfLon[4];
-    
+
     OGRXPlane_ExtendPosition(dfLat1, dfLon1, dfWidth / 2, dfTrack12 - 90, &adfLat[0], &adfLon[0]);
     OGRXPlane_ExtendPosition(dfLat2, dfLon2, dfWidth / 2, dfTrack21 + 90, &adfLat[1], &adfLon[1]);
     OGRXPlane_ExtendPosition(dfLat2, dfLon2, dfWidth / 2, dfTrack21 - 90, &adfLat[2], &adfLon[2]);
     OGRXPlane_ExtendPosition(dfLat1, dfLon1, dfWidth / 2, dfTrack12 + 90, &adfLat[3], &adfLon[3]);
-    
+
     OGRLinearRing* linearRing = new OGRLinearRing();
     linearRing->setNumPoints(5);
-    int i;
-    for(i=0;i<4;i++)
+    for( int i=0; i<4; i++ )
         linearRing->setPoint(i, adfLon[i], adfLat[i]);
     linearRing->setPoint(4, adfLon[0], adfLat[0]);
     OGRPolygon* polygon = new OGRPolygon();
@@ -2620,8 +2609,7 @@ OGRFeature*
 
     OGRLinearRing* linearRing = new OGRLinearRing();
     linearRing->setNumPoints(5);
-    int i;
-    for(i=0;i<4;i++)
+    for( int i=0; i<4; i++ )
         linearRing->setPoint(i, adfLon[i], adfLat[i]);
     linearRing->setPoint(4, adfLon[0], adfLat[0]);
     OGRPolygon* polygon = new OGRPolygon();
@@ -2717,8 +2705,7 @@ OGRFeature*
 
     OGRLinearRing* linearRing = new OGRLinearRing();
     linearRing->setNumPoints(5);
-    int i;
-    for(i=0;i<4;i++)
+    for( int i=0; i<4; i++ )
         linearRing->setPoint(i, adfLon[i], adfLat[i]);
     linearRing->setPoint(4, adfLon[0], adfLat[0]);
     OGRPolygon* polygon = new OGRPolygon();
@@ -3190,7 +3177,7 @@ OGRXPlaneTaxiLocationLayer::OGRXPlaneTaxiLocationLayer() : OGRXPlaneLayer("TaxiL
 
     OGRFieldDefn oFieldAirplaneTypes("airplane_types", OFTString );
     poFeatureDefn->AddFieldDefn( &oFieldAirplaneTypes );
-    
+
     OGRFieldDefn oFieldName("name", OFTString );
     poFeatureDefn->AddFieldDefn( &oFieldName );
 }

@@ -164,7 +164,7 @@ LayerDesc OGR2SQLITEExtractLayerDesc(const char **ppszSQLCommand)
     {
         oLayerDesc.osLayerName = osStr;
     }
-    
+
     oLayerDesc.osOriginalStr.resize(pszSQLCommand - pszOriginalStrStart);
 
     *ppszSQLCommand = pszSQLCommand;
@@ -220,7 +220,7 @@ static void OGR2SQLITEAddLayer( const char*& pszStart, int& nNum,
 /*                         StartsAsSQLITEKeyWord()                      */
 /************************************************************************/
 
-static const char* apszKeywords[] =  {
+static const char* const apszKeywords[] =  {
     "WHERE", "GROUP", "ORDER", "JOIN", "UNION", "INTERSECT", "EXCEPT", "LIMIT"
 };
 
@@ -557,7 +557,7 @@ int OGR2SQLITEDealWithSpatialColumn(OGRLayer* poLayer,
         /* We detect the need for creating a spatial index by 2 means : */
 
         /* 1) if there's an explicit reference to a 'idx_layername_geometrycolumn' */
-        /*   table in the SQL --> old/traditionnal way of requesting spatial indices */
+        /*   table in the SQL --> old/traditional way of requesting spatial indices */
         /*   with spatialite. */
 
         std::set<LayerDesc>::const_iterator oIter2 = oSetLayers.begin();
@@ -722,7 +722,7 @@ OGRLayer * OGRSQLiteExecuteSQL( GDALDataset* poDS,
                                 CPL_UNUSED const char *pszDialect )
 {
     char* pszTmpDBName = (char*) CPLMalloc(256);
-    sprintf(pszTmpDBName, "/vsimem/ogr2sqlite/temp_%p.db", pszTmpDBName);
+    snprintf(pszTmpDBName, 256, "/vsimem/ogr2sqlite/temp_%p.db", pszTmpDBName);
 
     OGRSQLiteDataSource* poSQLiteDS = NULL;
     int nRet;
@@ -759,8 +759,7 @@ OGRLayer * OGRSQLiteExecuteSQL( GDALDataset* poDS,
         {
             bTried = TRUE;
             char* pszCachedFilename = (char*) CPLMalloc(256);
-            // TODO: Is this sprintf safe?
-            sprintf(pszCachedFilename, "/vsimem/ogr2sqlite/reference_%p.db",
+            snprintf(pszCachedFilename, 256, "/vsimem/ogr2sqlite/reference_%p.db",
                     pszCachedFilename);
             char** papszOptions = CSLAddString(NULL, "SPATIALITE=YES");
             OGRSQLiteDataSource* poCachedDS = new OGRSQLiteDataSource();
@@ -906,7 +905,7 @@ OGRLayer * OGRSQLiteExecuteSQL( GDALDataset* poDS,
                 CPLFree(pszTmpDBName);
                 return NULL;
             }
-            
+
             poLayer = poOtherDS->GetLayerByName(oLayerDesc.osLayerName);
             if( poLayer == NULL )
             {
@@ -1042,7 +1041,7 @@ OGRLayer * OGRSQLiteExecuteSQL( GDALDataset* poDS,
 
     if( poSpatialFilter != NULL )
         poLayer->SetSpatialFilter( 0, poSpatialFilter );
-    
+
     if( poSingleSrcLayer != NULL )
         poLayer->SetMetadata( poSingleSrcLayer->GetMetadata( "NATIVE_DATA" ),
                               "NATIVE_DATA" );

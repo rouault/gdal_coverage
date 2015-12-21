@@ -27,15 +27,12 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "gdal_frmts.h"
 #include "rawdataset.h"
 
 CPL_CVSID("$Id$");
 
-CPL_C_START
-void    GDALRegister_ISCE(void);
-CPL_C_END
-
-static const char *papszISCE2GDALDatatypes[] = {
+static const char * const apszISCE2GDALDatatypes[] = {
     "BYTE:Byte",
     "CHAR:Byte",
     "SHORT:Int16",
@@ -52,7 +49,7 @@ static const char *papszISCE2GDALDatatypes[] = {
     "CDOUBLE:CFloat64",
     NULL };
 
-static const char *papszGDAL2ISCEDatatypes[] = {
+static const char * const apszGDAL2ISCEDatatypes[] = {
     "Byte:BYTE",
     "Int16:SHORT",
     "Int32:INT",
@@ -67,7 +64,7 @@ static const char *papszGDAL2ISCEDatatypes[] = {
     NULL };
 
 enum Scheme { BIL = 0, BIP = 1, BSQ = 2 };
-const char *papszSchemeNames[] = { "BIL", "BIP", "BSQ", NULL };
+static const char * const apszSchemeNames[] = { "BIL", "BIP", "BSQ", NULL };
 
 /************************************************************************/
 /* ==================================================================== */
@@ -222,10 +219,10 @@ void ISCEDataset::FlushCache( void )
     CPLAddXMLAttributeAndValue( psTmpNode, "name", "DATA_TYPE" );
     CPLCreateXMLElementAndValue( psTmpNode, "value", 
                                  CSLFetchNameValue(
-                                         (char **)papszGDAL2ISCEDatatypes, 
+                                         (char **)apszGDAL2ISCEDatatypes, 
                                          sType ) );
 
-    const char *sScheme = papszSchemeNames[eScheme];
+    const char *sScheme = apszSchemeNames[eScheme];
     psTmpNode = CPLCreateXMLNode( psDocNode, CXT_Element, "property" );
     CPLAddXMLAttributeAndValue( psTmpNode, "name", "SCHEME" );
     CPLCreateXMLElementAndValue( psTmpNode, "value", sScheme );
@@ -441,7 +438,7 @@ GDALDataset *ISCEDataset::Open( GDALOpenInfo *poOpenInfo )
 /*      Create band information objects.                                */
 /* -------------------------------------------------------------------- */
     const char *sDataType =
-        CSLFetchNameValue( (char **)papszISCE2GDALDatatypes,
+        CSLFetchNameValue( (char **)apszISCE2GDALDatatypes,
                            CSLFetchNameValue( papszXmlProps, "DATA_TYPE" ) );
     const GDALDataType eDataType = GDALGetDataTypeByName( sDataType );
     const int nBands = atoi( CSLFetchNameValue( papszXmlProps, "NUMBER_BANDS" ) );
@@ -496,7 +493,7 @@ GDALDataset *ISCEDataset::Open( GDALOpenInfo *poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Set all the other header metadata into the ISCE domain       */
 /* -------------------------------------------------------------------- */
-    for (int i = 0; i < CSLCount( papszXmlProps ); i++)
+    for (int i = 0; papszXmlProps != NULL && papszXmlProps[i] != NULL; i++)
     {
         char **papszTokens;
         papszTokens = CSLTokenizeString2( papszXmlProps[i],
@@ -594,7 +591,7 @@ GDALDataset *ISCEDataset::Create( const char *pszFilename,
     CPLAddXMLAttributeAndValue( psTmpNode, "name", "DATA_TYPE" );
     CPLCreateXMLElementAndValue( psTmpNode, "value", 
                                  CSLFetchNameValue(
-                                         (char **)papszGDAL2ISCEDatatypes, 
+                                         (char **)apszGDAL2ISCEDatatypes, 
                                          sType ));
 
     psTmpNode = CPLCreateXMLNode( psDocNode, CXT_Element, "property" );
@@ -641,25 +638,23 @@ ISCERasterBand::ISCERasterBand( GDALDataset *poDSIn, int nBandIn, void *fpRawIn,
 /*                         GDALRegister_ISCE()                          */
 /************************************************************************/
 
-void GDALRegister_ISCE( void )
+void GDALRegister_ISCE()
 {
-    if ( !GDAL_CHECK_VERSION( "ISCE" ) )
+    if( !GDAL_CHECK_VERSION( "ISCE" ) )
         return;
 
-    if ( GDALGetDriverByName( "ISCE" ) != NULL )
+    if( GDALGetDriverByName( "ISCE" ) != NULL )
         return;
 
-    GDALDriver  *poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "ISCE" );
-    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
-                               "ISCE raster" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_various.html#ISCE" );
+    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, "ISCE raster" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_various.html#ISCE" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
                                "Byte Int16 Int32 Int64 Float32"
-                                   " Float64 CInt16 CInt64 CFloat32 "
-                                   " CFloat64" );
+                               " Float64 CInt16 CInt64 CFloat32 "
+                               " CFloat64" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONOPTIONLIST,
 "<CreationOptionList>"
 "   <Option name='SCHEME' type='string-select'>"

@@ -30,13 +30,10 @@
 
 #include <cfloat>
 #include <zlib.h>
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_RIK(void);
-CPL_C_END
 
 #define RIK_HEADER_DEBUG 0
 #define RIK_CLEAR_DEBUG 0
@@ -761,7 +758,7 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
 
         // Read unknown string
 
-        projLength = GetRikString( poOpenInfo->fpL, projection, sizeof(projection) );
+        /*projLength =*/ GetRikString( poOpenInfo->fpL, projection, sizeof(projection) );
 
         // Read map north edge
 
@@ -1194,12 +1191,9 @@ void GDALRegister_RIK()
 
     poDriver->SetDescription( "RIK" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
-    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
-                               "Swedish Grid RIK (.rik)" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_various.html#RIK" );
+    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, "Swedish Grid RIK (.rik)" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_various.html#RIK" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "rik" );
-
     poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );
 
     poDriver->pfnOpen = RIKDataset::Open;

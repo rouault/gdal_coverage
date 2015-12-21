@@ -859,7 +859,8 @@ CPLXMLNode *CPLParseXMLString( const char *pszString )
 /* -------------------------------------------------------------------- */
 /*      Did we pop all the way out of our stack?                        */
 /* -------------------------------------------------------------------- */
-    if( CPLGetLastErrorType() != CE_Failure && sContext.nStackSize != 0 )
+    if( CPLGetLastErrorType() != CE_Failure && sContext.nStackSize > 0 &&
+        sContext.papsStack != NULL )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
                   "Parse error at EOF, not all elements have been closed,\n"
@@ -954,7 +955,7 @@ CPLSerializeXMLNode( const CPLXMLNode *psNode, int nIndent,
         CPLAssert( psNode->psChild != NULL
                    && psNode->psChild->eType == CXT_Text );
 
-        sprintf( *ppszText + *pnLength, " %s=\"", psNode->pszValue );
+        snprintf( *ppszText + *pnLength, *pnMaxLength - *pnLength, " %s=\"", psNode->pszValue );
         *pnLength += strlen(*ppszText + *pnLength);
 
         char *pszEscaped = CPLEscapeString( psNode->psChild->pszValue, -1, CPLES_XML );
@@ -985,7 +986,7 @@ CPLSerializeXMLNode( const CPLXMLNode *psNode, int nIndent,
         for( int i = 0; i < nIndent; i++ )
             (*ppszText)[(*pnLength)++] = ' ';
 
-        sprintf( *ppszText + *pnLength, "<!--%s-->\n",
+        snprintf( *ppszText + *pnLength, *pnMaxLength - *pnLength, "<!--%s-->\n",
                  psNode->pszValue );
     }
 
@@ -1015,7 +1016,7 @@ CPLSerializeXMLNode( const CPLXMLNode *psNode, int nIndent,
         *pnLength += nIndent;
         (*ppszText)[*pnLength] = '\0';
 
-        sprintf( *ppszText + *pnLength, "<%s", psNode->pszValue );
+        snprintf( *ppszText + *pnLength, *pnMaxLength - *pnLength, "<%s", psNode->pszValue );
 
         /* Serialize *all* the attribute children, regardless of order */
         CPLXMLNode *psChild;
@@ -1081,7 +1082,7 @@ CPLSerializeXMLNode( const CPLXMLNode *psNode, int nIndent,
             }
 
             *pnLength += strlen(*ppszText + *pnLength);
-            sprintf( *ppszText + *pnLength, "</%s>\n", psNode->pszValue );
+            snprintf( *ppszText + *pnLength, *pnMaxLength - *pnLength, "</%s>\n", psNode->pszValue );
         }
     }
 
@@ -1830,7 +1831,7 @@ int CPLSetXMLValue( CPLXMLNode *psRoot,  const char *pszPath,
     char **papszTokens = CSLTokenizeStringComplex( pszPath, ".", FALSE, FALSE );
     int iToken = 0;
 
-    while( papszTokens[iToken] != NULL && psRoot != NULL )
+    while( papszTokens[iToken] != NULL )
     {
         bool        bIsAttribute = false;
         const char *pszName = papszTokens[iToken];

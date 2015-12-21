@@ -28,8 +28,9 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "rawdataset.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
+#include "rawdataset.h"
 
 CPL_CVSID("$Id$");
 
@@ -284,7 +285,7 @@ void GDALRegister_KRO()
     if( GDALGetDriverByName( "KRO" ) != NULL )
         return;
 
-    GDALDriver	*poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "KRO" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );

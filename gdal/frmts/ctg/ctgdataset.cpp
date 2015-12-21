@@ -27,14 +27,11 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "ogr_spatialref.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void    GDALRegister_CTG(void);
-CPL_C_END
 
 static const int HEADER_LINE_COUNT = 5;
 
@@ -94,7 +91,7 @@ static const LULCDescStruct asLULCDesc[] =
     {92, "Glaciers" }
 };
 
-static const char* apszBandDescription[] =
+static const char* const apszBandDescription[] =
 {
     "Land Use and Land Cover",
     "Political units",

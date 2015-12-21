@@ -36,6 +36,7 @@
 #include <limits.h>
 #include <assert.h>
 
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 
 #ifndef DBL_MAX
@@ -51,10 +52,6 @@
 #endif /* INT_MAX */
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_GSAG(void);
-CPL_C_END
 
 /************************************************************************/
 /* ==================================================================== */
@@ -434,7 +431,7 @@ CPLErr GSAGRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
 		return CE_Failure;
 	    }
 	    szLineBuf[nCharsRead] = '\0';
-	    szStart = szEnd = szLineBuf;
+	    szEnd = szLineBuf;
 	    continue;
 	}
 	else if( *szEnd == '\0'
@@ -1721,7 +1718,7 @@ GDALDataset *GSAGDataset::CreateCopy( const char *pszFilename,
 }
 
 /************************************************************************/
-/*                          GDALRegister_GSAG()                          */
+/*                          GDALRegister_GSAG()                         */
 /************************************************************************/
 
 void GDALRegister_GSAG()
@@ -1729,18 +1726,18 @@ void GDALRegister_GSAG()
 {
     if( GDALGetDriverByName( "GSAG" ) != NULL )
         return;
+
     GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "GSAG" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
                                "Golden Software ASCII Grid (.grd)" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_various.html#GSAG" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_various.html#GSAG" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "grd" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
-    			   "Byte Int16 UInt16 Int32 UInt32 "
-    			   "Float32 Float64" );
+                               "Byte Int16 UInt16 Int32 UInt32 "
+                               "Float32 Float64" );
     poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );
 
     poDriver->pfnIdentify = GSAGDataset::Identify;

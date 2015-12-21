@@ -30,6 +30,7 @@
 
 #include "rawdataset.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "ogr_spatialref.h"
 #include "atlsci_spheroid.h"
 
@@ -37,10 +38,6 @@
 #include <algorithm>
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_MFF(void);
-CPL_C_END
 
 enum {
   MFFPRJ_NONE,
@@ -393,8 +390,8 @@ void MFFDataset::ScanForGCPs()
         }
 
         char szLatName[40], szLongName[40];
-        sprintf( szLatName, "%s_LATITUDE", pszBase );
-        sprintf( szLongName, "%s_LONGITUDE", pszBase );
+        snprintf( szLatName, sizeof(szLatName), "%s_LATITUDE", pszBase );
+        snprintf( szLongName, sizeof(szLongName), "%s_LONGITUDE", pszBase );
 
         if( CSLFetchNameValue(papszHdrLines, szLatName) != NULL
             && CSLFetchNameValue(papszHdrLines, szLongName) != NULL )
@@ -427,7 +424,7 @@ void MFFDataset::ScanForGCPs()
     for( int i = 0; i < NUM_GCPS; i++ )
     {
         char	szName[25];
-        sprintf( szName, "GCP%d", i+1 );
+        snprintf( szName, sizeof(szName), "GCP%d", i+1 );
         if( CSLFetchNameValue( papszHdrLines, szName ) == NULL )
             continue;
 
@@ -1134,15 +1131,15 @@ GDALDataset *MFFDataset::Create( const char * pszFilenameIn,
         char       szExtension[4];
 
         if( eType == GDT_Byte )
-            sprintf( szExtension, "b%02d", iBand );
+            snprintf( szExtension, sizeof(szExtension), "b%02d", iBand );
         else if( eType == GDT_UInt16 )
-            sprintf( szExtension, "i%02d", iBand );
+            snprintf( szExtension, sizeof(szExtension), "i%02d", iBand );
         else if( eType == GDT_Float32 )
-            sprintf( szExtension, "r%02d", iBand );
+            snprintf( szExtension, sizeof(szExtension),  "r%02d", iBand );
         else if( eType == GDT_CInt16 )
-            sprintf( szExtension, "j%02d", iBand );
+            snprintf( szExtension, sizeof(szExtension), "j%02d", iBand );
         else if( eType == GDT_CFloat32 )
-            sprintf( szExtension, "x%02d", iBand );
+            snprintf( szExtension, sizeof(szExtension), "x%02d", iBand );
 
         pszFilename = CPLFormFilename( NULL, pszBaseFilename, szExtension );
         fp = VSIFOpenL( pszFilename, "wb" );
@@ -1158,7 +1155,7 @@ GDALDataset *MFFDataset::Create( const char * pszFilenameIn,
                     1, 1, fp ) == 1;
         VSIFCloseL( fp );
     }
-    
+
     if( !bOK )
     {
         CPLFree( pszBaseFilename );
@@ -1514,7 +1511,7 @@ MFFDataset::CreateCopy( const char * pszFilename,
     CPLFree( padfTiepoints );
     bOK &= VSIFPrintfL( fp, "END\n" ) >= 0;
     VSIFCloseL( fp );
-    
+
     if( !bOK )
     {
         delete poDS;
@@ -1554,7 +1551,7 @@ MFFDataset::CreateCopy( const char * pszFilename,
 
 
 /************************************************************************/
-/*                         GDALRegister_MFF()                          */
+/*                         GDALRegister_MFF()                           */
 /************************************************************************/
 
 void GDALRegister_MFF()
@@ -1563,16 +1560,14 @@ void GDALRegister_MFF()
     if( GDALGetDriverByName( "MFF" ) != NULL )
         return;
 
-    GDALDriver	*poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "MFF" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
-    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, 
-                               "Vexcel MFF Raster" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, 
-                               "frmt_various.html#MFF" );
+    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, "Vexcel MFF Raster" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_various.html#MFF" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "hdr" );
-    poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES, 
+    poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
                                "Byte UInt16 Float32 CInt16 CFloat32" );
 
     poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );

@@ -28,16 +28,12 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "rawdataset.h"
-#include "ogr_spatialref.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
+#include "ogr_spatialref.h"
+#include "rawdataset.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void GDALRegister_CPG(void);
-CPL_C_END
-
 
 enum Interleave {BSQ, BIL, BIP};
 
@@ -585,7 +581,7 @@ GDALDataset* CPGDataset::InitializeType1Or2Dataset( const char *pszFilename )
 /* -------------------------------------------------------------------- */
 /*      Open the four bands.                                            */
 /* -------------------------------------------------------------------- */
-    static const char *apszPolarizations[4] = { "hh", "hv", "vv", "vh" };
+    static const char * const apszPolarizations[4] = { "hh", "hv", "vv", "vh" };
 
     const int nNameLen = static_cast<int>(strlen(pszWorkname));
 
@@ -703,7 +699,7 @@ GDALDataset* CPGDataset::InitializeType1Or2Dataset( const char *pszFilename )
         {
             char szID[32];
 
-            sprintf(szID,"%d",ngcp+1);
+            snprintf( szID, sizeof(szID), "%d",ngcp+1);
             if (itransposed == 1)
             {
                 if (ngcp < 4)
@@ -1334,7 +1330,7 @@ CPG_STOKESRasterBand::CPG_STOKESRasterBand( GDALDataset *poDSIn, int nBandIn,
     nBand(nBandIn),
     bNativeOrder(bNativeOrderIn)
 {
-    static const char *apszPolarizations[16] = { "Covariance_11",
+    static const char * const apszPolarizations[16] = { "Covariance_11",
                                                  "Covariance_12",
                                                  "Covariance_13",
                                                  "Covariance_14",
@@ -1623,7 +1619,7 @@ CPLErr CPG_STOKESRasterBand::IReadBlock( CPL_UNUSED int nBlockXOff,
 }
 
 /************************************************************************/
-/*                         GDALRegister_CPG()                          */
+/*                         GDALRegister_CPG()                           */
 /************************************************************************/
 
 void GDALRegister_CPG()
@@ -1632,7 +1628,7 @@ void GDALRegister_CPG()
     if( GDALGetDriverByName( "CPG" ) != NULL )
       return;
 
-    GDALDriver	*poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "CPG" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );

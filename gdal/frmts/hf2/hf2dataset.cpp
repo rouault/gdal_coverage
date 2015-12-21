@@ -28,14 +28,11 @@
  ****************************************************************************/
 
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "ogr_spatialref.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void    GDALRegister_HF2(void);
-CPL_C_END
 
 /************************************************************************/
 /* ==================================================================== */
@@ -570,7 +567,7 @@ GDALDataset *HF2Dataset::Open( GDALOpenInfo * poOpenInfo )
             else if (nEPSGDatumCode >= 6000)
             {
                 char szName[32];
-                sprintf( szName, "EPSG:%d", nEPSGDatumCode-2000 );
+                snprintf( szName, sizeof(szName), "EPSG:%d", nEPSGDatumCode-2000 );
                 oSRS.SetWellKnownGeogCS( szName );
                 bHasSRS = true;
             }
@@ -1066,14 +1063,13 @@ void GDALRegister_HF2()
     if( GDALGetDriverByName( "HF2" ) != NULL )
         return;
 
-    GDALDriver  *poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "HF2" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
                                "HF2/HFZ heightfield raster" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_hf2.html" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_hf2.html" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "hf2" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONOPTIONLIST,
 "<CreationOptionList>"

@@ -116,7 +116,7 @@ def vsifile_generic(filename):
     if statBuf is not None:
         gdaltest.post_reason('failure')
         return 'fail'
-    
+
     # Test append mode on non existing file
     fp = gdal.VSIFOpenL(filename, 'ab')
     gdal.VSIFWriteL('XX', 1, 2, fp)
@@ -131,7 +131,7 @@ def vsifile_generic(filename):
     if gdal.Unlink(filename) != 0:
         gdaltest.post_reason('failure')
         return 'fail'
-    
+
     return 'success'
 
 ###############################################################################
@@ -389,6 +389,42 @@ def vsifile_8():
 
     return 'success'
 
+###############################################################################
+# Test ReadDir()
+
+def vsifile_9():
+
+    lst = gdal.ReadDir('.')
+    if len(lst) < 4:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    # Test truncation
+    lst_truncated = gdal.ReadDir('.', int(len(lst)/2))
+    if len(lst_truncated) <= int(len(lst)/2):
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    gdal.Mkdir('/vsimem/mydir', 438)
+    for i in range(10):
+        fp = gdal.VSIFOpenL('/vsimem/mydir/%d' % i, 'wb')
+        gdal.VSIFCloseL(fp)
+
+    lst = gdal.ReadDir('/vsimem/mydir')
+    if len(lst) < 4:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    # Test truncation
+    lst_truncated = gdal.ReadDir('/vsimem/mydir', int(len(lst)/2))
+    if len(lst_truncated) <= int(len(lst)/2):
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    for i in range(10):
+        gdal.Unlink('/vsimem/mydir/%d' % i)
+    gdal.Rmdir('/vsimem/newdir')
+
+    return 'success'
+
 gdaltest_list = [ vsifile_1,
                   vsifile_2,
                   vsifile_3,
@@ -396,7 +432,8 @@ gdaltest_list = [ vsifile_1,
                   vsifile_5,
                   vsifile_6,
                   vsifile_7,
-                  vsifile_8 ]
+                  vsifile_8,
+                  vsifile_9 ]
 
 if __name__ == '__main__':
 

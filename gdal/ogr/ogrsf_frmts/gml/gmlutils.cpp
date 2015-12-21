@@ -194,9 +194,8 @@ OGRGeometry* GML_BuildOGRGeometryFromList(const CPLXMLNode* const * papsGeometry
                                           bool bFaceHoleNegative)
 {
     OGRGeometry* poGeom = NULL;
-    int i;
     OGRGeometryCollection* poCollection = NULL;
-    for(i=0;papsGeometry[i] != NULL;i++)
+    for( int i=0; papsGeometry[i] != NULL; i++ )
     {
         OGRGeometry* poSubGeom = GML2OGRGeometry_XMLNode( papsGeometry[i],
                                                           nPseudoBoolGetSecondaryGeometryOption,
@@ -265,7 +264,7 @@ OGRGeometry* GML_BuildOGRGeometryFromList(const CPLXMLNode* const * papsGeometry
             }
         }
     }
-    
+
     if( poGeom == NULL )
         return NULL;
 
@@ -331,12 +330,12 @@ char* GML_GetSRSName(const OGRSpatialReference* poSRS, bool bLongSRS, bool *pbCo
 
                 if (bLongSRS)
                 {
-                    sprintf( szSrsName, " srsName=\"urn:ogc:def:crs:%s::%s\"",
+                    snprintf( szSrsName, sizeof(szSrsName), " srsName=\"urn:ogc:def:crs:%s::%s\"",
                         pszAuthName, pszAuthCode );
                 }
                 else
                 {
-                    sprintf( szSrsName, " srsName=\"%s:%s\"",
+                    snprintf( szSrsName, sizeof(szSrsName), " srsName=\"%s:%s\"",
                             pszAuthName, pszAuthCode );
                 }
             }

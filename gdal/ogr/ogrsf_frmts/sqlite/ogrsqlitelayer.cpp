@@ -263,7 +263,7 @@ void OGRSQLiteLayer::BuildFeatureDefn( const char *pszLayerName,
           default:
             /* leave it as OFTString */;
         }
-        
+
         const char * pszDeclType = sqlite3_column_decltype(hStmtIn, iCol);
         //CPLDebug("SQLITE", "decltype(%s) = %s",
         //         oField.GetNameRef(), pszDeclType ? pszDeclType : "null");
@@ -499,7 +499,7 @@ void OGRSQLiteLayer::BuildFeatureDefn( const char *pszLayerName,
         if( EQUAL(oField.GetNameRef(),"OGC_FID") )
             continue;
 
-        /* config option just in case we wouldn't want that in some cases */
+        /* Config option just in case we would not want that in some cases */
         if( (eFieldType == OFTTime || eFieldType == OFTDate ||
              eFieldType == OFTDateTime) &&
             CSLTestBoolean(
@@ -883,8 +883,9 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
     if( nRecLevel == 32 )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
-                    "Too many recursiong level (%d) while parsing Spatialite geometry.",
-                    nRecLevel );
+                  "Too many recursion levels (%d) while parsing "
+                  "Spatialite geometry.",
+                  nRecLevel );
         return OGRERR_CORRUPT_DATA;
     }
 
@@ -1522,7 +1523,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -1605,7 +1606,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -1636,7 +1637,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
 
             poLR = new OGRLinearRing();
             poLR->setNumPoints( nPointCount, FALSE );
-            
+
             for( iPoint = 0; iPoint < nPointCount; iPoint++ )
             {
                 memcpy( adfTuple, pabyData + nNextByte, 3*8 );
@@ -1687,7 +1688,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -1718,7 +1719,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
 
             poLR = new OGRLinearRing();
             poLR->setNumPoints( nPointCount, FALSE );
-            
+
             for( iPoint = 0; iPoint < nPointCount; iPoint++ )
             {
                 memcpy( adfTuple, pabyData + nNextByte, 3*8 );
@@ -1769,7 +1770,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -1800,7 +1801,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
 
             poLR = new OGRLinearRing();
             poLR->setNumPoints( nPointCount, FALSE );
-            
+
             for( iPoint = 0; iPoint < nPointCount; iPoint++ )
             {
                 memcpy( adfTuple, pabyData + nNextByte, 4*8 );
@@ -1854,7 +1855,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -1890,7 +1891,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
 
             poLR = new OGRLinearRing();
             poLR->setNumPoints( nPointCount, FALSE );
-            
+
             for( iPoint = 0; iPoint < nPointCount; iPoint++ )
             {
                 if ( iPoint == 0 || iPoint == (nPointCount - 1 ) )
@@ -1962,7 +1963,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -1999,7 +2000,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
 
             poLR = new OGRLinearRing();
             poLR->setNumPoints( nPointCount, FALSE );
-            
+
             for( iPoint = 0; iPoint < nPointCount; iPoint++ )
             {
                 if ( iPoint == 0 || iPoint == (nPointCount - 1 ) )
@@ -2075,7 +2076,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -2112,7 +2113,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
 
             poLR = new OGRLinearRing();
             poLR->setNumPoints( nPointCount, FALSE );
-            
+
             for( iPoint = 0; iPoint < nPointCount; iPoint++ )
             {
                 if ( iPoint == 0 || iPoint == (nPointCount - 1 ) )
@@ -2184,7 +2185,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             return OGRERR_NOT_ENOUGH_DATA;
 
         nNextByte = 8;
-        
+
         poGeom = poPoly = new OGRPolygon();
 
         for( iRing = 0; iRing < nRingCount; iRing++ )
@@ -2222,7 +2223,7 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
 
             poLR = new OGRLinearRing();
             poLR->setNumPoints( nPointCount, FALSE );
-            
+
             for( iPoint = 0; iPoint < nPointCount; iPoint++ )
             {
                 if ( iPoint == 0 || iPoint == (nPointCount - 1 ) )
@@ -3194,16 +3195,19 @@ void OGRSQLiteLayer::ClearStatement()
 int OGRSQLITEStringToDateTimeField( OGRFeature* poFeature, int iField,
                                     const char* pszValue )
 {
-    int nYear = 0, nMonth = 0, nDay = 0,
-        nHour = 0, nMinute = 0;
-    float fSecond = 0;
+    int nYear = 0;
+    int nMonth = 0;
+    int nDay = 0;
+    int nHour = 0;
+    int nMinute = 0;
+    float fSecond = 0.0f;
 
-    /* YYYY-MM-DD HH:MM:SS or YYYY-MM-DD HH:MM:SS.SSS */
-    nYear = 0; nMonth = 0; nDay = 0; nHour = 0;
-    nMinute = 0; fSecond = 0;
+    /* YYYY-MM-DD HH:MM:SS.SSS */
     if( sscanf(pszValue, "%04d-%02d-%02d %02d:%02d:%f",
                 &nYear, &nMonth, &nDay, &nHour, &nMinute, &fSecond) == 6 ||
         sscanf(pszValue, "%04d/%02d/%02d %02d:%02d:%f",
+                &nYear, &nMonth, &nDay, &nHour, &nMinute, &fSecond) == 6 ||
+        sscanf(pszValue, "%04d-%02d-%02dT%02d:%02d:%f",
                 &nYear, &nMonth, &nDay, &nHour, &nMinute, &fSecond) == 6 )
     {
         if( poFeature )
@@ -3213,11 +3217,11 @@ int OGRSQLITEStringToDateTimeField( OGRFeature* poFeature, int iField,
     }
 
     /* YYYY-MM-DD HH:MM */
-    nYear = 0; nMonth = 0; nDay = 0; nHour = 0;
-    nMinute = 0;
     if( sscanf(pszValue, "%04d-%02d-%02d %02d:%02d",
                 &nYear, &nMonth, &nDay, &nHour, &nMinute) == 5 ||
         sscanf(pszValue, "%04d/%02d/%02d %02d:%02d",
+                &nYear, &nMonth, &nDay, &nHour, &nMinute) == 5 ||
+        sscanf(pszValue, "%04d-%02d-%02dT%02d:%02d",
                 &nYear, &nMonth, &nDay, &nHour, &nMinute) == 5 )
     {
         if( poFeature )
@@ -3226,32 +3230,7 @@ int OGRSQLITEStringToDateTimeField( OGRFeature* poFeature, int iField,
         return OFTDateTime;
     }
 
-    /*  YYYY-MM-DDTHH:MM:SS or YYYY-MM-DDTHH:MM:SS.SSS */
-    nYear = 0; nMonth = 0; nDay = 0; nHour = 0;
-    nMinute = 0; fSecond = 0;
-    if( sscanf(pszValue, "%04d-%02d-%02dT%02d:%02d:%f",
-                &nYear, &nMonth, &nDay, &nHour, &nMinute, &fSecond) == 6 )
-    {
-        if( poFeature )
-            poFeature->SetField( iField, nYear, nMonth, nDay,
-                                 nHour, nMinute, fSecond, 0);
-        return OFTDateTime;
-    }
-
-    /* YYYY-MM-DDTHH:MM */
-    nYear = 0; nMonth = 0; nDay = 0; nHour = 0;
-    nMinute = 0;
-    if( sscanf(pszValue, "%04d-%02d-%02dT%02d:%02d",
-                &nYear, &nMonth, &nDay, &nHour, &nMinute) == 5 )
-    {
-        if( poFeature )
-            poFeature->SetField( iField, nYear, nMonth, nDay,
-                                 nHour, nMinute, 0, 0);
-        return OFTDateTime;
-    }
-
     /* YYYY-MM-DD */
-    nYear = 0; nMonth = 0; nDay = 0;
     if( sscanf(pszValue, "%04d-%02d-%02d",
                 &nYear, &nMonth, &nDay) == 3 ||
         sscanf(pszValue, "%04d/%02d/%02d",
@@ -3263,8 +3242,7 @@ int OGRSQLITEStringToDateTimeField( OGRFeature* poFeature, int iField,
         return OFTDate;
     }
 
-    /*  HH:MM:SS or HH:MM:SS.SSS */
-    nDay = 0; nHour = 0; fSecond = 0;
+    /*  HH:MM:SS.SSS */
     if( sscanf(pszValue, "%02d:%02d:%f",
         &nHour, &nMinute, &fSecond) == 3 )
     {
@@ -3275,7 +3253,6 @@ int OGRSQLITEStringToDateTimeField( OGRFeature* poFeature, int iField,
     }
 
     /*  HH:MM */
-    nHour = 0; nMinute = 0;
     if( sscanf(pszValue, "%02d:%02d", &nHour, &nMinute) == 2 )
     {
         if( poFeature )

@@ -28,15 +28,12 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "rawdataset.h"
-#include "ogr_spatialref.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
+#include "ogr_spatialref.h"
+#include "rawdataset.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_EHdr(void);
-CPL_C_END
 
 static const int HAS_MIN_FLAG = 0x1;
 static const int HAS_MAX_FLAG = 0x2;
@@ -513,7 +510,7 @@ void EHdrDataset::ResetKeyValue( const char *pszKey, const char *pszValue )
     }
 
     char szNewLine[82];
-    sprintf( szNewLine, "%-15s%s", pszKey, pszValue );
+    snprintf( szNewLine, sizeof(szNewLine), "%-15s%s", pszKey, pszValue );
 
     for( int i = CSLCount(papszHDR)-1; i >= 0; i-- )
     {
@@ -832,9 +829,9 @@ CPLErr EHdrDataset::ReadSTX()
               if (bNoDataSet && dfNoData == poBand->dfMin)
               {
                   /* Triggered by /vsicurl/http://eros.usgs.gov/archive/nslrsda/GeoTowns/HongKong/srtm/n22e113.zip/n22e113.bil */
-                  CPLDebug("EHDr", "Ignoring .stx file where min == nodata. "
-                           "The nodata value shouldn't be taken into account "
-                           "in minimum value computation.");
+                  CPLDebug( "EHDr", "Ignoring .stx file where min == nodata. "
+                            "The nodata value should not be taken into account "
+                            "in minimum value computation.");
                   CSLDestroy( papszTokens );
                   papszTokens = NULL;
                   break;
@@ -1576,7 +1573,7 @@ GDALDataset *EHdrDataset::Open( GDALOpenInfo * poOpenInfo )
             if (utmZone != 0 && bUTM && bWGS84 && (bNorth || bSouth))
             {
                 char projCSStr[64];
-                sprintf(projCSStr, "WGS 84 / UTM zone %d%c",
+                snprintf(projCSStr, sizeof(projCSStr), "WGS 84 / UTM zone %d%c",
                         utmZone, (bNorth) ? 'N' : 'S');
 
                 OGRSpatialReference oSRS;
@@ -2013,13 +2010,12 @@ void GDALRegister_EHdr()
     if( GDALGetDriverByName( "EHdr" ) != NULL )
         return;
 
-    GDALDriver	*poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "EHdr" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, "ESRI .hdr Labelled" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_various.html#EHdr" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_various.html#EHdr" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
                                "Byte Int16 UInt16 Int32 UInt32 Float32" );
 

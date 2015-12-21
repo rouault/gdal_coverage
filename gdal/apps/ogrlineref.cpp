@@ -44,6 +44,7 @@
 #define FIELD_FINISH "end"
 #define FIELD_SCALE_FACTOR "scale"
 #define DELTA 0.00000001 //- delta
+// TODO: TOLLERANCE -> TOLERANCE
 #define TOLLERANCE 0.00008983153
 
 #if defined(HAVE_GEOS)
@@ -71,7 +72,9 @@ typedef struct _curve_data
 /************************************************************************/
 /*                               Usage()                                */
 /************************************************************************/
-static void Usage(const char* pszAdditionalMsg, int bShort = TRUE)
+static void Usage(const char* pszAdditionalMsg, int bShort = TRUE) CPL_NO_RETURN;
+
+static void Usage(const char* pszAdditionalMsg, int bShort)
 {
     OGRSFDriverRegistrar        *poR = OGRSFDriverRegistrar::GetRegistrar();
 
@@ -114,7 +117,7 @@ static void Usage(const char* pszAdditionalMsg, int bShort = TRUE)
         " -lf field_name: Field name for uniq paths in layer (optional)\n"
         " -p src_repers_datasource_name: Datasource of repers name\n"
         " -pn layer_name: Layer name in datasource (optional)\n"
-        " -pm pos_field_name: Line postion field name\n"
+        " -pm pos_field_name: Line position field name\n"
         " -pf field_name: Field name for correspondence repers of separate paths in layer (optional)\n"
         " -r src_parts_datasource_name: Parts datasource name\n"
         " -rn layer_name: Layer name in datasource (optional)\n"
@@ -192,7 +195,7 @@ static OGRLayer* SetupTargetLayer(OGRLayer * poSrcLayer, GDALDataset *poDstDS, c
         }
 
         if (iLayer == nLayerCount)
-            /* shouldn't happen with an ideal driver */
+            /* should not happen with an ideal driver */
             poDstLayer = NULL;
     }
 
@@ -424,8 +427,10 @@ static OGRErr CreateSubline(OGRLayer* const poPkLayer,
     pFeature = poPkLayer->GetNextFeature();
     if (NULL != pFeature)
     {
-        dfBeg = pFeature->GetFieldAsDouble(FIELD_START);
-        dfEnd = pFeature->GetFieldAsDouble(FIELD_FINISH);
+        // FIXME: Clang Static Analyzer rightly found that the following
+        // code is dead
+        /*dfBeg = pFeature->GetFieldAsDouble(FIELD_START);
+        dfEnd = pFeature->GetFieldAsDouble(FIELD_FINISH);*/
         OGRFeature::DestroyFeature(pFeature);
     }
     else
@@ -536,9 +541,6 @@ static OGRErr CreateSubline(OGRLayer* const poPkLayer,
         //store
         return AddFeature(poOutLayer, pOutLine, dfPosBeg, dfPosEnd, 1.0, bQuiet);
     }
-
-    //should never reach here
-    return OGRERR_NONE;
 }
 
 //------------------------------------------------------------------------
@@ -1410,7 +1412,7 @@ int main( int nArgc, char ** papszArgv )
         }
     }
 
-    
+
     if(stOper == op_create)
     {
 #ifdef HAVE_GEOS_PROJECT
@@ -1424,7 +1426,7 @@ int main( int nArgc, char ** papszArgv )
             Usage("no position field provided");
         else  if (dfStep == -100000000)
             Usage("no step provided");
-            
+
     /* -------------------------------------------------------------------- */
     /*      Open data source.                                               */
     /* -------------------------------------------------------------------- */
@@ -1442,7 +1444,7 @@ int main( int nArgc, char ** papszArgv )
         if( poLnDS == NULL )
         {
             OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-            
+
             fprintf( stderr, "FAILURE:\n"
                     "Unable to open path datasource `%s' with the following drivers.\n",
                     pszLineDataSource);

@@ -39,21 +39,13 @@ CPL_CVSID("$Id$");
 /*                        OGRCloudantDataSource()                       */
 /************************************************************************/
 
-OGRCloudantDataSource::OGRCloudantDataSource()
-
-{
-
-}
+OGRCloudantDataSource::OGRCloudantDataSource() {}
 
 /************************************************************************/
 /*                       ~OGRCloudantDataSource()                       */
 /************************************************************************/
 
-OGRCloudantDataSource::~OGRCloudantDataSource()
-
-{
-
-}
+OGRCloudantDataSource::~OGRCloudantDataSource() {}
 
 /************************************************************************/
 /*                             OpenDatabase()                           */
@@ -212,7 +204,7 @@ int OGRCloudantDataSource::Open( const char * pszFilename, int bUpdateIn)
     }
 
     int nTables = json_object_array_length(poAnswerObj);
-    
+
     for(int i=0;i<nTables;i++)
     {
         json_object* poAnswerObjDBName = json_object_array_get_idx(poAnswerObj, i);
@@ -338,9 +330,8 @@ OGRLayer   *OGRCloudantDataSource::ICreateLayer( const char *l_pszName,
 
             if (pszEpsg != NULL)
             {
-                const char * pszUrn = "urn:ogc:def:crs:epsg::";
-                CPLStrlcpy(szSrid, pszUrn, sizeof(szSrid));
-                if (CPLStrlcpy(szSrid + sizeof(pszUrn), pszEpsg, sizeof(szSrid)) >= sizeof(szSrid))
+                if( snprintf(szSrid, sizeof(szSrid), "urn:ogc:def:crs:epsg::%s",
+                             pszEpsg) >= (int)sizeof(szSrid) )
                 {
                     CPLError(CE_Failure, CPLE_AppDefined, "Unable to parse SRID");
                     return NULL;
@@ -360,7 +351,7 @@ OGRLayer   *OGRCloudantDataSource::ICreateLayer( const char *l_pszName,
         json_object_object_add(poStIndexes, "spatial", poSpatial);
         json_object_object_add(poSpatial, "index", 
             json_object_new_string("function(doc) {if (doc.geometry && doc.geometry.coordinates && doc.geometry.coordinates.length != 0){st_index(doc.geometry);}}"));
-        
+
         if (bSrid)
             json_object_object_add(poStIndexes, "srsid", json_object_new_string(szSrid));
 

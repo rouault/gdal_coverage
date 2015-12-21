@@ -29,14 +29,11 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "gdal_pam.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
+#include "gdal_pam.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void    GDALRegister_BMP(void);
-CPL_C_END
 
 // Enable if you want to see lots of BMP debugging output.
 // #define BMP_DEBUG
@@ -381,7 +378,7 @@ CPLErr BMPRasterBand::IReadBlock( CPL_UNUSED int nBlockXOff,
         {
             // Colour triplets in BMP file organized in reverse order:
             // blue, green, red. When we have 32-bit BMP the forth byte
-            // in quadriplet should be discarded as it has no meaning.
+            // in quadruplet should be discarded as it has no meaning.
             // That is why we always use 3 byte count in the following
             // pabyTemp index.
             ((GByte *) pImage)[i] = *pabyTemp;

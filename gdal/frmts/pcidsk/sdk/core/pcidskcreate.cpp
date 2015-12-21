@@ -116,7 +116,7 @@ PCIDSK::Create( std::string filename, int pixels, int lines,
         interleaving = "FILE";
     }
     else
-        ThrowPCIDSKException( "PCIDSK::Create() options '%s' not recognised.",
+        return (PCIDSKFile*)ThrowPCIDSKExceptionPtr( "PCIDSK::Create() options '%s' not recognised.",
                               options.c_str() );
 #if 0
     if( strstr(options.c_str(),"NOZERO") != NULL )
@@ -142,7 +142,7 @@ PCIDSK::Create( std::string filename, int pixels, int lines,
     
     if( !regular && strcmp(interleaving,"FILE") != 0 )
     {
-        ThrowPCIDSKException( 
+        return (PCIDSKFile*)ThrowPCIDSKExceptionPtr( 
            "Requested mixture of band types not supported for interleaving=%s.",
            interleaving );
     }
@@ -352,7 +352,7 @@ PCIDSK::Create( std::string filename, int pixels, int lines,
 
     // IHi.2 - Filename storing image.
     if( STARTS_WITH(interleaving, "FILE") )
-        ih.Put( "<unintialized>", 64, 64 );
+        ih.Put( "<unintialized>", 64, 64 );  // TODO: Spelling?
     
     if( externallink )
     {
@@ -378,7 +378,7 @@ PCIDSK::Create( std::string filename, int pixels, int lines,
         if( STARTS_WITH(options.c_str(), "TILED") )
         {
             char sis_filename[65];
-            sprintf( sis_filename, "/SIS=%d", chan_index );
+            snprintf( sis_filename, sizeof(sis_filename), "/SIS=%d", chan_index );
             ih.Put( sis_filename, 64, 64 );
 
             // IHi.6.7 - IHi.6.10
@@ -399,7 +399,7 @@ PCIDSK::Create( std::string filename, int pixels, int lines,
          chan_index++ )
     {
         ih.Put( "", 160, 8 );
-        ih.Put( "<unintialized>", 64, 64 );
+        ih.Put( "<unintialized>", 64, 64 );  // TODO: Spelling?
         ih.Put( "", 250, 40 );
 
         interfaces->io->Write( ih.buffer, 1024, 1, io_handle );
@@ -493,7 +493,7 @@ PCIDSK::Create( std::string filename, int pixels, int lines,
             // file, and adds ".nnn" based on the band. 
             std::string band_filename = filename;
             char ext[5];
-            sprintf( ext, ".%03d", chan_index+1 );
+            snprintf( ext, sizeof(ext), ".%03d", chan_index+1 );
             
             size_t last_dot = band_filename.find_last_of(".");
             if( last_dot != std::string::npos 

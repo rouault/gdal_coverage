@@ -208,7 +208,7 @@ void CPCIDSKFile::Synchronize()
     }
 
 /* -------------------------------------------------------------------- */
-/*      Ensure the file is synhronized to disk.                         */
+/*      Ensure the file is synchronized to disk.                        */
 /* -------------------------------------------------------------------- */
     MutexHolder oHolder( io_mutex );
 
@@ -223,7 +223,7 @@ PCIDSKChannel *CPCIDSKFile::GetChannel( int band )
 
 {
     if( band < 1 || band > channel_count )
-        ThrowPCIDSKException( "Out of range band (%d) requested.", 
+        return (PCIDSKChannel*)ThrowPCIDSKExceptionPtr( "Out of range band (%d) requested.", 
                               band );
 
     return channels[band-1];
@@ -368,7 +368,7 @@ PCIDSK::PCIDSKSegment *CPCIDSKFile::GetSegment( int type, std::string name,
     //see function BuildChildrenLayer in jtfile.cpp, the call on GDBSegNext
     //in the loop on gasTypeTable can create issue in PCIDSKSegNext 
     //(in pcic/gdbfrtms/pcidskopen.cpp)
-    sprintf( type_str, "%03d", (type % 1000) );
+    snprintf( type_str, sizeof(type_str), "%03d", (type % 1000) );
 
     for( i = previous; i < segment_count; i++ )
     {
@@ -484,7 +484,7 @@ void CPCIDSKFile::InitializeFromHeader()
 
         last_block_data = malloc((size_t) block_size);
         if( last_block_data == NULL )
-            ThrowPCIDSKException( "Allocating %d bytes for scanline buffer failed.", 
+            return ThrowPCIDSKException( "Allocating %d bytes for scanline buffer failed.", 
                                        (int) block_size );
 
         last_block_mutex = interfaces.CreateMutex();
@@ -577,7 +577,7 @@ void CPCIDSKFile::InitializeFromHeader()
         }
 
         else
-            ThrowPCIDSKException( "Unsupported interleaving:%s", 
+            return ThrowPCIDSKException( "Unsupported interleaving:%s", 
                                        interleaving.c_str() );
 
         channels.push_back( channel );
@@ -595,7 +595,7 @@ void CPCIDSKFile::ReadFromFile( void *buffer, uint64 offset, uint64 size )
 
     interfaces.io->Seek( io_handle, offset, SEEK_SET );
     if( interfaces.io->Read( buffer, 1, size, io_handle ) != size )
-        ThrowPCIDSKException( "PCIDSKFile:Failed to read %d bytes at %d.", 
+        return ThrowPCIDSKException( "PCIDSKFile:Failed to read %d bytes at %d.", 
                                    (int) size, (int) offset );
 }
 
@@ -613,7 +613,7 @@ void CPCIDSKFile::WriteToFile( const void *buffer, uint64 offset, uint64 size )
 
     interfaces.io->Seek( io_handle, offset, SEEK_SET );
     if( interfaces.io->Write( buffer, 1, size, io_handle ) != size )
-        ThrowPCIDSKException( "PCIDSKFile:Failed to write %d bytes at %d.",
+        return ThrowPCIDSKException( "PCIDSKFile:Failed to write %d bytes at %d.",
                                    (int) size, (int) offset );
 }
 
@@ -626,7 +626,7 @@ void *CPCIDSKFile::ReadAndLockBlock( int block_index,
 
 {
     if( last_block_data == NULL )
-        ThrowPCIDSKException( "ReadAndLockBlock() called on a file that is not pixel interleaved." );
+        return ThrowPCIDSKExceptionPtr( "ReadAndLockBlock() called on a file that is not pixel interleaved." );
 
 /* -------------------------------------------------------------------- */
 /*      Default, and validate windowing.                                */
@@ -639,7 +639,7 @@ void *CPCIDSKFile::ReadAndLockBlock( int block_index,
 
     if( win_xoff < 0 || win_xoff+win_xsize > GetWidth() )
     {
-        ThrowPCIDSKException( "CPCIDSKFile::ReadAndLockBlock(): Illegal window - xoff=%d, xsize=%d", 
+        return ThrowPCIDSKExceptionPtr( "CPCIDSKFile::ReadAndLockBlock(): Illegal window - xoff=%d, xsize=%d", 
                                    win_xoff, win_xsize );
     }
 
@@ -694,10 +694,10 @@ void CPCIDSKFile::WriteBlock( int block_index, void *buffer )
 
 {
     if( !GetUpdatable() )
-        throw PCIDSKException( "File not open for update in WriteBlock()" );
+        return ThrowPCIDSKException( "File not open for update in WriteBlock()" );
 
     if( last_block_data == NULL )
-        ThrowPCIDSKException( "WriteBlock() called on a file that is not pixel interleaved." );
+        return ThrowPCIDSKException( "WriteBlock() called on a file that is not pixel interleaved." );
 
     WriteToFile( buffer,
                  first_line_offset + block_index*block_size,
@@ -773,8 +773,8 @@ bool CPCIDSKFile::GetEDBFileDetails( EDBFile** file_p,
         new_file.file = interfaces.OpenEDB( filename, "r" );
 
     if( new_file.file == NULL )
-        ThrowPCIDSKException( "Unable to open file '%s'.", 
-                              filename.c_str() );
+        return ThrowPCIDSKException( 0, "Unable to open file '%s'.", 
+                              filename.c_str() ) != 0;
 
 /* -------------------------------------------------------------------- */
 /*      Push the new file into the list of files managed for this       */
@@ -842,7 +842,7 @@ void CPCIDSKFile::GetIODetails( void ***io_handle_pp,
         new_file.io_handle = interfaces.io->Open( filename, "r" );
         
     if( new_file.io_handle == NULL )
-        ThrowPCIDSKException( "Unable to open file '%s'.", 
+        return ThrowPCIDSKException( "Unable to open file '%s'.", 
                               filename.c_str() );
 
 /* -------------------------------------------------------------------- */
@@ -872,7 +872,7 @@ void CPCIDSKFile::DeleteSegment( int segment )
     PCIDSKSegment *poSeg = GetSegment( segment );
 
     if( poSeg == NULL )
-        ThrowPCIDSKException( "DeleteSegment(%d) failed, segment does not exist.", segment );
+        return ThrowPCIDSKException( "DeleteSegment(%d) failed, segment does not exist.", segment );
 
 /* -------------------------------------------------------------------- */
 /*      Wipe associated metadata.                                       */
@@ -1015,7 +1015,7 @@ int CPCIDSKFile::CreateSegment( std::string name, std::string description,
     }
     
     if( segment > segment_count )
-        ThrowPCIDSKException( "All %d segment pointers in use.", segment_count);
+        return ThrowPCIDSKException(0, "All %d segment pointers in use.", segment_count);
 
 /* -------------------------------------------------------------------- */
 /*      If the segment does not have a data area already, identify      */
@@ -1047,6 +1047,7 @@ int CPCIDSKFile::CreateSegment( std::string name, std::string description,
     segptr.Put( data_blocks+2, 23, 9 );
 
     // Update in memory copy of segment pointers.
+    assert(segment >= 1);
     memcpy( segment_pointers.buffer+(segment-1)*32, segptr.buffer, 32);
 
     // Update on disk. 
@@ -1099,9 +1100,9 @@ void CPCIDSKFile::ExtendFile( uint64 blocks_requested, bool prezero )
     {
         std::vector<uint8> zeros;
         uint64 blocks_to_zero = blocks_requested;
-        
+
         zeros.resize( 512 * 32 );
-        
+
         while( blocks_to_zero > 0 )
         {
             uint64 this_time = blocks_to_zero;
@@ -1314,11 +1315,11 @@ void CPCIDSKFile::CreateOverviews( int chan_count, int *chan_list,
 /* -------------------------------------------------------------------- */
 /*      Attach reference to this overview as metadata.                  */
 /* -------------------------------------------------------------------- */
-            char overview_md_value[128];
             char overview_md_key[128];
+            char overview_md_value[128];
 
-            sprintf( overview_md_key, "_Overview_%d", factor );
-            sprintf( overview_md_value, "%d 0 %s",virtual_image,resampling.c_str());
+            snprintf( overview_md_key, sizeof(overview_md_key),  "_Overview_%d", factor );
+            snprintf( overview_md_value, sizeof(overview_md_value), "%d 0 %s",virtual_image,resampling.c_str());
                      
             channel->SetMetadataValue( overview_md_key, overview_md_value );
         }

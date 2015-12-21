@@ -28,13 +28,14 @@
  * DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
-#include "gdal_priv.h"
 #include "cpl_conv.h"
-#include "cpl_string.h"
 #include "cpl_csv.h"
-#include "ogr_spatialref.h"
-#include "gdal_pam.h"
+#include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "gdal_alg.h"
+#include "gdal_pam.h"
+#include "gdal_priv.h"
+#include "ogr_spatialref.h"
 
 #include "IntergraphDataset.h"
 #include "IntergraphBand.h"
@@ -794,6 +795,8 @@ GDALDataset *IntergraphDataset::CreateCopy( const char *pszFilename,
                     eType, 0, 0, NULL );
                 if( eErr != CE_None )
                 {
+                    CPLFree( pData );
+                    delete poDstDS;
                     return NULL;
                 }
                 eErr = poDstBand->RasterIO( GF_Write, 
@@ -803,14 +806,18 @@ GDALDataset *IntergraphDataset::CreateCopy( const char *pszFilename,
                     eType, 0, 0, NULL );
                 if( eErr != CE_None )
                 {
+                    CPLFree( pData );
+                    delete poDstDS;
                     return NULL;
                 }
             }
             if( ( eErr == CE_None ) && ( ! pfnProgress( 
                 ( iYOffset + 1 ) / ( double ) nYSize, NULL, pProgressData ) ) )
             {
-                eErr = CE_Failure;
                 CPLError( CE_Failure, CPLE_UserInterrupt, "User terminated CreateCopy()" );
+                CPLFree( pData );
+                delete poDstDS;
+                return NULL;
             }
         }
         CPLFree( pData );
@@ -873,7 +880,7 @@ void GDALRegister_INGR()
     if( GDALGetDriverByName( "INGR" ) != NULL )
         return;
 
-    GDALDriver  *poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "INGR" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
@@ -882,9 +889,11 @@ void GDALRegister_INGR()
                                "frmt_IntergraphRaster.html" );
     poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
-        "Byte Int16 Int32 Float32 Float64" );
+                               "Byte Int16 Int32 Float32 Float64" );
+
     poDriver->pfnOpen = IntergraphDataset::Open;
     poDriver->pfnCreate    = IntergraphDataset::Create;
     poDriver->pfnCreateCopy = IntergraphDataset::CreateCopy;
+
     GetGDALDriverManager()->RegisterDriver( poDriver );
 }

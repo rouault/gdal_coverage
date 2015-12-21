@@ -39,14 +39,11 @@ CPL_CVSID("$Id$");
 /*                            OGRDXFLayer()                             */
 /************************************************************************/
 
-OGRDXFLayer::OGRDXFLayer( OGRDXFDataSource *poDSIn )
-
+OGRDXFLayer::OGRDXFLayer( OGRDXFDataSource *poDSIn ) :
+    poDS(poDSIn),
+    poFeatureDefn(new OGRFeatureDefn( "entities" )),
+    iNextFID(0)
 {
-    this->poDS = poDSIn;
-
-    iNextFID = 0;
-
-    poFeatureDefn = new OGRFeatureDefn( "entities" );
     poFeatureDefn->Reference();
 
     poDS->AddStandardFields( poFeatureDefn );
@@ -59,7 +56,7 @@ OGRDXFLayer::OGRDXFLayer( OGRDXFDataSource *poDSIn )
         OGRFieldDefn  oBlockAngleField( "BlockAngle", OFTReal );
         poFeatureDefn->AddFieldDefn( &oBlockAngleField );
     }
-    
+
     SetDescription( poFeatureDefn->GetName() );
 }
 
@@ -124,7 +121,7 @@ void OGRDXFLayer::TranslateGenericProperty( OGRFeature *poFeature,
       case 8: 
         poFeature->SetField( "Layer", TextUnescape(pszValue) );
         break;
-            
+
       case 100: 
       {
           CPLString osSubClass = poFeature->GetFieldAsString("SubClasses");
@@ -167,7 +164,7 @@ void OGRDXFLayer::TranslateGenericProperty( OGRFeature *poFeature,
           if( osAggregate.size() > 0 )
               osAggregate += " ";
           osAggregate += pszValue;
-            
+
           poFeature->SetField( "ExtendedEntity", osAggregate );
       }
       break;
@@ -176,11 +173,11 @@ void OGRDXFLayer::TranslateGenericProperty( OGRFeature *poFeature,
       case 210:
         oStyleProperties["210_N.dX"] = pszValue;
         break;
-        
+
       case 220:
         oStyleProperties["220_N.dY"] = pszValue;
         break;
-        
+
       case 230:
         oStyleProperties["230_N.dZ"] = pszValue;
         break;
@@ -221,7 +218,7 @@ void OGRDXFLayer::PrepareLineStyle( OGRFeature *poFeature )
         if( pszValue != NULL )
             nColor = atoi(pszValue);
     }
-        
+
     if( nColor < 1 || nColor > 255 )
         return;
 
@@ -275,7 +272,7 @@ void OGRDXFLayer::PrepareLineStyle( OGRFeature *poFeature )
     }
 
     osStyle += ")";
-    
+
     poFeature->SetStyleString( osStyle );
 }
 
@@ -289,7 +286,7 @@ private:
     double adfN[3];
     double adfAX[3];
     double adfAY[3];
-    
+
 public:
     OCSTransformer( double adfNIn[3] ) {
         static const double dSmall = 1.0 / 64.0;
@@ -328,7 +325,7 @@ public:
     int Transform( int nCount, 
                    double *x, double *y, double *z )
         { return TransformEx( nCount, x, y, z, NULL ); }
-    
+
     int TransformEx( int nCount, 
                      double *adfX, double *adfY, double *adfZ = NULL,
                      int *pabSuccess = NULL )
@@ -337,7 +334,7 @@ public:
             for( i = 0; i < nCount; i++ )
             {
                 double x = adfX[i], y = adfY[i], z = adfZ[i];
-                
+
                 adfX[i] = x * adfAX[0] + y * adfAY[0] + z * adfN[0];
                 adfY[i] = x * adfAX[1] + y * adfAY[1] + z * adfN[1];
                 adfZ[i] = x * adfAX[2] + y * adfAY[2] + z * adfN[2];
@@ -479,7 +476,7 @@ OGRFeature *OGRDXFLayer::TranslateMTEXT()
 
     poFeature->SetField( "Text", osText );
 
-    
+
 /* -------------------------------------------------------------------- */
 /*      We need to escape double quotes with backslashes before they    */
 /*      can be inserted in the style string.                            */
@@ -515,7 +512,7 @@ OGRFeature *OGRDXFLayer::TranslateMTEXT()
         if( pszValue != NULL )
             nColor = atoi(pszValue);
     }
-        
+
 /* -------------------------------------------------------------------- */
 /*      Prepare style string.                                           */
 /* -------------------------------------------------------------------- */
@@ -540,7 +537,7 @@ OGRFeature *OGRDXFLayer::TranslateMTEXT()
     {
         const static int anAttachmentMap[10] = 
             { -1, 7, 8, 9, 4, 5, 6, 1, 2, 3 };
-        
+
         osStyle += 
             CPLString().Printf(",p:%d", anAttachmentMap[nAttachmentPoint]);
     }
@@ -675,7 +672,7 @@ OGRFeature *OGRDXFLayer::TranslateTEXT()
         if( pszValue != NULL )
             nColor = atoi(pszValue);
     }
-        
+
     if( nColor < 1 || nColor > 255 )
         nColor = 8;
 
@@ -763,10 +760,10 @@ OGRFeature *OGRDXFLayer::TranslatePOINT()
 
     if( nCode == 0 )
         poDS->UnreadValue();
-    
+
     // Set style pen color
     PrepareLineStyle( poFeature );
- 
+
     return poFeature;
 }
 
@@ -947,7 +944,7 @@ OGRFeature *OGRDXFLayer::TranslateLWPOLYLINE()
     if( bHaveX && bHaveY )
         smoothPolyline.AddPoint(dfX, dfY, dfZ, dfBulge);
 
-    
+
     if(smoothPolyline.IsEmpty())
     {
         delete poFeature;
@@ -1028,11 +1025,11 @@ OGRFeature *OGRDXFLayer::TranslatePOLYLINE()
               case 10:
                 dfX = CPLAtof(szLineBuf);
                 break;
-                
+
               case 20:
                 dfY = CPLAtof(szLineBuf);
                 break;
-                
+
               case 30:
                 dfZ = CPLAtof(szLineBuf);
                 smoothPolyline.setCoordinateDimension(3);
@@ -1062,7 +1059,7 @@ OGRFeature *OGRDXFLayer::TranslatePOLYLINE()
         delete poFeature;
         return NULL;
     }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Close polyline if necessary.                                    */
 /* -------------------------------------------------------------------- */
@@ -1405,7 +1402,7 @@ OGRFeature *OGRDXFLayer::TranslateSPLINE()
     h.push_back(1.0);
     for( i = 0; i < nControlPoints; i++ )
         h.push_back( 1.0 );
-    
+
     // resolution:
     //int p1 = getGraphicVariableInt("$SPLINESEGS", 8) * npts;
     int p1 = nControlPoints * 8;
@@ -1420,7 +1417,7 @@ OGRFeature *OGRDXFLayer::TranslateSPLINE()
     else
         rbspline( nControlPoints, nDegree+1, p1, &(adfControlPoints[0]), 
                   &(h[0]), &(p[0]) );
-    
+
 /* -------------------------------------------------------------------- */
 /*      Turn into OGR geometry.                                         */
 /* -------------------------------------------------------------------- */
@@ -1724,7 +1721,7 @@ public:
     int Transform( int nCount, 
                    double *x, double *y, double *z )
         { return TransformEx( nCount, x, y, z, NULL ); }
-    
+
     int TransformEx( int nCount, 
                      double *x, double *y, double *z = NULL,
                      int *pabSuccess = NULL )
@@ -1810,7 +1807,7 @@ OGRFeature *OGRDXFLayer::TranslateINSERT()
           case 2: 
             osBlockName = szLineBuf;
             break;
-            
+
           default:
             TranslateGenericProperty( poFeature, nCode, szLineBuf );
             break;
@@ -1844,7 +1841,7 @@ OGRFeature *OGRDXFLayer::TranslateINSERT()
 /*      Lookup the block.                                               */
 /* -------------------------------------------------------------------- */
     DXFBlockDefinition *poBlock = poDS->LookupBlock( osBlockName );
-    
+
     if( poBlock == NULL )
     {
         delete poFeature;
@@ -1949,7 +1946,7 @@ OGRFeature *OGRDXFLayer::GetNextUnfilteredFeature()
             CPLDebug( "DXF", "Unexpected end of data without ENDSEC." );
             return NULL;
         }
-        
+
         if( EQUAL(szLineBuf,"ENDSEC") )
         {
             //CPLDebug( "DXF", "Clean end of features at ENDSEC." );

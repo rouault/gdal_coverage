@@ -29,6 +29,7 @@
 
 #include "cpl_multiproc.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "gdal_proxy.h"
 #include "ogr_spatialref.h"
@@ -193,7 +194,7 @@ class RPFTOCSubDataset : public VRTDataset
     void SetCachedTile(const char* tileFileName, int nBlockXOff, int nBlockYOff,
                        const void* pData, int dataSize)
     {
-        if (dataSize > cachedTileDataSize)
+        if (cachedTileData == NULL || dataSize > cachedTileDataSize)
         {
             cachedTileData = CPLRealloc(cachedTileData, dataSize);
             cachedTileDataSize = dataSize;
@@ -654,12 +655,12 @@ void RPFTOCDataset::AddSubDataset( const char* pszFilename,  RPFTocEntry* tocEnt
     char	szName[80];
     const int nCount = CSLCount(papszSubDatasets ) / 2;
 
-    sprintf( szName, "SUBDATASET_%d_NAME", nCount+1 );
+    snprintf( szName, sizeof(szName), "SUBDATASET_%d_NAME", nCount+1 );
     papszSubDatasets = 
         CSLSetNameValue( papszSubDatasets, szName, 
               CPLSPrintf( "NITF_TOC_ENTRY:%s:%s", MakeTOCEntryName(tocEntry), pszFilename ) );
 
-    sprintf( szName, "SUBDATASET_%d_DESC", nCount+1 );
+    snprintf( szName, sizeof(szName), "SUBDATASET_%d_DESC", nCount+1 );
     if (tocEntry->seriesName && tocEntry->seriesAbbreviation)
         papszSubDatasets = 
         CSLSetNameValue( papszSubDatasets, szName,
@@ -1274,7 +1275,8 @@ void GDALRegister_RPFTOC()
 {
     if( GDALGetDriverByName( "RPFTOC" ) != NULL )
         return;
-    GDALDriver	*poDriver = new GDALDriver();
+
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "RPFTOC" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );

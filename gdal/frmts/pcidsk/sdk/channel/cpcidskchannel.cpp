@@ -202,7 +202,7 @@ PCIDSKChannel *CPCIDSKChannel::GetOverview( int overview_index )
     EstablishOverviewInfo();
 
     if( overview_index < 0 || overview_index >= (int) overview_infos.size() )
-        ThrowPCIDSKException( "Non existent overview (%d) requested.", 
+        return (PCIDSKChannel*)ThrowPCIDSKExceptionPtr( "Non existent overview (%d) requested.", 
                               overview_index );
 
     if( overview_bands[overview_index] == NULL )
@@ -210,7 +210,7 @@ PCIDSKChannel *CPCIDSKChannel::GetOverview( int overview_index )
         PCIDSKBuffer image_header(1024), file_header(1024);
         char  pseudo_filename[65];
 
-        sprintf( pseudo_filename, "/SIS=%d", 
+        snprintf( pseudo_filename, sizeof(pseudo_filename), "/SIS=%d", 
                  atoi(overview_infos[overview_index].c_str()) );
 
         image_header.Put( pseudo_filename, 64, 64 );
@@ -233,8 +233,8 @@ bool CPCIDSKChannel::IsOverviewValid( int overview_index )
     EstablishOverviewInfo();
 
     if( overview_index < 0 || overview_index >= (int) overview_infos.size() )
-        ThrowPCIDSKException( "Non existent overview (%d) requested.", 
-                              overview_index );
+        return ThrowPCIDSKException(0, "Non existent overview (%d) requested.", 
+                              overview_index ) != 0;
 
     int sis_id, validity=0;
 
@@ -254,8 +254,11 @@ std::string CPCIDSKChannel::GetOverviewResampling( int overview_index )
     EstablishOverviewInfo();
 
     if( overview_index < 0 || overview_index >= (int) overview_infos.size() )
+    {
         ThrowPCIDSKException( "Non existent overview (%d) requested.", 
                               overview_index );
+        return "";
+    }
 
     int sis_id, validity=0;
     char resampling[17];
@@ -277,7 +280,7 @@ void CPCIDSKChannel::SetOverviewValidity( int overview_index,
     EstablishOverviewInfo();
 
     if( overview_index < 0 || overview_index >= (int) overview_infos.size() )
-        ThrowPCIDSKException( "Non existent overview (%d) requested.", 
+        return ThrowPCIDSKException( "Non existent overview (%d) requested.", 
                               overview_index );
 
     int sis_id, validity=0;
@@ -292,14 +295,14 @@ void CPCIDSKChannel::SetOverviewValidity( int overview_index,
 
     char new_info[48];
 
-    sprintf( new_info, "%d %d %s", 
+    snprintf( new_info, sizeof(new_info), "%d %d %s", 
              sis_id, (new_validity ? 1 : 0 ), resampling );
 
     overview_infos[overview_index] = new_info;
 
     // write back to metadata.
     char key[20];
-    sprintf( key, "_Overview_%d", overview_decimations[overview_index] );
+    snprintf( key, sizeof(key), "_Overview_%d", overview_decimations[overview_index] );
 
     SetMetadataValue( key, new_info );
 }
@@ -358,7 +361,7 @@ void CPCIDSKChannel::SetDescription( const std::string &description )
 
 {
     if( ih_offset == 0 )
-        ThrowPCIDSKException( "Description cannot be set on overviews." );
+        return ThrowPCIDSKException( "Description cannot be set on overviews." );
         
     PCIDSKBuffer ih_1(64);
     ih_1.Put( description.c_str(), 0, 64 );
@@ -412,7 +415,7 @@ void CPCIDSKChannel::SetHistoryEntries(const std::vector<std::string> &entries)
 
 {
     if( ih_offset == 0 )
-        ThrowPCIDSKException( "Attempt to update history on a raster that is not\na conventional band with an image header." );
+        return ThrowPCIDSKException( "Attempt to update history on a raster that is not\na conventional band with an image header." );
 
     PCIDSKBuffer image_header(1024);
 
@@ -490,7 +493,7 @@ void CPCIDSKChannel::SetChanInfo( CPL_UNUSED std::string filename,
                                   CPL_UNUSED uint64 line_offset,
                                   CPL_UNUSED bool little_endian )
 {
-    ThrowPCIDSKException( "Attempt to SetChanInfo() on a channel that is not FILE interleaved." );
+    return ThrowPCIDSKException( "Attempt to SetChanInfo() on a channel that is not FILE interleaved." );
 }
 
 /************************************************************************/
@@ -520,5 +523,5 @@ void CPCIDSKChannel::SetEChanInfo( CPL_UNUSED std::string filename,
                                    CPL_UNUSED int exsize,
                                    CPL_UNUSED int eysize )
 {
-    ThrowPCIDSKException( "Attempt to SetEChanInfo() on a channel that is not FILE interleaved." );
+    return ThrowPCIDSKException( "Attempt to SetEChanInfo() on a channel that is not FILE interleaved." );
 }

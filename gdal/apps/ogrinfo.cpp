@@ -212,14 +212,18 @@ int main( int nArgc, char ** papszArgv )
         else if( STARTS_WITH_CI(papszArgv[iArg], "-fields=") )
         {
             char* pszTemp = (char*)CPLMalloc(32 + strlen(papszArgv[iArg]));
-            sprintf(pszTemp, "DISPLAY_FIELDS=%s", papszArgv[iArg] + strlen("-fields="));
+            snprintf(pszTemp,
+                    32 + strlen(papszArgv[iArg]),
+                    "DISPLAY_FIELDS=%s", papszArgv[iArg] + strlen("-fields="));
             papszOptions = CSLAddString(papszOptions, pszTemp);
             CPLFree(pszTemp);
         }
         else if( STARTS_WITH_CI(papszArgv[iArg], "-geom=") )
         {
             char* pszTemp = (char*)CPLMalloc(32 + strlen(papszArgv[iArg]));
-            sprintf(pszTemp, "DISPLAY_GEOMETRY=%s", papszArgv[iArg] + strlen("-geom="));
+            snprintf(pszTemp,
+                    32 + strlen(papszArgv[iArg]),
+                    "DISPLAY_GEOMETRY=%s", papszArgv[iArg] + strlen("-geom="));
             papszOptions = CSLAddString(papszOptions, pszTemp);
             CPLFree(pszTemp);
         }
@@ -369,7 +373,7 @@ int main( int nArgc, char ** papszArgv )
     /* coverity[tainted_data] */
     for( int iRepeat = 0; iRepeat < nRepeatCount; iRepeat++ )
     {
-        if ( CSLCount(papszLayers) == 0 )
+        if ( papszLayers == NULL || *papszLayers == NULL )
         {
 /* -------------------------------------------------------------------- */
 /*      Process each data source layer.                                 */
@@ -792,7 +796,8 @@ static void GDALInfoReportMetadata( GDALMajorObjectH hObject,
             papszExtraMDDomainsExpanded = CSLDuplicate(papszExtraMDDomains);
         }
 
-        for( int iMDD = 0; iMDD < CSLCount(papszExtraMDDomainsExpanded); iMDD++ )
+        for( int iMDD = 0; papszExtraMDDomainsExpanded != NULL &&
+                           papszExtraMDDomainsExpanded[iMDD] != NULL; iMDD++ )
         {
             char pszDisplayedname[256];
             snprintf(pszDisplayedname, 256, "Metadata (%s)", papszExtraMDDomainsExpanded[iMDD]);

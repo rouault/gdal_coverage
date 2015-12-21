@@ -29,15 +29,13 @@
  ****************************************************************************/
 
 #include "dted_api.h"
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "ogr_spatialref.h"
+
 #include <algorithm>
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void    GDALRegister_DTED(void);
-CPL_C_END
 
 /************************************************************************/
 /* ==================================================================== */
@@ -791,7 +789,7 @@ DTEDCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         if (iPartialCell < 1)
            iPartialCell=1;
     }
-    sprintf(szPartialCell,"%02d",iPartialCell);
+    snprintf( szPartialCell, sizeof(szPartialCell), "%02d",iPartialCell);
     DTEDSetMetadata(psDTED, DTEDMD_PARTIALCELL_DSI, szPartialCell); 
 
 /* -------------------------------------------------------------------- */

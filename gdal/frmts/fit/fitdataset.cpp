@@ -28,17 +28,13 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "fit.h"
-#include "gstEndian.h"
-#include "gdal_pam.h"
 #include "cpl_string.h"
+#include "fit.h"
+#include "gdal_frmts.h"
+#include "gdal_pam.h"
+#include "gstEndian.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-
-void	GDALRegister_FIT(void);
-CPL_C_END
 
 #define FIT_WRITE
 
@@ -1345,10 +1341,8 @@ void GDALRegister_FIT()
 
     poDriver->SetDescription( "FIT" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
-    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
-                               "FIT Image" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_various.html#" );
+    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, "FIT Image" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_various.html#" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "" );
     poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );
 
@@ -1356,7 +1350,8 @@ void GDALRegister_FIT()
 #ifdef FIT_WRITE
     poDriver->pfnCreateCopy = FITCreateCopy;
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
-                               "Byte UInt16 Int16 UInt32 Int32 Float32 Float64" );
+                               "Byte UInt16 Int16 UInt32 Int32 "
+                               "Float32 Float64" );
 #endif // FIT_WRITE
 
     GetGDALDriverManager()->RegisterDriver( poDriver );

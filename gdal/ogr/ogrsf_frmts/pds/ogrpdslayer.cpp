@@ -34,6 +34,8 @@
 
 CPL_CVSID("$Id$");
 
+namespace OGRPDS {
+
 /************************************************************************/
 /*                           OGRPDSLayer()                              */
 /************************************************************************/
@@ -105,7 +107,7 @@ OGRPDSLayer::OGRPDSLayer(   CPLString osTableIDIn,
                 pszStr ++;
             }
             char szFieldName[32];
-            sprintf(szFieldName, "field_%d",
+            snprintf(szFieldName, sizeof(szFieldName), "field_%d",
                     poFeatureDefn->GetFieldCount() + 1);
             OGRFieldDefn oFieldDefn(szFieldName, eFieldType);
             poFeatureDefn->AddFieldDefn(&oFieldDefn);
@@ -740,3 +742,5 @@ OGRErr OGRPDSLayer::SetNextByIndex( GIntBig nIndex )
     VSIFSeekL( fpPDS, nStartBytes + nNextFID * nRecordSize, SEEK_SET );
     return OGRERR_NONE;
 }
+
+} /* end of OGRPDS namespace */

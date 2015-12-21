@@ -234,7 +234,7 @@ static void PrintAlgorithmAndOptions( GDALGridAlgorithm eAlgorithm,
 /*                          ProcessGeometry()                           */
 /*                                                                      */
 /*  Extract point coordinates from the geometry reference and set the   */
-/*  Z value as requested. Test whther we are in the clipped region      */
+/*  Z value as requested. Test whether we are in the clipped region     */
 /*  before processing.                                                  */
 /************************************************************************/
 
@@ -261,7 +261,7 @@ static void ProcessGeometry( OGRPoint *poGeom, OGRGeometry *poClipSrc,
 /************************************************************************/
 /*                       ProcessCommonGeometry()                        */
 /*                                                                      */
-/*  Process recursivelly geometry and extract points                    */
+/*  Process recursively geometry and extract points.                    */
 /************************************************************************/
 
 static void ProcessCommonGeometry(OGRGeometry* poGeom, OGRGeometry *poClipSrc,
@@ -807,7 +807,7 @@ GDALDatasetH GDALGrid( const char *pszDest, GDALDatasetH hSrcDataset,
         if( hLayer == NULL )
         {
             CPLError(CE_Failure, CPLE_AppDefined, "Unable to find layer \"%s\", skipping.", 
-                     psOptions->papszLayers[i] );
+                     psOptions->papszLayers[i] ? psOptions->papszLayers[i] : "null" );
             continue;
         }
 

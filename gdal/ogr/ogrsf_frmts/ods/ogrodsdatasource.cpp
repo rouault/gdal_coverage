@@ -36,6 +36,7 @@
 
 CPL_CVSID("$Id$");
 
+namespace OGRODS {
 
 /************************************************************************/
 /*                          ODSCellEvaluator                            */
@@ -375,7 +376,9 @@ void OGRODSDataSource::dataHandlerCbk(const char *data, int nLen)
         case STATE_TABLE:   break;
         case STATE_ROW:     break;
         case STATE_CELL:    break;
-        case STATE_TEXTP:   dataHandlerTextP(data, nLen);
+        case STATE_TEXTP:
+            dataHandlerTextP(data, nLen);
+            break;
         default:            break;
     }
 }
@@ -994,8 +997,8 @@ void OGRODSDataSource::AnalyseFile()
     AnalyseSettings();
 
     oParser = OGRCreateExpatXMLParser();
-    XML_SetElementHandler(oParser, ::startElementCbk, ::endElementCbk);
-    XML_SetCharacterDataHandler(oParser, ::dataHandlerCbk);
+    XML_SetElementHandler(oParser, OGRODS::startElementCbk, OGRODS::endElementCbk);
+    XML_SetCharacterDataHandler(oParser, OGRODS::dataHandlerCbk);
     XML_SetUserData(oParser, this);
 
     nDepth = 0;
@@ -1167,8 +1170,8 @@ void OGRODSDataSource::AnalyseSettings()
         return;
 
     oParser = OGRCreateExpatXMLParser();
-    XML_SetElementHandler(oParser, ::startElementStylesCbk, ::endElementStylesCbk);
-    XML_SetCharacterDataHandler(oParser, ::dataHandlerStylesCbk);
+    XML_SetElementHandler(oParser, OGRODS::startElementStylesCbk, OGRODS::endElementStylesCbk);
+    XML_SetCharacterDataHandler(oParser, OGRODS::dataHandlerStylesCbk);
     XML_SetUserData(oParser, this);
 
     nDepth = 0;
@@ -1381,7 +1384,7 @@ static void WriteLayer(VSILFILE* fp, OGRLayer* poLayer)
     char* pszXML = OGRGetXML_UTF8_EscapedString(pszLayerName);
     VSIFPrintfL(fp, "<table:table table:name=\"%s\">\n", pszXML);
     CPLFree(pszXML);
-    
+
     poLayer->ResetReading();
 
     OGRFeature* poFeature = poLayer->GetNextFeature();
@@ -1557,7 +1560,7 @@ void OGRODSDataSource::FlushCache()
         return;
     }
 
-    /* Write uncopressed mimetype */
+    /* Write uncompressed mimetype */
     char** papszOptions = CSLAddString(NULL, "COMPRESSED=NO");
     if( CPLCreateFileInZip(hZIP, "mimetype", papszOptions ) != CE_None )
     {
@@ -1961,3 +1964,5 @@ int ODSCellEvaluator::Evaluate(int nRow, int nCol)
 
     return TRUE;
 }
+
+} /* end of OGRODS namespace */

@@ -37,6 +37,7 @@
 /* -------------------------------------------------------------------- */
 #ifndef AVOID_CPL
 #  include "cpl_conv.h"
+#  include "cpl_string.h"
 #else
 
 #include <stdio.h>
@@ -194,7 +195,6 @@ typedef enum {
     DTEDMD_MAX = 23
 } DTEDMetaDataCode;
 
-    
 char *DTEDGetMetadata( DTEDInfo *, DTEDMetaDataCode );
 int   DTEDSetMetadata( DTEDInfo *, DTEDMetaDataCode, const char *);
 

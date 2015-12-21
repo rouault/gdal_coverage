@@ -154,10 +154,12 @@
 
 
 /* Ellipsoid parameters, default to WGS 84 */
-double MGRS_a = 6378137.0;    /* Semi-major axis of ellipsoid in meters */
-double MGRS_f = 1 / 298.257223563; /* Flattening of ellipsoid           */
-double MGRS_recpf = 298.257223563;
-char   MGRS_Ellipsoid_Code[3] = {'W','E',0};
+static const double MGRS_a = 6378137.0;    /* Semi-major axis of ellipsoid in meters */
+static const double MGRS_f = 1 / 298.257223563; /* Flattening of ellipsoid           */
+#ifdef unused
+static const double MGRS_recpf = 298.257223563;
+#endif
+static const char   MGRS_Ellipsoid_Code[3] = {'W','E',0};
 
 
 /* 
@@ -166,10 +168,10 @@ char   MGRS_Ellipsoid_Code[3] = {'W','E',0};
  *    BESSEL_1841 : Ellipsoid code for BESSEL_1841
  *    BESSEL_1841_NAMIBIA : Ellipsoid code for BESSEL 1841 (NAMIBIA)
  */
-const char* CLARKE_1866 = "CC";
-const char* CLARKE_1880 = "CD";
-const char* BESSEL_1841 = "BR";
-const char* BESSEL_1841_NAMIBIA = "BN";
+static const char* const CLARKE_1866 = "CC";
+static const char* const CLARKE_1880 = "CD";
+static const char* const BESSEL_1841 = "BR";
+static const char* const BESSEL_1841_NAMIBIA = "BN";
 
 
 typedef struct Latitude_Band_Value
@@ -412,7 +414,7 @@ static long Make_MGRS_String (char* MGRS,
   if (Northing >= 99999.5)
     Northing = 99999.0;
   north = (long)(Northing/divisor);
-  i += sprintf (MGRS+i, "%*.*ld", (int) Precision, (int) Precision, north);
+  /*i += */sprintf (MGRS+i, "%*.*ld", (int) Precision, (int) Precision, north);
   return (error_code);
 } /* Make_MGRS_String */
 
@@ -659,6 +661,7 @@ static long UTM_To_MGRS (long Zone,
 } /* END UTM_To_MGRS */
 #endif
 
+#ifdef unused
 long Set_MGRS_Parameters (double a,
                           double f,
                           char   *Ellipsoid_Code)
@@ -694,7 +697,7 @@ long Set_MGRS_Parameters (double a,
   }
   return (Error_Code);
 }  /* Set_MGRS_Parameters  */
-
+#endif
 
 void Get_MGRS_Parameters (double *a,
                           double *f,
@@ -1020,7 +1023,7 @@ long Convert_MGRS_To_UPS ( char   *MGRS,
   double false_northing;      /* False northing for 3rd letter              */
   double grid_easting;        /* easting for 100,000 meter grid square      */
   double grid_northing;       /* northing for 100,000 meter grid square     */
-  long zone;
+  long zone = 0;
   long letters[MGRS_LETTERS];
   long in_precision;
   int l_index = 0;

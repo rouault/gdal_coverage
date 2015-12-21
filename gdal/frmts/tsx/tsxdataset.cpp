@@ -30,18 +30,14 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "gdal_pam.h"
 #include "cpl_minixml.h"
+#include "gdal_frmts.h"
+#include "gdal_pam.h"
 #include "ogr_spatialref.h"
 
 #define MAX_GCPS 5000    //this should be more than enough ground control points
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void GDALRegister_TSX(void);
-CPL_C_END
-
 
 enum ePolarization {
     HH=0,
@@ -397,7 +393,7 @@ bool TSXDataset::getGCPsFromGEOREF_XML(char *pszGeorefFilename)
          nGCPCount++ ;
 
          char szID[32];
-         sprintf( szID, "%d", nGCPCount );
+         snprintf( szID, sizeof(szID), "%d", nGCPCount );
          psGCP->pszId = CPLStrdup( szID );
          psGCP->pszInfo = CPLStrdup("");
          psGCP->dfGCPPixel = CPLAtof(CPLGetXMLValue(psNode,"col","0"));

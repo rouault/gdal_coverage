@@ -111,7 +111,7 @@ int HFACreateSpillStack( HFAInfo_t *, int nXSize, int nYSize, int nLayers,
                          GIntBig *pnValidFlagsOffset, 
                          GIntBig *pnDataOffset );
 
-const char ** GetHFAAuxMetaDataList();
+const char * const * GetHFAAuxMetaDataList();
 
 double *HFAReadBFUniqueBins( HFAEntry *poBinFunc, int nPCTColors );
 
@@ -123,7 +123,7 @@ HFACreateLayer( HFAHandle psInfo, HFAEntry *poParent,
                 int bDependentLayer,
                 int nXSize, int nYSize, EPTType eDataType, 
                 char **papszOptions,
-                
+
                 // these are only related to external (large) files
                 GIntBig nStackValidFlagsOffset, 
                 GIntBig nStackDataOffset,
@@ -255,9 +255,7 @@ class HFAEntry
     int         bIsMIFObject;
 
                 HFAEntry();
-                HFAEntry( HFAEntry *poContainer,
-                          const char *pszMIFObjectPath,
-                          const char * pszDictionary,
+                HFAEntry( const char * pszDictionary,
                           const char * pszTypeName,
                           int nDataSizeIn,
                           GByte* pabyDataIn );
@@ -271,6 +269,11 @@ public:
                           HFAEntry * poParent, HFAEntry *poPrev);
 
                  HFAEntry( HFAInfo_t *psHFA, 
+                          const char *pszNodeName,
+                          const char *pszTypeName,
+                          HFAEntry *poParent );
+
+    static HFAEntry* New( HFAInfo_t *psHFA, 
                           const char *pszNodeName,
                           const char *pszTypeName,
                           HFAEntry *poParent );
@@ -422,7 +425,7 @@ class HFADictionary
 
     CPLString   osDictionaryText;
     int         bDictionaryTextDirty;
-    
+
                 HFADictionary( const char *pszDict );
                 ~HFADictionary();
 

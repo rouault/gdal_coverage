@@ -28,15 +28,12 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "rawdataset.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "ogr_spatialref.h"
+#include "rawdataset.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_PAux(void);
-CPL_C_END
 
 /************************************************************************/
 /* ==================================================================== */
@@ -131,23 +128,23 @@ PAuxRasterBand::PAuxRasterBand( GDALDataset *poDSIn, int nBandIn,
 /* -------------------------------------------------------------------- */
     char	szTarget[128];
 
-    sprintf( szTarget, "ChanDesc-%d", nBand );
+    snprintf( szTarget, sizeof(szTarget), "ChanDesc-%d", nBand );
     if( CSLFetchNameValue( poPDS->papszAuxLines, szTarget ) != NULL )
         GDALRasterBand::SetDescription( 
             CSLFetchNameValue( poPDS->papszAuxLines, szTarget ) );
 
 /* -------------------------------------------------------------------- */
 /*      See if we have colors.  Currently we must have color zero,      */
-/*      but this shouldn't really be a limitation.                      */
+/*      but this should not really be a limitation.                     */
 /* -------------------------------------------------------------------- */
-    sprintf( szTarget, "METADATA_IMG_%d_Class_%d_Color", nBand, 0 );
+    snprintf( szTarget, sizeof(szTarget), "METADATA_IMG_%d_Class_%d_Color", nBand, 0 );
     if( CSLFetchNameValue( poPDS->papszAuxLines, szTarget ) != NULL )
     {
         poCT = new GDALColorTable();
 
         for( int i = 0; i < 256; i++ )
         {
-            sprintf( szTarget, "METADATA_IMG_%d_Class_%d_Color", nBand, i );
+            snprintf( szTarget, sizeof(szTarget), "METADATA_IMG_%d_Class_%d_Color", nBand, i );
             const char *pszLine
                 = CSLFetchNameValue( poPDS->papszAuxLines, szTarget );
             while( pszLine && *pszLine == ' ' )
@@ -191,7 +188,7 @@ double PAuxRasterBand::GetNoDataValue( int *pbSuccess )
 
 {
     char	szTarget[128];
-    sprintf( szTarget, "METADATA_IMG_%d_NO_DATA_VALUE", nBand );
+    snprintf( szTarget, sizeof(szTarget), "METADATA_IMG_%d_NO_DATA_VALUE", nBand );
 
     PAuxDataset *poPDS = reinterpret_cast<PAuxDataset *>( poDS );
     const char  *pszLine = CSLFetchNameValue( poPDS->papszAuxLines, szTarget );
@@ -246,7 +243,7 @@ void PAuxRasterBand::SetDescription( const char *pszNewDescription )
     if( GetAccess() == GA_Update )
     {
         char	szTarget[128];
-        sprintf( szTarget, "ChanDesc-%d", nBand );
+        snprintf( szTarget, sizeof(szTarget), "ChanDesc-%d", nBand );
 
         PAuxDataset *poPDS = reinterpret_cast<PAuxDataset *>( poDS );
         poPDS->papszAuxLines =
@@ -408,7 +405,7 @@ void PAuxDataset::ScanForGCPs()
     for( int i = 0; nGCPCount < MAX_GCP; i++ )
     {
         char	szName[50];
-        sprintf( szName, "GCP_1_%d", i+1 );
+        snprintf( szName, sizeof(szName), "GCP_1_%d", i+1 );
         if( CSLFetchNameValue( papszAuxLines, szName ) == NULL )
             break;
 
@@ -435,7 +432,7 @@ void PAuxDataset::ScanForGCPs()
             }
             else
             {
-                sprintf( szName, "GCP_%d", i+1 );
+                snprintf( szName, sizeof(szName), "GCP_%d", i+1 );
                 pasGCPList[nGCPCount].pszId = CPLStrdup( szName );
             }
 
@@ -752,7 +749,7 @@ GDALDataset *PAuxDataset::Open( GDALOpenInfo * poOpenInfo )
     for( int i = 0; i < poDS->nBands; i++ )
     {
         char	szDefnName[32];
-        sprintf( szDefnName, "ChanDefinition-%d", i+1 );
+        snprintf( szDefnName, sizeof(szDefnName), "ChanDefinition-%d", i+1 );
 
         pszLine = CSLFetchNameValue(poDS->papszAuxLines, szDefnName);
         if (pszLine == NULL)

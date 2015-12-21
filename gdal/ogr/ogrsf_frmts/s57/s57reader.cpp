@@ -1028,7 +1028,7 @@ void S57Reader::GenerateLNAMAndRefs( DDFRecord * poRecord,
 /* -------------------------------------------------------------------- */
 /*      Apply the LNAM to the object.                                   */
 /* -------------------------------------------------------------------- */
-    sprintf( szLNAM, "%04X%08X%04X",
+    snprintf( szLNAM, sizeof(szLNAM), "%04X%08X%04X",
              poFeature->GetFieldAsInteger( "AGEN" ),
              poFeature->GetFieldAsInteger( "FIDN" ),
              poFeature->GetFieldAsInteger( "FIDS" ) );
@@ -1072,7 +1072,7 @@ void S57Reader::GenerateLNAMAndRefs( DDFRecord * poRecord,
             return;
         }
 
-        sprintf( szLNAM, "%02X%02X%02X%02X%02X%02X%02X%02X",
+        snprintf( szLNAM, sizeof(szLNAM), "%02X%02X%02X%02X%02X%02X%02X%02X",
                  pabyData[1], pabyData[0], /* AGEN */
                  pabyData[5], pabyData[4], pabyData[3], pabyData[2], /* FIDN */
                  pabyData[7], pabyData[6] );
@@ -1852,7 +1852,7 @@ void S57Reader::AssemblePointGeometry( DDFRecord * poFRecord,
                                        OGRFeature * poFeature )
 
 {
-    int         nRCNM, nRCID;
+    int         nRCNM = 0, nRCID;
 
 /* -------------------------------------------------------------------- */
 /*      Feature the spatial record containing the point.                */
@@ -1900,7 +1900,7 @@ void S57Reader::AssembleSoundingGeometry( DDFRecord * poFRecord,
 
 {
     DDFField    *poFSPT;
-    int         nRCNM, nRCID;
+    int         nRCNM = 0, nRCID;
     DDFRecord   *poSRecord;
 
 /* -------------------------------------------------------------------- */
@@ -2064,7 +2064,7 @@ void S57Reader::AssembleLineGeometry( DDFRecord * poFRecord,
                           GetIntSubfield( poFSPT, "RCID", 0 ) );
                 continue;
             }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Get the first and last nodes                                    */
 /* -------------------------------------------------------------------- */
@@ -2158,9 +2158,6 @@ void S57Reader::AssembleLineGeometry( DDFRecord * poFRecord,
                 /* omit point, already present */
             }
 
-            // remember the coordinates of the last point
-            dlastfX = dfX; dlastfY = dfY;
-
 /* -------------------------------------------------------------------- */
 /*      Collect the vertices.                                           */
 /*      Iterate over all the SG2D fields in the Spatial record          */
@@ -2184,6 +2181,8 @@ void S57Reader::AssembleLineGeometry( DDFRecord * poFRecord,
                     if( poXCOO == NULL || poYCOO == NULL )
                     {
                         CPLDebug( "S57", "XCOO or YCOO are NULL" );
+                        delete poLine;
+                        delete poMLS;
                         return;
                     }
 
@@ -2224,6 +2223,8 @@ void S57Reader::AssembleLineGeometry( DDFRecord * poFRecord,
                     }
                 }
             }
+
+            // remember the coordinates of the last point
             dlastfX = dfX; dlastfY = dfY;
 
 /* -------------------------------------------------------------------- */
@@ -2323,12 +2324,12 @@ void S57Reader::AssembleAreaGeometry( DDFRecord * poFRecord,
                     GetIntSubfield( poFSPT, "RCID", 0 ) );
                 continue;
             }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Create the line string.                                         */
 /* -------------------------------------------------------------------- */
             OGRLineString *poLine = new OGRLineString();
-        
+
 /* -------------------------------------------------------------------- */
 /*      Add the start node.                                             */
 /* -------------------------------------------------------------------- */
@@ -2441,7 +2442,7 @@ OGRFeatureDefn * S57Reader::FindFDefn( DDFRecord * poRecord )
     {
         int     nPRIM = poRecord->GetIntSubfield( "FRID", 0, "PRIM", 0 );
         OGRwkbGeometryType eGType;
-        
+
         if( nPRIM == PRIM_P )
             eGType = wkbPoint;
         else if( nPRIM == PRIM_L )
@@ -2607,7 +2608,7 @@ int S57Reader::ApplyRecordUpdate( DDFRecord *poTarget, DDFRecord *poUpdate )
         return FALSE;
 
     pnRVER = (unsigned char *) poKey->GetSubfieldData( poRVER_SFD, NULL, 0 );
- 
+
     *pnRVER += 1;
 
 /* -------------------------------------------------------------------- */
@@ -3099,7 +3100,7 @@ int S57Reader::ApplyUpdates( DDFModule *poUpdateModule )
         if( poKeyField == NULL )
             return FALSE;
         const char      *pszKey = poKeyField->GetFieldDefn()->GetName();
-        
+
         if( EQUAL(pszKey,"VRID") || EQUAL(pszKey,"FRID"))
         {
             int         nRCNM = poRecord->GetIntSubfield( pszKey,0, "RCNM",0 );
@@ -3246,7 +3247,7 @@ int S57Reader::FindAndApplyUpdates( const char * pszPath )
         if( 1 <= iUpdate &&  iUpdate < 10 )
         {
             char buf[2];
-            sprintf( buf, "%i", iUpdate );
+            snprintf( buf, sizeof(buf), "%i", iUpdate );
             extension.append("00");
             extension.append(buf);
             dirname.append(buf);
@@ -3254,7 +3255,7 @@ int S57Reader::FindAndApplyUpdates( const char * pszPath )
         else if( 10 <= iUpdate && iUpdate < 100 )
         {
             char buf[3];
-            sprintf( buf, "%i", iUpdate );
+            snprintf( buf, sizeof(buf), "%i", iUpdate );
             extension.append("0");
             extension.append(buf);
             dirname.append(buf);
@@ -3262,13 +3263,13 @@ int S57Reader::FindAndApplyUpdates( const char * pszPath )
         else if( 100 <= iUpdate && iUpdate < 1000 )
         {
             char buf[4];
-            sprintf( buf, "%i", iUpdate );
+            snprintf( buf, sizeof(buf), "%i", iUpdate );
             extension.append(buf);
             dirname.append(buf);
         }
 
         DDFModule oUpdateModule;
-          
+
         //trying current dir first
         char    *pszUpdateFilename = 
             CPLStrdup(CPLResetExtension(pszPath,extension.c_str()));

@@ -28,16 +28,13 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "gdal_pam.h"
 #include "bsb_read.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
+#include "gdal_pam.h"
 #include "ogr_spatialref.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_BSB(void);
-CPL_C_END
 
 //Disabled as people may worry about the BSB patent
 //#define BSB_CREATE
@@ -616,7 +613,7 @@ void BSBDataset::ScanForGCPsNos( const char *pszFilename )
 
                 CPLFree( pasGCPList[nGCPCount].pszId );
                 char	szName[50];
-                sprintf( szName, "GCP_%d", nGCPCount+1 );
+                snprintf( szName, sizeof(szName), "GCP_%d", nGCPCount+1 );
                 pasGCPList[nGCPCount].pszId = CPLStrdup( szName );
 
                 nGCPCount++;
@@ -679,7 +676,7 @@ void BSBDataset::ScanForGCPsBSB()
             else
             {
                 char szName[50];
-                sprintf( szName, "GCP_%d", nGCPCount+1 );
+                snprintf( szName, sizeof(szName), "GCP_%d", nGCPCount+1 );
                 pasGCPList[nGCPCount].pszId = CPLStrdup( szName );
             }
 
@@ -1160,14 +1157,13 @@ void GDALRegister_BSB()
     if( GDALGetDriverByName( "BSB" ) != NULL )
         return;
 
-    GDALDriver	*poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "BSB" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
                                "Maptech BSB Nautical Charts" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_various.html#BSB" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_various.html#BSB" );
     poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );
 #ifdef BSB_CREATE
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES, "Byte" );

@@ -28,6 +28,7 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "northwood.h"
 
@@ -39,9 +40,6 @@
 #endif
 #endif
 
-
-CPL_C_START void GDALRegister_NWT_GRC( void );
-CPL_C_END
 /************************************************************************/
 /* ==================================================================== */
 /*                             NWT_GRCDataset                           */
@@ -160,7 +158,7 @@ NWT_GRCRasterBand::NWT_GRCRasterBand( NWT_GRCDataset * poDSIn, int nBandIn )
     for( int val = 1; val <= maxValue; val++ )
     {
         int i = 0;
-        // loop throught the GRC dictionary to see if the value is defined
+        // Loop through the GRC dictionary to see if the value is defined.
         for( ;
              i < static_cast<int>( poGDS->pGrd->stClassDict->nNumClassifiedItems );
              i++ )
@@ -394,8 +392,8 @@ GDALDataset *NWT_GRCDataset::Open( GDALOpenInfo * poOpenInfo )
 /*                          GDALRegister_GRC()                          */
 /************************************************************************/
 
-void
-GDALRegister_NWT_GRC()
+void GDALRegister_NWT_GRC()
+
 {
     if( GDALGetDriverByName( "NWT_GRC" ) != NULL )
         return;
@@ -405,9 +403,9 @@ GDALRegister_NWT_GRC()
     poDriver->SetDescription( "NWT_GRC" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
-                             "Northwood Classified Grid Format .grc/.tab");
+                               "Northwood Classified Grid Format .grc/.tab");
     poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                             "frmt_various.html#northwood_grc" );
+                               "frmt_various.html#northwood_grc" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "grc" );
     poDriver->SetMetadataItem( GDAL_DCAP_VIRTUALIO, "YES" );
 

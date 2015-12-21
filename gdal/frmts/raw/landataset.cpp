@@ -28,9 +28,10 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "rawdataset.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "ogr_spatialref.h"
+#include "rawdataset.h"
 
 #include <cmath>
 
@@ -38,9 +39,6 @@
 
 CPL_CVSID("$Id$");
 
-CPL_C_START
-void GDALRegister_LAN(void);
-CPL_C_END
 
 /**
 
@@ -1007,8 +1005,7 @@ void GDALRegister_LAN()
     if( GDALGetDriverByName( "LAN" ) != NULL )
         return;
 
-    GDALDriver	*poDriver;
-    poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "LAN" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );

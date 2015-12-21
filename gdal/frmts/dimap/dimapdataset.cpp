@@ -30,16 +30,13 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "gdal_pam.h"
 #include "cpl_minixml.h"
-#include "ogr_spatialref.h"
+#include "gdal_frmts.h"
+#include "gdal_pam.h"
 #include "gdal_proxy.h"
+#include "ogr_spatialref.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void    GDALRegister_DIMAP(void);
-CPL_C_END
 
 /************************************************************************/
 /* ==================================================================== */
@@ -78,7 +75,7 @@ class DIMAPDataset : public GDALPamDataset
     int ReadImageInformation();
     int ReadImageInformation2(); /* DIMAP 2 */
 
-    void SetMetadataFromXML(CPLXMLNode *psProduct, const char *apszMetadataTranslation[]);
+    void SetMetadataFromXML(CPLXMLNode *psProduct, const char * const apszMetadataTranslation[]);
   public:
             DIMAPDataset();
             ~DIMAPDataset();
@@ -650,7 +647,7 @@ int DIMAPDataset::ReadImageInformation()
 
             nGCPCount++ ;
 
-            sprintf( szID, "%d", nGCPCount );
+            snprintf( szID, sizeof(szID), "%d", nGCPCount );
             psGCP->pszId = CPLStrdup( szID );
             psGCP->pszInfo = CPLStrdup("");
             psGCP->dfGCPPixel = 
@@ -707,7 +704,7 @@ int DIMAPDataset::ReadImageInformation()
 /* -------------------------------------------------------------------- */
 /*      Translate other metadata of interest.                           */
 /* -------------------------------------------------------------------- */
-    static const char *apszMetadataTranslation[] = 
+    static const char * const apszMetadataTranslation[] = 
         {
             "Production", "", 
             "Production.Facility", "FACILITY_", 
@@ -922,7 +919,7 @@ int DIMAPDataset::ReadImageInformation2()
 /*      Translate other metadata of interest: DIM_<product_name>.XML    */
 /* -------------------------------------------------------------------- */
 
-    static const char *apszMetadataTranslationDim[] = 
+    static const char * const apszMetadataTranslationDim[] = 
     {
         "Product_Information.Delivery_Identification", "DATASET_",
             "Product_Information.Producer_Information", "DATASET_",  
@@ -940,7 +937,7 @@ int DIMAPDataset::ReadImageInformation2()
 /*      Translate other metadata of interest: STRIP_<product_name>.XML    */
 /* -------------------------------------------------------------------- */
 
-    static const char *apszMetadataTranslationStrip[] = 
+    static const char * const apszMetadataTranslationStrip[] = 
     {
         "Catalog.Full_Strip.Notations.Cloud_And_Quality_Notation.Data_Strip_Notation", "CLOUDCOVER_",
         "Acquisition_Configuration.Platform_Configuration.Ephemeris_Configuration", "EPHEMERIS_",
@@ -989,7 +986,7 @@ int DIMAPDataset::ReadImageInformation2()
                             /* BAND_ID is: B0, B1, .... P */
                             if (!EQUAL(psTag->psChild->pszValue, "P")) 
                             {
-                                if (strlen(psTag->psChild->pszValue) < 2) /* shouldn't happen */
+                                if (strlen(psTag->psChild->pszValue) < 2) /* should not happen */
                                 {
                                     CPLError(CE_Warning, CPLE_AppDefined,
                                         "Bad BAND_INDEX value : %s", psTag->psChild->pszValue);
@@ -1043,7 +1040,7 @@ int DIMAPDataset::ReadImageInformation2()
 /*                          SetMetadataFromXML()                        */
 /************************************************************************/
 
-void DIMAPDataset::SetMetadataFromXML(CPLXMLNode *psProductIn, const char *apszMetadataTranslation[])
+void DIMAPDataset::SetMetadataFromXML(CPLXMLNode *psProductIn, const char * const apszMetadataTranslation[])
 {
     CPLXMLNode *psDoc = CPLGetXMLNode( psProductIn, "=Dimap_Document" );
     if( psDoc == NULL ) 

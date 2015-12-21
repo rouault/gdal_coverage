@@ -31,16 +31,13 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "ogr_spatialref.h"
 
 #include <algorithm>
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_USGSDEM(void);
-CPL_C_END
 
 typedef struct {
     double	x;
@@ -640,7 +637,7 @@ int USGSDEMDataset::LoadFromFile(VSILFILE *InDem)
         {
             sr.SetLinearUnitsAndUpdateParameters( SRS_UL_US_FOOT, CPLAtof(SRS_UL_US_FOOT_CONV) );
             char    szUTMName[128];
-            sprintf( szUTMName, "UTM Zone %d, Northern Hemisphere, us-ft", iUTMZone );
+            snprintf( szUTMName, sizeof(szUTMName), "UTM Zone %d, Northern Hemisphere, us-ft", iUTMZone );
             sr.SetNode( "PROJCS", szUTMName );
         }
     }

@@ -28,6 +28,7 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "northwood.h"
 
@@ -39,9 +40,6 @@
 #endif
 #endif
 
-
-CPL_C_START void GDALRegister_NWT_GRD( void );
-CPL_C_END
 /************************************************************************/
 /* ==================================================================== */
 /*                      NWT_GRDDataset                                  */
@@ -424,7 +422,6 @@ GDALDataset *NWT_GRDDataset::Open( GDALOpenInfo * poOpenInfo )
 /************************************************************************/
 void GDALRegister_NWT_GRD()
 {
-
     if( GDALGetDriverByName( "NWT_GRD" ) != NULL )
       return;
 

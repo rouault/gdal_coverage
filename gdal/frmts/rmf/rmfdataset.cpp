@@ -29,15 +29,12 @@
  ****************************************************************************/
 
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "ogr_spatialref.h"
 
 #include "rmfdataset.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void    GDALRegister_RMF(void);
-CPL_C_END
 
 static const int RMF_DEFAULT_BLOCKXSIZE = 256;
 static const int RMF_DEFAULT_BLOCKYSIZE = 256;
@@ -249,7 +246,7 @@ CPLErr RMFRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
                                       reinterpret_cast<GByte*>( pImage ),
                                       nRawBytes );
                 CPLFree( pabyTile );
-                nTileBytes = nRawBytes;
+                /*nTileBytes = nRawBytes;*/
             }
             else
             {
@@ -354,7 +351,7 @@ CPLErr RMFRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
             {
                 // Colour triplets in RMF file organized in reverse order:
                 // blue, green, red. When we have 32-bit RMF the forth byte
-                // in quadriplet should be discarded as it has no meaning.
+                // in quadruplet should be discarded as it has no meaning.
                 // That is why we always use 3 byte count in the following
                 // pabyTemp index.
                 reinterpret_cast<GByte *>( pImage )[i] =
@@ -1509,7 +1506,7 @@ do {                                                                    \
     {
         OGRSpatialReference oSRS;
         GInt32  nProj =
-            (poDS->sHeader.iProjection) ? poDS->sHeader.iProjection : 1L;
+            (poDS->sHeader.iProjection) ? poDS->sHeader.iProjection : 1;
         double  padfPrjParams[8];
 
         padfPrjParams[0] = poDS->sHeader.dfStdP1;
@@ -1776,7 +1773,7 @@ GDALDataset *RMFDataset::Create( const char * pszFilename,
         poDS->sHeader.nXTiles * poDS->sHeader.nYTiles * 4 * 2;
     poDS->paiTiles = reinterpret_cast<GUInt32 *>(
         CPLCalloc( poDS->sHeader.nTileTblSize, 1 ) );
-    nCurPtr += poDS->sHeader.nTileTblSize;
+    /*nCurPtr += poDS->sHeader.nTileTblSize;*/
     const GUInt32 nTileSize = poDS->sHeader.nTileWidth * poDS->sHeader.nTileHeight
         * GDALGetDataTypeSize( eType ) / 8;
     poDS->sHeader.nSize =

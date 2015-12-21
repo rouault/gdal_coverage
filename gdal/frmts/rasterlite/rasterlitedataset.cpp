@@ -709,11 +709,11 @@ void RasterliteDataset::AddSubDataset( const char* pszDSName)
     char	szName[80];
     const int nCount = CSLCount(papszSubDatasets ) / 2;
 
-    sprintf( szName, "SUBDATASET_%d_NAME", nCount+1 );
+    snprintf( szName, sizeof(szName), "SUBDATASET_%d_NAME", nCount+1 );
     papszSubDatasets = 
         CSLSetNameValue( papszSubDatasets, szName, pszDSName);
 
-    sprintf( szName, "SUBDATASET_%d_DESC", nCount+1 );
+    snprintf( szName, sizeof(szName), "SUBDATASET_%d_DESC", nCount+1 );
     papszSubDatasets = 
         CSLSetNameValue( papszSubDatasets, szName, pszDSName);
 }
@@ -1401,7 +1401,7 @@ end:
 void GDALRegister_Rasterlite()
 
 {
-    if ( ! GDAL_CHECK_VERSION("Rasterlite driver") )
+    if( !GDAL_CHECK_VERSION("Rasterlite driver") )
         return;
 
     if( GDALGetDriverByName( "Rasterlite" ) != NULL )
@@ -1411,10 +1411,8 @@ void GDALRegister_Rasterlite()
 
     poDriver->SetDescription( "Rasterlite" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
-    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
-                               "Rasterlite" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_rasterlite.html" );
+    poDriver->SetMetadataItem( GDAL_DMD_LONGNAME, "Rasterlite" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_rasterlite.html" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "sqlite" );
     poDriver->SetMetadataItem( GDAL_DMD_SUBDATASETS, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
@@ -1422,7 +1420,7 @@ void GDALRegister_Rasterlite()
                                "Float64 CInt16 CInt32 CFloat32 CFloat64" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONOPTIONLIST,
 "<CreationOptionList>"
-"   <Option name='WIPE' type='boolean' default='NO' description='Erase all prexisting data in the specified table'/>"
+"   <Option name='WIPE' type='boolean' default='NO' description='Erase all preexisting data in the specified table'/>"
 "   <Option name='TILED' type='boolean' default='YES' description='Use tiling'/>"
 "   <Option name='BLOCKXSIZE' type='int' default='256' description='Tile Width'/>"
 "   <Option name='BLOCKYSIZE' type='int' default='256' description='Tile Height'/>"

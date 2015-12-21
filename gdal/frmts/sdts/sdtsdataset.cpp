@@ -28,9 +28,10 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "sdts_al.h"
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "ogr_spatialref.h"
+#include "sdts_al.h"
 
 CPL_CVSID("$Id$");
 
@@ -39,10 +40,6 @@ CPL_CVSID("$Id$");
 
  exclude
 */
-
-CPL_C_START
-void    GDALRegister_SDTS(void);
-CPL_C_END
 
 /************************************************************************/
 /* ==================================================================== */
@@ -257,7 +254,7 @@ GDALDataset *SDTSDataset::Open( GDALOpenInfo * poOpenInfo )
                 if( poRecord->GetStringSubfield( "IDEN", 0, "MODN", 0 ) == NULL )
                     continue;
 
-                static const char* fields[][2] = { { "TITL", "TITLE" },
+                static const char* const fields[][2] = { { "TITL", "TITLE" },
                                                    { "DAID", "DATASET_ID" },
                                                    { "DAST", "DATA_STRUCTURE" },
                                                    { "MPDT", "MAP_DATE" },

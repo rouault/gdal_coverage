@@ -132,7 +132,7 @@ OGRErr OGRGeoconceptLayer::Open( GCSubType* Subclass )
       SetSubTypeFeatureDefn_GCIO(_gcFeature, (OGRFeatureDefnH) _poFeatureDefn);
       _poFeatureDefn->Reference();
     }
-    
+
     if( _poFeatureDefn->GetGeomFieldCount() > 0 )
         _poFeatureDefn->GetGeomFieldDefn(0)->SetSpatialRef(GetSpatialRef());
 
@@ -538,7 +538,7 @@ OGRErr OGRGeoconceptLayer::CreateField( OGRFieldDefn *poField,
                                              GetTypeName_GCIO(GetSubTypeType_GCIO(_gcFeature)),
                                              GetSubTypeName_GCIO(_gcFeature),
                                              FindFeatureFieldIndex_GCIO(_gcFeature,kNbFields_GCIO)
-                                            +GetSubTypeNbFields_GCIO(_gcFeature)+1L,
+                                            +GetSubTypeNbFields_GCIO(_gcFeature)+1,
                                              pszName,
                                              GetSubTypeNbFields_GCIO(_gcFeature)-999L,
                                              vUnknownItemType_GCIO, NULL, NULL)) )
@@ -552,7 +552,7 @@ OGRErr OGRGeoconceptLayer::CreateField( OGRFieldDefn *poField,
           CPLFree(pszName);
           return OGRERR_FAILURE;
         }
-        SetSubTypeNbFields_GCIO(_gcFeature, GetSubTypeNbFields_GCIO(_gcFeature)+1L);
+        SetSubTypeNbFields_GCIO(_gcFeature, GetSubTypeNbFields_GCIO(_gcFeature)+1);
         _poFeatureDefn->AddFieldDefn(poField);
       }
       else

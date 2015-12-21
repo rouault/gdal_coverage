@@ -137,7 +137,7 @@ static int DTEDPtStreamNewTile( DTEDPtStream *psStream,
     else
         chEWHemi = 'e';
 
-    sprintf( szFile, "%c%03d%c%03d.dt%d", 
+    snprintf( szFile, sizeof(szFile), "%c%03d%c%03d.dt%d", 
              chEWHemi, ABS(nCrLong), chNSHemi, ABS(nCrLat),
              psStream->nLevel );
 
@@ -395,10 +395,10 @@ void DTEDClosePtStream( void *hStream )
 
         CPLFree( psCF->papanProfiles );
 
-        for( iMD = 0; iMD < DTEDMD_MAX+1; iMD++ )
+        for( iMD = 0; iMD <= DTEDMD_MAX; iMD++ )
         {
             if( psStream->apszMetadata[iMD] != NULL )
-                DTEDSetMetadata( psCF->psInfo, iMD, 
+                DTEDSetMetadata( psCF->psInfo, (DTEDMetaDataCode)iMD, 
                                  psStream->apszMetadata[iMD] );
         }
 

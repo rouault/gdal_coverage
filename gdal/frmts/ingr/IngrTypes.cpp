@@ -70,7 +70,7 @@ static const INGR_FormatDescription INGR_FormatTable[] = {
     {LineArt,                 "LineArt",                     GDT_Byte}
 };
 
-static const char *IngrOrientation[] = {
+static const char * const IngrOrientation[] = {
     "Upper Left Vertical",
     "Upper Right Vertical",
     "Lower Left Vertical",
@@ -293,7 +293,7 @@ void CPL_STDCALL INGR_GetTransMatrix( INGR_HeaderOne *pHeaderOne,
     }
 
     // -------------------------------------------------------------
-    // Calculate Concatened Tranformation Matrix based on Orientation
+    // Calculate Concatenated Transformation Matrix based on Orientation
     // -------------------------------------------------------------
 
     double adfConcat[16];
@@ -1210,7 +1210,6 @@ INGR_DecodeRunLengthBitonalTiled( GByte *pabySrcData, GByte *pabyDstData,
     {
         nRun     = 256;
         nValue   = 0;
-        previous = 0;
         do
         {
             previous = nRun;
@@ -1696,14 +1695,8 @@ void    INGR_DGN2IEEEDouble(void * dbl)
     src = (unsigned char *) &dt;
     dest = (unsigned char *) dbl;
 
-    dest[0] = src[4];
-    dest[1] = src[5];
-    dest[2] = src[6];
-    dest[3] = src[7];
-    dest[4] = src[0];
-    dest[5] = src[1];
-    dest[6] = src[2];
-    dest[7] = src[3];
+    memcpy(dest + 0, src + 4, 4);
+    memcpy(dest + 4, src + 0, 4);
 #else
     memcpy( dbl, &dt, 8 );
 #endif

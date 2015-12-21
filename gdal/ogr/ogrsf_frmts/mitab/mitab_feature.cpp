@@ -17,10 +17,10 @@
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included
  * in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
@@ -556,7 +556,7 @@ int TABFeature::ReadRecordFromDATFile(TABDATFile *poDATFile)
             CPLError(CE_Failure, CPLE_AssertionFailed,
                      "Unsupported field type!");
         }
-        
+
     }
 
     return 0;
@@ -584,7 +584,6 @@ int TABFeature::WriteRecordToDATFile(TABDATFile *poDATFile,
 #endif
 
     CPLAssert(poDATFile);
-    CPLAssert(panIndexNo || GetDefnRef()->GetFieldCount() == 0);
 
     numFields = poDATFile->GetNumFields();
 
@@ -600,6 +599,7 @@ int TABFeature::WriteRecordToDATFile(TABDATFile *poDATFile,
             nStatus = poDATFile->WriteIntegerField( (int)GetFID(), poINDFile, 0 );
             continue;
         }
+        CPLAssert(panIndexNo != NULL);
 
         switch(poDATFile->GetFieldType(iField))
         {
@@ -662,7 +662,7 @@ int TABFeature::WriteRecordToDATFile(TABDATFile *poDATFile,
              nStatus = poDATFile->WriteTimeField(nHour, nMin, (int)fSec,
                                                  OGR_GET_MS(fSec),
                                                  poINDFile, panIndexNo[iField]);
-             
+
 #else
              nStatus = poDATFile->WriteTimeField(GetFieldAsString(iField),
                                                  poINDFile, panIndexNo[iField]);
@@ -909,7 +909,7 @@ void TABFeature::DumpMID(FILE *fpOut /*=NULL*/)
     for( int iField = 0; iField < GetFieldCount(); iField++ )
     {
         OGRFieldDefn    *poFDefn = l_poDefn->GetFieldDefn(iField);
-        
+
         fprintf( fpOut, "  %s (%s) = %s\n",
                  poFDefn->GetNameRef(),
                  OGRFieldDefn::GetFieldTypeName(poFDefn->GetType()),
@@ -1086,13 +1086,13 @@ int TABPoint::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
     m_nSymbolDefIndex = poPointHdr->m_nSymbolId;   // Symbol index
 
     poMapFile->ReadSymbolDef(m_nSymbolDefIndex, &m_sSymbolDef);
-    
+
     /*-----------------------------------------------------------------
      * Create and fill geometry object
      *----------------------------------------------------------------*/
     poMapFile->Int2Coordsys(poPointHdr->m_nX, poPointHdr->m_nY, dX, dY);
     poGeometry = new OGRPoint(dX, dY);
-    
+
     SetGeometryDirectly(poGeometry);
 
     SetMBR(dX, dY, dX, dY);
@@ -1417,9 +1417,9 @@ int TABFontPoint::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
                                poPointHdr->m_nB);
 
     /*-------------------------------------------------------------
-     * Symbol Angle, in thenths of degree.
-     * Contrary to arc start/end angles, no conversion based on 
-     * origin quadrant is required here
+     * Symbol Angle, in tenths of degree.
+     * Contrary to arc start/end angles, no conversion based on
+     * origin quadrant is required here.
      *------------------------------------------------------------*/
     m_dAngle       = poPointHdr->m_nAngle/10.0;
 
@@ -1432,7 +1432,7 @@ int TABFontPoint::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
      *----------------------------------------------------------------*/
     poMapFile->Int2Coordsys(poPointHdr->m_nX, poPointHdr->m_nY, dX, dY);
     poGeometry = new OGRPoint(dX, dY);
-    
+
     SetGeometryDirectly(poGeometry);
 
     SetMBR(dX, dY, dX, dY);
@@ -1509,9 +1509,9 @@ int TABFontPoint::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
     poPointHdr->m_nB = (GByte)COLOR_B(m_sSymbolDef.rgbColor);
 
     /*-------------------------------------------------------------
-     * Symbol Angle, in thenths of degree.
-     * Contrary to arc start/end angles, no conversion based on 
-     * origin quadrant is required here
+     * Symbol Angle, in tenths of degree.
+     * Contrary to arc start/end angles, no conversion based on
+     * origin quadrant is required here.
      *------------------------------------------------------------*/
     poPointHdr->m_nAngle = (GInt16)ROUND_INT(m_dAngle * 10.0);
 
@@ -1739,7 +1739,7 @@ int TABCustomPoint::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
      *----------------------------------------------------------------*/
     poMapFile->Int2Coordsys(poPointHdr->m_nX, poPointHdr->m_nY, dX, dY);
     poGeometry = new OGRPoint(dX, dY);
-    
+
     SetGeometryDirectly(poGeometry);
 
     SetMBR(dX, dY, dX, dY);
@@ -2492,7 +2492,7 @@ int TABPolyline::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
             poPLineHdr->m_nLabelX = m_nComprOrgX;
             poPLineHdr->m_nLabelY = m_nComprOrgY;
         }
-        
+
         // Compressed coordinate origin (useful only in compressed case!)
         poPLineHdr->m_nComprOrgX = m_nComprOrgX;
         poPLineHdr->m_nComprOrgY = m_nComprOrgY;
@@ -2577,7 +2577,7 @@ int TABPolyline::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
         {
             if (poMultiLine)
                 poGeom = poMultiLine->getGeometryRef(iLine);
-                
+
             if (poGeom && wkbFlatten(poGeom->getGeometryType()) == wkbLineString)
             {
                 poLine = (OGRLineString*)poGeom;
@@ -2607,7 +2607,7 @@ int TABPolyline::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
             }
 
         }
-         
+
         if (nStatus == 0)
             nStatus = poCoordBlock->WriteCoordSecHdrs(nVersion, numLines, 
                                                       pasSecHdrs, bCompressed);
@@ -2680,7 +2680,7 @@ int TABPolyline::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
             poPLineHdr->m_nLabelX = m_nComprOrgX;
             poPLineHdr->m_nLabelY = m_nComprOrgY;
         }
-        
+
         // Compressed coordinate origin (useful only in compressed case!)
         poPLineHdr->m_nComprOrgX = m_nComprOrgX;
         poPLineHdr->m_nComprOrgY = m_nComprOrgY;
@@ -3340,7 +3340,7 @@ int TABRegion::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
             }
 
             int numPoints = poRing->getNumPoints();
-            
+
             for(i=0; nStatus == 0 && i<numPoints; i++)
             {
                 poMapFile->Coordsys2Int(poRing->getX(i), poRing->getY(i),
@@ -3382,7 +3382,7 @@ int TABRegion::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
             poPLineHdr->m_nLabelX = m_nComprOrgX;
             poPLineHdr->m_nLabelY = m_nComprOrgY;
         }
-        
+
         // Compressed coordinate origin (useful only in compressed case!)
         poPLineHdr->m_nComprOrgX = m_nComprOrgX;
         poPLineHdr->m_nComprOrgY = m_nComprOrgY;
@@ -3561,7 +3561,7 @@ int TABRegion::AppendSecHdrs(OGRPolygon *poPolygon,
         }
 
         poRing->getEnvelope(&sEnvelope);
-            
+
         pasSecHdrs[iLastRing].numVertices = poRing->getNumPoints();
 
         if (iRing == 0)
@@ -3606,7 +3606,6 @@ OGRLinearRing *TABRegion::GetRingRef(int nRequestedRingIndex)
         /*-------------------------------------------------------------
          * Establish number of polygons based on geometry type
          *------------------------------------------------------------*/
-        OGRPolygon      *poPolygon=NULL;
         OGRMultiPolygon *poMultiPolygon = NULL;
         int             iCurRing = 0;
         int             numOGRPolygons = 0;
@@ -3618,7 +3617,6 @@ OGRLinearRing *TABRegion::GetRingRef(int nRequestedRingIndex)
         }
         else
         {
-            poPolygon = (OGRPolygon*)poGeom;
             numOGRPolygons = 1;
         }
 
@@ -3628,6 +3626,7 @@ OGRLinearRing *TABRegion::GetRingRef(int nRequestedRingIndex)
         iCurRing = 0;
         for(int iPoly=0; poRing == NULL && iPoly < numOGRPolygons; iPoly++)
         {
+            OGRPolygon      *poPolygon;
             if (poMultiPolygon)
                 poPolygon = (OGRPolygon*)poMultiPolygon->getGeometryRef(iPoly);
             else
@@ -3670,7 +3669,6 @@ GBool TABRegion::IsInteriorRing(int nRequestedRingIndex)
         /*-------------------------------------------------------------
          * Establish number of polygons based on geometry type
          *------------------------------------------------------------*/
-        OGRPolygon      *poPolygon=NULL;
         OGRMultiPolygon *poMultiPolygon = NULL;
         int             iCurRing = 0;
         int             numOGRPolygons = 0;
@@ -3682,7 +3680,6 @@ GBool TABRegion::IsInteriorRing(int nRequestedRingIndex)
         }
         else
         {
-            poPolygon = (OGRPolygon*)poGeom;
             numOGRPolygons = 1;
         }
 
@@ -3692,6 +3689,7 @@ GBool TABRegion::IsInteriorRing(int nRequestedRingIndex)
         iCurRing = 0;
         for(int iPoly=0; poRing == NULL && iPoly < numOGRPolygons; iPoly++)
         {
+            OGRPolygon* poPolygon;
             if (poMultiPolygon)
                 poPolygon = (OGRPolygon*)poMultiPolygon->getGeometryRef(iPoly);
             else
@@ -5155,7 +5153,7 @@ int TABArc::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
 
     poArcHdr->m_nStartAngle = ROUND_INT(m_dStartAngle*10.0);
     poArcHdr->m_nEndAngle = ROUND_INT(m_dEndAngle*10.0);
-    
+
     // An arc is defined by its defining ellipse's MBR:
     poMapFile->Coordsys2Int(m_dCenterX-m_dXRadius, m_dCenterY-m_dYRadius,
                             poArcHdr->m_nArcEllipseMinX, 
@@ -5446,9 +5444,9 @@ int TABText::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
     m_nTextAlignment = poTextHdr->m_nTextAlignment; // just./spacing/arrow
 
     /*-------------------------------------------------------------
-     * Text Angle, in thenths of degree.
-     * Contrary to arc start/end angles, no conversion based on 
-     * origin quadrant is required here
+     * Text Angle, in tenths of degree.
+     * Contrary to arc start/end angles, no conversion based on
+     * origin quadrant is required here.
      *------------------------------------------------------------*/
     m_dAngle       = poTextHdr->m_nAngle/10.0;
 
@@ -5628,7 +5626,7 @@ int TABText::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
     GInt32              nCoordBlockPtr;
     TABMAPCoordBlock    *poCoordBlock;
     int                 nStringLen;
-  
+
     /*-----------------------------------------------------------------
      * We assume that ValidateMapInfoType() was called already and that
      * the type in poObjHdr->m_nType is valid.
@@ -5689,9 +5687,9 @@ int TABText::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
     poTextHdr->m_nTextAlignment = m_nTextAlignment;   // just./spacing/arrow
 
     /*-----------------------------------------------------------------
-     * Text Angle, (written in thenths of degrees)
-     * Contrary to arc start/end angles, no conversion based on 
-     * origin quadrant is required here
+     * Text Angle, (written in tenths of degrees)
+     * Contrary to arc start/end angles, no conversion based on
+     * origin quadrant is required here.
      *----------------------------------------------------------------*/
     poTextHdr->m_nAngle = ROUND_INT(m_dAngle*10.0);
 
@@ -5714,7 +5712,7 @@ int TABText::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
      *----------------------------------------------------------------*/
     double dXMin, dYMin, dXMax, dYMax;
     // Make sure Feature MBR is in sync with other params
- 
+
     UpdateMBR();
     GetMBR(dXMin, dYMin, dXMax, dYMax);
 
@@ -6209,7 +6207,7 @@ const char *TABText::GetLabelStyleString()
         nJustification = 1;
         break;
     }
-    
+
     // Compute real font size, taking number of lines ("\\n", "\n") and line
     // spacing into account.
     int numLines = 1;
@@ -6217,7 +6215,7 @@ const char *TABText::GetLabelStyleString()
          numLines += ((pszTextString[i]=='\n' ||
                        (pszTextString[i]=='\\' && pszTextString[i+1]=='n')) &&
                       pszTextString[i+1] != '\0' ),++i);
-    
+
     double dHeight = GetTextBoxHeight()/numLines;
 
     // In all cases, take out 20% of font height to account for line spacing
@@ -6244,7 +6242,7 @@ const char *TABText::GetLabelStyleString()
         for (int i=0; pszTextString[i];++i)
             if (isalpha(pszTextString[i])) 
                 pszTextString[i] = (char)toupper(pszTextString[i]);
-    
+
     /* Escape the double quote chars and expand the text */
     char *pszTmpTextString;
     int j = 0;
@@ -6253,9 +6251,9 @@ const char *TABText::GetLabelStyleString()
         pszTmpTextString = (char*)CPLMalloc(((nStringLen*4)+1)*sizeof(char));
     else
         pszTmpTextString = (char*)CPLMalloc(((nStringLen*2)+1)*sizeof(char));
-    
+
     for (int i =0; i < nStringLen; ++i,++j)
-    { 
+    {
         if (pszTextString[i] == '"') 
         {
             pszTmpTextString[j] = '\\';
@@ -6270,8 +6268,8 @@ const char *TABText::GetLabelStyleString()
             pszTmpTextString[j+1] = ' ';
             ++j;
         }
-    }  
-      
+    }
+
     pszTmpTextString[j] = '\0';
     CPLFree(pszTextString);
     pszTextString = (char*)CPLMalloc((strlen(pszTmpTextString)+1)*sizeof(char));
@@ -6287,15 +6285,15 @@ const char *TABText::GetLabelStyleString()
     const char *pszBold = IsFontBold() ? ",bo:1" :"";
     const char *pszItalic = IsFontItalic() ? ",it:1" :"";
     const char *pszUnderline = IsFontUnderline() ? ",un:1" : "";
-    
+
     pszStyle=CPLSPrintf("LABEL(t:\"%s\",a:%f,s:%fg,c:#%6.6x%s%s%s%s%s%s,p:%d,f:\"%s\")",
                         pszTextString,GetTextAngle(), dHeight,
                         GetFontFGColor(),pszBGColor,pszOColor,pszSColor,
                         pszBold,pszItalic,pszUnderline,nJustification,GetFontNameRef());
-     
+
     CPLFree(pszTextString);
     return pszStyle;
-    
+
 }  
 
 /**********************************************************************
@@ -6557,7 +6555,7 @@ int TABMultiPoint::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
 
             poMapFile->Int2Coordsys(nX, nY, dX, dY);
             OGRPoint *poPoint = new OGRPoint(dX, dY);
-    
+
             if (poMultiPoint->addGeometryDirectly(poPoint) != OGRERR_NONE)
             {
                 CPLAssert(FALSE); // Just in case lower-level lib is modified
@@ -7326,8 +7324,8 @@ int TABCollection::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
             return -1;
 
         // Set new coord block ptr for next object
-        if (poCoordBlock)
-            nCurCoordBlockPtr = poCoordBlock->GetCurAddress();
+        /*if (poCoordBlock)
+            nCurCoordBlockPtr = poCoordBlock->GetCurAddress();*/
     }
 
 
@@ -7389,8 +7387,8 @@ int TABCollection::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
             return -1;
 
         // Set new coord block ptr for next object
-        if (poCoordBlock)
-            nCurCoordBlockPtr = poCoordBlock->GetCurAddress();
+        /*if (poCoordBlock)
+            nCurCoordBlockPtr = poCoordBlock->GetCurAddress();*/
     }
 
     /*-----------------------------------------------------------------
@@ -7441,10 +7439,10 @@ int TABCollection::ReadGeometryFromMAPFile(TABMAPFile *poMapFile,
             return -1;
 
         // Set new coord block ptr for next object (not really useful here)
-        if (poCoordBlock)
-            nCurCoordBlockPtr = poCoordBlock->GetCurAddress();
+        /*if (poCoordBlock)
+            nCurCoordBlockPtr = poCoordBlock->GetCurAddress();*/
     }
-    
+
     /*-----------------------------------------------------------------
      * Set the main OGRFeature Geometry 
      * (this is actually duplicating geometries from each member)
@@ -7610,7 +7608,7 @@ int TABCollection::WriteGeometryToMAPFile(TABMAPFile *poMapFile,
             poCollHdr->m_nRegionBrushId  = poRegionHdr->m_nBrushId;
             // TODO: Smooth flag         = poRegionHdr->m_bSmooth;
         }
-        
+
         delete poRegionHdr;
     }
     else
@@ -7903,7 +7901,7 @@ int    TABCollection::SyncOGRGeometryCollection(GBool bSyncRegion,
      *----------------------------------------------------------------*/
     if(bSyncRegion && m_poRegion && m_poRegion->GetGeometryRef() != NULL)
         poGeomColl->addGeometry(m_poRegion->GetGeometryRef());
-    
+
     if(bSyncPline && m_poPline && m_poPline->GetGeometryRef() != NULL)
         poGeomColl->addGeometry(m_poPline->GetGeometryRef());
 
@@ -8270,7 +8268,7 @@ const char *ITABFeaturePen::GetPenStyleString()
     const char *pszStyle = NULL;
     int    nOGRStyle  = 0;
     char szPattern[20];
-    
+
     szPattern[0] = '\0';
 
     // For now, I only add the 25 first styles 
@@ -8432,14 +8430,14 @@ void  ITABFeaturePen::SetPenFromStyleString(const char *pszStyleString)
     int   nPenId;
     const char* pszPenId;
 
-    // Use the Style Manager to retreive all the information we need.
+    // Use the Style Manager to retrieve all the information we need.
     OGRStyleMgr *poStyleMgr = new OGRStyleMgr(NULL);
     OGRStyleTool *poStylePart = NULL;
 
     // Init the StyleMgr with the StyleString.
     poStyleMgr->InitStyleString(pszStyleString);
 
-    // Retreive the Pen info.
+    // Retrieve the Pen info.
     numParts = poStyleMgr->GetPartCount();
     for(i=0; i<numParts; i++)
     {
@@ -8527,7 +8525,7 @@ void  ITABFeaturePen::SetPenFromStyleString(const char *pszStyleString)
     }
     else
     {
-        // If no Pen Id, use the Pen Pattern to retreive the Id.
+        // If no Pen Id, use the Pen Pattern to retrieve the Id.
         pszPenPattern = poPenStyle->Pattern(bIsNull);
         if (bIsNull)
             pszPenPattern = NULL;
@@ -8654,7 +8652,6 @@ const char *ITABFeatureBrush::GetBrushStyleString()
       nOGRStyle = 6;
     else if (m_sBrushDef.nFillPattern == 8)
       nOGRStyle = 7;
-          
 
     if (GetBrushTransparent())
     {
@@ -8672,8 +8669,7 @@ const char *ITABFeatureBrush::GetBrushStyleString()
     }
 
      return pszStyle;
-    
-}  
+}
 
 
 /**********************************************************************
@@ -8693,14 +8689,14 @@ void  ITABFeatureBrush::SetBrushFromStyleString(const char *pszStyleString)
     const char *pszBrushColor;
     int nBrushColor;
 
-    // Use the Style Manager to retreive all the information we need.
+    // Use the Style Manager to retrieve all the information we need.
     OGRStyleMgr *poStyleMgr = new OGRStyleMgr(NULL);
     OGRStyleTool *poStylePart = NULL;
 
     // Init the StyleMgr with the StyleString.
     poStyleMgr->InitStyleString(pszStyleString);
 
-    // Retreive the Brush info.
+    // Retrieve the Brush info.
     numParts = poStyleMgr->GetPartCount();
     for(i=0; i<numParts; i++)
     {
@@ -8934,17 +8930,16 @@ const char *ITABFeatureSymbol::GetSymbolStyleString(double dfAngle)
       nOGRStyle = 2;
 
     nAngle += (int)dfAngle;
-    
+
     pszStyle=CPLSPrintf("SYMBOL(a:%d,c:#%6.6x,s:%dpt,id:\"mapinfo-sym-%d,ogr-sym-%d\")",
                         nAngle,
                         m_sSymbolDef.rgbColor,
                         m_sSymbolDef.nPointSize,
                         m_sSymbolDef.nSymbolNo,
                         nOGRStyle);
-     
+
     return pszStyle;
-    
-}  
+}
 
 /**********************************************************************
  *                   ITABFeatureSymbol::SetSymbolFromStyleString()
@@ -8964,14 +8959,14 @@ void ITABFeatureSymbol::SetSymbolFromStyleString(const char *pszStyleString)
 
     double dSymbolSize;
 
-    // Use the Style Manager to retreive all the information we need.
+    // Use the Style Manager to retrieve all the information we need.
     OGRStyleMgr *poStyleMgr = new OGRStyleMgr(NULL);
     OGRStyleTool *poStylePart = NULL;
 
     // Init the StyleMgr with the StyleString.
     poStyleMgr->InitStyleString(pszStyleString);
 
-    // Retreive the Symbol info.
+    // Retrieve the Symbol info.
     numParts = poStyleMgr->GetPartCount();
     for(i=0; i<numParts; i++)
     {
@@ -9085,9 +9080,9 @@ void ITABFeatureSymbol::SetSymbolFromStyleString(const char *pszStyleString)
 
     delete poStyleMgr;
     delete poStylePart;
-    
+
     return;
-}  
+}
 
 /**********************************************************************
  *                   ITABFeatureSymbol::DumpSymbolDef()

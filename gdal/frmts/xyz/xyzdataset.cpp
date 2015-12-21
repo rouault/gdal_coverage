@@ -27,18 +27,15 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "cpl_vsi_virtual.h"
 #include "cpl_string.h"
+#include "cpl_vsi_virtual.h"
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 
 #include <algorithm>
 #include <vector>
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void GDALRegister_XYZ(void);
-CPL_C_END
 
 /************************************************************************/
 /* ==================================================================== */
@@ -1231,7 +1228,7 @@ void GDALRegister_XYZ()
     if( GDALGetDriverByName( "XYZ" ) != NULL )
       return;
 
-    GDALDriver  *poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "XYZ" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );

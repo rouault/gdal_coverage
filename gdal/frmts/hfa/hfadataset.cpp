@@ -29,6 +29,7 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "gdal_frmts.h"
 #include "gdal_pam.h"
 #include "gdal_rat.h"
 #include "hfa_p.h"
@@ -36,10 +37,6 @@
 #include "ogr_srs_api.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_HFA(void);
-CPL_C_END
 
 #ifndef R2D
 #  define R2D	(180/M_PI)
@@ -51,7 +48,7 @@ CPL_C_END
 int WritePeStringIfNeeded(OGRSpatialReference* poSRS, HFAHandle hHFA);
 void ClearSR(HFAHandle hHFA);
 
-static const char *apszDatumMap[] = {
+static const char * const apszDatumMap[] = {
     /* Imagine name, WKT name */
     "NAD27", "North_American_Datum_1927",
     "NAD83", "North_American_Datum_1983",
@@ -61,7 +58,7 @@ static const char *apszDatumMap[] = {
     NULL, NULL
 };
 
-static const char *apszUnitMap[] = {
+static const char * const apszUnitMap[] = {
     "meters", "1.0",
     "meter", "1.0",
     "m", "1.0",
@@ -450,10 +447,10 @@ private:
 
     void CreateDT()
     {
-        this->poDT = new HFAEntry( this->hHFA->papoBand[this->nBand-1]->psInfo, 
-                             this->osName, "Edsc_Table",
-                             this->hHFA->papoBand[this->nBand-1]->poNode );
-        this->poDT->SetIntField( "numrows", nRows );
+        poDT = HFAEntry::New( hHFA->papoBand[nBand-1]->psInfo, 
+                              osName, "Edsc_Table",
+                              hHFA->papoBand[nBand-1]->poNode );
+        poDT->SetIntField( "numrows", nRows );
     }
 
 public:
@@ -1730,7 +1727,7 @@ CPLErr HFARasterAttributeTable::CreateColumn( const char *pszFieldName,
                                 GDALRATFieldType eFieldType, 
                                 GDALRATFieldUsage eFieldUsage )
 {
-    if( this->eAccess == GA_ReadOnly )
+    if( eAccess == GA_ReadOnly )
     {
         CPLError( CE_Failure, CPLE_NoWriteAccess,
             "Dataset not open in update mode");
@@ -1738,7 +1735,7 @@ CPLErr HFARasterAttributeTable::CreateColumn( const char *pszFieldName,
     }
 
     // do we have a descriptor table already?
-    if( this->poDT == NULL || !EQUAL(this->poDT->GetType(),"Edsc_Table") )
+    if( poDT == NULL || !EQUAL(poDT->GetType(),"Edsc_Table") )
         CreateDT();
 
     int bConvertColors = FALSE;
@@ -1790,9 +1787,9 @@ CPLErr HFARasterAttributeTable::CreateColumn( const char *pszFieldName,
     HFAEntry *poColumn = poDT->GetNamedChild(pszFieldName);
 
     if(poColumn == NULL || !EQUAL(poColumn->GetType(),"Edsc_Column"))
-        poColumn = new HFAEntry( this->hHFA->papoBand[this->nBand-1]->psInfo,
+        poColumn = HFAEntry::New( hHFA->papoBand[nBand-1]->psInfo,
                                      pszFieldName, "Edsc_Column",
-                                     this->poDT );
+                                     poDT );
 
     poColumn->SetIntField( "numRows", this->nRows );
     int nElementSize = 0;
@@ -1860,9 +1857,9 @@ CPLErr HFARasterAttributeTable::SetLinearBinning( double dfRow0MinIn, double dfB
     /* we should have an Edsc_BinFunction */
     HFAEntry *poBinFunction = this->poDT->GetNamedChild( "#Bin_Function#" );
     if( poBinFunction == NULL || !EQUAL(poBinFunction->GetType(),"Edsc_BinFunction") )
-        poBinFunction = new HFAEntry( hHFA->papoBand[nBand-1]->psInfo,
-                                      "#Bin_Function#", "Edsc_BinFunction",
-                                      this->poDT );
+        poBinFunction = HFAEntry::New( hHFA->papoBand[nBand-1]->psInfo,
+                                       "#Bin_Function#", "Edsc_BinFunction",
+                                       poDT );
 
     // Because of the BaseData we have to hardcode the size. 
     poBinFunction->MakeData( 30 );
@@ -2098,7 +2095,7 @@ void HFARasterBand::ReadAuxMetadata()
 
     HFABand *poBand = hHFA->papoBand[nBand-1];
 
-    const char ** pszAuxMetaData = GetHFAAuxMetaDataList();
+    const char * const * pszAuxMetaData = GetHFAAuxMetaDataList();
     for( int i = 0; pszAuxMetaData[i] != NULL; i += 4 )
     {
         HFAEntry *poEntry;
@@ -2131,7 +2128,7 @@ void HFARasterBand::ReadAuxMetadata()
                       break;
 
                   char szValueAsString[100];
-                  CPLsprintf( szValueAsString, "%.14g", dfValue );
+                  CPLsnprintf( szValueAsString, sizeof(szValueAsString), "%.14g", dfValue );
 
                   if( iValue > 0 )
                       osValueList += ",";
@@ -2156,7 +2153,7 @@ void HFARasterBand::ReadAuxMetadata()
                       break;
 
                   char szValueAsString[100];
-                  sprintf( szValueAsString, "%d", nValue );
+                  snprintf( szValueAsString, sizeof(szValueAsString), "%d", nValue );
 
                   if( iValue > 0 )
                       osValueList += ",";
@@ -3020,7 +3017,7 @@ CPLErr HFARasterBand::WriteNamedRAT( const char * /*pszName*/,
 /* -------------------------------------------------------------------- */
     HFAEntry * poDT = hHFA->papoBand[nBand-1]->poNode->GetNamedChild( "Descriptor_Table" );
     if( poDT == NULL || !EQUAL(poDT->GetType(),"Edsc_Table") )
-        poDT = new HFAEntry( hHFA->papoBand[nBand-1]->psInfo,
+        poDT = HFAEntry::New( hHFA->papoBand[nBand-1]->psInfo,
                              "Descriptor_Table", "Edsc_Table",
                              hHFA->papoBand[nBand-1]->poNode );
 
@@ -3034,7 +3031,7 @@ CPLErr HFARasterBand::WriteNamedRAT( const char * /*pszName*/,
         /* then it should have an Edsc_BinFunction */
         HFAEntry *poBinFunction = poDT->GetNamedChild( "#Bin_Function#" );
         if( poBinFunction == NULL || !EQUAL(poBinFunction->GetType(),"Edsc_BinFunction") )
-            poBinFunction = new HFAEntry( hHFA->papoBand[nBand-1]->psInfo,
+            poBinFunction = HFAEntry::New( hHFA->papoBand[nBand-1]->psInfo,
                                           "#Bin_Function#", "Edsc_BinFunction",
                                           poDT );
 
@@ -3088,7 +3085,7 @@ CPLErr HFARasterBand::WriteNamedRAT( const char * /*pszName*/,
         HFAEntry *poColumn = poDT->GetNamedChild(pszName);
 
         if(poColumn == NULL || !EQUAL(poColumn->GetType(),"Edsc_Column"))
-	    poColumn = new HFAEntry( hHFA->papoBand[nBand-1]->psInfo,
+	    poColumn = HFAEntry::New( hHFA->papoBand[nBand-1]->psInfo,
                                      pszName, "Edsc_Column",
                                      poDT );
 
@@ -3106,7 +3103,7 @@ CPLErr HFARasterBand::WriteNamedRAT( const char * /*pszName*/,
         if( ( poRAT->GetTypeOfCol(col) == GFT_Real ) || bIsColorCol || (poRAT->GetUsageOfCol(col) == GFU_PixelCount) )
         {
             int nOffset = HFAAllocateSpace( hHFA->papoBand[nBand-1]->psInfo,
-                                            nRowCount * sizeof(double) );
+                                            (GUInt32)nRowCount * (GUInt32)sizeof(double) );
             poColumn->SetIntField( "columnDataPtr", nOffset );
             poColumn->SetStringField( "dataType", "real" );
 
@@ -3168,7 +3165,7 @@ CPLErr HFARasterBand::WriteNamedRAT( const char * /*pszName*/,
         else if (poRAT->GetTypeOfCol(col) == GFT_Integer)
         {
             int nOffset = HFAAllocateSpace( hHFA->papoBand[nBand-1]->psInfo,
-                                            nRowCount * sizeof(GInt32) );
+                                            (GUInt32)nRowCount * (GUInt32)sizeof(GInt32) );
             poColumn->SetIntField( "columnDataPtr", nOffset );
             poColumn->SetStringField( "dataType", "integer" );
 
@@ -6038,14 +6035,13 @@ void GDALRegister_HFA()
     if( GDALGetDriverByName( "HFA" ) != NULL )
         return;
 
-    GDALDriver	*poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "HFA" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
     poDriver->SetMetadataItem( GDAL_DMD_LONGNAME,
                                "Erdas Imagine Images (.img)" );
-    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC,
-                               "frmt_hfa.html" );
+    poDriver->SetMetadataItem( GDAL_DMD_HELPTOPIC, "frmt_hfa.html" );
     poDriver->SetMetadataItem( GDAL_DMD_EXTENSION, "img" );
     poDriver->SetMetadataItem( GDAL_DMD_CREATIONDATATYPES,
                                "Byte Int16 UInt16 Int32 UInt32 Float32 Float64 CFloat32 CFloat64" );

@@ -817,6 +817,8 @@ LIBZ_SETTING
 RENAME_INTERNAL_LIBGEOTIFF_SYMBOLS
 RENAME_INTERNAL_LIBTIFF_SYMBOLS
 HAVE_HIDE_INTERNAL_SYMBOLS
+CXXFLAGS_NO_LTO_IF_AVX_NONDEFAULT
+CFLAGS_NO_LTO_IF_AVX_NONDEFAULT
 HAVE_AVX_AT_COMPILE_TIME
 AVXFLAGS
 HAVE_SSE_AT_COMPILE_TIME
@@ -931,6 +933,7 @@ with_unix_stdio_64
 enable_debug
 with_sse
 with_avx
+enable_lto
 with_hide_internal_symbols
 with_rename_internal_libtiff_symbols
 with_rename_internal_libgeotiff_symbols
@@ -1666,6 +1669,8 @@ Optional Features:
                           optimize for fast installation [default=yes]
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --enable-debug          enable debugging (disabled by default)
+  --enable-lto            enable LTO(link time optimization) (disabled by
+                          default)
   --disable-rpath         do not hardcode runtime library paths
   --enable-pdf-plugin     enable PDF driver as a plugin (included in libgdal
                           by default)
@@ -1702,7 +1707,7 @@ Optional Packages:
   --with-png=ARG        Include PNG support (ARG=internal, no or path)
   --with-dds=ARG        Include DDS support (ARG=no, or path)
   --with-gta=ARG        Include GTA support (ARG=no or libgta tree prefix)
-  --with-pcidsk=ARG     Path to external PCIDSK SDK, or internal (default), or old
+  --with-pcidsk=ARG     Path to external PCIDSK SDK or internal (default)
   --with-libtiff=ARG    Libtiff library to use (ARG=internal, yes or path)
   --with-geotiff=ARG    Libgeotiff library to use (ARG=internal, yes or path)
   --with-jpeg=ARG       Include JPEG support (ARG=internal, no or path)
@@ -4684,41 +4689,6 @@ else
   :
 fi
 
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Werror -Wno-clobbered" >&5
-$as_echo_n "checking whether C compiler accepts -Werror -Wno-clobbered... " >&6; }
-if ${ax_cv_check_cflags___Werror__Wno_clobbered+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-
-  ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -Werror -Wno-clobbered"
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___Werror__Wno_clobbered=yes
-else
-  ax_cv_check_cflags___Werror__Wno_clobbered=no
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  CFLAGS=$ax_check_save_flags
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Werror__Wno_clobbered" >&5
-$as_echo "$ax_cv_check_cflags___Werror__Wno_clobbered" >&6; }
-if test "x$ax_cv_check_cflags___Werror__Wno_clobbered" = xyes; then :
-  C_WFLAGS="$C_WFLAGS -Wno-clobbered" CXX_WFLAGS="$CXX_WFLAGS -Wno-clobbered"
-else
-  :
-fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Werror -Wno-sign-compare" >&5
@@ -18002,6 +17972,17 @@ _ACEOF
 fi
 done
 
+for ac_func in statvfs
+do :
+  ac_fn_c_check_func "$LINENO" "statvfs" "ac_cv_func_statvfs"
+if test "x$ac_cv_func_statvfs" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_STATVFS 1
+_ACEOF
+
+fi
+done
+
 
 
 ac_ext=cpp
@@ -18317,7 +18298,12 @@ if test "$with_avx" = "yes" -o "$with_avx" = ""; then
     rm -f detectavx.cpp
     echo '#ifdef __AVX__' > detectavx.cpp
     echo '#include <immintrin.h>' >> detectavx.cpp
-    echo 'void foo() { unsigned int nXCRLow, nXCRHigh; __asm__ ("xgetbv" : "=a" (nXCRLow), "=d" (nXCRHigh) : "c" (0)); float fEpsilon = 0.0000000000001f; __m256 ymm_small = _mm256_set_ps(fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon); } int main() { return 0; }' >> detectavx.cpp
+    echo 'int foo() { unsigned int nXCRLow, nXCRHigh;' >> detectavx.cpp
+    echo '__asm__ ("xgetbv" : "=a" (nXCRLow), "=d" (nXCRHigh) : "c" (0));' >> detectavx.cpp
+    echo 'float fEpsilon = 0.0000000000001f;' >> detectavx.cpp
+    echo '__m256 ymm_small = _mm256_set_ps(fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon,fEpsilon);' >> detectavx.cpp
+    echo 'return (int)nXCRLow + _mm256_movemask_ps(ymm_small); }' >> detectavx.cpp
+    echo 'int main(int argc, char**) { if( argc == 0 ) return foo(); return 0; }' >> detectavx.cpp
     echo '#else' >> detectavx.cpp
     echo 'some_error' >> detectavx.cpp
     echo '#endif' >> detectavx.cpp
@@ -18373,6 +18359,49 @@ fi
 AVXFLAGS=$AVXFLAGS
 
 HAVE_AVX_AT_COMPILE_TIME=$HAVE_AVX_AT_COMPILE_TIME
+
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking to enable LTO (link time optimization) build" >&5
+$as_echo_n "checking to enable LTO (link time optimization) build... " >&6; }
+
+# Check whether --enable-lto was given.
+if test "${enable_lto+set}" = set; then :
+  enableval=$enable_lto;
+fi
+
+
+CFLAGS_NO_LTO_IF_AVX_NONDEFAULT="$CFLAGS"
+CXXFLAGS_NO_LTO_IF_AVX_NONDEFAULT="$CXXFLAGS"
+
+if test "x$enable_lto" = "xyes" ; then
+
+
+  CXXFLAGS=`echo "$CXXFLAGS" | sed "s/-g //"`
+  CFLAGS=`echo "$CFLAGS" | sed "s/-g //"`
+
+
+  CXXFLAGS="$CXXFLAGS -flto"
+  CFLAGS="$CFLAGS -flto"
+  LDFLAGS="$LDFLAGS -flto"
+
+      if test "$HAVE_AVX_AT_COMPILE_TIME" = "yes"; then
+    if test "$AVXFLAGS" = ""; then
+        CFLAGS_NO_LTO_IF_AVX_NONDEFAULT="$CFLAGS"
+        CXXFLAGS_NO_LTO_IF_AVX_NONDEFAULT="$CXXFLAGS"
+    fi
+  fi
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+CFLAGS_NO_LTO_IF_AVX_NONDEFAULT=$CFLAGS_NO_LTO_IF_AVX_NONDEFAULT
+
+CXXFLAGS_NO_LTO_IF_AVX_NONDEFAULT=$CXXFLAGS_NO_LTO_IF_AVX_NONDEFAULT
 
 
 
@@ -20992,11 +21021,11 @@ $as_echo_n "checking for PCIDSK... " >&6; }
 PCIDSK_LIB=
 PCIDSK_INCLUDE=
 
-if test "$with_pcidsk" = "old" -o "$with_pcidsk" = "no" ; then
+if test "$with_pcidsk" = "no" ; then
 
-  PCIDSK_SETTING=old
+  PCIDSK_SETTING=no
 
-  echo "pcidsk support using pre-PCIDSK SDK (old) implementation."
+  echo "pcidsk support disabled."
 
 elif test "$with_pcidsk" = "" -o "$with_pcidsk" = "yes" -o "$with_pcidsk" = "internal" ; then
 
@@ -21014,12 +21043,16 @@ else
 
 fi
 
-PCIDSK_SETTING=$PCIDSK_SETTING
+if test "$with_pcidsk" != "no" ; then
 
-PCIDSK_LIB=$PCIDSK_LIB
+  PCIDSK_SETTING=$PCIDSK_SETTING
 
-PCIDSK_INCLUDE=$PCIDSK_INCLUDE
+  PCIDSK_LIB=$PCIDSK_LIB
 
+  PCIDSK_INCLUDE=$PCIDSK_INCLUDE
+
+
+fi
 
 
 
@@ -27264,7 +27297,7 @@ else
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: not found" >&5
 $as_echo "not found" >&6; }
             HAVE_SQLITE3="no"
-            succees="no"
+            success="no"
 
 
 fi

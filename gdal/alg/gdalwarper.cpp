@@ -249,7 +249,7 @@ GDALReprojectImage( GDALDatasetH hSrcDS, const char *pszSrcWKT,
 
     if( dfMaxError > 0.0 )
         GDALDestroyApproxTransformer( psWOptions->pTransformerArg );
-        
+
     GDALDestroyWarpOptions( psWOptions );
 
     return eErr;
@@ -268,7 +268,7 @@ CPLErr CPL_STDCALL GDALCreateAndReprojectImage(
     GDALResampleAlg eResampleAlg, double dfWarpMemoryLimit, double dfMaxError,
     GDALProgressFunc pfnProgress, void *pProgressArg, 
     GDALWarpOptions *psOptions )
-    
+
 {
     VALIDATE_POINTER1( hSrcDS, "GDALCreateAndReprojectImage", CE_Failure );
 
@@ -815,7 +815,7 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
         eErr = GDALRasterIO( hAlphaBand, GF_Write, 
                              nXOff, nYOff, nDstXSize, nDstYSize, 
                              pafMask, nDstXSize, nDstYSize, GDT_Float32,
-                             0, sizeof(float) * nXSize );
+                             0, (int)sizeof(float) * nXSize );
         return eErr;
     }
 }

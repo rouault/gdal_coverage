@@ -754,7 +754,7 @@ int GDALRasterBand::InitBlockInfo()
     if (nBlockXSize >= 10000 || nBlockYSize >= 10000)
     {
         /* Check that the block size is not overflowing int capacity as it is */
-        /* (reasonnably) assumed in many places (GDALRasterBlock::Internalize(), */
+        /* (reasonably) assumed in many places (GDALRasterBlock::Internalize(), */
         /* GDALRasterBand::Fill(), many drivers...) */
         /* As 10000 * 10000 * 16 < INT_MAX, we don't need to do the multiplication in other cases */
 
@@ -2424,7 +2424,7 @@ const char * CPL_STDCALL GDALGetRasterUnitType( GDALRasterBandH hBand )
  *
  * @param pszNewValue the new unit type value.
  *
- * @return CE_None on success or CE_Failure if not succuessful, or
+ * @return CE_None on success or CE_Failure if not successful, or
  * unsupported.
  */
 

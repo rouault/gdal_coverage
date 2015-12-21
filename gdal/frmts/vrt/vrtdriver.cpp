@@ -31,6 +31,7 @@
 #include "vrtdataset.h"
 #include "cpl_minixml.h"
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "gdal_alg_priv.h"
 
 CPL_CVSID("$Id$");
@@ -119,8 +120,11 @@ void VRTDriver::AddSourceParser( const char *pszElementName,
 
 {
     char szPtrValue[128];
+    int nRet = CPLPrintPointer( szPtrValue,
+                                reinterpret_cast<void*>(pfnParser),
+                                sizeof(szPtrValue) );
+    szPtrValue[nRet] = 0;
 
-    sprintf( szPtrValue, "%p", pfnParser );
     papszSourceParsers = CSLSetNameValue( papszSourceParsers, 
                                           pszElementName, szPtrValue );
 }
@@ -145,9 +149,9 @@ VRTSource *VRTDriver::ParseSource( CPLXMLNode *psSrc, const char *pszVRTPath )
     if( pszParserFunc == NULL )
         return NULL;
 
-    VRTSourceParser pfnParser = NULL;
-
-    sscanf( pszParserFunc, "%p", &pfnParser );
+    VRTSourceParser pfnParser = reinterpret_cast<VRTSourceParser>
+                        (CPLScanPointer(pszParserFunc,
+                                        static_cast<int>(strlen(pszParserFunc))));
 
     if( pfnParser == NULL )
         return NULL;

@@ -37,16 +37,17 @@
 
 #include <string.h>
 #include <math.h>
+
 #include "cpl_multiproc.h"
+#include "cpl_string.h"
+#include "gdal_frmts.h"
+#include "gdal_priv.h"
+#include "ogr_spatialref.h"
 
 #include "hdf.h"
 #include "mfhdf.h"
 
 #include "HdfEosDef.h"
-
-#include "gdal_priv.h"
-#include "cpl_string.h"
-#include "ogr_spatialref.h"
 
 #include "hdf4compat.h"
 #include "hdf4dataset.h"
@@ -55,17 +56,14 @@
 
 #include <algorithm>
 
-
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void GDALRegister_HDF4(void);
-CPL_C_END
 
 static const int HDF4_SDS_MAXNAMELEN = 65;
 
+extern const char * const pszGDALSignature;
+
 // Signature to recognize files written by GDAL
-const char      *pszGDALSignature =
+const char      * const pszGDALSignature =
         "Created with GDAL (http://www.remotesensing.org/gdal/)";
 
 extern CPLMutex *hHDF4Mutex;
@@ -849,6 +847,7 @@ HDF4ImageDataset::~HDF4ImageDataset()
                         break;
                     case H4ST_EOS_GRID:
                         GDclose( hHDF4 );
+                        break;
                     default:
                         break;
                 }
@@ -1337,7 +1336,7 @@ void HDF4ImageDataset::CaptureNRLGeoTransform()
 /*      Collect the four corners.                                       */
 /* -------------------------------------------------------------------- */
     double adfXY[8];
-    static const char *apszItems[] = {
+    static const char * const apszItems[] = {
         "mapUpperLeft", "mapUpperRight", "mapLowerLeft", "mapLowerRight" };
     bool bLLPossible = true;
 
@@ -2713,9 +2712,10 @@ GDALDataset *HDF4ImageDataset::Open( GDALOpenInfo * poOpenInfo )
     /* -------------------------------------------------------------------- */
     if (strlen(papszSubdatasetName[2]) == 1)
     {
+        const size_t nLen = 2 + strlen(papszSubdatasetName[3]) + 1;
         char* pszFilename = reinterpret_cast<char *>(
-            CPLMalloc( 2 + strlen(papszSubdatasetName[3]) + 1) );
-        sprintf(pszFilename, "%s:%s", papszSubdatasetName[2], papszSubdatasetName[3]);
+            CPLMalloc( nLen ) );
+        snprintf(pszFilename, nLen, "%s:%s", papszSubdatasetName[2], papszSubdatasetName[3]);
         CPLFree(papszSubdatasetName[2]);
         CPLFree(papszSubdatasetName[3]);
         papszSubdatasetName[2] = pszFilename;
@@ -3871,14 +3871,23 @@ GDALDataset *HDF4ImageDataset::Create( const char * pszFilename,
                 break;
         }
     }
-    else                                            // Should never happen
+    else
+    {
+        // Should never happen
+        CPLReleaseMutex(hHDF4Mutex); // Release mutex otherwise we'll deadlock with GDALDataset own mutex
+        delete poDS;
+        CPLAcquireMutex(hHDF4Mutex, 1000.0);
         return NULL;
+    }
 
     if ( iSDS < 0 )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
                   "Can't create SDS with rank %ld for file %s",
                   static_cast<long>( poDS->iRank ), pszFilename );
+        CPLReleaseMutex(hHDF4Mutex); // Release mutex otherwise we'll deadlock with GDALDataset own mutex
+        delete poDS;
+        CPLAcquireMutex(hHDF4Mutex, 1000.0);
         return NULL;
     }
 
@@ -3911,7 +3920,7 @@ void GDALRegister_HDF4Image()
     if( GDALGetDriverByName( "HDF4Image" ) != NULL )
         return;
 
-    GDALDriver  *poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "HDF4Image" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );

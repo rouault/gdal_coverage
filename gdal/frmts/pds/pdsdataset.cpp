@@ -42,16 +42,13 @@ static const int NULL2 = -32768;
 static const double NULL3 = -3.4028226550889044521e+38;
 
 #include "cpl_string.h"
+#include "gdal_frmts.h"
 #include "gdal_proxy.h"
 #include "nasakeywordhandler.h"
 #include "ogr_spatialref.h"
 #include "rawdataset.h"
 
 CPL_CVSID("$Id$");
-
-CPL_C_START
-void	GDALRegister_PDS(void);
-CPL_C_END
 
 enum PDSLayout
 {
@@ -1251,7 +1248,7 @@ GDALDataset *PDSDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Transfer a few interesting keywords as metadata.                */
 /* -------------------------------------------------------------------- */
-    static const char *apszKeywords[] = 
+    static const char * const apszKeywords[] = 
         { "FILTER_NAME", "DATA_SET_ID", "PRODUCT_ID", 
           "PRODUCER_INSTITUTION_NAME", "PRODUCT_TYPE", "MISSION_NAME",
           "SPACECRAFT_NAME", "INSTRUMENT_NAME", "INSTRUMENT_ID", 
@@ -1379,7 +1376,7 @@ void PDSDataset::CleanString( CPLString &osInput )
     CPLFree( pszWrk );
 }
 /************************************************************************/
-/*                         GDALRegister_PDS()                         */
+/*                         GDALRegister_PDS()                           */
 /************************************************************************/
 
 void GDALRegister_PDS()

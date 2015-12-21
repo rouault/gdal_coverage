@@ -146,7 +146,7 @@ CPLErr HFABand::LoadOverviews()
         for( int iName = 0; true; iName++ )
         {
             char  szField[128];
-            sprintf( szField, "nameList[%d].string", iName );
+            snprintf( szField, sizeof(szField), "nameList[%d].string", iName );
 
             CPLErr eErr;
             const char *pszName = poRRDNames->GetStringField( szField, &eErr );
@@ -161,7 +161,6 @@ CPLErr HFABand::LoadOverviews()
                 continue;
             }
 
-            pszName = pszEnd + 2;
             pszEnd[0] = '\0';
 
             char *pszJustFilename = CPLStrdup(CPLGetFilename(pszFilename));
@@ -337,7 +336,7 @@ CPLErr	HFABand::LoadBlockInfo()
         char	szVarName[64];
         int	nLogvalid, nCompressType;
 
-        sprintf( szVarName, "blockinfo[%d].offset", iBlock );
+        snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].offset", iBlock );
         panBlockStart[iBlock] = (GUInt32)poDMS->GetIntField( szVarName, &eErr);
         if( eErr == CE_Failure )
         {
@@ -345,7 +344,7 @@ CPLErr	HFABand::LoadBlockInfo()
             return eErr;
         }
 
-        sprintf( szVarName, "blockinfo[%d].size", iBlock );
+        snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].size", iBlock );
         panBlockSize[iBlock] = poDMS->GetIntField( szVarName, &eErr );
         if( eErr == CE_Failure )
         {
@@ -353,7 +352,7 @@ CPLErr	HFABand::LoadBlockInfo()
             return eErr;
         }
 
-        sprintf( szVarName, "blockinfo[%d].logvalid", iBlock );
+        snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].logvalid", iBlock );
         nLogvalid = poDMS->GetIntField( szVarName, &eErr );
         if( eErr == CE_Failure )
         {
@@ -361,7 +360,7 @@ CPLErr	HFABand::LoadBlockInfo()
             return eErr;
         }
 
-        sprintf( szVarName, "blockinfo[%d].compressionType", iBlock );
+        snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].compressionType", iBlock );
         nCompressType = poDMS->GetIntField( szVarName, &eErr );
         if( eErr == CE_Failure )
         {
@@ -1279,10 +1278,10 @@ void HFABand::ReAllocBlock( int iBlock, int nSize )
     }
 
     char	szVarName[64];
-    sprintf( szVarName, "blockinfo[%d].offset", iBlock );
+    snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].offset", iBlock );
     poDMS->SetIntField( szVarName, (int) panBlockStart[iBlock] );
 
-    sprintf( szVarName, "blockinfo[%d].size", iBlock );
+    snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].size", iBlock );
     poDMS->SetIntField( szVarName, panBlockSize[iBlock] );
 }
 
@@ -1452,7 +1451,7 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
             }
 
             char	szVarName[64];
-            sprintf( szVarName, "blockinfo[%d].compressionType", iBlock );
+            snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].compressionType", iBlock );
             poDMS->SetIntField( szVarName, 0 );
         }
 
@@ -1470,7 +1469,7 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
                 return CE_Failure;
             }
 
-            sprintf( szVarName, "blockinfo[%d].logvalid", iBlock );
+            snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].logvalid", iBlock );
             poDMS->SetStringField( szVarName, "true" );
 
             panBlockFlag[iBlock] |= BFLG_VALID;
@@ -1553,7 +1552,7 @@ CPLErr HFABand::SetRasterBlock( int nXBlock, int nYBlock, void * pData )
                           "block valid." );
                 return CE_Failure;
             }
-            sprintf( szVarName, "blockinfo[%d].logvalid", iBlock );
+            snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].logvalid", iBlock );
             poDMS->SetStringField( szVarName, "true" );
 
             panBlockFlag[iBlock] |= BFLG_VALID;
@@ -1648,7 +1647,7 @@ CPLErr HFABand::SetNoDataValue( double dfValue )
 
     if ( poNDNode == NULL )
     {
-        poNDNode = new HFAEntry( psInfo,
+        poNDNode = HFAEntry::New( psInfo,
                                  "Eimg_NonInitializedValue",
                                  "Eimg_NonInitializedValue",
                                  poNode );
@@ -1860,7 +1859,7 @@ CPLErr HFABand::SetPCT( int nColors,
 			double *padfAlpha)
 
 {
-    static const char *apszColNames[4] = {"Red", "Green", "Blue", "Opacity"};
+    static const char * const apszColNames[4] = {"Red", "Green", "Blue", "Opacity"};
     HFAEntry	*poEdsc_Table;
 
 /* -------------------------------------------------------------------- */
@@ -1889,7 +1888,7 @@ CPLErr HFABand::SetPCT( int nColors,
     poEdsc_Table = poNode->GetNamedChild( "Descriptor_Table" );
     if( poEdsc_Table == NULL 
         || !EQUAL(poEdsc_Table->GetType(),"Edsc_Table") )
-        poEdsc_Table = new HFAEntry( psInfo, "Descriptor_Table", 
+        poEdsc_Table = HFAEntry::New( psInfo, "Descriptor_Table", 
                                      "Edsc_Table", poNode );
 
     poEdsc_Table->SetIntField( "numrows", nColors );
@@ -1902,7 +1901,7 @@ CPLErr HFABand::SetPCT( int nColors,
         = poEdsc_Table->GetNamedChild( "#Bin_Function#" );
     if( poEdsc_BinFunction == NULL 
         || !EQUAL(poEdsc_BinFunction->GetType(),"Edsc_BinFunction") )
-        poEdsc_BinFunction = new HFAEntry( psInfo, "#Bin_Function#", 
+        poEdsc_BinFunction = HFAEntry::New( psInfo, "#Bin_Function#", 
                                            "Edsc_BinFunction", 
                                            poEdsc_Table );
 
@@ -1937,7 +1936,7 @@ CPLErr HFABand::SetPCT( int nColors,
         HFAEntry *poEdsc_Column = poEdsc_Table->GetNamedChild( pszName );
         if( poEdsc_Column == NULL 
             || !EQUAL(poEdsc_Column->GetType(),"Edsc_Column") )
-            poEdsc_Column = new HFAEntry( psInfo, pszName, "Edsc_Column", 
+            poEdsc_Column = HFAEntry::New( psInfo, pszName, "Edsc_Column", 
                                           poEdsc_Table );
 
         poEdsc_Column->SetIntField( "numRows", nColors );
@@ -1992,6 +1991,8 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
     if( CSLTestBoolean( CPLGetConfigOption( "HFA_USE_RRD", "NO" ) ) )
     {
         psRRDInfo = HFACreateDependent( psInfo );
+        if( psRRDInfo == NULL )
+            return -1;
 
         poParent = psRRDInfo->poRoot->GetNamedChild( GetBandName() );
 
@@ -1999,7 +2000,7 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
         if( poParent == NULL )
         {
             poParent = 
-                new HFAEntry( psRRDInfo, GetBandName(),
+                HFAEntry::New( psRRDInfo, GetBandName(),
                               "Eimg_Layer", psRRDInfo->poRoot );
         }
     }
@@ -2078,7 +2079,7 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
     HFAEntry *poRRDNamesList = poNode->GetNamedChild("RRDNamesList");
     if( poRRDNamesList == NULL )
     {
-        poRRDNamesList = new HFAEntry( psInfo, "RRDNamesList", 
+        poRRDNamesList = HFAEntry::New( psInfo, "RRDNamesList", 
                                        "Eimg_RRDNamesList", 
                                        poNode );
         poRRDNamesList->MakeData( 23+16+8+ 3000 /* hack for growth room*/ );
@@ -2097,13 +2098,13 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
     char szName[50];
     CPLString osNodeName;
 
-    sprintf( szName, "nameList[%d].string", iNextName );
+    snprintf( szName, sizeof(szName), "nameList[%d].string", iNextName );
 
     osLayerName.Printf( "%s(:%s:_ss_%d_)", 
                         psRRDInfo->pszFilename, GetBandName(),
                         nOverviewLevel );
 
-    // TODO: Need to add to end of array (thats pretty hard).
+    // TODO: Need to add to end of array (that is pretty hard).
     if( poRRDNamesList->SetStringField( szName, osLayerName ) != CE_None )
     {
         poRRDNamesList->MakeData( poRRDNamesList->GetDataSize() + 3000 );

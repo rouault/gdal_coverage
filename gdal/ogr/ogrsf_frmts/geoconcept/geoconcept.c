@@ -42,7 +42,7 @@ CPL_CVSID("$Id: geoconcept.c,v 1.0.0 2007-11-03 20:58:19 drichard Exp $")
 #define kIdSize_GCIO         12
 #define UNDEFINEDID_GCIO 199901L
 
-static char* gkGCCharset[]=
+static const char* const gkGCCharset[]=
 {
 /* 0 */ "",
 /* 1 */ "ANSI",
@@ -50,7 +50,7 @@ static char* gkGCCharset[]=
 /* 3 */ "MAC"
 };
 
-static char* gkGCAccess[]=
+static const char* const gkGCAccess[]=
 {
 /* 0 */ "",
 /* 1 */ "NO",
@@ -59,14 +59,14 @@ static char* gkGCAccess[]=
 /* 4 */ "WRITE"
 };
 
-static char* gkGCStatus[]=
+static const char* const gkGCStatus[]=
 {
 /* 0 */ "NONE",
 /* 1 */ "MEMO",
 /* 2 */ "EOF"
 };
 
-static char* gk3D[]=
+static const char* const gk3D[]=
 {
 /* 0 */ "",
 /* 1 */ "2D",
@@ -74,7 +74,7 @@ static char* gk3D[]=
 /* 3 */ "3D"
 };
 
-static char* gkGCTypeKind[]=
+static const char* const gkGCTypeKind[]=
 {
 /* 0 */ "",
 /* 1 */ "POINT",
@@ -271,14 +271,18 @@ static long GCIOAPI_CALL _read_GCIO (
   while ((c= VSIFGetc(h))!=EOF)
   {
     c= (0x00FF & (unsigned char)(c));
-    switch (c) {
-    case 0X1A : continue ; /* PC end-of-file           */
-    case '\r' :            /* PC '\r\n' line, MAC '\r' */
+
+    if( c ==  '\r' )            /* PC '\r\n' line, MAC '\r' */
+    {
       if ((c= VSIFGetc(h))!='\n')
       {
         VSIUngetc(c,h);
         c= '\n';
       }
+    }
+
+    switch (c) {
+    case 0X1A : continue ; /* PC end-of-file           */
     case '\n' :
       SetGCCurrentLinenum_GCIO(hGXT,GetGCCurrentLinenum_GCIO(hGXT)+1L);
       if (nread==0L) continue;
@@ -1778,7 +1782,7 @@ static OGRGeometryH GCIOAPI_CALL _buildOGRGeometry_GCIO (
   {
     buildGeom= FALSE;
   }
-  x= y= z= 0.0;
+  z= 0.0;
   switch( GetSubTypeKind_GCIO(theSubType) )
   {
     case vPoint_GCIO :
@@ -2261,6 +2265,7 @@ static OGRFeatureH GCIOAPI_CALL _buildOGRFeature_GCIO (
   else
   {
     *theSubType= _getSubType_GCIO(theClass,whereSubType);
+    CPLAssert(*theSubType != NULL);
   }
   snprintf(tdst, kItemSize_GCIO-1, "%s.%s", GetTypeName_GCIO(theClass), GetSubTypeName_GCIO(*theSubType));
   tdst[kItemSize_GCIO-1]= '\0';
@@ -2397,7 +2402,7 @@ static OGRFeatureH GCIOAPI_CALL _buildOGRFeature_GCIO (
     }
     for( i= 1 + nbf, j= 0; i<1 + nbf + nbstf; i++, j++ )
     {
-      theField= GetSubTypeField_GCIO(*theSubType,i);
+      /*theField= GetSubTypeField_GCIO(*theSubType,i); */ /* FIXME?*/
       if( pszFields[i][0]=='\0' )
         OGR_F_UnsetField(f,j);
       else
@@ -2548,7 +2553,7 @@ reloop:
     }
 #endif
   }
-  d= vUnknown3D_GCIO;
+  /*d= vUnknown3D_GCIO;*/
   theSubType= NULL;
 
   return Meta;
@@ -3573,7 +3578,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
           CPLError( CE_Failure, CPLE_AppDefined,
                     "Duplicate Name found : '%s'.\n",
                     GetGCCache_GCIO(hGCT));
-          res= OGRERR_CORRUPT_DATA;
           goto onError;
         }
         if( (k= _getHeaderValue_GCIO(k))==NULL )
@@ -3581,7 +3585,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
           CPLError( CE_Failure, CPLE_AppDefined,
                     "Invalid Name found : '%s'.\n",
                     GetGCCache_GCIO(hGCT));
-          res= OGRERR_CORRUPT_DATA;
           goto onError;
         }
         strncpy(n,k,kItemSize_GCIO-1), n[kItemSize_GCIO-1]= '\0';
@@ -3594,7 +3597,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
             CPLError( CE_Failure, CPLE_AppDefined,
                       "Duplicate ID found : '%s'.\n",
                       GetGCCache_GCIO(hGCT));
-            res= OGRERR_CORRUPT_DATA;
             goto onError;
           }
           if( (k= _getHeaderValue_GCIO(k))==NULL )
@@ -3602,7 +3604,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
             CPLError( CE_Failure, CPLE_AppDefined,
                       "Invalid ID found : '%s'.\n",
                       GetGCCache_GCIO(hGCT));
-            res= OGRERR_CORRUPT_DATA;
             goto onError;
           }
           if( sscanf(k,"%ld", &id)!=1 )
@@ -3610,7 +3611,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
             CPLError( CE_Failure, CPLE_AppDefined,
                       "Invalid ID found : '%s'.\n",
                       GetGCCache_GCIO(hGCT));
-            res= OGRERR_CORRUPT_DATA;
             goto onError;
           }
         }
@@ -3622,7 +3622,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
               CPLError( CE_Failure, CPLE_AppDefined,
                         "Duplicate Kind found : '%s'.\n",
                         GetGCCache_GCIO(hGCT));
-              res= OGRERR_CORRUPT_DATA;
               goto onError;
             }
             if( (k= _getHeaderValue_GCIO(k))==NULL )
@@ -3630,7 +3629,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
               CPLError( CE_Failure, CPLE_AppDefined,
                         "Invalid Kind found : '%s'.\n",
                         GetGCCache_GCIO(hGCT));
-              res= OGRERR_CORRUPT_DATA;
               goto onError;
             }
             if( (knd= str2GCTypeKind_GCIO(k))==vUnknownItemType_GCIO )
@@ -3638,7 +3636,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
               CPLError( CE_Failure, CPLE_AppDefined,
                         "Not supported Kind found : '%s'.\n",
                         GetGCCache_GCIO(hGCT));
-              res= OGRERR_CORRUPT_DATA;
               goto onError;
             }
           }
@@ -3650,7 +3647,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
                 CPLError( CE_Failure, CPLE_AppDefined,
                           "Duplicate Dimension found : '%s'.\n",
                           GetGCCache_GCIO(hGCT));
-                res= OGRERR_CORRUPT_DATA;
                 goto onError;
               }
               if( (k= _getHeaderValue_GCIO(k))==NULL )
@@ -3658,7 +3654,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
                 CPLError( CE_Failure, CPLE_AppDefined,
                           "Invalid Dimension found : '%s'.\n",
                           GetGCCache_GCIO(hGCT));
-                res= OGRERR_CORRUPT_DATA;
                 goto onError;
               }
               if( (sys= str2GCDim(k))==vUnknown3D_GCIO )
@@ -3666,7 +3661,6 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
                 CPLError( CE_Failure, CPLE_AppDefined,
                           "Not supported Dimension found : '%s'.\n",
                           GetGCCache_GCIO(hGCT));
-                res= OGRERR_CORRUPT_DATA;
                 goto onError;
               }
             }
@@ -3680,12 +3674,10 @@ static OGRErr GCIOAPI_CALL _readConfigSubTypeType_GCIO (
                     CPLError( CE_Failure, CPLE_AppDefined,
                               "Missing %s.\n",
                               n[0]=='\0'? "Name": id==UNDEFINEDID_GCIO? "ID": knd==vUnknownItemType_GCIO? "Kind": "3D");
-                    res= OGRERR_CORRUPT_DATA;
                     goto onError;
                   }
                   if( (theSubType= AddSubType_GCIO(hGCT,GetTypeName_GCIO(theClass),n,id,knd,sys))==NULL )
                   {
-                    res= OGRERR_CORRUPT_DATA;
                     goto onError;
                   }
                 }
@@ -3758,7 +3750,6 @@ static OGRErr GCIOAPI_CALL _readConfigType_GCIO (
           CPLError( CE_Failure, CPLE_AppDefined,
                     "Duplicate Name found : '%s'.\n",
                     GetGCCache_GCIO(hGCT));
-          res= OGRERR_CORRUPT_DATA;
           goto onError;
         }
         if( (k= _getHeaderValue_GCIO(k))==NULL )
@@ -3766,7 +3757,6 @@ static OGRErr GCIOAPI_CALL _readConfigType_GCIO (
           CPLError( CE_Failure, CPLE_AppDefined,
                     "Invalid Name found : '%s'.\n",
                     GetGCCache_GCIO(hGCT));
-          res= OGRERR_CORRUPT_DATA;
           goto onError;
         }
         strncpy(n,k,kItemSize_GCIO-1), n[kItemSize_GCIO-1]= '\0';
@@ -3779,7 +3769,6 @@ static OGRErr GCIOAPI_CALL _readConfigType_GCIO (
             CPLError( CE_Failure, CPLE_AppDefined,
                       "Duplicate ID found : '%s'.\n",
                       GetGCCache_GCIO(hGCT));
-            res= OGRERR_CORRUPT_DATA;
             goto onError;
           }
           if( (k= _getHeaderValue_GCIO(k))==NULL )
@@ -3787,7 +3776,6 @@ static OGRErr GCIOAPI_CALL _readConfigType_GCIO (
             CPLError( CE_Failure, CPLE_AppDefined,
                       "Invalid ID found : '%s'.\n",
                       GetGCCache_GCIO(hGCT));
-            res= OGRERR_CORRUPT_DATA;
             goto onError;
           }
           if( sscanf(k,"%ld", &id)!=1 )
@@ -3795,7 +3783,6 @@ static OGRErr GCIOAPI_CALL _readConfigType_GCIO (
             CPLError( CE_Failure, CPLE_AppDefined,
                       "Not supported ID found : '%s'.\n",
                       GetGCCache_GCIO(hGCT));
-            res= OGRERR_CORRUPT_DATA;
             goto onError;
           }
         }
@@ -3806,7 +3793,6 @@ static OGRErr GCIOAPI_CALL _readConfigType_GCIO (
             {
               if( n[0]=='\0' || id==UNDEFINEDID_GCIO || (theClass= AddType_GCIO(hGCT,n,id))==NULL )
               {
-                res= OGRERR_CORRUPT_DATA;
                 goto onError;
               }
             }
@@ -3819,7 +3805,6 @@ static OGRErr GCIOAPI_CALL _readConfigType_GCIO (
               {
                 if( n[0]=='\0' || id==UNDEFINEDID_GCIO || (theClass= AddType_GCIO(hGCT,n,id))==NULL )
                 {
-                  res= OGRERR_CORRUPT_DATA;
                   goto onError;
                 }
               }
@@ -3981,25 +3966,25 @@ GCExportFileMetadata GCIOAPI_CALL1(*) ReadConfig_GCIO (
         eoc= 1;
         break;
       }
-      res= OGRERR_NONE;
+
       if( strstr(GetGCCache_GCIO(hGCT),kConfigBeginMap_GCIO)!=NULL )
       {
         res= _readConfigMap_GCIO(hGCT);
       }
       else
-        if( strstr(GetGCCache_GCIO(hGCT),kConfigBeginType_GCIO)!=NULL )
-        {
-          res= _readConfigType_GCIO(hGCT);
-        }
-        else
-          if( strstr(GetGCCache_GCIO(hGCT),kConfigBeginField_GCIO)!=NULL )
-          {
-            res= _readConfigField_GCIO(hGCT);
-          }
-          else
-          { /* Skipping : Version, Origin, ... */
-            res= OGRERR_NONE;
-          }
+      if( strstr(GetGCCache_GCIO(hGCT),kConfigBeginType_GCIO)!=NULL )
+      {
+        res= _readConfigType_GCIO(hGCT);
+      }
+      else
+      if( strstr(GetGCCache_GCIO(hGCT),kConfigBeginField_GCIO)!=NULL )
+      {
+        res= _readConfigField_GCIO(hGCT);
+      }
+      else
+      { /* Skipping : Version, Origin, ... */
+        res= OGRERR_NONE;
+      }
       if( res != OGRERR_NONE )
       {
         goto onError;
@@ -4705,7 +4690,8 @@ static int GCIOAPI_CALL _findNextFeatureFieldToWrite_GCIO (
   FILE *h;
   int n, i;
   GCField* theField;
-  char* fieldName, *quotes, *escapedValue, delim;
+  char* fieldName, *escapedValue, delim;
+  const char *quotes;
 
   if( (n= CountSubTypeFields_GCIO(theSubType))==0 )
   {
@@ -4787,6 +4773,7 @@ static int GCIOAPI_CALL _findNextFeatureFieldToWrite_GCIO (
       if( VSIFPrintf(h,"%s%s%s", quotes, escapedValue, quotes)<=0 )
       {
         CPLError( CE_Failure, CPLE_AppDefined, "Write failed.\n");
+        CPLFree(escapedValue);
         return WRITEERROR_GCIO;
       }
       CPLFree(escapedValue);
@@ -5069,13 +5056,13 @@ int GCIOAPI_CALL WriteFeatureGeometry_GCIO (
   GCExportFileH* H;
   FILE *h;
   int n, i, iAn, pCS, hCS;
-  char *quotes, delim;
+  const char *quotes;
+  char delim;
 
   H= GetSubTypeGCHandle_GCIO(theSubType);
   h= GetGCHandle_GCIO(H);
   n= CountSubTypeFields_GCIO(theSubType);
   iAn= -1;
-  pCS= hCS= 0;
   if( (i= _findFieldByName_GCIO(GetSubTypeFields_GCIO(theSubType),kGraphics_GCIO))==-1 )
   {
     if( (i= _findFieldByName_GCIO(GetSubTypeFields_GCIO(theSubType),kAngle_GCIO))==-1 )
@@ -5111,6 +5098,7 @@ int GCIOAPI_CALL WriteFeatureGeometry_GCIO (
     SetMetaPlanarFormat_GCIO(GetGCMeta_GCIO(H), pCS);
   }
 
+  hCS= 0;
   if (GetSubTypeDim_GCIO(theSubType)==v3D_GCIO &&
       (hCS= GetMetaHeightFormat_GCIO(GetGCMeta_GCIO(H)))==0 )
   {
@@ -5207,7 +5195,8 @@ int GCIOAPI_CALL WriteFeatureFieldAsString_GCIO (
   GCExportFileH* H;
   FILE *h;
   int n;
-  char *quotes, *escapedValue, delim;
+  const char *quotes;
+  char *escapedValue, delim;
   GCField* theField;
 
   H= GetSubTypeGCHandle_GCIO(theSubType);

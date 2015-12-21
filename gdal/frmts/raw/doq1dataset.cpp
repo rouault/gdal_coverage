@@ -28,17 +28,14 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "rawdataset.h"
+#include "gdal_frmts.h"
 #include "cpl_string.h"
+#include "rawdataset.h"
 
 CPL_CVSID("$Id$");
 
 static double DOQGetField( unsigned char *, int );
 static void DOQGetDescription( GDALDataset *, unsigned char * );
-
-CPL_C_START
-void	GDALRegister_DOQ1(void);
-CPL_C_END
 
 #define UTM_FORMAT \
 "PROJCS[\"%s / UTM zone %dN\",GEOGCS[%s,PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433]],PROJECTION[\"Transverse_Mercator\"],PARAMETER[\"latitude_of_origin\",0],PARAMETER[\"central_meridian\",%d],PARAMETER[\"scale_factor\",0.9996],PARAMETER[\"false_easting\",500000],PARAMETER[\"false_northing\",0],%s]"
@@ -341,7 +338,7 @@ void GDALRegister_DOQ1()
     if( GDALGetDriverByName( "DOQ1" ) != NULL )
         return;
 
-    GDALDriver	*poDriver = new GDALDriver();
+    GDALDriver *poDriver = new GDALDriver();
 
     poDriver->SetDescription( "DOQ1" );
     poDriver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
