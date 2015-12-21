@@ -63,82 +63,28 @@ before_install:
   - sudo make install
   - cd ../..
   - sudo ldconfig
+  - cd gdal
+  - wget http://even.rouault.free.fr/clang-3.7.0-light/libstdc++.so.6.tar.bz2
+  - wget http://even.rouault.free.fr/clang-3.7.0-light/install-llvm-3.7.0-light.tar.bz2
+  - tar xJf libstdc++.so.6.tar.bz2
+  - tar xJf install-llvm-3.7.0-light.tar.bz2
+  - cd ..
+
 
 # installing PostGIS 2 from Ubuntu PPA draws libgdal1.9 dependency. We must install ourselves
 # in /usr too to avoid gdal version conflict. Might be fragile however
 
 install:
   - cd gdal
-  - ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-python --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-mongocxx=/usr/local
-  - make USER_DEFS="-Wextra -Werror" -j3
-  - cd apps
-  - make USER_DEFS="-Wextra -Werror" test_ogrsf
-  - cd ..
-  - cd swig/java
-  - cat java.opt | sed "s/JAVA_HOME =.*/JAVA_HOME = \/usr\/lib\/jvm\/java-7-openjdk-amd64\//" > java.opt.tmp
-  - mv java.opt.tmp java.opt
-  - make
-  - cd ../..
-  - cd swig/perl
-  - make generate
-  - make
-  - cd ../..
-  - sudo rm -f /usr/lib/libgdal.so*
-  - sudo make install
-  - sudo ldconfig
-  - cd ../autotest/cpp
-  - make -j3
-  - cd ../../gdal
-  - wget http://mdb-sqlite.googlecode.com/files/mdb-sqlite-1.0.2.tar.bz2
-  - tar xjvf mdb-sqlite-1.0.2.tar.bz2
-  - sudo cp mdb-sqlite-1.0.2/lib/*.jar /usr/lib/jvm/java-7-openjdk-amd64/jre/lib/ext
+# For libstdc++.so.6
+  - export LD_LIBRARY_PATH=$PWD
+  - export PATH=$PWD/install-llvm-3.7.0-light/bin
+  - scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-python --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-mongocxx=/usr/local
+  - scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap make -j3
+  - ! grep -r "\.c" scanbuildoutput | grep string | grep -v key | grep -v degrib | grep -v libjpeg | grep -v libpng | grep -v EHapi | grep -v GDapi | grep -v SWapi | grep -v osr_cs_wkt_parser | grep -v ods_formula_parser | grep -v swq_parser
 
-# When run in the same process after ogr_pgeo.py (with the MDB driver), FileGDB tests fail.
-# Run it in isolation
 script:
-# Perl unit tests
-  - cd swig/perl
-  - make test
-  - cd ../..
-# Java unit tests
-  - cd swig/java
-  - make test
-  - cd ../..
-# CPP unit tests
-  - cd ../autotest
-  - cd cpp
-  - GDAL_SKIP=JP2ECW make quick_test
-# Compile and test vsipreload
-  - make vsipreload.so
-  - LD_PRELOAD=./vsipreload.so gdalinfo /vsicurl/http://download.osgeo.org/gdal/data/ecw/spif83.ecw
-  - LD_PRELOAD=./vsipreload.so sqlite3  /vsicurl/http://download.osgeo.org/gdal/data/sqlite3/polygon.db "select * from polygon limit 10"
-  - cd ..
-# Download a sample file
-  - mkdir -p ogr/tmp/cache/
-  - cd ogr/tmp/cache/
-  - wget http://download.osgeo.org/gdal/data/pgeo/PGeoTest.zip
-  - unzip PGeoTest.zip
-  - cd ../../..
-# Run ogr_fgdb.py in isolation from the rest
-  - cd ogr
-  - python ogr_fgdb.py
-  - mkdir disabled
-  - mv ogr_fgdb.* disabled
-  - cd ..
-# Run ogr_pgeo.py in isolation from the rest
-  - cd ogr
-  - python ogr_pgeo.py
-  - mv ogr_pgeo.* disabled
-  - cd ..
-# Run all the Python autotests
-  - GDAL_SKIP="JP2ECW ECW" python run_all.py
-# A bit messy, but force testing with libspatialite 4.0dev (that has been patched a bit to remove any hard-coded SRS definition so it is very small)
-  - cd ogr
-  - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/libspatialite4.0dev_ubuntu12.04-64bit_srs_stripped.tar.gz
-  - tar xzf libspatialite4.0dev_ubuntu12.04-64bit_srs_stripped.tar.gz
-  - ln -s install-libspatialite-4.0dev/lib/libspatialite.so.5.0.1 libspatialite.so.3
-  - LD_LIBRARY_PATH=$PWD python ogr_sqlite.py
-  - cd ..
+  - echo "script"
 
 notifications:
   email:
