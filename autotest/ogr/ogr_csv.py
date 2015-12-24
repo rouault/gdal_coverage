@@ -217,6 +217,7 @@ def ogr_csv_7():
         gdaltest.post_reason( 'unexpected name for first layer' )
         return 'fail'
 
+    gdaltest.csv_lyr1 = None
     err = gdaltest.csv_tmpds.DeleteLayer(0)
 
     if err != 0:
@@ -1155,7 +1156,9 @@ def ogr_csv_29():
 
     ds = ogr.GetDriverByName('CSV').CreateDataSource('tmp/ogr_csv_29', options = ['GEOMETRY=AS_WKT'])
     lyr = ds.CreateLayer('test', geom_type = ogr.wkbNone)
-    lyr.CreateGeomField(ogr.GeomFieldDefn("geom__WKT_lyr1_EPSG_4326", ogr.wkbPoint))
+    if lyr.CreateGeomField(ogr.GeomFieldDefn("geom__WKT_lyr1_EPSG_4326", ogr.wkbPoint)) != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
     lyr.CreateGeomField(ogr.GeomFieldDefn("geom__WKT_lyr2_EPSG_32632", ogr.wkbPolygon))
     ds = None
 
@@ -1909,6 +1912,25 @@ def ogr_csv_41():
     return 'success'
 
 ###############################################################################
+# Test writing field with empty content
+
+def ogr_csv_42():
+
+    ds = ogr.GetDriverByName('CSV').CreateDataSource('/vsimem/ogr_csv_42.csv')
+    lyr = ds.CreateLayer('ogr_csv_42')
+    lyr.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
+    lyr.CreateField(ogr.FieldDefn('foo', ogr.OFTInteger))
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f.SetField('id', 1)
+    if lyr.CreateFeature(f) != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds = None
+
+    gdal.Unlink('/vsimem/ogr_csv_42.csv')
+    return 'success'
+
+###############################################################################
 #
 
 def ogr_csv_cleanup():
@@ -1984,6 +2006,7 @@ gdaltest_list = [
     ogr_csv_39,
     ogr_csv_40,
     ogr_csv_41,
+    ogr_csv_42,
     ogr_csv_cleanup ]
 
 if __name__ == '__main__':
