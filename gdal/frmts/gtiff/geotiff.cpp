@@ -1138,7 +1138,8 @@ GTiffRasterBand::GTiffRasterBand( GTiffDataset *poDSIn, int nBandIn) :
         {
             const int nBaseSamples = poGDS->nSamplesPerPixel - count;
 
-            if( nBand > nBaseSamples 
+            if( nBand > nBaseSamples
+                && nBand-nBaseSamples-1 < count
                 && (v[nBand-nBaseSamples-1] == EXTRASAMPLE_ASSOCALPHA
                     || v[nBand-nBaseSamples-1] == EXTRASAMPLE_UNASSALPHA) )
                 eBandInterp = GCI_AlphaBand;
@@ -4352,7 +4353,7 @@ CPLErr GTiffRasterBand::SetColorInterpretation( GDALColorInterp eInterp )
                 }
             }
 
-            if( nBand > nBaseSamples )
+            if( nBand > nBaseSamples && nBand - nBaseSamples - 1 < count )
             {
                 // We need to allocate a new array as (current) libtiff
                 // versions will not like that we reuse the array we got from
@@ -10960,14 +10961,18 @@ CPLErr GTiffDataset::OpenOffset( TIFF *hTIFFIn,
 /* -------------------------------------------------------------------- */
 /*      Should we treat this via the RGBA interface?                    */
 /* -------------------------------------------------------------------- */
-    if( bAllowRGBAInterface &&
+    if( 
+#ifdef DEBUG
+        CSLTestBoolean(CPLGetConfigOption("GTIFF_FORCE_RGBA", "NO")) ||
+#endif
+        (bAllowRGBAInterface &&
         !bTreatAsBitmap && !(nBitsPerSample > 8)
         && (nPhotometric == PHOTOMETRIC_CIELAB ||
             nPhotometric == PHOTOMETRIC_LOGL ||
             nPhotometric == PHOTOMETRIC_LOGLUV ||
             nPhotometric == PHOTOMETRIC_SEPARATED ||
             ( nPhotometric == PHOTOMETRIC_YCBCR
-              && nCompression != COMPRESSION_JPEG )) )
+              && nCompression != COMPRESSION_JPEG ))) )
     {
         char	szMessage[1024];
 
@@ -13370,7 +13375,7 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         if( TIFFGetField( hTIFF, TIFFTAG_EXTRASAMPLES, &count, &v ) )
         {
             int nBaseSamples = nBands - count;
-            if( nBands > nBaseSamples )
+            if( nBands > nBaseSamples && nBands - nBaseSamples - 1 < count )
             {
                 // We need to allocate a new array as (current) libtiff
                 // versions will not like that we reuse the array we got from
