@@ -91,7 +91,7 @@ GDALRasterBand::~GDALRasterBand()
 
     delete poBandBlockCache;
 
-    if( nBlockReads > nBlocksPerRow * nBlocksPerColumn
+    if( static_cast<GIntBig>(nBlockReads) > static_cast<GIntBig>(nBlocksPerRow) * nBlocksPerColumn
         && nBand == 1 && poDS != NULL )
     {
         CPLDebug( "GDAL", "%d block reads on %d block band 1 of %s.",
@@ -748,6 +748,12 @@ int GDALRasterBand::InitBlockInfo()
     {
         ReportError( CE_Failure, CPLE_AppDefined, "Invalid raster dimension : %d * %d",
                   nRasterXSize, nRasterYSize );
+        return FALSE;
+    }
+    
+    if( GDALGetDataTypeSize(eDataType) == 0 )
+    {
+        ReportError( CE_Failure, CPLE_AppDefined, "Invalid data type" );
         return FALSE;
     }
 
