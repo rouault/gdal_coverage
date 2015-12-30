@@ -689,15 +689,6 @@ class BMPComprRasterBand : public BMPRasterBand
 BMPComprRasterBand::BMPComprRasterBand( BMPDataset *poDSIn, int nBandIn )
     : BMPRasterBand( poDSIn, nBandIn )
 {
-    GUInt32 iComprSize = poDSIn->sFileHeader.iSize - poDSIn->sFileHeader.iOffBits;
-    GUInt32 iUncomprSize = poDS->GetRasterXSize() * poDS->GetRasterYSize();
-
-#ifdef DEBUG
-    CPLDebug( "BMP", "RLE compression detected." );
-    CPLDebug ( "BMP", "Size of compressed buffer %ld bytes,"
-               " size of uncompressed buffer %ld bytes.",
-               (long) iComprSize, (long) iUncomprSize );
-#endif
     /* TODO: it might be interesting to avoid uncompressing the whole data */
     /* in a single pass, especially if nXSize * nYSize is big */
     /* We could read incrementally one row at a time */
@@ -709,6 +700,17 @@ BMPComprRasterBand::BMPComprRasterBand( BMPDataset *poDSIn, int nBandIn )
         pabyUncomprBuf = NULL;
         return;
     }
+
+    GUInt32 iComprSize = poDSIn->sFileHeader.iSize - poDSIn->sFileHeader.iOffBits;
+    GUInt32 iUncomprSize = poDS->GetRasterXSize() * poDS->GetRasterYSize();
+
+#ifdef DEBUG
+    CPLDebug( "BMP", "RLE compression detected." );
+    CPLDebug ( "BMP", "Size of compressed buffer %ld bytes,"
+               " size of uncompressed buffer %ld bytes.",
+               (long) iComprSize, (long) iUncomprSize );
+#endif
+
     pabyComprBuf = (GByte *) VSIMalloc( iComprSize );
     pabyUncomprBuf = (GByte *) VSIMalloc( iUncomprSize );
     if (pabyComprBuf == NULL ||
@@ -1155,6 +1157,12 @@ GDALDataset *BMPDataset::Open( GDALOpenInfo * poOpenInfo )
               poDS->sInfoHeader.iXPelsPerMeter, poDS->sInfoHeader.iYPelsPerMeter,
               poDS->sInfoHeader.iClrUsed, poDS->sInfoHeader.iClrImportant );
 #endif
+    
+    if( poDS->sInfoHeader.iHeight == INT_MIN )
+    {
+        delete poDS;
+        return NULL;
+    }
 
     poDS->nRasterXSize = poDS->sInfoHeader.iWidth;
     poDS->nRasterYSize = (poDS->sInfoHeader.iHeight > 0)?
