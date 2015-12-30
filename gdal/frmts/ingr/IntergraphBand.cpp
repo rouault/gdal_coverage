@@ -98,7 +98,13 @@ IntergraphRasterBand::IntergraphRasterBand( IntergraphDataset *poDSIn,
     // -------------------------------------------------------------------- 
     // Get the image start from Words to Follow (WTF)
     // -------------------------------------------------------------------- 
-
+    if( nBandOffset > INT_MAX - (2 + ( 2 * ( hHeaderOne.WordsToFollow + 1 ) )) )
+    {
+        pabyBlockBuf = NULL;
+        CPLError(CE_Failure, CPLE_AppDefined, "Invalid header values");
+        return;
+    }
+    
     nDataOffset = nBandOffset + 2 + ( 2 * ( hHeaderOne.WordsToFollow + 1 ) );
 
     // -------------------------------------------------------------------- 
@@ -1075,7 +1081,10 @@ int IntergraphRasterBand::LoadBlockBuf( int nBlockXOff,
         return 0;
     }
 
-    return static_cast<int>(VSIFReadL( pabyBlock, 1, nReadSize, poGDS->fp ));
+    uint32 nRead = static_cast<uint32>(VSIFReadL( pabyBlock, 1, nReadSize, poGDS->fp ));
+    if( nRead < nReadSize )
+        memset( pabyBlock + nRead, 0, nReadSize - nRead );
+    return static_cast<int>(nRead);
 }
 
 //  ----------------------------------------------------------------------------
