@@ -329,6 +329,14 @@ void CPL_STDCALL INGR_GetTransMatrix( INGR_HeaderOne *pHeaderOne,
         case LowerRightHorizontal:
             INGR_MultiplyMatrix( adfConcat, pHeaderOne->TransformationMatrix, INGR_LRH_Flip ); 
             break;
+        default:
+            padfGeoTransform[0] = 0.0;
+            padfGeoTransform[1] = 1.0;
+            padfGeoTransform[2] = 0.0; 
+            padfGeoTransform[3] = 0.0;
+            padfGeoTransform[4] = 0.0;
+            padfGeoTransform[5] = 1.0;
+            return;
     }
 
     // -------------------------------------------------------------
@@ -741,7 +749,8 @@ uint32 CPL_STDCALL INGR_GetDataBlockSize( const char *pszFilename,
         // -------------------------------------------------------------
 
         VSIStatBufL  sStat;
-        if( VSIStatL( pszFilename, &sStat ) != 0 )
+        if( VSIStatL( pszFilename, &sStat ) != 0 ||
+            sStat.st_size < nDataOffset )
             return 0;
         return (uint32) (sStat.st_size - nDataOffset);
     }
@@ -750,6 +759,8 @@ uint32 CPL_STDCALL INGR_GetDataBlockSize( const char *pszFilename,
     // Until the end of the band
     // -------------------------------------------------------------
 
+    if( nBandOffset < nDataOffset )
+        return 0;
     return nBandOffset - nDataOffset;
 }
 
