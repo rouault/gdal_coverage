@@ -71,6 +71,8 @@ IntergraphRasterBand::IntergraphRasterBand( IntergraphDataset *poDSIn,
                                             int nBandIn,
                                             int nBandOffset,
                                             GDALDataType eType ) :
+    poColorTable(NULL),
+    nDataOffset(0),
     nBlockBufSize(0),
     nBandStart(nBandOffset),
     nRGBIndex(0),
@@ -199,7 +201,7 @@ IntergraphRasterBand::IntergraphRasterBand( IntergraphDataset *poDSIn,
         nBlockXSize > INT_MAX / nBlockYSize ||
         nBlockXSize > INT_MAX / 4 - 2 ||
         GDALGetDataTypeSize( eDataType ) == 0 ||
-        nBlockYSize * (GDALGetDataTypeSize( eDataType ) / 8) > INT_MAX ||
+        nBlockYSize > INT_MAX / (GDALGetDataTypeSize( eDataType ) / 8) ||
         nBlockXSize > INT_MAX / (nBlockYSize * (GDALGetDataTypeSize( eDataType ) / 8)) )
     {
         CPLError(CE_Failure, CPLE_AppDefined, "Too big block size");
