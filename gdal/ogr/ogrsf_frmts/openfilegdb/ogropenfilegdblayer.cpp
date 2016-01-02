@@ -199,6 +199,7 @@ int OGROpenFileGDBLayer::BuildGeometryColumnGDBv10()
     CPLXMLNode* psTree = CPLParseXMLString(m_osDefinition.c_str());
     if( psTree == NULL )
     {
+        m_osDefinition = "";
         return FALSE;
     }
 
@@ -209,6 +210,7 @@ int OGROpenFileGDBLayer::BuildGeometryColumnGDBv10()
         psInfo = CPLSearchXMLNode( psTree, "=DETableInfo" );
     if( psInfo == NULL )
     {
+        m_osDefinition = "";
         CPLDestroyXMLNode(psTree);
         return FALSE;
     }
@@ -358,7 +360,9 @@ int OGROpenFileGDBLayer::BuildLayerDefinition()
         }
     }
 
-    if( m_osDefinition.size() == 0 && m_iGeomFieldIdx >= 0 )
+    if( m_iGeomFieldIdx >= 0 &&
+        (m_osDefinition.size() == 0 ||
+         m_poFeatureDefn->OGRFeatureDefn::GetGeomFieldCount() == 0) )
     {
         /* FileGDB v9 case */
         FileGDBGeomField* poGDBGeomField =
