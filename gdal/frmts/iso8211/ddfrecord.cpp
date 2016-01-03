@@ -135,6 +135,7 @@ int DDFRecord::Read()
 /* -------------------------------------------------------------------- */
     size_t      nReadBytes;
 
+    CPLAssert( nFieldOffset <= nDataSize );
     nReadBytes = VSIFReadL( pachData + nFieldOffset, 1,
                             nDataSize - nFieldOffset,
                             poModule->GetFP() );
@@ -305,9 +306,8 @@ int DDFRecord::ReadHeader()
 /* -------------------------------------------------------------------- */
 /*      Is there anything seemly screwy about this record?              */
 /* -------------------------------------------------------------------- */
-    if(( _recLength <= 24 || _recLength > 100000000
+    if( ((_recLength <= 24 || _recLength > 100000000) && (_recLength != 0))
          || _fieldAreaStart < 24 || _fieldAreaStart > 100000 )
-       && (_recLength != 0))
     {
         CPLError( CE_Failure, CPLE_FileIO, 
                   "Data record appears to be corrupt on DDF file.\n"
@@ -555,6 +555,12 @@ int DDFRecord::ReadHeader()
             CPLFree(tmpBuf);
             pachData = newBuf;
             nDataSize += nFieldLength;
+        }
+
+        if( nFieldOffset >= nDataSize )
+        {
+            CPLError(CE_Failure, CPLE_AssertionFailed, "nFieldOffset < nDataSize");
+            return FALSE;
         }
 
         /* ----------------------------------------------------------------- */
@@ -1517,7 +1523,7 @@ int DDFRecord::ResetDirectory()
 /* -------------------------------------------------------------------- */
 /*      Now set each directory entry.                                   */
 /* -------------------------------------------------------------------- */
-    for( iField = 0; iField < nFieldCount; iField++ )
+    for( iField = 0; paoFields != NULL && iField < nFieldCount; iField++ )
     {
         DDFField *poField = /*GetField( iField )*/ paoFields + iField;
         DDFFieldDefn *poDefn = poField->GetFieldDefn();
