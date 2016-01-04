@@ -414,6 +414,7 @@ int main( int nArgc, char ** papszArgv )
         {
             printf( "Coordinate System is '%s'\n", pszProjection );
         }
+        OSRDestroySpatialReference(hSRS);
 
         // report layers
         if(poDS->GetLayerCount() > 0)
@@ -899,6 +900,7 @@ int main( int nArgc, char ** papszArgv )
     }
 
 exit:
+    CSLDestroy( papszArgv );
     CSLDestroy( papszDSCO );
     CSLDestroy( papszLayers );
 
