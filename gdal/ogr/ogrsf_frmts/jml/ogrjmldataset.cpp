@@ -187,11 +187,11 @@ OGRLayer * OGRJMLDataset::ICreateLayer( const char * pszLayerName,
     if (!bWriteMode || poLayer != NULL)
         return NULL;
 
-    int bAddRGBField = CSLTestBoolean(
+    bool bAddRGBField = CPLTestBool(
         CSLFetchNameValueDef(papszOptions, "CREATE_R_G_B_FIELD", "YES"));
-    int bAddOGRStyleField = CSLTestBoolean(
+    bool bAddOGRStyleField = CPLTestBool(
         CSLFetchNameValueDef(papszOptions, "CREATE_OGR_STYLE_FIELD", "NO"));
-    int bClassicGML = CSLTestBoolean(
+    bool bClassicGML = CPLTestBool(
         CSLFetchNameValueDef(papszOptions, "CLASSIC_GML", "NO"));
     poLayer = new OGRJMLWriterLayer( pszLayerName, this, fp,
                                      bAddRGBField, bAddOGRStyleField,
