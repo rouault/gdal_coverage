@@ -145,7 +145,7 @@ GDALDataset *KRODataset::Open( GDALOpenInfo * poOpenInfo )
     memcpy(&nComp, achHeader + 16, 4);
     CPL_MSBPTR32( &nComp );
 
-    if (!GDALCheckDatasetDimensions(poDS->nRasterXSize, poDS->nRasterYSize) ||
+    if (!GDALCheckDatasetDimensions(nXSize, nYSize) ||
         !GDALCheckBandCount(nComp, FALSE))
     {
         delete poDS;
@@ -184,6 +184,7 @@ GDALDataset *KRODataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Create bands.                                                   */
 /* -------------------------------------------------------------------- */
+    CPLErrorReset();
     for( int iBand = 0; iBand < nComp; iBand++ )
     {
         RawRasterBand *poBand = 
@@ -197,6 +198,11 @@ GDALDataset *KRODataset::Open( GDALOpenInfo * poOpenInfo )
             poBand->SetColorInterpretation( (GDALColorInterp) (GCI_RedBand + iBand) );
         }
         poDS->SetBand( iBand+1, poBand );
+        if( CPLGetLastErrorType() != CE_None )
+        {
+            delete poDS;
+            return NULL;
+        }
     }
 
     if( nComp > 1 )
