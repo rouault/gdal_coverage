@@ -686,8 +686,8 @@ int ReadDenseNodes(GByte* pabyData, GByte* pabyDataLimit,
             pasNodes[nNodes].nTags = nTags - nKVIndexStart;
 
             pasNodes[nNodes].nID = nID;
-            pasNodes[nNodes].dfLat = .000000001 * (psCtxt->nLatOffset + (psCtxt->nGranularity * nLat));
-            pasNodes[nNodes].dfLon = .000000001 * (psCtxt->nLonOffset + (psCtxt->nGranularity * nLon));
+            pasNodes[nNodes].dfLat = .000000001 * (psCtxt->nLatOffset + ((double)psCtxt->nGranularity * nLat));
+            pasNodes[nNodes].dfLon = .000000001 * (psCtxt->nLonOffset + ((double)psCtxt->nGranularity * nLon));
             if( pasNodes[nNodes].dfLon < -180 || pasNodes[nNodes].dfLon > 180 ||
                 pasNodes[nNodes].dfLat < -90 || pasNodes[nNodes].dfLat > 90 )
                 GOTO_END_ERROR;
@@ -696,7 +696,10 @@ int ReadDenseNodes(GByte* pabyData, GByte* pabyDataLimit,
             pasNodes[nNodes].sInfo.nChangeset = nChangeset;
             pasNodes[nNodes].sInfo.nVersion = nVersion;
             pasNodes[nNodes].sInfo.nUID = nUID;
-            pasNodes[nNodes].sInfo.pszUserSID = pszStrBuf + panStrOff[nUserSID];
+            if( panStrOff == NULL )
+                pasNodes[nNodes].sInfo.pszUserSID = "";
+            else
+                pasNodes[nNodes].sInfo.pszUserSID = pszStrBuf + panStrOff[nUserSID];
             /* pasNodes[nNodes].sInfo.nVisible = nVisible; */
             nNodes ++;
             /* printf("nLat = " CPL_FRMT_GIB "\n", nLat); printf("nLon = " CPL_FRMT_GIB "\n", nLon); */
@@ -792,12 +795,16 @@ end_error:
 /*                             ReadNode()                               */
 /************************************************************************/
 
+/* From https://github.com/openstreetmap/osmosis/blob/master/osmosis-osm-binary/src/main/protobuf/osmformat.proto */
+/* The one advertized in http://wiki.openstreetmap.org/wiki/PBF_Format and */
+/* used previously seem wrong/old-dated */
+
 #define NODE_IDX_ID      1
-#define NODE_IDX_LAT     7
-#define NODE_IDX_LON     8
-#define NODE_IDX_KEYS    9
-#define NODE_IDX_VALS    10
-#define NODE_IDX_INFO    11
+#define NODE_IDX_LAT     8
+#define NODE_IDX_LON     9
+#define NODE_IDX_KEYS    2
+#define NODE_IDX_VALS    3
+#define NODE_IDX_INFO    4
 
 static
 int ReadNode(GByte* pabyData, GByte* pabyDataLimit,
@@ -826,13 +833,13 @@ int ReadNode(GByte* pabyData, GByte* pabyDataLimit,
         {
             GIntBig nLat;
             READ_VARSINT64_NOCHECK(pabyData, pabyDataLimit, nLat);
-            sNode.dfLat = .000000001 * (psCtxt->nLatOffset + (psCtxt->nGranularity * nLat));
+            sNode.dfLat = .000000001 * (psCtxt->nLatOffset + ((double)psCtxt->nGranularity * nLat));
         }
         else if (nKey == MAKE_KEY(NODE_IDX_LON, WT_VARINT))
         {
             GIntBig nLon;
             READ_VARSINT64_NOCHECK(pabyData, pabyDataLimit, nLon);
-            sNode.dfLon = .000000001 * (psCtxt->nLonOffset + (psCtxt->nGranularity * nLon));
+            sNode.dfLon = .000000001 * (psCtxt->nLonOffset + ((double)psCtxt->nGranularity * nLon));
         }
         else if (nKey == MAKE_KEY(NODE_IDX_KEYS, WT_DATA))
         {
@@ -867,7 +874,7 @@ int ReadNode(GByte* pabyData, GByte* pabyDataLimit,
 
                 psCtxt->pasTags[sNode.nTags].pszK = psCtxt->pszStrBuf +
                                               psCtxt->panStrOff[nKey2];
-                psCtxt->pasTags[sNode.nTags].pszV = NULL;
+                psCtxt->pasTags[sNode.nTags].pszV = "";
                 sNode.nTags ++;
             }
             if (pabyData != pabyDataNewLimit)
@@ -997,7 +1004,7 @@ int ReadWay(GByte* pabyData, GByte* pabyDataLimit,
 
                 psCtxt->pasTags[sWay.nTags].pszK = psCtxt->pszStrBuf +
                                                    psCtxt->panStrOff[nKey2];
-                psCtxt->pasTags[sWay.nTags].pszV = NULL;
+                psCtxt->pasTags[sWay.nTags].pszV = "";
                 sWay.nTags ++;
             }
             if (pabyData != pabyDataNewLimit)
@@ -1161,7 +1168,7 @@ int ReadRelation(GByte* pabyData, GByte* pabyDataLimit,
 
                 psCtxt->pasTags[sRelation.nTags].pszK = psCtxt->pszStrBuf +
                                                         psCtxt->panStrOff[nKey2];
-                psCtxt->pasTags[sRelation.nTags].pszV = NULL;
+                psCtxt->pasTags[sRelation.nTags].pszV = "";
                 sRelation.nTags ++;
             }
             if (pabyData != pabyDataNewLimit)
@@ -1395,6 +1402,8 @@ int ReadPrimitiveBlock(GByte* pabyData, GByte* pabyDataLimit,
         if (nKey == MAKE_KEY(PRIMITIVEBLOCK_IDX_GRANULARITY, WT_VARINT))
         {
             READ_VARINT32(pabyData, pabyDataLimit, psCtxt->nGranularity);
+            if( psCtxt->nGranularity <= 0 )
+                GOTO_END_ERROR;
         }
         else if (nKey == MAKE_KEY(PRIMITIVEBLOCK_IDX_DATE_GRANULARITY, WT_VARINT))
         {
