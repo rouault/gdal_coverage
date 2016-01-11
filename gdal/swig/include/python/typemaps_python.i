@@ -746,7 +746,7 @@ CreateTupleFromDoubleArray( int *first, unsigned int size ) {
   for( int i = 0; i<$1; i++ ) {
     PyObject *o = PySequence_GetItem($input,i);
     GDAL_GCP *item = 0;
-    SWIG_ConvertPtr( o, (void**)&item, SWIGTYPE_p_GDAL_GCP, SWIG_POINTER_EXCEPTION | 0 );
+    CPL_IGNORE_RET_VAL(SWIG_ConvertPtr( o, (void**)&item, SWIGTYPE_p_GDAL_GCP, SWIG_POINTER_EXCEPTION | 0 ));
     if ( ! item ) {
       Py_DECREF(o);
       SWIG_fail;
@@ -1148,7 +1148,7 @@ OPTIONAL_POD(GIntBig,L);
 static CPLXMLNode *PyListToXMLTree( PyObject *pyList )
 
 {
-    int      nChildCount = 0, iChild, nType;
+    int      nChildCount = 0, iChild, nType = 0;
     CPLXMLNode *psThisNode;
     CPLXMLNode *psChild;
     char       *pszText = NULL;
@@ -1160,8 +1160,8 @@ static CPLXMLNode *PyListToXMLTree( PyObject *pyList )
         return NULL;
     }
 
-    PyArg_Parse( PyList_GET_ITEM(pyList,0), "i", &nType );
-    PyArg_Parse( PyList_GET_ITEM(pyList,1), "s", &pszText );
+    CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyList,0), "i", &nType ));
+    CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyList,1), "s", &pszText ));
 
     /* Detect "pseudo" root */
     if (nType == CXT_Element && pszText != NULL && strlen(pszText) == 0 && nChildCount == 2)
@@ -1174,8 +1174,8 @@ static CPLXMLNode *PyListToXMLTree( PyObject *pyList )
         }
         int nTypeFirst = 0;
         char* pszTextFirst = NULL;
-        PyArg_Parse( PyList_GET_ITEM(pyFirst,0), "i", &nTypeFirst );
-        PyArg_Parse( PyList_GET_ITEM(pyFirst,1), "s", &pszTextFirst );
+        CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyFirst,0), "i", &nTypeFirst ));
+        CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyFirst,1), "s", &pszTextFirst ));
         if (nTypeFirst == CXT_Element && pszTextFirst != NULL && pszTextFirst[0] == '?')
         {
             psThisNode = PyListToXMLTree( PyList_GET_ITEM(pyList,2) );
@@ -1488,7 +1488,7 @@ OBJECT_LIST_INPUT(GDALDatasetShadow);
 {
   /* %typemap(in) int buckets, GUIntBig* panHistogram -> list */
   int requested_buckets = 0;
-  SWIG_AsVal_int($input, &requested_buckets);
+  CPL_IGNORE_RET_VAL(SWIG_AsVal_int($input, &requested_buckets));
   if( requested_buckets != $1 )
   {
     $1 = requested_buckets;

@@ -4077,12 +4077,6 @@ GIntBig ComputeDatasetRasterIOSize (int buf_xsize, int buf_ysize, int nPixelSize
                                 GIntBig nPixelSpace, GIntBig nLineSpace, GIntBig nBandSpace,
                                 int bSpacingShouldBeMultipleOfPixelSize )
 {
-#if SIZEOF_VOIDP == 8
-    const GIntBig MAX_INT = (((GIntBig)0x7fffffff) << 32) | 0xffffffff;
-#else
-    const GIntBig MAX_INT = 0x7fffffff;
-#endif
-
     if (buf_xsize <= 0 || buf_ysize <= 0)
     {
         CPLError(CE_Failure, CPLE_IllegalArg, "Illegal values for buffer size");
@@ -4136,11 +4130,13 @@ GIntBig ComputeDatasetRasterIOSize (int buf_xsize, int buf_ysize, int nPixelSize
     }
 
     GIntBig nRet = (GIntBig)(buf_ysize - 1) * nLineSpace + (GIntBig)(buf_xsize - 1) * nPixelSpace + (GIntBig)(nBands - 1) * nBandSpace + nPixelSize;
-    if (nRet > MAX_INT)
+#if SIZEOF_VOIDP == 4
+    if (nRet > INT_MAX)
     {
         CPLError(CE_Failure, CPLE_IllegalArg, "Integer overflow");
         return 0;
     }
+#endif
 
     return nRet;
 }
@@ -4374,9 +4370,16 @@ SWIGINTERN GDALAsyncReaderShadow *GDALDatasetShadow_BeginAsyncReader(GDALDataset
         {
             // round up
             int nLevel = atoi(pszLevel);
-            int nRes = 2 << (nLevel - 1);
-            buf_xsize = ceil(xSize / (1.0 * nRes));
-            buf_ysize = ceil(ySize / (1.0 * nRes));
+            if( nLevel < 0 || nLevel > 30 )
+            {
+                CPLError(CE_Failure, CPLE_AppDefined, "Invalid LEVEL: %d", nLevel);
+            }
+            else
+            {
+                int nRes = 1 << nLevel;
+                buf_xsize = ceil(xSize / (1.0 * nRes));
+                buf_ysize = ceil(ySize / (1.0 * nRes));
+            }
         }
     }
 
@@ -4709,12 +4712,6 @@ GIntBig ComputeBandRasterIOSize (int buf_xsize, int buf_ysize, int nPixelSize,
                                  GIntBig nPixelSpace, GIntBig nLineSpace,
                                  int bSpacingShouldBeMultipleOfPixelSize )
 {
-#if SIZEOF_VOIDP == 8
-    const GIntBig MAX_INT = (((GIntBig)0x7fffffff) << 32) | 0xffffffff;
-#else
-    const GIntBig MAX_INT = 0x7fffffff;
-#endif
-
     if (buf_xsize <= 0 || buf_ysize <= 0)
     {
         CPLError(CE_Failure, CPLE_IllegalArg, "Illegal values for buffer size");
@@ -4752,11 +4749,13 @@ GIntBig ComputeBandRasterIOSize (int buf_xsize, int buf_ysize, int nPixelSize,
     }
 
     GIntBig nRet = (GIntBig)(buf_ysize - 1) * nLineSpace + (GIntBig)(buf_xsize - 1) * nPixelSpace + nPixelSize;
-    if (nRet > MAX_INT)
+#if SIZEOF_VOIDP == 4
+    if (nRet > INT_MAX)
     {
         CPLError(CE_Failure, CPLE_IllegalArg, "Integer overflow");
         return 0;
     }
+#endif
 
     return nRet;
 }
@@ -5724,7 +5723,7 @@ static PyObject *XMLTreeToPyList( CPLXMLNode *psTree )
 static CPLXMLNode *PyListToXMLTree( PyObject *pyList )
 
 {
-    int      nChildCount = 0, iChild, nType;
+    int      nChildCount = 0, iChild, nType = 0;
     CPLXMLNode *psThisNode;
     CPLXMLNode *psChild;
     char       *pszText = NULL;
@@ -5736,8 +5735,8 @@ static CPLXMLNode *PyListToXMLTree( PyObject *pyList )
         return NULL;
     }
 
-    PyArg_Parse( PyList_GET_ITEM(pyList,0), "i", &nType );
-    PyArg_Parse( PyList_GET_ITEM(pyList,1), "s", &pszText );
+    CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyList,0), "i", &nType ));
+    CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyList,1), "s", &pszText ));
 
     /* Detect "pseudo" root */
     if (nType == CXT_Element && pszText != NULL && strlen(pszText) == 0 && nChildCount == 2)
@@ -5750,8 +5749,8 @@ static CPLXMLNode *PyListToXMLTree( PyObject *pyList )
         }
         int nTypeFirst = 0;
         char* pszTextFirst = NULL;
-        PyArg_Parse( PyList_GET_ITEM(pyFirst,0), "i", &nTypeFirst );
-        PyArg_Parse( PyList_GET_ITEM(pyFirst,1), "s", &pszTextFirst );
+        CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyFirst,0), "i", &nTypeFirst ));
+        CPL_IGNORE_RET_VAL(PyArg_Parse( PyList_GET_ITEM(pyFirst,1), "s", &pszTextFirst ));
         if (nTypeFirst == CXT_Element && pszTextFirst != NULL && pszTextFirst[0] == '?')
         {
             psThisNode = PyListToXMLTree( PyList_GET_ITEM(pyList,2) );
@@ -8911,8 +8910,8 @@ SWIGINTERN PyObject *_wrap_MajorObject_SetMetadata(PyObject *self, PyObject *arg
   PyObject *argv[4];
   int ii;
   
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
+  if (args == NULL || !PyTuple_Check(args)) SWIG_fail;
+  argc = (int)PyObject_Length(args);
   for (ii = 0; (ii < 3) && (ii < argc); ii++) {
     argv[ii] = PyTuple_GET_ITEM(args,ii);
   }
@@ -11528,7 +11527,7 @@ SWIGINTERN PyObject *_wrap_GCPsToGeoTransform(PyObject *SWIGUNUSEDPARM(self), Py
     for( int i = 0; i<arg1; i++ ) {
       PyObject *o = PySequence_GetItem(obj0,i);
       GDAL_GCP *item = 0;
-      SWIG_ConvertPtr( o, (void**)&item, SWIGTYPE_p_GDAL_GCP, SWIG_POINTER_EXCEPTION | 0 );
+      CPL_IGNORE_RET_VAL(SWIG_ConvertPtr( o, (void**)&item, SWIGTYPE_p_GDAL_GCP, SWIG_POINTER_EXCEPTION | 0 ));
       if ( ! item ) {
         Py_DECREF(o);
         SWIG_fail;
@@ -12832,7 +12831,7 @@ SWIGINTERN PyObject *_wrap_Dataset_SetGCPs(PyObject *SWIGUNUSEDPARM(self), PyObj
     for( int i = 0; i<arg2; i++ ) {
       PyObject *o = PySequence_GetItem(obj1,i);
       GDAL_GCP *item = 0;
-      SWIG_ConvertPtr( o, (void**)&item, SWIGTYPE_p_GDAL_GCP, SWIG_POINTER_EXCEPTION | 0 );
+      CPL_IGNORE_RET_VAL(SWIG_ConvertPtr( o, (void**)&item, SWIGTYPE_p_GDAL_GCP, SWIG_POINTER_EXCEPTION | 0 ));
       if ( ! item ) {
         Py_DECREF(o);
         SWIG_fail;
@@ -17735,7 +17734,7 @@ SWIGINTERN PyObject *_wrap_Band_GetHistogram(PyObject *SWIGUNUSEDPARM(self), PyO
     {
       /* %typemap(in) int buckets, GUIntBig* panHistogram -> list */
       int requested_buckets = 0;
-      SWIG_AsVal_int(obj3, &requested_buckets);
+      CPL_IGNORE_RET_VAL(SWIG_AsVal_int(obj3, &requested_buckets));
       if( requested_buckets != arg4 )
       {
         arg4 = requested_buckets;
@@ -23306,8 +23305,8 @@ SWIGINTERN PyObject *_wrap_Transformer_TransformPoint(PyObject *self, PyObject *
   PyObject *argv[6];
   int ii;
   
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? (int)PyObject_Length(args) : 0;
+  if (args == NULL || !PyTuple_Check(args)) SWIG_fail;
+  argc = (int)PyObject_Length(args);
   for (ii = 0; (ii < 5) && (ii < argc); ii++) {
     argv[ii] = PyTuple_GET_ITEM(args,ii);
   }
