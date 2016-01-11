@@ -36,12 +36,6 @@ GIntBig ComputeDatasetRasterIOSize (int buf_xsize, int buf_ysize, int nPixelSize
                                 GIntBig nPixelSpace, GIntBig nLineSpace, GIntBig nBandSpace,
                                 int bSpacingShouldBeMultipleOfPixelSize )
 {
-#if SIZEOF_VOIDP == 8
-    const GIntBig MAX_INT = (((GIntBig)0x7fffffff) << 32) | 0xffffffff;
-#else
-    const GIntBig MAX_INT = 0x7fffffff;
-#endif
-
     if (buf_xsize <= 0 || buf_ysize <= 0)
     {
         CPLError(CE_Failure, CPLE_IllegalArg, "Illegal values for buffer size");
@@ -95,11 +89,13 @@ GIntBig ComputeDatasetRasterIOSize (int buf_xsize, int buf_ysize, int nPixelSize
     }
 
     GIntBig nRet = (GIntBig)(buf_ysize - 1) * nLineSpace + (GIntBig)(buf_xsize - 1) * nPixelSpace + (GIntBig)(nBands - 1) * nBandSpace + nPixelSize;
-    if (nRet > MAX_INT)
+#if SIZEOF_VOIDP == 4
+    if (nRet > INT_MAX)
     {
         CPLError(CE_Failure, CPLE_IllegalArg, "Integer overflow");
         return 0;
     }
+#endif
 
     return nRet;
 }
@@ -608,9 +604,16 @@ CPLErr ReadRaster(  int xoff, int yoff, int xsize, int ysize,
         {
             // round up
             int nLevel = atoi(pszLevel);
-            int nRes = 2 << (nLevel - 1);
-            buf_xsize = ceil(xSize / (1.0 * nRes));
-            buf_ysize = ceil(ySize / (1.0 * nRes));
+            if( nLevel < 0 || nLevel > 30 )
+            {
+                CPLError(CE_Failure, CPLE_AppDefined, "Invalid LEVEL: %d", nLevel);
+            }
+            else
+            {
+                int nRes = 1 << nLevel;
+                buf_xsize = ceil(xSize / (1.0 * nRes));
+                buf_ysize = ceil(ySize / (1.0 * nRes));
+            }
         }
     }
 
