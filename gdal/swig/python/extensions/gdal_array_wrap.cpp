@@ -4321,10 +4321,10 @@ SWIGINTERN PyObject *_wrap_VirtualMem_GetAddr(PyObject *SWIGUNUSEDPARM(self), Py
       buf->format = (char*) "B";
       buf->itemsize = 1;
     }
+    Py_DECREF(resultobj);
     resultobj = PyMemoryView_FromBuffer(buf);
 #else
     PyErr_SetString( PyExc_RuntimeError, "needs Python 2.7 or later" );
-    SWIG_fail;
 #endif
   }
   return resultobj;
@@ -5162,6 +5162,7 @@ SWIGINTERN PyObject *_wrap_VirtualMemGetArray(PyObject *SWIGUNUSEDPARM(self), Py
     /* Keep a reference to the VirtualMem object */
     ar->base = obj0;
     Py_INCREF(obj0);
+    Py_DECREF(resultobj);
     resultobj = (PyObject*) ar;
   }
   return resultobj;
@@ -5457,7 +5458,7 @@ SWIG_InitializeModule(void *clientdata) {
     /* This is the first module loaded for this interpreter */
     /* so set the swig module into the interpreter */
     SWIG_SetModule(clientdata, &swig_module);
-    module_head = &swig_module;
+    /*module_head = &swig_module;*/
   } else {
     /* the interpreter has loaded a SWIG module, but has it loaded this one? */
     found=0;
