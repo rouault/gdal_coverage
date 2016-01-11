@@ -9,6 +9,7 @@
  * ----------------------------------------------------------------------------- */
 
 #define SWIGPYTHON
+#define SED_HACKS
 #define SWIG_PYTHON_DIRECTOR_NO_VTABLE
 
 
@@ -3139,10 +3140,12 @@ PythonBindingErrorHandler(CPLErr eclass, int code, const char *msg )
 
 
 int GetUseExceptions() {
+  CPLErrorReset();
   return bUseExceptions;
 }
 
 void UseExceptions() {
+  CPLErrorReset();
   if( !bUseExceptions )
   {
     bUseExceptions = 1;
@@ -3152,6 +3155,7 @@ void UseExceptions() {
 }
 
 void DontUseExceptions() {
+  CPLErrorReset();
   if( bUseExceptions )
   {
     bUseExceptions = 0;
@@ -4128,12 +4132,13 @@ SWIGINTERN void OSRCoordinateTransformationShadow_TransformPoints(OSRCoordinateT
 extern "C" {
 #endif
 SWIGINTERN PyObject *_wrap_GetUseExceptions(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   int result;
   
   if (!PyArg_ParseTuple(args,(char *)":GetUseExceptions")) SWIG_fail;
   result = (int)GetUseExceptions();
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4141,11 +4146,12 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_UseExceptions(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   
   if (!PyArg_ParseTuple(args,(char *)":UseExceptions")) SWIG_fail;
   UseExceptions();
   resultobj = SWIG_Py_Void();
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4153,11 +4159,12 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_DontUseExceptions(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   
   if (!PyArg_ParseTuple(args,(char *)":DontUseExceptions")) SWIG_fail;
   DontUseExceptions();
   resultobj = SWIG_Py_Void();
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4165,7 +4172,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_GetWellKnownGeogCSAsWKT(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   char *arg1 = (char *) 0 ;
   char **arg2 = (char **) 0 ;
   int res1 ;
@@ -4195,12 +4202,14 @@ SWIGINTERN PyObject *_wrap_GetWellKnownGeogCSAsWKT(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)GetWellKnownGeogCSAsWKT((char const *)arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -4233,6 +4242,7 @@ SWIGINTERN PyObject *_wrap_GetWellKnownGeogCSAsWKT(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
@@ -4246,7 +4256,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_GetUserInputAsWKT(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   char *arg1 = (char *) 0 ;
   char **arg2 = (char **) 0 ;
   int res1 ;
@@ -4276,12 +4286,14 @@ SWIGINTERN PyObject *_wrap_GetUserInputAsWKT(PyObject *SWIGUNUSEDPARM(self), PyO
       CPLErrorReset();
     }
     result = (OGRErr)GetUserInputAsWKT((char const *)arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -4314,6 +4326,7 @@ SWIGINTERN PyObject *_wrap_GetUserInputAsWKT(PyObject *SWIGUNUSEDPARM(self), PyO
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
@@ -4327,7 +4340,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_new_SpatialReference(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   char *arg1 = (char *) "" ;
   int res1 ;
   char *buf1 = 0 ;
@@ -4351,15 +4364,18 @@ SWIGINTERN PyObject *_wrap_new_SpatialReference(PyObject *SWIGUNUSEDPARM(self), 
       CPLErrorReset();
     }
     result = (OSRSpatialReferenceShadow *)new_OSRSpatialReferenceShadow((char const *)arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_OSRSpatialReferenceShadow, SWIG_POINTER_NEW |  0 );
   if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
@@ -4368,7 +4384,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_delete_SpatialReference(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4385,14 +4401,17 @@ SWIGINTERN PyObject *_wrap_delete_SpatialReference(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     delete_OSRSpatialReferenceShadow(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_Py_Void();
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4400,7 +4419,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference___str__(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4418,12 +4437,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference___str__(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (retStringAndCPLFree *)OSRSpatialReferenceShadow___str__(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) (retStringAndCPLFree*) */
@@ -4433,6 +4454,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference___str__(PyObject *SWIGUNUSEDPARM(sel
       CPLFree(result);
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4440,7 +4462,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsSame(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   OSRSpatialReferenceShadow *arg2 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
@@ -4472,14 +4494,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsSame(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsSame(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4487,7 +4512,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsSameGeogCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   OSRSpatialReferenceShadow *arg2 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
@@ -4519,14 +4544,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsSameGeogCS(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsSameGeogCS(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4534,7 +4562,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsSameVertCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   OSRSpatialReferenceShadow *arg2 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
@@ -4566,14 +4594,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsSameVertCS(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsSameVertCS(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4581,7 +4612,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsGeographic(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4599,14 +4630,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsGeographic(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsGeographic(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4614,7 +4648,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsProjected(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4632,14 +4666,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsProjected(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsProjected(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4647,7 +4684,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsCompound(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4665,14 +4702,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsCompound(PyObject *SWIGUNUSEDPARM(
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsCompound(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4680,7 +4720,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsGeocentric(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4698,14 +4738,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsGeocentric(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsGeocentric(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4713,7 +4756,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsLocal(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4731,14 +4774,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsLocal(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsLocal(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4746,7 +4792,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_IsVertical(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4764,14 +4810,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_IsVertical(PyObject *SWIGUNUSEDPARM(
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_IsVertical(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4779,7 +4828,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_EPSGTreatsAsLatLong(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4797,14 +4846,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_EPSGTreatsAsLatLong(PyObject *SWIGUN
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_EPSGTreatsAsLatLong(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4812,7 +4864,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_EPSGTreatsAsNorthingEasting(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -4830,14 +4882,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_EPSGTreatsAsNorthingEasting(PyObject
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_EPSGTreatsAsNorthingEasting(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -4845,7 +4900,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetAuthority(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   char *arg3 = (char *) 0 ;
@@ -4892,12 +4947,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAuthority(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetAuthority(arg1,(char const *)arg2,(char const *)arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -4914,6 +4971,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAuthority(PyObject *SWIGUNUSEDPAR
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -4923,7 +4981,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetAttrValue(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   int arg3 = (int) 0 ;
@@ -4967,15 +5025,18 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetAttrValue(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (char *)OSRSpatialReferenceShadow_GetAttrValue(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_FromCharPtr((const char *)result);
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -4984,7 +5045,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetAttrValue(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   char *arg3 = (char *) 0 ;
@@ -5027,12 +5088,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAttrValue(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetAttrValue(arg1,(char const *)arg2,(char const *)arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5049,6 +5112,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAttrValue(PyObject *SWIGUNUSEDPAR
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5058,7 +5122,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetAngularUnits(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 ;
@@ -5100,12 +5164,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAngularUnits(PyObject *SWIGUNUSED
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetAngularUnits(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5121,6 +5187,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAngularUnits(PyObject *SWIGUNUSED
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5129,7 +5196,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetAngularUnits(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -5147,14 +5214,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetAngularUnits(PyObject *SWIGUNUSED
       CPLErrorReset();
     }
     result = (double)OSRSpatialReferenceShadow_GetAngularUnits(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_double(static_cast< double >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -5162,7 +5232,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetTargetLinearUnits(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   char *arg3 = (char *) 0 ;
@@ -5214,12 +5284,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTargetLinearUnits(PyObject *SWIGU
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetTargetLinearUnits(arg1,(char const *)arg2,(char const *)arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5236,6 +5308,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTargetLinearUnits(PyObject *SWIGU
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5245,7 +5318,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetLinearUnits(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 ;
@@ -5287,12 +5360,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLinearUnits(PyObject *SWIGUNUSEDP
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetLinearUnits(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5308,6 +5383,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLinearUnits(PyObject *SWIGUNUSEDP
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5316,7 +5392,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetLinearUnitsAndUpdateParameters(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 ;
@@ -5358,12 +5434,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLinearUnitsAndUpdateParameters(Py
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetLinearUnitsAndUpdateParameters(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5379,6 +5457,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLinearUnitsAndUpdateParameters(Py
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5387,7 +5466,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetLinearUnits(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -5405,14 +5484,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetLinearUnits(PyObject *SWIGUNUSEDP
       CPLErrorReset();
     }
     result = (double)OSRSpatialReferenceShadow_GetLinearUnits(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_double(static_cast< double >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -5420,7 +5502,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetLinearUnitsName(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -5438,14 +5520,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetLinearUnitsName(PyObject *SWIGUNU
       CPLErrorReset();
     }
     result = (char *)OSRSpatialReferenceShadow_GetLinearUnitsName(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_FromCharPtr((const char *)result);
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -5453,7 +5538,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetAuthorityCode(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -5481,15 +5566,18 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetAuthorityCode(PyObject *SWIGUNUSE
       CPLErrorReset();
     }
     result = (char *)OSRSpatialReferenceShadow_GetAuthorityCode(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_FromCharPtr((const char *)result);
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5498,7 +5586,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetAuthorityName(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -5526,15 +5614,18 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetAuthorityName(PyObject *SWIGUNUSE
       CPLErrorReset();
     }
     result = (char *)OSRSpatialReferenceShadow_GetAuthorityName(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_FromCharPtr((const char *)result);
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5543,7 +5634,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetUTM(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   int arg2 ;
   int arg3 = (int) 1 ;
@@ -5581,12 +5672,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetUTM(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetUTM(arg1,arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5601,6 +5694,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetUTM(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -5608,7 +5702,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetUTMZone(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -5626,14 +5720,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetUTMZone(PyObject *SWIGUNUSEDPARM(
       CPLErrorReset();
     }
     result = (int)OSRSpatialReferenceShadow_GetUTMZone(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -5641,7 +5738,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetStatePlane(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   int arg2 ;
   int arg3 = (int) 1 ;
@@ -5702,12 +5799,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetStatePlane(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetStatePlane(arg1,arg2,arg3,(char const *)arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5723,6 +5822,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetStatePlane(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc4 == SWIG_NEWOBJ) delete[] buf4;
@@ -5731,7 +5831,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_AutoIdentifyEPSG(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -5749,12 +5849,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_AutoIdentifyEPSG(PyObject *SWIGUNUSE
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_AutoIdentifyEPSG(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5769,6 +5871,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_AutoIdentifyEPSG(PyObject *SWIGUNUSE
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -5776,7 +5879,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetProjection(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -5804,12 +5907,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetProjection(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetProjection(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5825,6 +5930,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetProjection(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5833,7 +5939,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetProjParm(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 ;
@@ -5875,12 +5981,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetProjParm(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetProjParm(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -5896,6 +6004,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetProjParm(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5904,7 +6013,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetProjParm(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 = (double) 0.0 ;
@@ -5948,15 +6057,18 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetProjParm(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (double)OSRSpatialReferenceShadow_GetProjParm(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_double(static_cast< double >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5965,7 +6077,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetNormProjParm(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 ;
@@ -6007,12 +6119,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetNormProjParm(PyObject *SWIGUNUSED
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetNormProjParm(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6028,6 +6142,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetNormProjParm(PyObject *SWIGUNUSED
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -6036,7 +6151,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetNormProjParm(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 = (double) 0.0 ;
@@ -6080,15 +6195,18 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetNormProjParm(PyObject *SWIGUNUSED
       CPLErrorReset();
     }
     result = (double)OSRSpatialReferenceShadow_GetNormProjParm(arg1,(char const *)arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_double(static_cast< double >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -6097,7 +6215,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetSemiMajor(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -6115,14 +6233,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetSemiMajor(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (double)OSRSpatialReferenceShadow_GetSemiMajor(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_double(static_cast< double >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6130,7 +6251,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetSemiMinor(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -6148,14 +6269,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetSemiMinor(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (double)OSRSpatialReferenceShadow_GetSemiMinor(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_double(static_cast< double >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6163,7 +6287,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetInvFlattening(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -6181,14 +6305,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetInvFlattening(PyObject *SWIGUNUSE
       CPLErrorReset();
     }
     result = (double)OSRSpatialReferenceShadow_GetInvFlattening(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_From_double(static_cast< double >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6196,7 +6323,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetACEA(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6271,12 +6398,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetACEA(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetACEA(arg1,arg2,arg3,arg4,arg5,arg6,arg7);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6291,6 +6420,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetACEA(PyObject *SWIGUNUSEDPARM(sel
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6298,7 +6428,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetAE(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6355,12 +6485,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAE(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetAE(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6375,6 +6507,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetAE(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6382,7 +6515,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetBonne(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6439,12 +6572,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetBonne(PyObject *SWIGUNUSEDPARM(se
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetBonne(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6459,6 +6594,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetBonne(PyObject *SWIGUNUSEDPARM(se
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6466,7 +6602,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetCEA(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6523,12 +6659,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetCEA(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetCEA(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6543,6 +6681,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetCEA(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6550,7 +6689,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6607,12 +6746,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetCS(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetCS(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6627,6 +6768,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetCS(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6634,7 +6776,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetEC(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6709,12 +6851,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEC(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetEC(arg1,arg2,arg3,arg4,arg5,arg6,arg7);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6729,6 +6873,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEC(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6736,7 +6881,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetEckertIV(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6784,12 +6929,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEckertIV(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetEckertIV(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6804,6 +6951,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEckertIV(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6811,7 +6959,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetEckertVI(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6859,12 +7007,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEckertVI(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetEckertVI(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6879,6 +7029,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEckertVI(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6886,7 +7037,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetEquirectangular(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -6943,12 +7094,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEquirectangular(PyObject *SWIGUNU
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetEquirectangular(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -6963,6 +7116,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEquirectangular(PyObject *SWIGUNU
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -6970,7 +7124,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetEquirectangular2(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7036,12 +7190,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEquirectangular2(PyObject *SWIGUN
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetEquirectangular2(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7056,6 +7212,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetEquirectangular2(PyObject *SWIGUN
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7063,7 +7220,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetGaussSchreiberTMercator(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7129,12 +7286,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGaussSchreiberTMercator(PyObject 
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetGaussSchreiberTMercator(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7149,6 +7308,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGaussSchreiberTMercator(PyObject 
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7156,7 +7316,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetGS(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7204,12 +7364,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGS(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetGS(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7224,6 +7386,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGS(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7231,7 +7394,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetGH(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7279,12 +7442,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGH(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetGH(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7299,6 +7464,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGH(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7306,7 +7472,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetIGH(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -7324,12 +7490,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetIGH(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetIGH(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7344,6 +7512,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetIGH(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7351,7 +7520,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetGEOS(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7408,12 +7577,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGEOS(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetGEOS(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7428,6 +7599,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGEOS(PyObject *SWIGUNUSEDPARM(sel
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7435,7 +7607,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetGnomonic(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7492,12 +7664,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGnomonic(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetGnomonic(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7512,6 +7686,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGnomonic(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7519,7 +7694,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetHOM(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7603,12 +7778,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetHOM(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetHOM(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7623,6 +7800,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetHOM(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7630,7 +7808,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetHOM2PNO(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7723,12 +7901,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetHOM2PNO(PyObject *SWIGUNUSEDPARM(
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetHOM2PNO(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8,arg9);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7743,6 +7923,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetHOM2PNO(PyObject *SWIGUNUSEDPARM(
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7750,7 +7931,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetKrovak(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7834,12 +8015,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetKrovak(PyObject *SWIGUNUSEDPARM(s
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetKrovak(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7854,6 +8037,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetKrovak(PyObject *SWIGUNUSEDPARM(s
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7861,7 +8045,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetLAEA(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -7918,12 +8102,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLAEA(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetLAEA(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -7938,6 +8124,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLAEA(PyObject *SWIGUNUSEDPARM(sel
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -7945,7 +8132,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetLCC(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8020,12 +8207,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLCC(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetLCC(arg1,arg2,arg3,arg4,arg5,arg6,arg7);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8040,6 +8229,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLCC(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8047,7 +8237,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetLCC1SP(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8113,12 +8303,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLCC1SP(PyObject *SWIGUNUSEDPARM(s
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetLCC1SP(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8133,6 +8325,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLCC1SP(PyObject *SWIGUNUSEDPARM(s
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8140,7 +8333,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetLCCB(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8215,12 +8408,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLCCB(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetLCCB(arg1,arg2,arg3,arg4,arg5,arg6,arg7);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8235,6 +8430,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLCCB(PyObject *SWIGUNUSEDPARM(sel
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8242,7 +8438,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetMC(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8299,12 +8495,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetMC(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetMC(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8319,6 +8517,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetMC(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8326,7 +8525,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetMercator(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8392,12 +8591,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetMercator(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetMercator(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8412,6 +8613,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetMercator(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8419,7 +8621,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetMollweide(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8467,12 +8669,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetMollweide(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetMollweide(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8487,6 +8691,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetMollweide(PyObject *SWIGUNUSEDPAR
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8494,7 +8699,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetNZMG(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8551,12 +8756,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetNZMG(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetNZMG(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8571,6 +8778,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetNZMG(PyObject *SWIGUNUSEDPARM(sel
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8578,7 +8786,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetOS(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8644,12 +8852,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetOS(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetOS(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8664,6 +8874,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetOS(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8671,7 +8882,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetOrthographic(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8728,12 +8939,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetOrthographic(PyObject *SWIGUNUSED
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetOrthographic(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8748,6 +8961,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetOrthographic(PyObject *SWIGUNUSED
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8755,7 +8969,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetPolyconic(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8812,12 +9026,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetPolyconic(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetPolyconic(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8832,6 +9048,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetPolyconic(PyObject *SWIGUNUSEDPAR
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8839,7 +9056,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetPS(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8905,12 +9122,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetPS(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetPS(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -8925,6 +9144,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetPS(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -8932,7 +9152,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetRobinson(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -8980,12 +9200,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetRobinson(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetRobinson(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9000,6 +9222,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetRobinson(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9007,7 +9230,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetSinusoidal(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9055,12 +9278,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetSinusoidal(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetSinusoidal(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9075,6 +9300,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetSinusoidal(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9082,7 +9308,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetStereographic(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9148,12 +9374,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetStereographic(PyObject *SWIGUNUSE
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetStereographic(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9168,6 +9396,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetStereographic(PyObject *SWIGUNUSE
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9175,7 +9404,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetSOC(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9232,12 +9461,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetSOC(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetSOC(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9252,6 +9483,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetSOC(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9259,7 +9491,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetTM(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9325,12 +9557,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTM(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetTM(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9345,6 +9579,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTM(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9352,7 +9587,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetTMVariant(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   double arg3 ;
@@ -9428,12 +9663,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTMVariant(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetTMVariant(arg1,(char const *)arg2,arg3,arg4,arg5,arg6,arg7);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9449,6 +9686,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTMVariant(PyObject *SWIGUNUSEDPAR
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -9457,7 +9695,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetTMG(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9514,12 +9752,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTMG(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetTMG(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9534,6 +9774,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTMG(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9541,7 +9782,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetTMSO(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9607,12 +9848,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTMSO(PyObject *SWIGUNUSEDPARM(sel
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetTMSO(arg1,arg2,arg3,arg4,arg5,arg6);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9627,6 +9870,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTMSO(PyObject *SWIGUNUSEDPARM(sel
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9634,7 +9878,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetVDG(PyObject *SWIGUNUSEDPARM(self), PyObject *args, PyObject *kwargs) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9682,12 +9926,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetVDG(PyObject *SWIGUNUSEDPARM(self
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetVDG(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9702,6 +9948,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetVDG(PyObject *SWIGUNUSEDPARM(self
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9709,7 +9956,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetWellKnownGeogCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -9742,12 +9989,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetWellKnownGeogCS(PyObject *SWIGUNU
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetWellKnownGeogCS(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9763,6 +10012,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetWellKnownGeogCS(PyObject *SWIGUNU
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -9771,7 +10021,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetFromUserInput(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -9804,12 +10054,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetFromUserInput(PyObject *SWIGUNUSE
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetFromUserInput(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9825,6 +10077,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetFromUserInput(PyObject *SWIGUNUSE
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -9833,7 +10086,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_CopyGeogCSFrom(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   OSRSpatialReferenceShadow *arg2 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
@@ -9865,12 +10118,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_CopyGeogCSFrom(PyObject *SWIGUNUSEDP
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_CopyGeogCSFrom(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -9885,6 +10140,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_CopyGeogCSFrom(PyObject *SWIGUNUSEDP
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -9892,7 +10148,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetTOWGS84(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double arg2 ;
   double arg3 ;
@@ -9981,12 +10237,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTOWGS84(PyObject *SWIGUNUSEDPARM(
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetTOWGS84(arg1,arg2,arg3,arg4,arg5,arg6,arg7,arg8);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10001,6 +10259,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetTOWGS84(PyObject *SWIGUNUSEDPARM(
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -10008,7 +10267,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_GetTOWGS84(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   double *arg2 ;
   void *argp1 = 0 ;
@@ -10019,6 +10278,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetTOWGS84(PyObject *SWIGUNUSEDPARM(
   
   {
     /* %typemap(in,numinputs=0) (double argout2[ANY]) */
+    memset(argout2, 0, sizeof(argout2));
     arg2 = argout2;
   }
   if (!PyArg_ParseTuple(args,(char *)"O:SpatialReference_GetTOWGS84",&obj0)) SWIG_fail;
@@ -10032,12 +10292,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetTOWGS84(PyObject *SWIGUNUSEDPARM(
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_GetTOWGS84(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10057,6 +10319,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_GetTOWGS84(PyObject *SWIGUNUSEDPARM(
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -10064,7 +10327,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetLocalCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -10092,12 +10355,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLocalCS(PyObject *SWIGUNUSEDPARM(
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetLocalCS(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10113,6 +10378,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetLocalCS(PyObject *SWIGUNUSEDPARM(
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10121,7 +10387,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetGeogCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   char *arg3 = (char *) 0 ;
@@ -10233,12 +10499,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGeogCS(PyObject *SWIGUNUSEDPARM(s
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetGeogCS(arg1,(char const *)arg2,(char const *)arg3,(char const *)arg4,arg5,arg6,(char const *)arg7,arg8,(char const *)arg9,arg10);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10258,6 +10526,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGeogCS(PyObject *SWIGUNUSEDPARM(s
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10270,7 +10539,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetProjCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) "unnamed" ;
   void *argp1 = 0 ;
@@ -10305,12 +10574,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetProjCS(PyObject *SWIGUNUSEDPARM(s
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetProjCS(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10326,6 +10597,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetProjCS(PyObject *SWIGUNUSEDPARM(s
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10334,7 +10606,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetGeocCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) "unnamed" ;
   void *argp1 = 0 ;
@@ -10369,12 +10641,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGeocCS(PyObject *SWIGUNUSEDPARM(s
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetGeocCS(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10390,6 +10664,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetGeocCS(PyObject *SWIGUNUSEDPARM(s
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10398,7 +10673,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetVertCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) "unnamed" ;
   char *arg3 = (char *) "unnamed" ;
@@ -10451,12 +10726,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetVertCS(PyObject *SWIGUNUSEDPARM(s
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetVertCS(arg1,(char const *)arg2,(char const *)arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10473,6 +10750,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetVertCS(PyObject *SWIGUNUSEDPARM(s
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10482,7 +10760,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_SetCompoundCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   OSRSpatialReferenceShadow *arg3 = (OSRSpatialReferenceShadow *) 0 ;
@@ -10543,12 +10821,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetCompoundCS(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_SetCompoundCS(arg1,(char const *)arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10564,6 +10844,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_SetCompoundCS(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10572,7 +10853,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromWkt(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   void *argp1 = 0 ;
@@ -10601,12 +10882,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromWkt(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromWkt(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10621,6 +10904,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromWkt(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -10628,7 +10912,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromProj4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -10656,12 +10940,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromProj4(PyObject *SWIGUNUSED
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromProj4(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10677,6 +10963,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromProj4(PyObject *SWIGUNUSED
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10685,7 +10972,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromUrl(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -10718,12 +11005,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromUrl(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromUrl(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10739,6 +11028,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromUrl(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -10747,7 +11037,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromESRI(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   void *argp1 = 0 ;
@@ -10815,12 +11105,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromESRI(PyObject *SWIGUNUSEDP
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromESRI(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10839,6 +11131,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromESRI(PyObject *SWIGUNUSEDP
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -10850,7 +11143,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromEPSG(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   int arg2 ;
   void *argp1 = 0 ;
@@ -10877,12 +11170,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromEPSG(PyObject *SWIGUNUSEDP
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromEPSG(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10897,6 +11192,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromEPSG(PyObject *SWIGUNUSEDP
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -10904,7 +11200,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromEPSGA(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   int arg2 ;
   void *argp1 = 0 ;
@@ -10931,12 +11227,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromEPSGA(PyObject *SWIGUNUSED
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromEPSGA(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -10951,6 +11249,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromEPSGA(PyObject *SWIGUNUSED
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -10958,7 +11257,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromPCI(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   char *arg3 = (char *) "METRE" ;
@@ -11027,12 +11326,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromPCI(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromPCI(arg1,(char const *)arg2,(char const *)arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11049,6 +11350,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromPCI(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -11058,7 +11360,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromUSGS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   long arg2 ;
   long arg3 = (long) 0 ;
@@ -11136,12 +11438,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromUSGS(PyObject *SWIGUNUSEDP
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromUSGS(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11156,6 +11460,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromUSGS(PyObject *SWIGUNUSEDP
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -11163,7 +11468,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromXML(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -11191,12 +11496,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromXML(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromXML(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11212,6 +11519,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromXML(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -11220,7 +11528,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromERM(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   char *arg3 = (char *) 0 ;
@@ -11278,12 +11586,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromERM(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromERM(arg1,(char const *)arg2,(char const *)arg3,(char const *)arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11301,6 +11611,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromERM(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -11311,7 +11622,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromMICoordSys(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char *arg2 = (char *) 0 ;
   void *argp1 = 0 ;
@@ -11339,12 +11650,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromMICoordSys(PyObject *SWIGU
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromMICoordSys(arg1,(char const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11360,6 +11673,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromMICoordSys(PyObject *SWIGU
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -11368,7 +11682,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromOzi(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   void *argp1 = 0 ;
@@ -11441,12 +11755,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromOzi(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ImportFromOzi(arg1,(char const *const *)arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11465,6 +11781,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ImportFromOzi(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -11476,7 +11793,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ExportToWkt(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   void *argp1 = 0 ;
@@ -11500,12 +11817,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToWkt(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ExportToWkt(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11537,6 +11856,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToWkt(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -11549,7 +11869,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ExportToPrettyWkt(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   int arg3 = (int) 0 ;
@@ -11584,12 +11904,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToPrettyWkt(PyObject *SWIGUNUS
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ExportToPrettyWkt(arg1,arg2,arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11621,6 +11943,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToPrettyWkt(PyObject *SWIGUNUS
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -11633,7 +11956,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ExportToProj4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   void *argp1 = 0 ;
@@ -11657,12 +11980,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToProj4(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ExportToProj4(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11694,6 +12019,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToProj4(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -11706,7 +12032,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ExportToPCI(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   char **arg3 = (char **) 0 ;
@@ -11729,6 +12055,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToPCI(PyObject *SWIGUNUSEDPARM
   }
   {
     /* %typemap(in,numinputs=0) (double *argout4[ANY]) */
+    argout4 = NULL;
     arg4 = &argout4;
   }
   if (!PyArg_ParseTuple(args,(char *)"O:SpatialReference_ExportToPCI",&obj0)) SWIG_fail;
@@ -11742,12 +12069,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToPCI(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ExportToPCI(arg1,arg2,arg3,arg4);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11805,6 +12134,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToPCI(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -11826,7 +12156,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ExportToUSGS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   long *arg2 = (long *) 0 ;
   long *arg3 = (long *) 0 ;
@@ -11848,6 +12178,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToUSGS(PyObject *SWIGUNUSEDPAR
   arg3 = &temp3;
   {
     /* %typemap(in,numinputs=0) (double *argout4[ANY]) */
+    argout4 = NULL;
     arg4 = &argout4;
   }
   arg5 = &temp5;
@@ -11862,12 +12193,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToUSGS(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ExportToUSGS(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11909,6 +12242,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToUSGS(PyObject *SWIGUNUSEDPAR
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -11920,7 +12254,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ExportToXML(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   char *arg3 = (char *) "" ;
@@ -11956,12 +12290,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToXML(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ExportToXML(arg1,arg2,(char const *)arg3);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -11994,6 +12330,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToXML(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -12007,7 +12344,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_ExportToMICoordSys(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   char **arg2 = (char **) 0 ;
   void *argp1 = 0 ;
@@ -12031,12 +12368,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToMICoordSys(PyObject *SWIGUNU
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_ExportToMICoordSys(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -12068,6 +12407,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_ExportToMICoordSys(PyObject *SWIGUNU
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -12080,7 +12420,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_CloneGeogCS(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12098,14 +12438,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_CloneGeogCS(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OSRSpatialReferenceShadow *)OSRSpatialReferenceShadow_CloneGeogCS(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_OSRSpatialReferenceShadow, SWIG_POINTER_OWN |  0 );
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12113,7 +12456,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_Clone(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12131,14 +12474,17 @@ SWIGINTERN PyObject *_wrap_SpatialReference_Clone(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OSRSpatialReferenceShadow *)OSRSpatialReferenceShadow_Clone(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_OSRSpatialReferenceShadow, SWIG_POINTER_OWN |  0 );
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12146,7 +12492,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_Validate(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12164,12 +12510,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_Validate(PyObject *SWIGUNUSEDPARM(se
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_Validate(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -12184,6 +12532,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_Validate(PyObject *SWIGUNUSEDPARM(se
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12191,7 +12540,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_StripCTParms(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12209,12 +12558,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_StripCTParms(PyObject *SWIGUNUSEDPAR
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_StripCTParms(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -12229,6 +12580,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_StripCTParms(PyObject *SWIGUNUSEDPAR
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12236,7 +12588,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_FixupOrdering(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12254,12 +12606,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_FixupOrdering(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_FixupOrdering(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -12274,6 +12628,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_FixupOrdering(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12281,7 +12636,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_Fixup(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12299,12 +12654,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_Fixup(PyObject *SWIGUNUSEDPARM(self)
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_Fixup(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -12319,6 +12676,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_Fixup(PyObject *SWIGUNUSEDPARM(self)
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12326,7 +12684,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_MorphToESRI(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12344,12 +12702,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_MorphToESRI(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_MorphToESRI(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -12364,6 +12724,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_MorphToESRI(PyObject *SWIGUNUSEDPARM
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12371,7 +12732,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_SpatialReference_MorphFromESRI(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12389,12 +12750,14 @@ SWIGINTERN PyObject *_wrap_SpatialReference_MorphFromESRI(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OGRErr)OSRSpatialReferenceShadow_MorphFromESRI(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   {
     /* %typemap(out) OGRErr */
@@ -12409,6 +12772,7 @@ SWIGINTERN PyObject *_wrap_SpatialReference_MorphFromESRI(PyObject *SWIGUNUSEDPA
       resultobj = PyInt_FromLong( result );
     }
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12423,7 +12787,7 @@ SWIGINTERN PyObject *SpatialReference_swigregister(PyObject *SWIGUNUSEDPARM(self
 }
 
 SWIGINTERN PyObject *_wrap_new_CoordinateTransformation(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   OSRSpatialReferenceShadow *arg2 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
@@ -12450,14 +12814,17 @@ SWIGINTERN PyObject *_wrap_new_CoordinateTransformation(PyObject *SWIGUNUSEDPARM
       CPLErrorReset();
     }
     result = (OSRCoordinateTransformationShadow *)new_OSRCoordinateTransformationShadow(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_OSRCoordinateTransformationShadow, SWIG_POINTER_NEW |  0 );
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12465,7 +12832,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_delete_CoordinateTransformation(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRCoordinateTransformationShadow *arg1 = (OSRCoordinateTransformationShadow *) 0 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
@@ -12482,14 +12849,17 @@ SWIGINTERN PyObject *_wrap_delete_CoordinateTransformation(PyObject *SWIGUNUSEDP
       CPLErrorReset();
     }
     delete_OSRCoordinateTransformationShadow(arg1);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_Py_Void();
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12497,7 +12867,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoint__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRCoordinateTransformationShadow *arg1 = (OSRCoordinateTransformationShadow *) 0 ;
   double *arg2 ;
   void *argp1 = 0 ;
@@ -12541,12 +12911,14 @@ SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoint__SWIG_0(PyObj
       CPLErrorReset();
     }
     OSRCoordinateTransformationShadow_TransformPoint__SWIG_0(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_Py_Void();
   {
@@ -12554,6 +12926,7 @@ SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoint__SWIG_0(PyObj
     PyObject *out = CreateTupleFromDoubleArray( arg2, 3 );
     resultobj = t_output_helper(resultobj,out);
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12561,7 +12934,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoint__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRCoordinateTransformationShadow *arg1 = (OSRCoordinateTransformationShadow *) 0 ;
   double *arg2 ;
   double arg3 ;
@@ -12583,6 +12956,7 @@ SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoint__SWIG_1(PyObj
   
   {
     /* %typemap(in,numinputs=0) (double argout2[ANY]) */
+    memset(argout2, 0, sizeof(argout2));
     arg2 = argout2;
   }
   if (!PyArg_ParseTuple(args,(char *)"OOO|O:CoordinateTransformation_TransformPoint",&obj0,&obj1,&obj2,&obj3)) SWIG_fail;
@@ -12613,12 +12987,14 @@ SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoint__SWIG_1(PyObj
       CPLErrorReset();
     }
     OSRCoordinateTransformationShadow_TransformPoint__SWIG_1(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_Py_Void();
   {
@@ -12626,6 +13002,7 @@ SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoint__SWIG_1(PyObj
     PyObject *out = CreateTupleFromDoubleArray( arg2, 3 );
     resultobj = t_output_helper(resultobj,out);
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -12697,7 +13074,7 @@ fail:
 
 
 SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoints(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRCoordinateTransformationShadow *arg1 = (OSRCoordinateTransformationShadow *) 0 ;
   int arg2 ;
   double *arg3 = (double *) 0 ;
@@ -12745,12 +13122,14 @@ SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoints(PyObject *SW
       CPLErrorReset();
     }
     OSRCoordinateTransformationShadow_TransformPoints(arg1,arg2,arg3,arg4,arg5);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_Py_Void();
   {
@@ -12772,6 +13151,7 @@ SWIGINTERN PyObject *_wrap_CoordinateTransformation_TransformPoints(PyObject *SW
     VSIFree(arg4);
     VSIFree(arg5);
   }
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   {
@@ -12792,7 +13172,7 @@ SWIGINTERN PyObject *CoordinateTransformation_swigregister(PyObject *SWIGUNUSEDP
 }
 
 SWIGINTERN PyObject *_wrap_CreateCoordinateTransformation(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OSRSpatialReferenceShadow *arg1 = (OSRSpatialReferenceShadow *) 0 ;
   OSRSpatialReferenceShadow *arg2 = (OSRSpatialReferenceShadow *) 0 ;
   void *argp1 = 0 ;
@@ -12819,14 +13199,17 @@ SWIGINTERN PyObject *_wrap_CreateCoordinateTransformation(PyObject *SWIGUNUSEDPA
       CPLErrorReset();
     }
     result = (OSRCoordinateTransformationShadow *)CreateCoordinateTransformation(arg1,arg2);
+#ifndef SED_HACKS
     if ( bUseExceptions ) {
       CPLErr eclass = CPLGetLastErrorType();
       if ( eclass == CE_Failure || eclass == CE_Fatal ) {
         SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
       }
     }
+#endif
   }
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_OSRCoordinateTransformationShadow, SWIG_POINTER_OWN |  0 );
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
   return resultobj;
 fail:
   return NULL;
@@ -13139,7 +13522,7 @@ SWIG_InitializeModule(void *clientdata) {
     /* This is the first module loaded for this interpreter */
     /* so set the swig module into the interpreter */
     SWIG_SetModule(clientdata, &swig_module);
-    module_head = &swig_module;
+    /*module_head = &swig_module;*/
   } else {
     /* the interpreter has loaded a SWIG module, but has it loaded this one? */
     found=0;
