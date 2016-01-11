@@ -169,10 +169,7 @@
 %typemap(ret) OGRErr
 {
   /* %typemap(ret) OGRErr */
-  if (resultobj == Py_None ) {
-    resultobj = 0;
-  }
-  if (resultobj == 0) {
+  if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
     resultobj = PyInt_FromLong( $1 );
   }
 }
@@ -1042,7 +1039,7 @@ CreateTupleFromDoubleArray( int *first, unsigned int size ) {
 {
   /* %typemap(argout) (char **argout) */
   PyObject *o;
-  if ( $1 != NULL && *$1 != NULL) {
+  if ( ReturnSame($1) != NULL && *$1 != NULL ) {
     o = GDALPythonObjectFromCStr( *$1 );
   }
   else {
