@@ -3177,6 +3177,23 @@ SWIGINTERNINLINE PyObject*
 }
 
 
+/* Completely unrelated: just to avoid Coverity warnings */
+
+static int bReturnSame = 1;
+
+void NeverCallMePlease() {
+    bReturnSame = 0;
+}
+
+/* Some SWIG code generates dead code, which Coverity warns about */
+static int ReturnSame(int x)
+{
+    if( bReturnSame )
+        return x;
+    return 0;
+}
+
+
 
 /* Return a PyObject* from a NULL terminated C String */
 static PyObject* GDALPythonObjectFromCStr(const char *pszStr)
@@ -3246,7 +3263,13 @@ static void GDALPythonFreeCStr(void* ptr, int bToFree)
 
 int wrapper_VSIFReadL( void **buf, int nMembSize, int nMembCount, VSILFILE *fp)
 {
-    GIntBig buf_size = nMembSize * nMembCount;
+    GUIntBig buf_size = (GUIntBig)nMembSize * nMembCount;
+    if( nMembSize < 0 || nMembCount < 0 || buf_size > 0xFFFFFFFFU )
+   {
+        CPLError(CE_Failure, CPLE_AppDefined, "Too big request");
+        *buf = NULL;
+        return 0;
+    }
 
     if (buf_size == 0)
     {
@@ -3264,8 +3287,8 @@ int wrapper_VSIFReadL( void **buf, int nMembSize, int nMembCount, VSILFILE *fp)
     }
     PyObject* o = (PyObject*) *buf;
     char *data = PyBytes_AsString(o);
-    GIntBig nRet = (GIntBig)VSIFReadL( data, nMembSize, nMembCount, fp );
-    if (nRet * nMembSize < buf_size)
+    size_t nRet = (size_t)VSIFReadL( data, nMembSize, nMembCount, fp );
+    if (nRet * (size_t)nMembSize < buf_size)
     {
         _PyBytes_Resize(&o, nRet * nMembSize);
         *buf = o;
@@ -3281,8 +3304,8 @@ int wrapper_VSIFReadL( void **buf, int nMembSize, int nMembCount, VSILFILE *fp)
     }
     PyObject* o = (PyObject*) *buf;
     char *data = PyString_AsString(o);
-    GIntBig nRet = (GIntBig)VSIFReadL( data, nMembSize, nMembCount, fp );
-    if (nRet * nMembSize < buf_size)
+    size_t nRet = (size_t)VSIFReadL( data, nMembSize, nMembCount, fp );
+    if (nRet * (size_t)nMembSize < buf_size)
     {
         _PyString_Resize(&o, nRet * nMembSize);
         *buf = o;
@@ -4421,6 +4444,11 @@ SWIGINTERN GDALAsyncReaderShadow *GDALDatasetShadow_BeginAsyncReader(GDALDataset
     GDALAsyncReaderH hAsyncReader =
             GDALBeginAsyncReader(self, xOff, yOff, xSize, ySize, (void*) buf_string, nxsize, nysize, ntype, nBCount, pBandList, nPixelSpace, nLineSpace,
     nBandSpace, options);
+
+    if ( myBandList ) {
+       CPLFree( pBandList );
+    }
+
     if (hAsyncReader)
     {
         return (GDALAsyncReader*) CreateAsyncReaderWrapper(hAsyncReader, pyObject);
@@ -4428,10 +4456,6 @@ SWIGINTERN GDALAsyncReaderShadow *GDALDatasetShadow_BeginAsyncReader(GDALDataset
     else
     {
         return NULL;
-    }
-
-    if ( myBandList ) {
-       CPLFree( pBandList );
     }
 
   }
@@ -5869,6 +5893,9 @@ GDALDriverShadow *IdentifyDriver( const char *utf8_path,
   char **GeneralCmdLineProcessor( char **papszArgv, int nOptions = 0 ) {
     int nResArgCount;
 
+    if( papszArgv == NULL )
+        return NULL;
+
     nResArgCount =
       GDALGeneralCmdLineProcessor( CSLCount(papszArgv), &papszArgv, nOptions );
 
@@ -6381,16 +6408,6 @@ SWIGINTERN PyObject *_wrap_SetErrorHandler(PyObject *SWIGUNUSEDPARM(self), PyObj
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
   if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc1 == SWIG_NEWOBJ) delete[] buf1;
@@ -6456,16 +6473,6 @@ SWIGINTERN PyObject *_wrap_PushErrorHandler(PyObject *SWIGUNUSEDPARM(self), PyOb
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -6814,7 +6821,7 @@ SWIGINTERN PyObject *_wrap_EscapeString(PyObject *SWIGUNUSEDPARM(self), PyObject
   }
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -6822,7 +6829,7 @@ SWIGINTERN PyObject *_wrap_EscapeString(PyObject *SWIGUNUSEDPARM(self), PyObject
 fail:
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -7348,7 +7355,7 @@ SWIGINTERN PyObject *_wrap_CPLBinaryToHex(PyObject *SWIGUNUSEDPARM(self), PyObje
   }
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -7356,7 +7363,7 @@ SWIGINTERN PyObject *_wrap_CPLBinaryToHex(PyObject *SWIGUNUSEDPARM(self), PyObje
 fail:
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -7492,7 +7499,7 @@ SWIGINTERN PyObject *_wrap_FileFromMemBuffer(PyObject *SWIGUNUSEDPARM(self), PyO
   }
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc2 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc2) == SWIG_NEWOBJ ) {
       delete[] arg3;
     }
   }
@@ -7504,7 +7511,7 @@ fail:
   }
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc2 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc2) == SWIG_NEWOBJ ) {
       delete[] arg3;
     }
   }
@@ -8362,7 +8369,7 @@ SWIGINTERN PyObject *_wrap_VSIFWriteL(PyObject *SWIGUNUSEDPARM(self), PyObject *
   resultobj = SWIG_From_int(static_cast< int >(result));
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -8370,7 +8377,7 @@ SWIGINTERN PyObject *_wrap_VSIFWriteL(PyObject *SWIGUNUSEDPARM(self), PyObject *
 fail:
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -8815,16 +8822,6 @@ SWIGINTERN PyObject *_wrap_MajorObject_SetMetadata__SWIG_0(PyObject *SWIGUNUSEDP
     CSLDestroy( arg2 );
   }
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   {
@@ -8887,16 +8884,6 @@ SWIGINTERN PyObject *_wrap_MajorObject_SetMetadata__SWIG_1(PyObject *SWIGUNUSEDP
   resultobj = SWIG_From_int(static_cast< int >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -9101,16 +9088,6 @@ SWIGINTERN PyObject *_wrap_MajorObject_SetMetadataItem(PyObject *SWIGUNUSEDPARM(
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
   if (alloc4 == SWIG_NEWOBJ) delete[] buf4;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -9637,16 +9614,6 @@ SWIGINTERN PyObject *_wrap_Driver_Delete(PyObject *SWIGUNUSEDPARM(self), PyObjec
     /* %typemap(freearg) (const char *utf8_path) */
     GDALPythonFreeCStr(arg2, bToFree2);
   }
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   {
@@ -9716,16 +9683,6 @@ SWIGINTERN PyObject *_wrap_Driver_Rename(PyObject *SWIGUNUSEDPARM(self), PyObjec
   resultobj = SWIG_From_int(static_cast< int >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -9793,16 +9750,6 @@ SWIGINTERN PyObject *_wrap_Driver_CopyFiles(PyObject *SWIGUNUSEDPARM(self), PyOb
   resultobj = SWIG_From_int(static_cast< int >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -11880,25 +11827,25 @@ SWIGINTERN PyObject *_wrap_AsyncReader_GetNextUpdatedRegion(PyObject *SWIGUNUSED
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  if (SWIG_IsTmpObj(res3)) {
+  if (ReturnSame(SWIG_IsTmpObj(res3))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg3)));
   } else {
     int new_flags = SWIG_IsNewObj(res3) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg3), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res4)) {
+  if (ReturnSame(SWIG_IsTmpObj(res4))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg4)));
   } else {
     int new_flags = SWIG_IsNewObj(res4) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg4), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res5)) {
+  if (ReturnSame(SWIG_IsTmpObj(res5))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg5)));
   } else {
     int new_flags = SWIG_IsNewObj(res5) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg5), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res6)) {
+  if (ReturnSame(SWIG_IsTmpObj(res6))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg6)));
   } else {
     int new_flags = SWIG_IsNewObj(res6) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
@@ -12357,16 +12304,6 @@ SWIGINTERN PyObject *_wrap_Dataset_SetProjection(PyObject *SWIGUNUSEDPARM(self),
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -12502,16 +12439,6 @@ SWIGINTERN PyObject *_wrap_Dataset_SetGeoTransform(PyObject *SWIGUNUSEDPARM(self
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -12866,16 +12793,6 @@ SWIGINTERN PyObject *_wrap_Dataset_SetGCPs(PyObject *SWIGUNUSEDPARM(self), PyObj
     }
   }
   if (alloc4 == SWIG_NEWOBJ) delete[] buf4;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   {
@@ -13018,16 +12935,6 @@ SWIGINTERN PyObject *_wrap_Dataset_AddBand(PyObject *SWIGUNUSEDPARM(self), PyObj
     /* %typemap(freearg) char **options */
     CSLDestroy( arg3 );
   }
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   {
@@ -13074,16 +12981,6 @@ SWIGINTERN PyObject *_wrap_Dataset_CreateMaskBand(PyObject *SWIGUNUSEDPARM(self)
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -13387,7 +13284,7 @@ SWIGINTERN PyObject *_wrap_Dataset_WriteRaster(PyObject *SWIGUNUSEDPARM(self), P
   resultobj = SWIG_From_int(static_cast< int >(result));
   {
     /* %typemap(freearg) (GIntBig *nLen, char *pBuf ) */
-    if( alloc6 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc6) == SWIG_NEWOBJ ) {
       delete[] arg7;
     }
   }
@@ -13397,21 +13294,11 @@ SWIGINTERN PyObject *_wrap_Dataset_WriteRaster(PyObject *SWIGUNUSEDPARM(self), P
       free((void*) arg12);
     }
   }
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   {
     /* %typemap(freearg) (GIntBig *nLen, char *pBuf ) */
-    if( alloc6 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc6) == SWIG_NEWOBJ ) {
       delete[] arg7;
     }
   }
@@ -14495,10 +14382,7 @@ SWIGINTERN PyObject *_wrap_Dataset_DeleteLayer(PyObject *SWIGUNUSEDPARM(self), P
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -14915,10 +14799,7 @@ SWIGINTERN PyObject *_wrap_Dataset_StartTransaction(PyObject *SWIGUNUSEDPARM(sel
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -14963,10 +14844,7 @@ SWIGINTERN PyObject *_wrap_Dataset_CommitTransaction(PyObject *SWIGUNUSEDPARM(se
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -15011,10 +14889,7 @@ SWIGINTERN PyObject *_wrap_Dataset_RollbackTransaction(PyObject *SWIGUNUSEDPARM(
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -15313,16 +15188,6 @@ SWIGINTERN PyObject *_wrap_Dataset_ReadRaster1(PyObject *SWIGUNUSEDPARM(self), P
     CPLFree(psProgressInfo);
     
   }
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   {
@@ -15547,13 +15412,13 @@ SWIGINTERN PyObject *_wrap_Band_GetBlockSize(PyObject *SWIGUNUSEDPARM(self), PyO
     }
   }
   resultobj = SWIG_Py_Void();
-  if (SWIG_IsTmpObj(res2)) {
+  if (ReturnSame(SWIG_IsTmpObj(res2))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg2)));
   } else {
     int new_flags = SWIG_IsNewObj(res2) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg2), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res3)) {
+  if (ReturnSame(SWIG_IsTmpObj(res3))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg3)));
   } else {
     int new_flags = SWIG_IsNewObj(res3) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
@@ -15667,16 +15532,6 @@ SWIGINTERN PyObject *_wrap_Band_SetColorInterpretation(PyObject *SWIGUNUSEDPARM(
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -15719,16 +15574,6 @@ SWIGINTERN PyObject *_wrap_Band_SetRasterColorInterpretation(PyObject *SWIGUNUSE
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -15825,16 +15670,6 @@ SWIGINTERN PyObject *_wrap_Band_SetNoDataValue(PyObject *SWIGUNUSEDPARM(self), P
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -15868,16 +15703,6 @@ SWIGINTERN PyObject *_wrap_Band_DeleteNoDataValue(PyObject *SWIGUNUSEDPARM(self)
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -15955,16 +15780,6 @@ SWIGINTERN PyObject *_wrap_Band_SetUnitType(PyObject *SWIGUNUSEDPARM(self), PyOb
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -16100,16 +15915,6 @@ SWIGINTERN PyObject *_wrap_Band_SetRasterCategoryNames(PyObject *SWIGUNUSEDPARM(
   {
     /* %typemap(freearg) char **options */
     CSLDestroy( arg2 );
-  }
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
   }
   return resultobj;
 fail:
@@ -16373,16 +16178,6 @@ SWIGINTERN PyObject *_wrap_Band_SetOffset(PyObject *SWIGUNUSEDPARM(self), PyObje
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -16425,16 +16220,6 @@ SWIGINTERN PyObject *_wrap_Band_SetScale(PyObject *SWIGUNUSEDPARM(self), PyObjec
     }
   }
   resultobj = SWIG_From_int(static_cast< int >(result));
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   return NULL;
@@ -16504,39 +16289,29 @@ SWIGINTERN PyObject *_wrap_Band_GetStatistics(PyObject *SWIGUNUSEDPARM(self), Py
   {
     /* %typemap(out) IF_ERROR_RETURN_NONE */
   }
-  if (SWIG_IsTmpObj(res4)) {
+  if (ReturnSame(SWIG_IsTmpObj(res4))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg4)));
   } else {
     int new_flags = SWIG_IsNewObj(res4) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg4), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res5)) {
+  if (ReturnSame(SWIG_IsTmpObj(res5))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg5)));
   } else {
     int new_flags = SWIG_IsNewObj(res5) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg5), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res6)) {
+  if (ReturnSame(SWIG_IsTmpObj(res6))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg6)));
   } else {
     int new_flags = SWIG_IsNewObj(res6) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg6), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res7)) {
+  if (ReturnSame(SWIG_IsTmpObj(res7))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg7)));
   } else {
     int new_flags = SWIG_IsNewObj(res7) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg7), SWIGTYPE_p_double, new_flags));
-  }
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
   }
   return resultobj;
 fail:
@@ -16642,25 +16417,25 @@ SWIGINTERN PyObject *_wrap_Band_ComputeStatistics(PyObject *SWIGUNUSEDPARM(self)
   {
     /* %typemap(out) IF_ERROR_RETURN_NONE */
   }
-  if (SWIG_IsTmpObj(res3)) {
+  if (ReturnSame(SWIG_IsTmpObj(res3))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg3)));
   } else {
     int new_flags = SWIG_IsNewObj(res3) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg3), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res4)) {
+  if (ReturnSame(SWIG_IsTmpObj(res4))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg4)));
   } else {
     int new_flags = SWIG_IsNewObj(res4) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg4), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res5)) {
+  if (ReturnSame(SWIG_IsTmpObj(res5))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg5)));
   } else {
     int new_flags = SWIG_IsNewObj(res5) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg5), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res6)) {
+  if (ReturnSame(SWIG_IsTmpObj(res6))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg6)));
   } else {
     int new_flags = SWIG_IsNewObj(res6) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
@@ -17284,7 +17059,7 @@ SWIGINTERN PyObject *_wrap_Band_WriteRaster(PyObject *SWIGUNUSEDPARM(self), PyOb
   resultobj = SWIG_From_int(static_cast< int >(result));
   {
     /* %typemap(freearg) (GIntBig *nLen, char *pBuf ) */
-    if( alloc6 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc6) == SWIG_NEWOBJ ) {
       delete[] arg7;
     }
   }
@@ -17292,7 +17067,7 @@ SWIGINTERN PyObject *_wrap_Band_WriteRaster(PyObject *SWIGUNUSEDPARM(self), PyOb
 fail:
   {
     /* %typemap(freearg) (GIntBig *nLen, char *pBuf ) */
-    if( alloc6 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc6) == SWIG_NEWOBJ ) {
       delete[] arg7;
     }
   }
@@ -20371,13 +20146,13 @@ SWIGINTERN PyObject *_wrap_RasterAttributeTable_GetLinearBinning(PyObject *SWIGU
     }
   }
   resultobj = SWIG_From_bool(static_cast< bool >(result));
-  if (SWIG_IsTmpObj(res2)) {
+  if (ReturnSame(SWIG_IsTmpObj(res2))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg2)));
   } else {
     int new_flags = SWIG_IsNewObj(res2) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg2), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res3)) {
+  if (ReturnSame(SWIG_IsTmpObj(res3))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg3)));
   } else {
     int new_flags = SWIG_IsNewObj(res3) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
@@ -23754,13 +23529,13 @@ SWIGINTERN PyObject *_wrap_ApplyGeoTransform(PyObject *SWIGUNUSEDPARM(self), PyO
     }
   }
   resultobj = SWIG_Py_Void();
-  if (SWIG_IsTmpObj(res4)) {
+  if (ReturnSame(SWIG_IsTmpObj(res4))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg4)));
   } else {
     int new_flags = SWIG_IsNewObj(res4) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg4), SWIGTYPE_p_double, new_flags));
   }
-  if (SWIG_IsTmpObj(res5)) {
+  if (ReturnSame(SWIG_IsTmpObj(res5))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_double((*arg5)));
   } else {
     int new_flags = SWIG_IsNewObj(res5) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
@@ -29005,7 +28780,7 @@ extern "C" {
               char *buff = ndoc;
               strncpy(buff, methods[i].ml_doc, ldoc);
               buff += ldoc;
-              strncpy(buff, "swig_ptr: ", 10);
+              memcpy(buff, "swig_ptr: ", 10);
               buff += 10;
               SWIG_PackVoidPtr(buff, ptr, ty->name, lptr);
               methods[i].ml_doc = ndoc;
