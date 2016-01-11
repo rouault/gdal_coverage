@@ -3204,6 +3204,23 @@ void DontUseExceptions() {
 }
 
 
+/* Completely unrelated: just to avoid Coverity warnings */
+
+static int bReturnSame = 1;
+
+void NeverCallMePlease() {
+    bReturnSame = 0;
+}
+
+/* Some SWIG code generates dead code, which Coverity warns about */
+static int ReturnSame(int x)
+{
+    if( bReturnSame )
+        return x;
+    return 0;
+}
+
+
 
 /* Return a PyObject* from a NULL terminated C String */
 static PyObject* GDALPythonObjectFromCStr(const char *pszStr)
@@ -5062,6 +5079,9 @@ OGRDriverShadow* GetDriver(int driver_number) {
   char **GeneralCmdLineProcessor( char **papszArgv, int nOptions = 0 ) {
     int nResArgCount;
 
+    if( papszArgv == NULL )
+        return NULL;
+
     nResArgCount =
       OGRGeneralCmdLineProcessor( CSLCount(papszArgv), &papszArgv, nOptions );
 
@@ -5488,16 +5508,6 @@ SWIGINTERN PyObject *_wrap_MajorObject_SetMetadata__SWIG_0(PyObject *SWIGUNUSEDP
     CSLDestroy( arg2 );
   }
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   {
@@ -5560,16 +5570,6 @@ SWIGINTERN PyObject *_wrap_MajorObject_SetMetadata__SWIG_1(PyObject *SWIGUNUSEDP
   resultobj = SWIG_From_int(static_cast< int >(result));
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -5774,16 +5774,6 @@ SWIGINTERN PyObject *_wrap_MajorObject_SetMetadataItem(PyObject *SWIGUNUSEDPARM(
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   if (alloc3 == SWIG_NEWOBJ) delete[] buf3;
   if (alloc4 == SWIG_NEWOBJ) delete[] buf4;
-  {
-    /* %typemap(ret) CPLErr */
-    if ( bUseExceptions == 0 ) {
-      /* We're not using exceptions.  And no error has occurred */
-      if ( resultobj == 0 ) {
-        /* No other return values set so return ErrorCode */
-        resultobj = PyInt_FromLong(result);
-      }
-    }
-  }
   return resultobj;
 fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
@@ -6991,10 +6981,7 @@ SWIGINTERN PyObject *_wrap_DataSource_DeleteLayer(PyObject *SWIGUNUSEDPARM(self)
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -7039,10 +7026,7 @@ SWIGINTERN PyObject *_wrap_DataSource_SyncToDisk(PyObject *SWIGUNUSEDPARM(self),
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -7720,10 +7704,7 @@ SWIGINTERN PyObject *_wrap_DataSource_StartTransaction(PyObject *SWIGUNUSEDPARM(
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -7768,10 +7749,7 @@ SWIGINTERN PyObject *_wrap_DataSource_CommitTransaction(PyObject *SWIGUNUSEDPARM
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -7816,10 +7794,7 @@ SWIGINTERN PyObject *_wrap_DataSource_RollbackTransaction(PyObject *SWIGUNUSEDPA
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -8330,10 +8305,7 @@ SWIGINTERN PyObject *_wrap_Layer_SetAttributeFilter(PyObject *SWIGUNUSEDPARM(sel
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -8629,10 +8601,7 @@ SWIGINTERN PyObject *_wrap_Layer_SetNextByIndex(PyObject *SWIGUNUSEDPARM(self), 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -8691,10 +8660,7 @@ SWIGINTERN PyObject *_wrap_Layer_SetFeature(PyObject *SWIGUNUSEDPARM(self), PyOb
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -8753,10 +8719,7 @@ SWIGINTERN PyObject *_wrap_Layer_CreateFeature(PyObject *SWIGUNUSEDPARM(self), P
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -8811,10 +8774,7 @@ SWIGINTERN PyObject *_wrap_Layer_DeleteFeature(PyObject *SWIGUNUSEDPARM(self), P
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -8859,10 +8819,7 @@ SWIGINTERN PyObject *_wrap_Layer_SyncToDisk(PyObject *SWIGUNUSEDPARM(self), PyOb
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9162,10 +9119,7 @@ SWIGINTERN PyObject *_wrap_Layer_CreateField(PyObject *SWIGUNUSEDPARM(self), PyO
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9219,10 +9173,7 @@ SWIGINTERN PyObject *_wrap_Layer_DeleteField(PyObject *SWIGUNUSEDPARM(self), PyO
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9285,10 +9236,7 @@ SWIGINTERN PyObject *_wrap_Layer_ReorderField(PyObject *SWIGUNUSEDPARM(self), Py
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9366,10 +9314,7 @@ SWIGINTERN PyObject *_wrap_Layer_ReorderFields(PyObject *SWIGUNUSEDPARM(self), P
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9452,10 +9397,7 @@ SWIGINTERN PyObject *_wrap_Layer_AlterFieldDefn(PyObject *SWIGUNUSEDPARM(self), 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9528,10 +9470,7 @@ SWIGINTERN PyObject *_wrap_Layer_CreateGeomField(PyObject *SWIGUNUSEDPARM(self),
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9576,10 +9515,7 @@ SWIGINTERN PyObject *_wrap_Layer_StartTransaction(PyObject *SWIGUNUSEDPARM(self)
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9624,10 +9560,7 @@ SWIGINTERN PyObject *_wrap_Layer_CommitTransaction(PyObject *SWIGUNUSEDPARM(self
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9672,10 +9605,7 @@ SWIGINTERN PyObject *_wrap_Layer_RollbackTransaction(PyObject *SWIGUNUSEDPARM(se
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -9902,10 +9832,7 @@ SWIGINTERN PyObject *_wrap_Layer_SetIgnoredFields(PyObject *SWIGUNUSEDPARM(self)
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -10081,10 +10008,7 @@ SWIGINTERN PyObject *_wrap_Layer_Intersection(PyObject *SWIGUNUSEDPARM(self), Py
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -10266,10 +10190,7 @@ SWIGINTERN PyObject *_wrap_Layer_Union(PyObject *SWIGUNUSEDPARM(self), PyObject 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -10451,10 +10372,7 @@ SWIGINTERN PyObject *_wrap_Layer_SymDifference(PyObject *SWIGUNUSEDPARM(self), P
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -10636,10 +10554,7 @@ SWIGINTERN PyObject *_wrap_Layer_Identity(PyObject *SWIGUNUSEDPARM(self), PyObje
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -10821,10 +10736,7 @@ SWIGINTERN PyObject *_wrap_Layer_Update(PyObject *SWIGUNUSEDPARM(self), PyObject
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11006,10 +10918,7 @@ SWIGINTERN PyObject *_wrap_Layer_Clip(PyObject *SWIGUNUSEDPARM(self), PyObject *
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11191,10 +11100,7 @@ SWIGINTERN PyObject *_wrap_Layer_Erase(PyObject *SWIGUNUSEDPARM(self), PyObject 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11445,10 +11351,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetGeometry(PyObject *SWIGUNUSEDPARM(self), P
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11500,10 +11403,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetGeometryDirectly(PyObject *SWIGUNUSEDPARM(
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11599,10 +11499,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetGeomField__SWIG_0(PyObject *SWIGUNUSEDPARM
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11672,10 +11569,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetGeomField__SWIG_1(PyObject *SWIGUNUSEDPARM
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11795,10 +11689,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetGeomFieldDirectly__SWIG_0(PyObject *SWIGUN
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -11866,10 +11757,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetGeomFieldDirectly__SWIG_1(PyObject *SWIGUN
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -13143,43 +13031,43 @@ SWIGINTERN PyObject *_wrap_Feature_GetFieldAsDateTime(PyObject *SWIGUNUSEDPARM(s
     }
   }
   resultobj = SWIG_Py_Void();
-  if (SWIG_IsTmpObj(res3)) {
+  if (ReturnSame(SWIG_IsTmpObj(res3))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg3)));
   } else {
     int new_flags = SWIG_IsNewObj(res3) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg3), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res4)) {
+  if (ReturnSame(SWIG_IsTmpObj(res4))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg4)));
   } else {
     int new_flags = SWIG_IsNewObj(res4) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg4), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res5)) {
+  if (ReturnSame(SWIG_IsTmpObj(res5))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg5)));
   } else {
     int new_flags = SWIG_IsNewObj(res5) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg5), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res6)) {
+  if (ReturnSame(SWIG_IsTmpObj(res6))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg6)));
   } else {
     int new_flags = SWIG_IsNewObj(res6) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg6), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res7)) {
+  if (ReturnSame(SWIG_IsTmpObj(res7))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg7)));
   } else {
     int new_flags = SWIG_IsNewObj(res7) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg7), SWIGTYPE_p_int, new_flags));
   }
-  if (SWIG_IsTmpObj(res8)) {
+  if (ReturnSame(SWIG_IsTmpObj(res8))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_float((*arg8)));
   } else {
     int new_flags = SWIG_IsNewObj(res8) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_NewPointerObj((void*)(arg8), SWIGTYPE_p_float, new_flags));
   }
-  if (SWIG_IsTmpObj(res9)) {
+  if (ReturnSame(SWIG_IsTmpObj(res9))) {
     resultobj = SWIG_Python_AppendOutput(resultobj, SWIG_From_int((*arg9)));
   } else {
     int new_flags = SWIG_IsNewObj(res9) ? (SWIG_POINTER_OWN |  0 ) :  0 ;
@@ -13503,10 +13391,7 @@ SWIGINTERN PyObject *_wrap_Feature_GetFieldAsBinary__SWIG_0(PyObject *SWIGUNUSED
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -13597,10 +13482,7 @@ SWIGINTERN PyObject *_wrap_Feature_GetFieldAsBinary__SWIG_1(PyObject *SWIGUNUSED
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -13991,10 +13873,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetFID(PyObject *SWIGUNUSEDPARM(self), PyObje
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -15485,10 +15364,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetFrom(PyObject *SWIGUNUSEDPARM(self), PyObj
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -15589,10 +15465,7 @@ SWIGINTERN PyObject *_wrap_Feature_SetFromWithMap(PyObject *SWIGUNUSEDPARM(self)
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -16697,10 +16570,7 @@ SWIGINTERN PyObject *_wrap_FeatureDefn_DeleteGeomFieldDefn(PyObject *SWIGUNUSEDP
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -18507,7 +18377,7 @@ SWIGINTERN PyObject *_wrap_CreateGeometryFromWkb(PyObject *SWIGUNUSEDPARM(self),
   resultobj = SWIG_NewPointerObj(SWIG_as_voidptr(result), SWIGTYPE_p_OGRGeometryShadow, SWIG_POINTER_OWN |  0 );
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -18515,7 +18385,7 @@ SWIGINTERN PyObject *_wrap_CreateGeometryFromWkb(PyObject *SWIGUNUSEDPARM(self),
 fail:
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc1 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc1) == SWIG_NEWOBJ ) {
       delete[] arg2;
     }
   }
@@ -19224,7 +19094,7 @@ SWIGINTERN PyObject *_wrap_new_Geometry(PyObject *SWIGUNUSEDPARM(self), PyObject
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc3 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc3) == SWIG_NEWOBJ ) {
       delete[] arg4;
     }
   }
@@ -19234,7 +19104,7 @@ fail:
   if (alloc2 == SWIG_NEWOBJ) delete[] buf2;
   {
     /* %typemap(freearg) (int *nLen, char *pBuf ) */
-    if( alloc3 == SWIG_NEWOBJ ) {
+    if (ReturnSame(alloc3) == SWIG_NEWOBJ ) {
       delete[] arg4;
     }
   }
@@ -19301,10 +19171,7 @@ SWIGINTERN PyObject *_wrap_Geometry_ExportToWkt(PyObject *SWIGUNUSEDPARM(self), 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -19377,10 +19244,7 @@ SWIGINTERN PyObject *_wrap_Geometry_ExportToIsoWkt(PyObject *SWIGUNUSEDPARM(self
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -19468,10 +19332,7 @@ SWIGINTERN PyObject *_wrap_Geometry_ExportToWkb(PyObject *SWIGUNUSEDPARM(self), 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -19560,10 +19421,7 @@ SWIGINTERN PyObject *_wrap_Geometry_ExportToIsoWkb(PyObject *SWIGUNUSEDPARM(self
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -20000,10 +19858,7 @@ SWIGINTERN PyObject *_wrap_Geometry_AddGeometryDirectly(PyObject *SWIGUNUSEDPARM
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -20062,10 +19917,7 @@ SWIGINTERN PyObject *_wrap_Geometry_AddGeometry(PyObject *SWIGUNUSEDPARM(self), 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -22151,10 +22003,7 @@ SWIGINTERN PyObject *_wrap_Geometry_TransformTo(PyObject *SWIGUNUSEDPARM(self), 
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -22213,10 +22062,7 @@ SWIGINTERN PyObject *_wrap_Geometry_Transform(PyObject *SWIGUNUSEDPARM(self), Py
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -23076,10 +22922,7 @@ SWIGINTERN PyObject *_wrap_SetGenerate_DB2_V72_BYTE_ORDER(PyObject *SWIGUNUSEDPA
   }
   {
     /* %typemap(ret) OGRErr */
-    if (resultobj == Py_None ) {
-      resultobj = 0;
-    }
-    if (resultobj == 0) {
+    if ( ReturnSame(resultobj == Py_None || resultobj == 0) ) {
       resultobj = PyInt_FromLong( result );
     }
   }
@@ -28690,7 +28533,7 @@ extern "C" {
               char *buff = ndoc;
               strncpy(buff, methods[i].ml_doc, ldoc);
               buff += ldoc;
-              strncpy(buff, "swig_ptr: ", 10);
+              memcpy(buff, "swig_ptr: ", 10);
               buff += 10;
               SWIG_PackVoidPtr(buff, ptr, ty->name, lptr);
               methods[i].ml_doc = ndoc;
