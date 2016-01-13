@@ -621,10 +621,11 @@ void OGRODSDataSource::startElementTable(const char *pszNameIn,
 /*                           endElementTable()                          */
 /************************************************************************/
 
-void OGRODSDataSource::endElementTable( const char * /* pszNameIn */ )
+void OGRODSDataSource::endElementTable( CPL_UNUSED /* in non-DEBUG*/ const char * pszNameIn )
 {
     if (stateStack[nStackDepth].nBeginDepth == nDepth)
     {
+        // Only use of pszNameIn.
         CPLAssert(strcmp(pszNameIn, "table:table") == 0);
 
         if (nCurLine == 0 ||
@@ -754,7 +755,7 @@ void OGRODSDataSource::startElementRow(const char *pszNameIn,
 /*                            endElementRow()                           */
 /************************************************************************/
 
-void OGRODSDataSource::endElementRow( const char * /* pszNameIn */)
+void OGRODSDataSource::endElementRow( CPL_UNUSED /*in non-DEBUG*/ const char * pszNameIn )
 {
     if (stateStack[nStackDepth].nBeginDepth == nDepth)
     {
@@ -972,7 +973,7 @@ void OGRODSDataSource::startElementCell(const char *pszNameIn,
 /*                            endElementCell()                          */
 /************************************************************************/
 
-void OGRODSDataSource::endElementCell( const char * /* pszNameIn */ )
+void OGRODSDataSource::endElementCell( CPL_UNUSED /*in non-DEBUG*/ const char * pszNameIn )
 {
     if (stateStack[nStackDepth].nBeginDepth == nDepth)
     {
