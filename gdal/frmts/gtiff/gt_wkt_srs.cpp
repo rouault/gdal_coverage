@@ -738,7 +738,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
         GDALGTIFKeyGetSHORT(hGTIF, GeographicTypeGeoKey, &tmp, 0, 1  ) == 0 &&
         GDALGTIFKeyGetSHORT(hGTIF, GeogGeodeticDatumGeoKey, &tmp, 0, 1  ) == 0 &&
         GDALGTIFKeyGetSHORT(hGTIF, GeogEllipsoidGeoKey, &tmp, 0, 1  ) == 0 &&
-        CSLTestBoolean(CPLGetConfigOption("GTIFF_IMPORT_FROM_EPSG", "YES")) )
+        CPLTestBool(CPLGetConfigOption("GTIFF_IMPORT_FROM_EPSG", "YES")) )
     {
         // Save error state as importFromEPSGA() will call CPLReset()
         CPLErrorNum errNo = CPLGetLastErrorNo();
@@ -1433,7 +1433,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
 /*      Handle the projection transformation.                           */
 /* -------------------------------------------------------------------- */
     const char *pszProjection = poSRS->GetAttrValue( "PROJECTION" );
-    int bWritePEString = FALSE;
+    bool bWritePEString = false;
 
     if( nPCS != KvUserDefined )
     {
@@ -1442,7 +1442,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
         // that requires not setting GTModelTypeGeoKey to ProjectedCSTypeGeoKey
         if( eFlavor == GEOTIFF_KEYS_ESRI_PE && nPCS == 3857 )
         {
-            bWritePEString = TRUE;
+            bWritePEString = true;
         }
         else
         {
@@ -2197,7 +2197,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
 
     else
     {
-        bWritePEString = TRUE;
+        bWritePEString = true;
     }
 
     // Note that VERTCS is an ESRI "spelling" of VERT_CS so we assume if
@@ -2206,8 +2206,8 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
 
     bWritePEString |= (eFlavor == GEOTIFF_KEYS_ESRI_PE);
 
-    bWritePEString &= CSLTestBoolean( CPLGetConfigOption("GTIFF_ESRI_CITATION",
-                                              "YES") );
+    bWritePEString &=
+        CPLTestBool( CPLGetConfigOption("GTIFF_ESRI_CITATION", "YES") );
 
     if( bWritePEString )
     {
@@ -2284,7 +2284,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
            && nUOMLengthCode == KvUserDefined 
            && pszLinearUOMName 
            && strlen(pszLinearUOMName)>0
-           && CSLTestBoolean( CPLGetConfigOption("GTIFF_ESRI_CITATION",
+           && CPLTestBool( CPLGetConfigOption("GTIFF_ESRI_CITATION",
                                                  "YES") ) )
         {
             SetLinearUnitCitation(psGTIF, pszLinearUOMName);
@@ -2427,7 +2427,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
                         dfSemiMajor );
 
         if( nGCS == KvUserDefined 
-            && CSLTestBoolean( CPLGetConfigOption("GTIFF_ESRI_CITATION",
+            && CPLTestBool( CPLGetConfigOption("GTIFF_ESRI_CITATION",
                                                   "YES") ) )
             SetGeogCSCitation(psGTIF, poSRS, angUnitName, nDatum, nSpheroid);
     }
@@ -2561,7 +2561,7 @@ CPLErr GTIFWktFromMemBufEx( int nSize, unsigned char *pabyBuffer,
     {
         bPixelIsPoint = true;
         bPointGeoIgnore =
-            CSLTestBoolean( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
+            CPLTestBool( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
                                             "FALSE") );
     }
     if( pbPixelIsPoint )
@@ -2748,12 +2748,12 @@ CPLErr GTIFMemBufFromWktEx( const char *pszWKT, const double *padfGeoTransform,
 /*      Get the projection definition.                                  */
 /* -------------------------------------------------------------------- */
 
-    int  bPointGeoIgnore = FALSE;
+    int bPointGeoIgnore = FALSE;
     if( bPixelIsPoint )
     {
-        bPointGeoIgnore = 
-            CSLTestBoolean( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
-                                               "FALSE") );
+        bPointGeoIgnore =
+            CPLTestBool( CPLGetConfigOption( "GTIFF_POINT_GEO_IGNORE",
+                                             "FALSE") );
     }
 
     if( pszWKT != NULL || bPixelIsPoint )
