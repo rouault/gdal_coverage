@@ -440,6 +440,8 @@ GDALGeoPackageDataset::GDALGeoPackageDataset() :
     m_nTileMatrixWidth(0),
     m_nTileMatrixHeight(0),
     m_eTF(GPKG_TF_PNG_JPEG),
+    m_bPNGSupports2Bands(true),
+    m_bPNGSupportsCT(true),
     m_nZLevel(6),
     m_nQuality(75),
     m_bDither(false),
@@ -1086,7 +1088,7 @@ int GDALGeoPackageDataset::OpenRaster( const char* pszTableName,
         return FALSE;
     }
 
-    CheckUnknownExtensions(TRUE);
+    CheckUnknownExtensions(true);
 
     // Do this after CheckUnknownExtensions() so that m_eTF is set to GPKG_TF_WEBP
     // if the table already registers the gpkg_webp extension
@@ -2501,6 +2503,10 @@ int GDALGeoPackageDataset::Create( const char * pszFilename,
     bUpdate = TRUE;
     eAccess = GA_Update; /* hum annoying duplication */
 
+    // for test/debug purposes only. true is the nominal value
+    m_bPNGSupports2Bands = CPLTestBool(CPLGetConfigOption("GPKG_PNG_SUPPORTS_2BANDS", "TRUE"));
+    m_bPNGSupportsCT = CPLTestBool(CPLGetConfigOption("GPKG_PNG_SUPPORTS_CT", "TRUE"));
+
     if (!OpenOrCreateDB(bFileExists ? SQLITE_OPEN_READWRITE : SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE))
         return FALSE;
 
@@ -3712,13 +3718,13 @@ void GDALGeoPackageDataset::ReleaseResultSet( OGRLayer * poLayer )
 /*                         HasExtensionsTable()                         */
 /************************************************************************/
 
-int GDALGeoPackageDataset::HasExtensionsTable()
+bool GDALGeoPackageDataset::HasExtensionsTable()
 {
     SQLResult oResultTable;
     OGRErr err = SQLQuery(hDB,
         "SELECT * FROM sqlite_master WHERE name = 'gpkg_extensions' "
         "AND type IN ('table', 'view')", &oResultTable);
-    int bHasExtensionsTable = ( err == OGRERR_NONE && oResultTable.nRowCount == 1 );
+    bool bHasExtensionsTable = ( err == OGRERR_NONE && oResultTable.nRowCount == 1 );
     SQLResultFree(&oResultTable);
     return bHasExtensionsTable;
 }
@@ -3727,7 +3733,7 @@ int GDALGeoPackageDataset::HasExtensionsTable()
 /*                    CheckUnknownExtensions()                          */
 /************************************************************************/
 
-void GDALGeoPackageDataset::CheckUnknownExtensions(int bCheckRasterTable)
+void GDALGeoPackageDataset::CheckUnknownExtensions(bool bCheckRasterTable)
 {
     if( !HasExtensionsTable() )
         return;
@@ -3814,10 +3820,10 @@ void GDALGeoPackageDataset::CheckUnknownExtensions(int bCheckRasterTable)
 /*                         HasGDALAspatialExtension()                       */
 /************************************************************************/
 
-int GDALGeoPackageDataset::HasGDALAspatialExtension()
+bool GDALGeoPackageDataset::HasGDALAspatialExtension()
 {
     if (!HasExtensionsTable())
-        return 0;
+        return false;
 
     SQLResult oResultTable;
     OGRErr err = SQLQuery(hDB,
@@ -3829,7 +3835,7 @@ int GDALGeoPackageDataset::HasGDALAspatialExtension()
         " OR 0"
 #endif
         , &oResultTable);
-    int bHasExtension = ( err == OGRERR_NONE && oResultTable.nRowCount == 1 );
+    bool bHasExtension = ( err == OGRERR_NONE && oResultTable.nRowCount == 1 );
     SQLResultFree(&oResultTable);
     return bHasExtension;
 }
@@ -4131,7 +4137,7 @@ void OGRGeoPackageDisableSpatialIndex(sqlite3_context* pContext,
         return;
     }
 
-    sqlite3_result_int( pContext, poLyr->DropSpatialIndex(TRUE) );
+    sqlite3_result_int( pContext, poLyr->DropSpatialIndex(true) );
 }
 
 /************************************************************************/
