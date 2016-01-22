@@ -63,6 +63,8 @@ ALTERED_DESTROY(GDALRasterAttributeTableShadow, GDALc, delete_RasterAttributeTab
 
 /* Make room for Perl interface */
 
+%rename (_FindFile) FindFile;
+
 %rename (_GetDriver) GetDriver;
 
 %rename (_Open) Open;
@@ -330,6 +332,14 @@ sub string2int {
 sub RELEASE_PARENTS {
 }
 
+sub FindFile {
+    if (@_ == 1) {
+        _FindFile('', @_);
+    } else {
+        _FindFile(@_);
+    }
+}
+
 sub DataTypes {
     return @DATA_TYPES;
 }
@@ -448,7 +458,9 @@ sub Open {
     Geo::GDAL::error(1, $p[1], {ReadOnly => 1, Update => 1}) unless ($p[1] eq 'ReadOnly' or $p[1] eq 'Update'); 
     push @flags, qw/READONLY/ if $p[1] eq 'ReadOnly';
     push @flags, qw/UPDATE/ if $p[1] eq 'Update';
-    OpenEx($p[0], \@flags);
+    my $dataset = OpenEx($p[0], \@flags);
+    error("Failed to open $p[0]. Is it a raster dataset?") unless $dataset;
+    return $dataset;
 }
 
 sub OpenShared {
@@ -458,7 +470,9 @@ sub OpenShared {
     Geo::GDAL::error(1, $p[1], {ReadOnly => 1, Update => 1}) unless ($p[1] eq 'ReadOnly' or $p[1] eq 'Update'); 
     push @flags, qw/READONLY/ if $p[1] eq 'ReadOnly';
     push @flags, qw/UPDATE/ if $p[1] eq 'Update';
-    OpenEx($p[0], \@flags);
+    my $dataset = OpenEx($p[0], \@flags);
+    error("Failed to open $p[0]. Is it a raster dataset?") unless $dataset;
+    return $dataset;
 }
 
 sub OpenEx {
@@ -689,7 +703,9 @@ sub Open {
     my @flags = qw/RASTER/;
     push @flags, qw/READONLY/ if $p[1] eq 'ReadOnly';
     push @flags, qw/UPDATE/ if $p[1] eq 'Update';
-    Geo::GDAL::OpenEx($p[0], \@flags, [$self->Name()]);
+    my $dataset = Geo::GDAL::OpenEx($p[0], \@flags, [$self->Name()]);
+    Geo::GDAL::error("Failed to open $p[0]. Is it a raster dataset?") unless $dataset;
+    return $dataset;
 }
 
 
