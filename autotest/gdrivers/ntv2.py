@@ -71,18 +71,65 @@ def ntv2_4():
     return tst.testCreateCopy( vsimem = 1 )
 
 ###############################################################################
-# Test appending
+# Test appending to a little-endian NTv2 grid
 
 def ntv2_5():
 
     src_ds = gdal.Open('data/test_ntv2_le.gsb')
-    gdal.GetDriverByName('NTv2').CreateCopy('/vsimem/ntv2_5.gsb', src_ds)
-    gdal.GetDriverByName('NTv2').CreateCopy('/vsimem/ntv2_5.gsb', src_ds, options = ['APPEND_SUBDATASET=YES'])
+    gdal.GetDriverByName('NTv2').Create('/vsimem/ntv2_5.gsb', 1, 1, 4, gdal.GDT_Float32, options = ['ENDIANNESS=LE'])
+    ds = gdal.GetDriverByName('NTv2').CreateCopy('/vsimem/ntv2_5.gsb', src_ds, options = ['APPEND_SUBDATASET=YES'])
+    if ds.GetRasterBand(2).Checksum() != 10:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(2).Checksum())
+        return 'fail'
+    ds = None
     ds = gdal.Open('NTv2:1:/vsimem/ntv2_5.gsb')
     if ds.GetRasterBand(2).Checksum() != 10:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(2).Checksum())
         return 'fail'
     ds = None
     gdal.GetDriverByName('NTv2').Delete('/vsimem/ntv2_5.gsb')
+
+    return 'success'
+
+###############################################################################
+# Test appending to a big-endian NTv2 grid
+
+def ntv2_6():
+
+    src_ds = gdal.Open('data/test_ntv2_le.gsb')
+    gdal.GetDriverByName('NTv2').Create('/vsimem/ntv2_6.gsb', 1, 1, 4, gdal.GDT_Float32, options = ['ENDIANNESS=BE'])
+    ds = gdal.GetDriverByName('NTv2').CreateCopy('/vsimem/ntv2_6.gsb', src_ds, options = ['APPEND_SUBDATASET=YES'])
+    if ds.GetRasterBand(2).Checksum() != 10:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(2).Checksum())
+        return 'fail'
+    ds = None
+    ds = gdal.Open('NTv2:1:/vsimem/ntv2_6.gsb')
+    if ds.GetRasterBand(2).Checksum() != 10:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(2).Checksum())
+        return 'fail'
+    ds = None
+    gdal.GetDriverByName('NTv2').Delete('/vsimem/ntv2_6.gsb')
+
+    return 'success'
+
+###############################################################################
+# Test creating a file with invalid filename
+
+def ntv2_7():
+
+    with gdaltest.error_handler():
+        ds = gdal.GetDriverByName('NTv2').Create('/does/not/exist.gsb', 1, 1, 4, gdal.GDT_Float32)
+    if ds is not None:
+        return 'fail'
+
+    with gdaltest.error_handler():
+        ds = gdal.GetDriverByName('NTv2').Create('/does/not/exist.gsb', 1, 1, 4, gdal.GDT_Float32, options = ['APPEND_SUBDATASET=YES'])
+    if ds is not None:
+        return 'fail'
 
     return 'success'
 
@@ -124,7 +171,7 @@ def ntv2_online_3():
         return 'skip'
 
     tst = gdaltest.GDALTest( 'NTV2', 'tmp/cache/nzgd2kgrid0005.gsb', 1, 54971, filename_absolute = 1 )
-    return tst.testCreate( vsimem = 1 )
+    return tst.testCreate( vsimem = 1, out_bands = 4 )
 
 
 gdaltest_list = [
@@ -133,6 +180,8 @@ gdaltest_list = [
     ntv2_3,
     ntv2_4,
     ntv2_5,
+    ntv2_6,
+    ntv2_7,
     ntv2_online_1,
     ntv2_online_2,
     ntv2_online_3,
