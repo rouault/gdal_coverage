@@ -45,6 +45,8 @@
 
 #include "marfa.h"
 
+NAMESPACE_MRF_START
+
 // Returns a string in /vsimem/ + prefix + count that doesn't exist when this function gets called
 // It is not thread safe, open the result as soon as possible
 CPLString uniq_memfname(const char *prefix)
@@ -94,14 +96,14 @@ CPLErr CompressTIF(buf_mgr &dst, buf_mgr &src, const ILImage &img, char **papszO
     if (VSIStatL(fname, &statb))
     {
 	CPLError(CE_Failure,CPLE_AppDefined,
-	    CPLString().Printf("MRF: TIFF, can't stat %s", fname.c_str()));
+	    "MRF: TIFF, can't stat %s", fname.c_str());
         return CE_Failure;
     }
 
     if (size_t(statb.st_size) > dst.size)
     {
 	CPLError(CE_Failure,CPLE_AppDefined,
-	    CPLString().Printf("MRF: TIFF, Tiff generated is too large"));
+	    "MRF: TIFF, Tiff generated is too large");
         return CE_Failure;
     }
 
@@ -109,7 +111,7 @@ CPLErr CompressTIF(buf_mgr &dst, buf_mgr &src, const ILImage &img, char **papszO
     if (pf == NULL)
     {
 	CPLError(CE_Failure,CPLE_AppDefined,
-	    CPLString().Printf("MRF: TIFF, can't open %s", fname.c_str()));
+	    "MRF: TIFF, can't open %s", fname.c_str());
         return CE_Failure;
     }
     
@@ -131,13 +133,13 @@ CPLErr DecompressTIF(buf_mgr &dst, buf_mgr &src, const ILImage &img)
 	VSIFCloseL(fp);
     else {
 	CPLError(CE_Failure,CPLE_AppDefined,
-	    CPLString().Printf("MRF: TIFF, can't open %s as a temp file", fname.c_str()));
+	    "MRF: TIFF, can't open %s as a temp file", fname.c_str());
         return CE_Failure;
     }
     GDALDataset *poTiff = reinterpret_cast<GDALDataset*>(GDALOpen(fname, GA_ReadOnly));
     if (!fp) {
 	CPLError(CE_Failure,CPLE_AppDefined,
-	    CPLString().Printf("MRF: TIFF, can't open page as a Tiff"));
+	    "MRF: TIFF, can't open page as a Tiff");
         return CE_Failure;
     }
 
@@ -190,3 +192,4 @@ TIF_Band::~TIF_Band()
     CSLDestroy(papszOptions);
 };
 
+NAMESPACE_MRF_END
