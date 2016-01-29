@@ -49,22 +49,11 @@
 ****************************************************************************/
 
 #include "marfa.h"
+#include "cpl_multiproc.h" /* for CPLSleep() */
 #include <gdal_priv.h>
 #include <assert.h>
 
 #include <vector>
-
-// Sleep is not portable and not covered in GDAL as far as I can tell
-// So we define MRF_sleep_ms, in milliseconds, not very accurate unfortunately
-#if defined(WIN32)
-// Unfortunately this defines all sorts of garbage
-#include <windows.h>
-#define MRF_sleep_ms(t) Sleep(t)
-#else // Assume linux
-#include <unistd.h>
-// Usleep is in usec
-#define MRF_sleep_ms(t) usleep(t*1000)
-#endif
 
 using std::vector;
 using std::string;
@@ -271,7 +260,7 @@ CPLErr GDALMRFDataset::IBuildOverviews(
 		idxSize = AddOverviews(int(scale));
 		if (!CheckFileSize(current.idxfname, idxSize, GA_Update)) {
 		    CPLError(CE_Failure, CPLE_AppDefined, "MRF: Can't extend index file");
-		    return CE_Failure;
+		    throw CE_Failure;
 		}
 
 		//  Set the uniform node, in case it was not set before, and save the new configuration
@@ -280,7 +269,7 @@ CPLErr GDALMRFDataset::IBuildOverviews(
 
 		if (!WriteConfig(config)) {
 		    CPLError(CE_Failure, CPLE_AppDefined, "MRF: Can't rewrite the metadata file");
-		    return CE_Failure;
+		    throw CE_Failure;
 		}
 		CPLDestroyXMLNode(config);
 		config = NULL;
@@ -908,7 +897,7 @@ VSILFILE *GDALMRFDataset::IdxFP() {
 	do {
 	    if (CheckFileSize(current.idxfname, expected_size, GA_ReadOnly))
 		return ifp.FP;
-	    MRF_sleep_ms(100);
+	    CPLSleep(0.100); /* 100 ms */
 	} while (--timeout);
 
 	// If we get here it is a time-out
