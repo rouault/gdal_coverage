@@ -69,6 +69,8 @@
 using std::vector;
 using std::string;
 
+NAMESPACE_MRF_START
+
 // Initialize as invalid
 GDALMRFDataset::GDALMRFDataset()
 {   //		     X0   Xx   Xy  Y0    Yx   Yy
@@ -123,6 +125,7 @@ GDALMRFDataset::~GDALMRFDataset()
     pbsize = 0;
 }
 
+#ifdef unused
 /*
  *\brief Called before the IRaster IO gets called
  *
@@ -139,6 +142,7 @@ CPLErr GDALMRFDataset::AdviseRead(int nXOff, int nYOff, int nXSize, int nYSize,
 	nXOff, nYOff, nXSize, nYSize, nBufXSize, nBufYSize, nBandCount);
     return CE_None;
 }
+#endif
 
 /*
  *\brief Format specifc RasterIO, may be bypassed by BlockBasedRasterIO by setting
@@ -150,12 +154,18 @@ CPLErr GDALMRFDataset::AdviseRead(int nXOff, int nYOff, int nXSize, int nYSize,
 CPLErr GDALMRFDataset::IRasterIO(GDALRWFlag eRWFlag, int nXOff, int nYOff, int nXSize, int nYSize,
     void *pData, int nBufXSize, int nBufYSize, GDALDataType eBufType,
     int nBandCount, int *panBandMap,
-    int nPixelSpace, int nLineSpace, int nBandSpace)
+#if GDAL_VERSION_MAJOR >= 2
+    GSpacing nPixelSpace, GSpacing nLineSpace, GSpacing nBandSpace, GDALRasterIOExtraArg* psExtraArgs
+#else
+    int nPixelSpace, int nLineSpace, int nBandSpace
+#endif
+    )
 {
     CPLDebug("MRF_IO", "IRasterIO %s, %d, %d, %d, %d, bufsz %d,%d,%d strides P %d, L %d, B %d \n",
 	eRWFlag == GF_Write ? "Write" : "Read",
 	nXOff, nYOff, nXSize, nYSize, nBufXSize, nBufYSize, nBandCount,
-	nPixelSpace, nLineSpace, nBandSpace);
+	static_cast<int>(nPixelSpace), static_cast<int>(nLineSpace),
+        static_cast<int>(nBandSpace));
 
     // Finish the Create call
     if (!bCrystalized)
@@ -165,7 +175,11 @@ CPLErr GDALMRFDataset::IRasterIO(GDALRWFlag eRWFlag, int nXOff, int nYOff, int n
     // Call the parent implementation, which splits it into bands and calls their IRasterIO
     // 
     return GDALPamDataset::IRasterIO(eRWFlag, nXOff, nYOff, nXSize, nYSize, pData, nBufXSize, nBufYSize,
-	eBufType, nBandCount, panBandMap, nPixelSpace, nLineSpace, nBandSpace);
+	eBufType, nBandCount, panBandMap, nPixelSpace, nLineSpace, nBandSpace
+#if GDAL_VERSION_MAJOR >= 2
+        ,psExtraArgs
+#endif
+	);
 }
 
 
@@ -178,13 +192,19 @@ CPLErr GDALMRFDataset::IRasterIO(GDALRWFlag eRWFlag, int nXOff, int nYOff, int n
 CPLErr GDALMRFDataset::IBuildOverviews(
     const char * pszResampling,
     int nOverviews, int * panOverviewList,
-    int nBands, int * panBandList,
+    int nBandsIn, int * panBandList,
     GDALProgressFunc pfnProgress, void * pProgressData)
 
 {
     CPLErr       eErr = CE_None;
 
-    CPLDebug("MRF_OVERLAY", "IBuildOverviews %d, bands %d\n", nOverviews, nBands);
+    CPLDebug("MRF_OVERLAY", "IBuildOverviews %d, bands %d\n", nOverviews, nBandsIn);
+
+    if( nBands != nBandsIn )
+    {
+        CPLError(CE_Failure, CPLE_NotSupported, "nBands = %d not supported", nBandsIn);
+        return CE_Failure;
+    }
 
     /* -------------------------------------------------------------------- */
     /*      If we don't have read access, then create the overviews         */
@@ -752,7 +772,7 @@ start_idx = end_idx;
     if (photo_val)
 	ds->SetPhotometricInterpretation(photo_val);
 
-    if (image.quality < 0 && image.quality>99) {
+    if (image.quality < 0 || image.quality>99) {
 	CPLError(CE_Warning, CPLE_AppDefined, "GDAL MRF: Quality setting error, using default of 85");
 	image.quality = 85;
     }
@@ -1163,7 +1183,7 @@ CPLErr GDALMRFDataset::Initialize(CPLXMLNode *config)
     }
 
     // Pick up the source data image, if there is one
-    source = CPLStrdup(CPLGetXMLValue(config, "CachedSource.Source", 0));
+    source = CPLGetXMLValue(config, "CachedSource.Source", "");
     // Is it a clone?
     clonedSource = on(CPLGetXMLValue(config, "CachedSource.Source.clone", "no"));
     // Pick up the options, if any
@@ -1300,7 +1320,7 @@ GDALDataset *GDALMRFDataset::GetSrcDS() {
 * @return size of the index file
 */
 
-GIntBig GDALMRFDataset::AddOverviews(int scale) {
+GIntBig GDALMRFDataset::AddOverviews(int scaleIn) {
     // Fit the overlays
     ILImage img = current;
     while (1 != img.pagecount.x*img.pagecount.y)
@@ -1310,8 +1330,8 @@ GIntBig GDALMRFDataset::AddOverviews(int scale) {
 	img.idxoffset += sizeof(ILIdx) * img.pagecount.l / img.size.z * (img.size.z - zslice);
 
 	// Next overview size
-	img.size.x = pcount(img.size.x, scale);
-	img.size.y = pcount(img.size.y, scale);
+	img.size.x = pcount(img.size.x, scaleIn);
+	img.size.y = pcount(img.size.y, scaleIn);
 	img.size.l++; // Increment the level
 	img.pagecount = pcount(img.size, img.pagesize);
 
@@ -1332,7 +1352,7 @@ GIntBig GDALMRFDataset::AddOverviews(int scale) {
 
 // Try to implement CreateCopy using Create
 GDALDataset *GDALMRFDataset::CreateCopy(const char *pszFilename,
-    GDALDataset *poSrcDS, int bStrict, char **papszOptions,
+    GDALDataset *poSrcDS, int /*bStrict*/, char **papszOptions,
     GDALProgressFunc pfnProgress, void *pProgressData)
 {
     ILImage img;
@@ -1340,6 +1360,11 @@ GDALDataset *GDALMRFDataset::CreateCopy(const char *pszFilename,
     int x = poSrcDS->GetRasterXSize();
     int y = poSrcDS->GetRasterYSize();
     int nBands = poSrcDS->GetRasterCount();
+    if( nBands == 0 )
+    {
+        CPLError(CE_Failure, CPLE_NotSupported, "nBands == 0 not supported");
+        return NULL;
+    }
     GDALRasterBand *poSrcBand1 = poSrcDS->GetRasterBand(1);
 
     GDALDataType dt = poSrcBand1->GetRasterDataType();
@@ -1407,7 +1432,7 @@ GDALDataset *GDALMRFDataset::CreateCopy(const char *pszFilename,
     catch (CPLString(e)) {
 	if (poDS)
 	    delete poDS;
-	CPLError(CE_Failure, CPLE_ObjectNull, e.c_str());
+	CPLError(CE_Failure, CPLE_ObjectNull, "%s", e.c_str());
 	poDS = NULL;
     }
 
@@ -1431,7 +1456,7 @@ GDALDataset *GDALMRFDataset::CreateCopy(const char *pszFilename,
 
     CSLDestroy(papszCWROptions);
 
-    if (CE_None == err) {
+    if (CE_Failure == err) {
 	delete poDS;
 	return NULL;
     }
@@ -1510,21 +1535,27 @@ GDALMRFDataset::Create(const char * pszName,
     GDALDataType eType, char ** papszOptions)
 
 {   // Pending create
+    if( nBands == 0 )
+    {
+        CPLError(CE_Failure, CPLE_NotSupported, "nBands == 0 not supported");
+        return NULL;
+    }
+
     GDALMRFDataset *poDS = new GDALMRFDataset();
     CPLErr err = CE_None;
     poDS->fname = pszName;
     poDS->nBands = nBands;
 
     // Don't know what to do with these in this call
-    int level = -1;
-    int version = 0;
+    //int level = -1;
+    //int version = 0;
 
     size_t pos = poDS->fname.find(":MRF:");
     if (string::npos != pos) { // Tokenize and pick known options
 	vector<string> tokens;
 	stringSplit(tokens, poDS->fname, pos + 5, ':');
-	level = getnum(tokens, 'L', -1);
-	version = getnum(tokens, 'V', 0);
+	//level = getnum(tokens, 'L', -1);
+	//version = getnum(tokens, 'V', 0);
 	poDS->zslice = getnum(tokens, 'Z', 0);
 	poDS->fname.resize(pos); // Cut the ornamentations
     }
@@ -1559,7 +1590,7 @@ GDALMRFDataset::Create(const char * pszName,
     }
 
     catch (CPLString e) {
-	CPLError(CE_Failure, CPLE_OpenFailed, e.c_str());
+	CPLError(CE_Failure, CPLE_OpenFailed, "%s", e.c_str());
 	delete poDS;
 	poDS = NULL;
     }
@@ -1612,14 +1643,14 @@ void GDALMRFDataset::Crystalize()
 CPLErr GDALMRFDataset::AddVersion()
 {
     // Hides the dataset variables with the same name
-    VSILFILE *ifp = IdxFP();
+    VSILFILE *l_ifp = IdxFP();
 
-    void *tbuff = CPLMalloc(idxSize);
-    VSIFSeekL(ifp, 0, SEEK_SET);
-    VSIFReadL(tbuff, 1, idxSize, ifp);
+    void *tbuff = CPLMalloc(static_cast<size_t>(idxSize));
+    VSIFSeekL(l_ifp, 0, SEEK_SET);
+    VSIFReadL(tbuff, 1, static_cast<size_t>(idxSize), l_ifp);
     verCount++; // The one we write
-    VSIFSeekL(ifp, idxSize * verCount, SEEK_SET); // At the end, this can mess things up royally
-    VSIFWriteL(tbuff, 1, idxSize, ifp);
+    VSIFSeekL(l_ifp, idxSize * verCount, SEEK_SET); // At the end, this can mess things up royally
+    VSIFWriteL(tbuff, 1, static_cast<size_t>(idxSize), l_ifp);
     CPLFree(tbuff);
     return CE_None;
 }
@@ -1638,14 +1669,13 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
     CPLErr ret = CE_None;
     ILIdx tinfo = { 0, 0 };
 
-    // These hide the dataset variables with the same name
-    VSILFILE *dfp = DataFP();
-    VSILFILE *ifp = IdxFP();
+    VSILFILE *l_dfp = DataFP();
+    VSILFILE *l_ifp = IdxFP();
 
     // Pointer to verfiy buffer, if it doesn't exist everything worked fine
     void *tbuff = 0;
 
-    if (ifp == NULL || dfp == NULL)
+    if (l_ifp == NULL || l_dfp == NULL)
 	return CE_Failure;
 
     if (hasVersions) {
@@ -1653,15 +1683,15 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 	int new_tile = false;
 
 	// Read the current tile info
-	VSIFSeekL(ifp, infooffset, SEEK_SET);
-	VSIFReadL(&tinfo, 1, sizeof(ILIdx), ifp);
+	VSIFSeekL(l_ifp, infooffset, SEEK_SET);
+	VSIFReadL(&tinfo, 1, sizeof(ILIdx), l_ifp);
 
 	if (verCount != 0) { // We have at least two versions before we test buffers
 	    ILIdx prevtinfo = { 0, 0 };
 
 	    // Read the previous one
-	    VSIFSeekL(ifp, infooffset + verCount * idxSize, SEEK_SET);
-	    VSIFReadL(&prevtinfo, 1, sizeof(ILIdx), ifp);
+	    VSIFSeekL(l_ifp, infooffset + verCount * idxSize, SEEK_SET);
+	    VSIFReadL(&prevtinfo, 1, sizeof(ILIdx), l_ifp);
 
 	    // current and previous tiles are different, might create version
 	    if (tinfo.size != prevtinfo.size || tinfo.offset != prevtinfo.offset)
@@ -1673,12 +1703,12 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 	// tinfo contains the current info or 0,0
 	if (tinfo.size == GIntBig(net64(size))) { // Might be the same, read and compare
 	    if (size != 0) {
-		tbuff = CPLMalloc(size);
+		tbuff = CPLMalloc(static_cast<size_t>(size));
 		// Use the temporary buffer, we can't have a versioned cache !!
-		VSIFSeekL(dfp, infooffset, SEEK_SET);
-		VSIFReadL(tbuff, 1, size, dfp);
+		VSIFSeekL(l_dfp, infooffset, SEEK_SET);
+		VSIFReadL(tbuff, 1, static_cast<size_t>(size), l_dfp);
 		// Need to write it if not the same
-		new_tile = (0 != memcmp(buff, tbuff, size));
+		new_tile = (0 != memcmp(buff, tbuff, static_cast<size_t>(size)));
 		CPLFree(tbuff);
 	    }
 	    else {
@@ -1706,9 +1736,9 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 
     if (size) do {
 	// Theese statements are the critical MP section for the data file
-	VSIFSeekL(dfp, 0, SEEK_END);
-	GUIntBig offset = VSIFTellL(dfp);
-	if (size != VSIFWriteL(buff, 1, size, dfp))
+	VSIFSeekL(l_dfp, 0, SEEK_END);
+	GUIntBig offset = VSIFTellL(l_dfp);
+	if (static_cast<size_t>(size) != VSIFWriteL(buff, 1, static_cast<size_t>(size), l_dfp))
 	    ret = CE_Failure;
 
 	tinfo.offset = net64(offset);
@@ -1719,11 +1749,11 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 	if (mp_safe) {
 	    // Allocate the temp buffer if we haven't done so already
 	    if (!tbuff)
-		tbuff = CPLMalloc(size);
-	    VSIFSeekL(dfp, offset, SEEK_SET);
-	    VSIFReadL(tbuff, 1, size, dfp);
+		tbuff = CPLMalloc(static_cast<size_t>(size));
+	    VSIFSeekL(l_dfp, offset, SEEK_SET);
+	    VSIFReadL(tbuff, 1, static_cast<size_t>(size), l_dfp);
 	    // If memcmp returns zero, verify passed
-	    if (!memcmp(buff, tbuff, size)) {
+	    if (!memcmp(buff, tbuff, static_cast<size_t>(size))) {
 		CPLFree(tbuff);
 		tbuff = NULL; // Triggers the loop termination
 	    }
@@ -1739,8 +1769,8 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
     if (0 != buff && 0 == size)
 	tinfo.offset = net64(GUIntBig(buff));
 
-    VSIFSeekL(ifp, infooffset, SEEK_SET);
-    if (sizeof(tinfo) != VSIFWriteL(&tinfo, 1, sizeof(tinfo), ifp))
+    VSIFSeekL(l_ifp, infooffset, SEEK_SET);
+    if (sizeof(tinfo) != VSIFWriteL(&tinfo, 1, sizeof(tinfo), l_ifp))
 	ret = CE_Failure;
 
     return ret;
@@ -1780,21 +1810,21 @@ CPLErr GDALMRFDataset::GetGeoTransform(double *gt)
 CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImage &img, const GIntBig bias)
 
 {
-    VSILFILE *ifp = IdxFP();
+    VSILFILE *l_ifp = IdxFP();
     GIntBig offset = bias + IdxOffset(pos, img);
-    if (ifp == NULL && img.comp == IL_NONE) {
+    if (l_ifp == NULL && img.comp == IL_NONE) {
 	tinfo.size = current.pageSizeBytes;
 	tinfo.offset = offset * tinfo.size;
 	return CE_None;
     }
 
-    if (ifp == NULL) {
+    if (l_ifp == NULL) {
 	CPLError(CE_Failure, CPLE_FileIO, "Can't open index file");
 	return CE_Failure;
     }
 
-    VSIFSeekL(ifp, offset, SEEK_SET);
-    if (1 != VSIFReadL(&tinfo, sizeof(ILIdx), 1, ifp))
+    VSIFSeekL(l_ifp, offset, SEEK_SET);
+    if (1 != VSIFReadL(&tinfo, sizeof(ILIdx), 1, l_ifp))
 	return CE_Failure;
     // Convert them to native form
     tinfo.offset = net64(tinfo.offset);
@@ -1818,7 +1848,7 @@ CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImag
     offset = (offset / CPYSZ) * CPYSZ;
     GIntBig size = MIN(size_t(CPYSZ), size_t(bias - offset));
     size /= sizeof(ILIdx); // In records
-    vector<ILIdx> buf(size);
+    vector<ILIdx> buf(static_cast<size_t>(size));
     ILIdx *buffer = &buf[0]; // Buffer to copy the source to the clone index
 
 
@@ -1832,7 +1862,7 @@ CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImag
     }
 
     VSIFSeekL(srcidx, offset, SEEK_SET);
-    size = VSIFReadL(buffer, sizeof(ILIdx), size, srcidx);
+    size = VSIFReadL(buffer, sizeof(ILIdx), static_cast<size_t>(size), srcidx);
     if (size != GIntBig(buf.size())) {
 	CPLError(CE_Failure, CPLE_FileIO, "Can't read cloned source index");
 	return CE_Failure; // Source reported the error
@@ -1845,8 +1875,8 @@ CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImag
     }
 
     // Write it in the right place in the local index file
-    VSIFSeekL(ifp, bias + offset, SEEK_SET);
-    size = VSIFWriteL(&buf[0], sizeof(ILIdx), size, ifp);
+    VSIFSeekL(l_ifp, bias + offset, SEEK_SET);
+    size = VSIFWriteL(&buf[0], sizeof(ILIdx), static_cast<size_t>(size), l_ifp);
     if (size != GIntBig(buf.size())) {
 	CPLError(CE_Failure, CPLE_FileIO, "Can't write to cloning MRF index");
 	return CE_Failure; // Source reported the error
@@ -1855,3 +1885,5 @@ CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImag
     // Cloned index updated, restart this function, it will work now
     return ReadTileIdx(tinfo, pos, img, bias);
 }
+
+NAMESPACE_MRF_END
