@@ -435,7 +435,7 @@ CPLErr GDALMRFRasterBand::FetchBlock(int xblk, int yblk, void *buffer)
     ILSize req(xblk, yblk, 0, m_band/cstride, m_l);
     GUIntBig infooffset = IdxOffset(req, img);
 
-    if ( 0 == (poSrcDS = poDS->GetSrcDS())) {
+    if ( NULL == (poSrcDS = poDS->GetSrcDS())) {
 	CPLError( CE_Failure, CPLE_AppDefined, "MRF: Can't open source file %s", poDS->source.c_str());
 	return CE_Failure;
     }
@@ -488,7 +488,9 @@ CPLErr GDALMRFRasterBand::FetchBlock(int xblk, int yblk, void *buffer)
 
     // Might have the block in the pbuffer, mark it anyhow
     poDS->tile = req;
-    buf_mgr filesrc = { (char *)ob, img.pageSizeBytes };
+    buf_mgr filesrc;
+    filesrc.buffer = (char *)ob;
+    filesrc.size = static_cast<size_t>(img.pageSizeBytes);
 
     if (poDS->bypass_cache) { // No local caching, just return the data
 	if (1 == cstride)
@@ -562,7 +564,7 @@ CPLErr GDALMRFRasterBand::FetchClonedBlock(int xblk, int yblk, void *buffer)
     assert(poDS->clonedSource);
 
     GDALMRFDataset *poSrc;
-    if ( 0 == (poSrc = static_cast<GDALMRFDataset *>(poDS->GetSrcDS()))) {
+    if ( NULL == (poSrc = static_cast<GDALMRFDataset *>(poDS->GetSrcDS()))) {
 	CPLError( CE_Failure, CPLE_AppDefined, "MRF: Can't open source file %s", poDS->source.c_str());
 	return CE_Failure;
     }
@@ -572,6 +574,8 @@ CPLErr GDALMRFRasterBand::FetchClonedBlock(int xblk, int yblk, void *buffer)
 	GDALMRFRasterBand *b = static_cast<GDALMRFRasterBand *>(poSrc->GetRasterBand(nBand));
 	if (b->GetOverviewCount() && m_l)
 	    b = static_cast<GDALMRFRasterBand *>(b->GetOverview(m_l-1));
+        if( b == NULL )
+            return CE_Failure;
 	return b->IReadBlock(xblk,yblk,buffer);
     }
 
@@ -759,12 +763,14 @@ CPLErr GDALMRFRasterBand::IWriteBlock(int xblk, int yblk, void *buffer)
 	double val = GetNoDataValue(&success);
 	if (!success) val = 0.0;
 	if (isAllVal(eDataType, buffer, img.pageSizeBytes, val))
-	    return poDS->WriteTile(0, infooffset, 0);
+	    return poDS->WriteTile(NULL, infooffset, 0);
 
 	// Use the pbuffer to hold the compressed page before writing it
 	poDS->tile = ILSize(); // Mark it corrupt
 
-	buf_mgr src = {(char *)buffer, img.pageSizeBytes};
+	buf_mgr src;
+        src.buffer = (char *)buffer;
+        src.size = static_cast<size_t>(img.pageSizeBytes);
 	buf_mgr dst = {(char *)poDS->GetPBuffer(), poDS->GetPBufferSize()};
 
 	// Swab the source before encoding if we need to 
@@ -856,7 +862,7 @@ CPLErr GDALMRFRasterBand::IWriteBlock(int xblk, int yblk, void *buffer)
 
     if (GIntBig(empties) == AllBandMask()) {
 	CPLFree(tbuffer);
-	return poDS->WriteTile(0, infooffset, 0);
+	return poDS->WriteTile(NULL, infooffset, 0);
     }
 
     if (poDS->bdirty != AllBandMask())
@@ -866,7 +872,9 @@ CPLErr GDALMRFRasterBand::IWriteBlock(int xblk, int yblk, void *buffer)
 
 //    ppmWrite("test.ppm",(char *)tbuffer, ILSize(nBlockXSize,nBlockYSize,0,poDS->nBands));
 
-    buf_mgr src={(char *)tbuffer, img.pageSizeBytes};
+    buf_mgr src;
+    src.buffer = (char *)tbuffer;
+    src.size = static_cast<size_t>(img.pageSizeBytes);
 
     // Use the space after pagesizebytes for compressed output, it is of pbsize
     char *outbuff = (char *)tbuffer + img.pageSizeBytes;
