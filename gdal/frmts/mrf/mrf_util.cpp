@@ -46,27 +46,27 @@
 #include <zlib.h>
 #include <algorithm>
 
-static const char *ILC_N[]={ "PNG", "PPNG", "JPEG", "NONE", "DEFLATE", "TIF", 
+CPL_C_START
+void GDALRegister_mrf(void);
+CPL_C_END
+
+NAMESPACE_MRF_START
+
+static const char * const ILC_N[]={ "PNG", "PPNG", "JPEG", "NONE", "DEFLATE", "TIF", 
 #if defined(LERC)
 	"LERC", 
 #endif
 	"Unknown" };
-static const char *ILC_E[]={ ".ppg", ".ppg", ".pjg", ".til", ".pzp", ".ptf", 
+static const char * const ILC_E[]={ ".ppg", ".ppg", ".pjg", ".til", ".pzp", ".ptf", 
 #if defined(LERC)
 	".lrc" ,
 #endif
 	"" };
-static const char *ILO_N[]={ "PIXEL", "BAND", "LINE", "Unknown" };
+static const char * const ILO_N[]={ "PIXEL", "BAND", "LINE", "Unknown" };
 
-char const **ILComp_Name=ILC_N;
-char const **ILComp_Ext=ILC_E;
-char const **ILOrder_Name=ILO_N;
-
-CPL_C_START
-void GDALRegister_mrf(void);
-void GDALDeregister_mrf( GDALDriver * ) {};
-CPL_C_END
-
+char const * const * ILComp_Name=ILC_N;
+char const * const * ILComp_Ext=ILC_E;
+char const * const * ILOrder_Name=ILO_N;
 /**
  *  Get the string for a compression type
  */
@@ -273,10 +273,13 @@ bool is_Endianess_Dependent(GDALDataType dt, ILCompression comp) {
     return false;
 }
 
+NAMESPACE_MRF_END
 
 /************************************************************************/
 /*                          GDALRegister_mrf()                          */
 /************************************************************************/
+
+USING_NAMESPACE_MRF
 
 void GDALRegister_mrf(void)
 
@@ -289,6 +292,10 @@ void GDALRegister_mrf(void)
 	driver->SetMetadataItem(GDAL_DMD_LONGNAME, "Meta Raster Format");
 	driver->SetMetadataItem(GDAL_DMD_HELPTOPIC, "frmt_marfa.html");
 		driver->SetMetadataItem(GDAL_DCAP_VIRTUALIO, "YES" );
+
+#if GDAL_VERSION_MAJOR >= 2
+        driver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
+#endif
 
 	// These will need to be revisited, do we support complex data types too?
 	driver->SetMetadataItem(GDAL_DMD_CREATIONDATATYPES,
@@ -327,13 +334,14 @@ void GDALRegister_mrf(void)
 
 	driver->pfnOpen = GDALMRFDataset::Open;
 	driver->pfnIdentify = GDALMRFDataset::Identify;
-	driver->pfnUnloadDriver = GDALDeregister_mrf;
 	driver->pfnCreateCopy = GDALMRFDataset::CreateCopy;
 	driver->pfnCreate = GDALMRFDataset::Create;
 	driver->pfnDelete = GDALMRFDataset::Delete;
 	GetGDALDriverManager()->RegisterDriver(driver);
     }
 }
+
+NAMESPACE_MRF_START
 
 GDALMRFRasterBand *newMRFRasterBand(GDALMRFDataset *pDS, const ILImage &image, int b, int level)
 
@@ -449,7 +457,7 @@ CPLString PrintDouble(double d, const char *frmt)
     return CPLString().FormatC(d, frmt);
 }
 
-void XMLSetAttributeVal(CPLXMLNode *parent, const char* pszName,
+static void XMLSetAttributeVal(CPLXMLNode *parent, const char* pszName,
     const char *val)
 {
     CPLCreateXMLNode(parent, CXT_Attribute, pszName);
@@ -553,9 +561,10 @@ int CheckFileSize(const char *fname, GIntBig sz, GDALAccess eAccess) {
 // Similar to compress2() but with flags to control zlib features
 // Returns true if it worked
 int ZPack(const buf_mgr &src, buf_mgr &dst, int flags) {
-    z_stream stream = {0};
+    z_stream stream;
     int err;
 
+    memset(&stream, 0, sizeof(stream));
     stream.next_in = (Bytef*)src.buffer;
     stream.avail_in = (uInt)src.size;
     stream.next_out = (Bytef*)dst.buffer;
@@ -587,9 +596,10 @@ int ZPack(const buf_mgr &src, buf_mgr &dst, int flags) {
 // Return true if it worked
 int ZUnPack(const buf_mgr &src, buf_mgr &dst, int flags) {
 
-    z_stream stream = {0};
+    z_stream stream;
     int err;
 
+    memset(&stream, 0, sizeof(stream));
     stream.next_in = (Bytef*)src.buffer;
     stream.avail_in = (uInt)src.size;
     stream.next_out = (Bytef*)dst.buffer;
@@ -610,3 +620,4 @@ int ZUnPack(const buf_mgr &src, buf_mgr &dst, int flags) {
     return err == Z_OK;
 }
 
+NAMESPACE_MRF_END
