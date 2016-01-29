@@ -49,7 +49,6 @@
 
 CPL_C_START
 void GDALRegister_mrf(void);
-void GDALDeregister_mrf( GDALDriver * ) {};
 CPL_C_END
 
 NAMESPACE_MRF_START
@@ -296,6 +295,10 @@ void GDALRegister_mrf(void)
 	driver->SetMetadataItem(GDAL_DMD_HELPTOPIC, "frmt_marfa.html");
 		driver->SetMetadataItem(GDAL_DCAP_VIRTUALIO, "YES" );
 
+#if GDAL_VERSION_MAJOR >= 2
+        driver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
+#endif
+
 	// These will need to be revisited, do we support complex data types too?
 	driver->SetMetadataItem(GDAL_DMD_CREATIONDATATYPES,
 				"Byte UInt16 Int16 Int32 UInt32 Float32 Float64");
@@ -333,7 +336,6 @@ void GDALRegister_mrf(void)
 
 	driver->pfnOpen = GDALMRFDataset::Open;
 	driver->pfnIdentify = GDALMRFDataset::Identify;
-	driver->pfnUnloadDriver = GDALDeregister_mrf;
 	driver->pfnCreateCopy = GDALMRFDataset::CreateCopy;
 	driver->pfnCreate = GDALMRFDataset::Create;
 	driver->pfnDelete = GDALMRFDataset::Delete;
@@ -457,7 +459,7 @@ CPLString PrintDouble(double d, const char *frmt)
     return CPLString().FormatC(d, frmt);
 }
 
-void XMLSetAttributeVal(CPLXMLNode *parent, const char* pszName,
+static void XMLSetAttributeVal(CPLXMLNode *parent, const char* pszName,
     const char *val)
 {
     CPLCreateXMLNode(parent, CXT_Attribute, pszName);
