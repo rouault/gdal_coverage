@@ -62,6 +62,8 @@
 using std::vector;
 using std::string;
 
+NAMESPACE_MRF_START
+
 // packs a block of a given type, with a stride
 // Count is the number of items that need to be copied
 // These are separate to allow for optimization
@@ -369,7 +371,7 @@ CPLErr GDALMRFRasterBand::FillBlock(void *buffer)
  *  The current band output goes directly into the buffer
  */
 
-CPLErr GDALMRFRasterBand::RB(int xblk, int yblk, buf_mgr src, void *buffer) {
+CPLErr GDALMRFRasterBand::RB(int xblk, int yblk, buf_mgr /*src*/, void *buffer) {
     vector<GDALRasterBlock *> blocks;
 
     for (int i = 0; i < poDS->nBands; i++) {
@@ -476,7 +478,11 @@ CPLErr GDALMRFRasterBand::FetchBlock(int xblk, int yblk, void *buffer)
 	eDataType, cstride, (1 == cstride)? &nBand: NULL,
 	vsz * cstride, 	// pixel, line, band stride
 	vsz * cstride * img.pagesize.x,
-	(cstride != 1) ? vsz : vsz * img.pagesize.x * img.pagesize.y );
+	(cstride != 1) ? vsz : vsz * img.pagesize.x * img.pagesize.y
+#if GDAL_VERSION_MAJOR >= 2
+	,NULL
+#endif
+	);
 
     if (ret != CE_None) return ret;
 
@@ -888,3 +894,5 @@ CPLErr GDALMRFRasterBand::IWriteBlock(int xblk, int yblk, void *buffer)
     poDS->bdirty = 0;
     return ret;
 }
+
+NAMESPACE_MRF_END

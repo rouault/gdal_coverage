@@ -50,6 +50,8 @@ CPL_C_START
 #include "../png/libpng/png.h"
 CPL_C_END
 
+NAMESPACE_MRF_START
+
 //Lucian recommended to change the following three lines to above as
 // it is causing trouble compiling for AMNH folks.
 //CPL_C_START
@@ -57,16 +59,16 @@ CPL_C_END
 //CPL_C_END
 
 // Do Nothing
-void flush_png(png_structp) {}
+static void flush_png(png_structp) {}
 
 // Warning Emit
-void pngWH(png_struct *png, png_const_charp message)
+static void pngWH(png_struct * /*png*/, png_const_charp message)
 {
     CPLError(CE_Warning, CPLE_AppDefined, "MRF: PNG warning %s", message);
 }
 
 // Fatal Warning
-void pngEH(png_struct *png, png_const_charp message)
+static void pngEH(png_struct *png, png_const_charp message)
 {
     CPLError(CE_Failure, CPLE_AppDefined, "MRF: PNG Failure %s", message);
     longjmp(png->jmpbuf, 1);
@@ -357,3 +359,5 @@ PNG_Band::~PNG_Band() {
     CPLFree(PNGColors);
     CPLFree(PNGAlpha);
 }
+
+NAMESPACE_MRF_END
