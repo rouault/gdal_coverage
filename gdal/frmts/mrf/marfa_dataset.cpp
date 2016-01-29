@@ -200,6 +200,12 @@ CPLErr GDALMRFDataset::IBuildOverviews(
 
     CPLDebug("MRF_OVERLAY", "IBuildOverviews %d, bands %d\n", nOverviews, nBandsIn);
 
+    if( nBands != nBandsIn )
+    {
+        CPLError(CE_Failure, CPLE_NotSupported, "nBands = %d not supported", nBandsIn);
+        return CE_Failure;
+    }
+
     /* -------------------------------------------------------------------- */
     /*      If we don't have read access, then create the overviews         */
     /*      externally.                                                     */
@@ -1177,7 +1183,7 @@ CPLErr GDALMRFDataset::Initialize(CPLXMLNode *config)
     }
 
     // Pick up the source data image, if there is one
-    source = CPLStrdup(CPLGetXMLValue(config, "CachedSource.Source", 0));
+    source = CPLGetXMLValue(config, "CachedSource.Source", "");
     // Is it a clone?
     clonedSource = on(CPLGetXMLValue(config, "CachedSource.Source.clone", "no"));
     // Pick up the options, if any
@@ -1346,7 +1352,7 @@ GIntBig GDALMRFDataset::AddOverviews(int scaleIn) {
 
 // Try to implement CreateCopy using Create
 GDALDataset *GDALMRFDataset::CreateCopy(const char *pszFilename,
-    GDALDataset *poSrcDS, int bStrict, char **papszOptions,
+    GDALDataset *poSrcDS, int /*bStrict*/, char **papszOptions,
     GDALProgressFunc pfnProgress, void *pProgressData)
 {
     ILImage img;
@@ -1639,12 +1645,12 @@ CPLErr GDALMRFDataset::AddVersion()
     // Hides the dataset variables with the same name
     VSILFILE *l_ifp = IdxFP();
 
-    void *tbuff = CPLMalloc(idxSize);
+    void *tbuff = CPLMalloc(static_cast<size_t>(idxSize));
     VSIFSeekL(l_ifp, 0, SEEK_SET);
-    VSIFReadL(tbuff, 1, idxSize, l_ifp);
+    VSIFReadL(tbuff, 1, static_cast<size_t>(idxSize), l_ifp);
     verCount++; // The one we write
     VSIFSeekL(l_ifp, idxSize * verCount, SEEK_SET); // At the end, this can mess things up royally
-    VSIFWriteL(tbuff, 1, idxSize, l_ifp);
+    VSIFWriteL(tbuff, 1, static_cast<size_t>(idxSize), l_ifp);
     CPLFree(tbuff);
     return CE_None;
 }
@@ -1697,12 +1703,12 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 	// tinfo contains the current info or 0,0
 	if (tinfo.size == GIntBig(net64(size))) { // Might be the same, read and compare
 	    if (size != 0) {
-		tbuff = CPLMalloc(size);
+		tbuff = CPLMalloc(static_cast<size_t>(size));
 		// Use the temporary buffer, we can't have a versioned cache !!
 		VSIFSeekL(l_dfp, infooffset, SEEK_SET);
-		VSIFReadL(tbuff, 1, size, l_dfp);
+		VSIFReadL(tbuff, 1, static_cast<size_t>(size), l_dfp);
 		// Need to write it if not the same
-		new_tile = (0 != memcmp(buff, tbuff, size));
+		new_tile = (0 != memcmp(buff, tbuff, static_cast<size_t>(size)));
 		CPLFree(tbuff);
 	    }
 	    else {
@@ -1732,7 +1738,7 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 	// Theese statements are the critical MP section for the data file
 	VSIFSeekL(l_dfp, 0, SEEK_END);
 	GUIntBig offset = VSIFTellL(l_dfp);
-	if (size != VSIFWriteL(buff, 1, size, l_dfp))
+	if (static_cast<size_t>(size) != VSIFWriteL(buff, 1, static_cast<size_t>(size), l_dfp))
 	    ret = CE_Failure;
 
 	tinfo.offset = net64(offset);
@@ -1743,11 +1749,11 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 	if (mp_safe) {
 	    // Allocate the temp buffer if we haven't done so already
 	    if (!tbuff)
-		tbuff = CPLMalloc(size);
+		tbuff = CPLMalloc(static_cast<size_t>(size));
 	    VSIFSeekL(l_dfp, offset, SEEK_SET);
-	    VSIFReadL(tbuff, 1, size, l_dfp);
+	    VSIFReadL(tbuff, 1, static_cast<size_t>(size), l_dfp);
 	    // If memcmp returns zero, verify passed
-	    if (!memcmp(buff, tbuff, size)) {
+	    if (!memcmp(buff, tbuff, static_cast<size_t>(size))) {
 		CPLFree(tbuff);
 		tbuff = NULL; // Triggers the loop termination
 	    }
@@ -1842,7 +1848,7 @@ CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImag
     offset = (offset / CPYSZ) * CPYSZ;
     GIntBig size = MIN(size_t(CPYSZ), size_t(bias - offset));
     size /= sizeof(ILIdx); // In records
-    vector<ILIdx> buf(size);
+    vector<ILIdx> buf(static_cast<size_t>(size));
     ILIdx *buffer = &buf[0]; // Buffer to copy the source to the clone index
 
 
@@ -1856,7 +1862,7 @@ CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImag
     }
 
     VSIFSeekL(srcidx, offset, SEEK_SET);
-    size = VSIFReadL(buffer, sizeof(ILIdx), size, srcidx);
+    size = VSIFReadL(buffer, sizeof(ILIdx), static_cast<size_t>(size), srcidx);
     if (size != GIntBig(buf.size())) {
 	CPLError(CE_Failure, CPLE_FileIO, "Can't read cloned source index");
 	return CE_Failure; // Source reported the error
@@ -1870,7 +1876,7 @@ CPLErr GDALMRFDataset::ReadTileIdx(ILIdx &tinfo, const ILSize &pos, const ILImag
 
     // Write it in the right place in the local index file
     VSIFSeekL(l_ifp, bias + offset, SEEK_SET);
-    size = VSIFWriteL(&buf[0], sizeof(ILIdx), size, l_ifp);
+    size = VSIFWriteL(&buf[0], sizeof(ILIdx), static_cast<size_t>(size), l_ifp);
     if (size != GIntBig(buf.size())) {
 	CPLError(CE_Failure, CPLE_FileIO, "Can't write to cloning MRF index");
 	return CE_Failure; // Source reported the error
