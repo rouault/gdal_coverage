@@ -50,6 +50,8 @@ CPL_C_START
 #include <jpeglib.h>
 CPL_C_END
 
+NAMESPACE_MRF_START
+
 /**
 *\Brief Helper class for jpeg error management
 */
@@ -76,7 +78,7 @@ static void emitMessage(j_common_ptr cinfo, int msgLevel)
     if (err->num_warnings++ >1) return;
     char buffer[JMSG_LENGTH_MAX];
     err->format_message(cinfo, buffer);
-    CPLError(CE_Failure, CPLE_AppDefined, buffer);
+    CPLError(CE_Failure, CPLE_AppDefined, "%s", buffer);
 }
 
 static void errorExit(j_common_ptr cinfo)
@@ -86,7 +88,7 @@ static void errorExit(j_common_ptr cinfo)
     char buffer[JMSG_LENGTH_MAX];
 
     err->format_message(cinfo, buffer);
-    CPLError(CE_Failure, CPLE_AppDefined, buffer);
+    CPLError(CE_Failure, CPLE_AppDefined, "%s", buffer);
     // return control to the setjmp point
     longjmp(err->setjmpBuffer, 1);
 }
@@ -351,3 +353,5 @@ GDALMRFRasterBand(pDS, image, b, int(level)), sameres(FALSE), rgb(FALSE)
 	optimize = TRUE; // Required for 12bit
 }
 #endif
+
+NAMESPACE_MRF_END
