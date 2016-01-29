@@ -46,6 +46,13 @@
 #include <zlib.h>
 #include <algorithm>
 
+
+CPL_C_START
+void GDALRegister_mrf(void);
+CPL_C_END
+
+NAMESPACE_MRF_START
+
 static const char *ILC_N[]={ "PNG", "PPNG", "JPEG", "NONE", "DEFLATE", "TIF", 
 #if defined(LERC)
 	"LERC", 
@@ -61,11 +68,6 @@ static const char *ILO_N[]={ "PIXEL", "BAND", "LINE", "Unknown" };
 char const **ILComp_Name=ILC_N;
 char const **ILComp_Ext=ILC_E;
 char const **ILOrder_Name=ILO_N;
-
-CPL_C_START
-void GDALRegister_mrf(void);
-void GDALDeregister_mrf( GDALDriver * ) {};
-CPL_C_END
 
 /**
  *  Get the string for a compression type
@@ -273,10 +275,13 @@ bool is_Endianess_Dependent(GDALDataType dt, ILCompression comp) {
     return false;
 }
 
+NAMESPACE_MRF_END
 
 /************************************************************************/
 /*                          GDALRegister_mrf()                          */
 /************************************************************************/
+
+USING_NAMESPACE_MRF
 
 void GDALRegister_mrf(void)
 
@@ -289,6 +294,10 @@ void GDALRegister_mrf(void)
 	driver->SetMetadataItem(GDAL_DMD_LONGNAME, "Meta Raster Format");
 	driver->SetMetadataItem(GDAL_DMD_HELPTOPIC, "frmt_marfa.html");
 		driver->SetMetadataItem(GDAL_DCAP_VIRTUALIO, "YES" );
+
+#if GDAL_VERSION_MAJOR >= 2
+        driver->SetMetadataItem( GDAL_DCAP_RASTER, "YES" );
+#endif
 
 	// These will need to be revisited, do we support complex data types too?
 	driver->SetMetadataItem(GDAL_DMD_CREATIONDATATYPES,
@@ -327,13 +336,14 @@ void GDALRegister_mrf(void)
 
 	driver->pfnOpen = GDALMRFDataset::Open;
 	driver->pfnIdentify = GDALMRFDataset::Identify;
-	driver->pfnUnloadDriver = GDALDeregister_mrf;
 	driver->pfnCreateCopy = GDALMRFDataset::CreateCopy;
 	driver->pfnCreate = GDALMRFDataset::Create;
 	driver->pfnDelete = GDALMRFDataset::Delete;
 	GetGDALDriverManager()->RegisterDriver(driver);
     }
 }
+
+NAMESPACE_MRF_START
 
 GDALMRFRasterBand *newMRFRasterBand(GDALMRFDataset *pDS, const ILImage &image, int b, int level)
 
@@ -449,7 +459,7 @@ CPLString PrintDouble(double d, const char *frmt)
     return CPLString().FormatC(d, frmt);
 }
 
-void XMLSetAttributeVal(CPLXMLNode *parent, const char* pszName,
+static void XMLSetAttributeVal(CPLXMLNode *parent, const char* pszName,
     const char *val)
 {
     CPLCreateXMLNode(parent, CXT_Attribute, pszName);
@@ -610,3 +620,4 @@ int ZUnPack(const buf_mgr &src, buf_mgr &dst, int flags) {
     return err == Z_OK;
 }
 
+NAMESPACE_MRF_END

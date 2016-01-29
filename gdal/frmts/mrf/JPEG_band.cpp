@@ -50,6 +50,8 @@ CPL_C_START
 #include <jpeglib.h>
 CPL_C_END
 
+NAMESPACE_MRF_START
+
 /**
 *\Brief Helper class for jpeg error management
 */
@@ -76,7 +78,7 @@ static void emitMessage(j_common_ptr cinfo, int msgLevel)
     if (err->num_warnings++ >1) return;
     char buffer[JMSG_LENGTH_MAX];
     err->format_message(cinfo, buffer);
-    CPLError(CE_Failure, CPLE_AppDefined, buffer);
+    CPLError(CE_Failure, CPLE_AppDefined, "%s", buffer);
 }
 
 static void errorExit(j_common_ptr cinfo)
@@ -86,7 +88,7 @@ static void errorExit(j_common_ptr cinfo)
     char buffer[JMSG_LENGTH_MAX];
 
     err->format_message(cinfo, buffer);
-    CPLError(CE_Failure, CPLE_AppDefined, buffer);
+    CPLError(CE_Failure, CPLE_AppDefined, "%s", buffer);
     // return control to the setjmp point
     longjmp(err->setjmpBuffer, 1);
 }
@@ -104,23 +106,23 @@ ErrorMgr::ErrorMgr()
 /**
 *\Brief Do nothing stub function for JPEG library, called
 */
-static void stub_source_dec(j_decompress_ptr cinfo) {};
+static void stub_source_dec(j_decompress_ptr /*cinfo*/) {};
 
 /**
 *\Brief: Do nothing stub function for JPEG library, called?
 */
-static boolean fill_input_buffer_dec(j_decompress_ptr cinfo) { return TRUE; };
+static boolean fill_input_buffer_dec(j_decompress_ptr /*cinfo*/) { return TRUE; };
 
 /**
 *\Brief: Do nothing stub function for JPEG library, not called
 */
-static void skip_input_data_dec(j_decompress_ptr cinfo, long l) {};
+static void skip_input_data_dec(j_decompress_ptr /*cinfo*/, long /*l*/) {};
 
 // Destination should be already set up
-static void init_or_terminate_destination(j_compress_ptr cinfo) {}
+static void init_or_terminate_destination(j_compress_ptr /*cinfo*/) {}
 
 // Called if the buffer provided is too small
-static boolean empty_output_buffer(j_compress_ptr cinfo) {
+static boolean empty_output_buffer(j_compress_ptr /*cinfo*/) {
     std::cerr << "JPEG Output buffer empty called\n";
     return FALSE;
 }
@@ -351,3 +353,5 @@ GDALMRFRasterBand(pDS, image, b, int(level)), sameres(FALSE), rgb(FALSE)
 	optimize = TRUE; // Required for 12bit
 }
 #endif
+
+NAMESPACE_MRF_END

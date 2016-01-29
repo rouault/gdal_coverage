@@ -58,6 +58,18 @@
 #include <iostream>
 #include <sstream>
 
+#ifdef GDAL_COMPILATION
+#define NAMESPACE_MRF_START namespace GDAL_MRF {
+#define NAMESPACE_MRF_END   }
+#define USING_NAMESPACE_MRF using namespace GDAL_MRF;
+#else
+#define NAMESPACE_MRF_START
+#define NAMESPACE_MRF_END
+#define USING_NAMESPACE_MRF
+#endif
+
+NAMESPACE_MRF_START
+
 // ZLIB Bit flag fields
 // 0:3 - level, 4 - GZip, 5 RAW zlib, 6:9 strategy
 #define ZFLAG_LMASK 0xF
@@ -276,11 +288,13 @@ GIntBig IdxOffset(const ILSize &pos, const ILImage &img);
 
 enum { SAMPLING_ERR, SAMPLING_Avg, SAMPLING_Near };
 
+GDALMRFRasterBand *newMRFRasterBand(GDALMRFDataset *, const ILImage &, int, int level = 0);
+
 class GDALMRFDataset : public GDALPamDataset {
 
 
     friend class GDALMRFRasterBand;
-    friend GDALMRFRasterBand *newMRFRasterBand(GDALMRFDataset *, const ILImage &, int, int level = 0);
+    friend GDALMRFRasterBand *newMRFRasterBand(GDALMRFDataset *, const ILImage &, int, int level);
 
 public:
     GDALMRFDataset();
@@ -299,7 +313,7 @@ public:
 	GDALDataType eType, char ** papszOptions);
 
     // Stub for delete, GDAL should only overwrite the XML
-    static CPLErr Delete(const char * pszName) {
+    static CPLErr Delete(const char *) {
 	return CE_None;
     }
 
@@ -318,11 +332,13 @@ public:
     virtual CPLErr GetGeoTransform(double *gt);
     virtual CPLErr SetGeoTransform(double *gt);
 
+#ifdef unused
     virtual CPLErr AdviseRead(int nXOff, int nYOff, int nXSize, int nYSize,
 	int nBufXSize, int nBufYSize,
 	GDALDataType eDT,
 	int nBandCount, int *panBandList,
 	char **papszOptions);
+#endif
 
     virtual char **GetFileList();
 
@@ -377,9 +393,15 @@ protected:
 	return pbuffer;
     }
 
+#if GDAL_VERSION_MAJOR >= 2
+    virtual CPLErr IRasterIO(GDALRWFlag, int, int, int, int,
+        void *, int, int, GDALDataType,
+        int, int *, GSpacing, GSpacing, GSpacing, GDALRasterIOExtraArg*);
+#else
     virtual CPLErr IRasterIO(GDALRWFlag, int, int, int, int,
 	void *, int, int, GDALDataType,
 	int, int *, int, int, int);
+#endif
 
     virtual CPLErr IBuildOverviews(const char*, int, int*, int, int*,
 	GDALProgressFunc, void*);
@@ -687,10 +709,12 @@ public:
 
 protected:
     virtual int GetOverviewCount() { return 0; }
-    virtual GDALRasterBand *GetOverview(int n) { return 0; }
+    virtual GDALRasterBand *GetOverview(int ) { return 0; }
 
     GDALMRFRasterBand *pBand;
 };
+
+NAMESPACE_MRF_END
 
 #endif // GDAL_FRMTS_MRF_MARFA_H_INCLUDED
 
