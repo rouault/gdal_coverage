@@ -17,6 +17,8 @@ Contributors:  Thomas Maurer
 #include "RLE.h"
 #include <cstring>
 
+NAMESPACE_MRF_START
+
 // -------------------------------------------------------------------------- ;
 
 size_t RLE::computeNumBytesRLE(const Byte* arr, size_t numBytes) const
@@ -223,7 +225,7 @@ bool RLE::compress(const Byte* arr, size_t numBytes,
   }
 
   writeCount(-32768, &cntPtr, &dstPtr);    // write end of stream symbol
-  sum += 2;
+  /*sum += 2;*/
 
   if (verify)
   {
@@ -317,3 +319,4 @@ short RLE::readCount(const Byte** ppCnt) const
 
 // -------------------------------------------------------------------------- ;
 
+NAMESPACE_MRF_END
