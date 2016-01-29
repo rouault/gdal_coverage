@@ -24,8 +24,9 @@ Contributors:  Thomas Maurer
 #include <cstdlib>
 #include "Image.h"
 
+NAMESPACE_MRF_START
 // -------------------------------------------------------------------------- ;
-
+// -------------------------------------------------------------------------- ;
 // ---- related classes ----------------------------------------------------- ;
 
 class CntZ
@@ -54,7 +55,7 @@ public:
   };
 
   /// assignment
-  virtual TImage& operator=(const TImage& tImg);
+  TImage& operator=(const TImage& tImg);
 
   bool resize(long width, long height);
   virtual void clear();
@@ -194,3 +195,6 @@ bool TImage< Element >::operator == (const Image& img) const
 
   return true;
 }
+
+NAMESPACE_MRF_END
+
