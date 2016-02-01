@@ -85,13 +85,18 @@ GDALMRFDataset::GDALMRFDataset()
     poColorTable = NULL;
     bCrystalized = FALSE; // Assume not in create mode
     bypass_cache = CSLTestBoolean(CPLGetConfigOption("MRF_BYPASSCACHING", "FALSE"));
+    idxSize = 0;
+    verCount = 0;
+    Quality = 0;
+    dfp.acc = GF_Read;
+    ifp.acc = GF_Read;
 }
 
 void GDALMRFDataset::SetPBuffer(unsigned int sz)
 {
     if (sz == 0) {
 	CPLFree(pbuffer);
-	pbsize = 0;
+	pbuffer = NULL;
     }
     pbuffer = CPLRealloc(pbuffer, sz);
     pbsize = (pbuffer == NULL) ? 0 : sz;
@@ -878,8 +883,13 @@ char      **GDALMRFDataset::GetFileList()
 // Try to create all the folders in the path in sequence, ignore errors
 static void mkdir_r(string const &fname) {
     size_t loc = fname.find_first_of("\\/");
-    while (string::npos != fname.find_first_of("\\/", ++loc)) {
+    if( loc == string::npos )
+        return;
+    while (true) {
+        ++ loc;
 	loc = fname.find_first_of("\\/", loc);
+        if( loc == string::npos )
+            break;
 	VSIMkdir(fname.substr(0, loc).c_str(), 0);
     }
 }
@@ -1751,6 +1761,7 @@ CPLErr GDALMRFDataset::WriteTile(void *buff, GUIntBig infooffset, GUIntBig size)
 		// Need to write it if not the same
 		new_tile = (0 != memcmp(buff, tbuff, static_cast<size_t>(size)));
 		CPLFree(tbuff);
+                tbuff = NULL;
 	    }
 	    else {
 		// Writing a null tile on top of a null tile, does it count?
