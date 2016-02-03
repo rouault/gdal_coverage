@@ -111,6 +111,7 @@ test_script:
   - SET GDAL_DATA=%CD%\gdal\data
   - cd autotest
   - cd cpp
+  - SET DO_NOT_FAIL_ON_RECODE_ERRORS=YES
   - nmake /f makefile.vc check MSVC_VER=1800 %WIN64_ARG%
   - cd ..
   - python run_all.py
