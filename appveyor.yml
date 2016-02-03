@@ -65,7 +65,7 @@ install:
 - echo POPPLER_0_20_OR_LATER = YES >> nmake.local
 - echo POPPLER_0_23_OR_LATER = YES >> nmake.local
 - echo POPPLER_BASE_STREAM_HAS_TWO_ARGS = YES >> nmake.local
-- echo POPPLER_LIBS = $(SDK_LIB)\poppler.lib $(SDK_LIB)\$(FT_LIB) advapi32.lib gdi32.lib >> nmake.local
+- echo POPPLER_LIBS = $(SDK_LIB)\poppler.lib $(SDK_LIB)\freetype2411.lib advapi32.lib gdi32.lib >> nmake.local
 - echo OPENJPEG_ENABLED = YES >> nmake.local
 - echo OPENJPEG_CFLAGS = -I$(SDK_INC) >> nmake.local
 - echo OPENJPEG_LIB = $(SDK_LIB)\openjp2.lib >> nmake.local
