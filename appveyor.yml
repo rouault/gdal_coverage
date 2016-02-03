@@ -58,7 +58,7 @@ install:
 - echo EXPAT_LIB=$(SDK_LIB)\expat.lib >> nmake.local
 - echo LIBKML_DIR=bla >> nmake.local
 - echo LIBKML_INCLUDE=-I$(SDK_INC) >> nmake.local
-- echo LIBKML_LIBS=$(SDK_LIB)\libkmlbase.lib (SDK_LIB)\libkmlconvenience.lib (SDK_LIB)\libkmldom.lib (SDK_LIB)\libkmlengine.lib (SDK_LIB)\libkmlregionator.lib (SDK_LIB)\libkmlxsd.lib (SDK_LIB)\libexpat.lib (SDK_LIB)\zdll.lib >> nmake.local
+- echo LIBKML_LIBS=$(SDK_LIB)\libkmlbase.lib $(SDK_LIB)\libkmlconvenience.lib $(SDK_LIB)\libkmldom.lib $(SDK_LIB)\libkmlengine.lib $(SDK_LIB)\libkmlregionator.lib $(SDK_LIB)\libkmlxsd.lib $(SDK_LIB)\expat.lib $(SDK_LIB)\zdll.lib >> nmake.local
 - echo POPPLER_ENABLED = YES >> nmake.local
 - echo POPPLER_CFLAGS = -I$(SDK_INC) -I$(SDK_INC)\poppler >> nmake.local
 - echo POPPLER_HAS_OPTCONTENT = YES >> nmake.local
@@ -75,12 +75,12 @@ install:
 - echo ECWFLAGS=-DECWSDK_VERSION=33 -I$(SDK_INC) /D_MBCS /D_UNICODE /DUNICODE /D_WINDOWS  /DLIBECWJ2 /DWIN32 /D_WINDLL -DNO_X86_MMI >> nmake.local
 - echo LIBICONV_DIR = bla >> nmake.local
 - echo LIBICONV_INCLUDE = -I$(SDK_INC) >> nmake.local
-- echo LIBICONV_LIBRARY = $(SDK_LIB)\libiconv.lib >> nmake.local
+- echo LIBICONV_LIBRARY = $(SDK_LIB)\iconv.lib >> nmake.local
 - echo LIBICONV_CFLAGS = -DICONV_CONST=const >> nmake.local
 #- echo HDF4_DIR = $(SDK_PREFIX) >> nmake.local
 #- echo HDF4_LIB = $(SDK_LIB)\hdfdll.lib $(SDK_LIB)\mfhdfdll.lib Ws2_32.lib >> nmake.local
 - echo HDF5_DIR = $(SDK_PREFIX) >> nmake.local
-- echo HDF5_LIB = $(SDK_LIB)\hdf5dll.lib  >> nmake.local
+- echo HDF5_LIB = $(SDK_LIB)\hdf5.lib  >> nmake.local
 - echo KEA_CFLAGS = -I$(SDK_INC) >> nmake.local
 - echo KEA_LIB = $(SDK_LIB)\libkea.lib >> nmake.local
 - echo NETCDF_SETTING=yes >> nmake.local
