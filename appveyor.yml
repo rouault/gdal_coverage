@@ -11,14 +11,64 @@ install:
 - if "%platform%" == "x64" "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
 - if "%platform%" == "x64" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
 - if "%platform%" == "x64" set WIN64_ARG="WIN64=YES"
-- ps: Start-FileDownload http://download.osgeo.org/proj/proj-4.9.1.tar.gz
-- 7z x proj-4.9.1.tar.gz
-- 7z x proj-4.9.1.tar
-- cd proj-4.9.1
-- nmake /f makefile.vc
-- nmake /f makefile.vc install-all
+- if "%platform%" == "x86" SET SDK=release-1800
+- if "%platform%" == "x64" SET SDK=release-1800-x64
+- set SDK_ZIP=%SDK%-dev.zip
+- set SDK_URL=http://download.gisinternals.com/sdk/downloads/%SDK_ZIP%
+- echo "%SDK_ZIP%"
+- echo "%SDK_URL%"
+- mkdir sdk
+- cd sdk
+- appveyor DownloadFile "%SDK_URL%"
+- 7z x "%SDK_ZIP%" > nul
 - cd ..
+- set SDK_PREFIX=%CD%\sdk\%SDK%
+- set SDK_INC=%CD%\sdk\%SDK%\include
+- set SDK_LIB=%CD%\sdk\%SDK%\lib
+- set SDK_BIN=%CD%\sdk\%SDK%\bin
+#- ps: Start-FileDownload http://download.osgeo.org/proj/proj-4.9.1.tar.gz
+#- 7z x proj-4.9.1.tar.gz
+#- 7z x proj-4.9.1.tar
+#- cd proj-4.9.1
+#- nmake /f makefile.vc
+#- nmake /f makefile.vc install-all
+#- cd ..
 - cd gdal
+- echo GEOS_CFLAGS=-I$(SDK_INC) -DHAVE_GEOS > nmake.local
+- echo GEOS_LIB=$(SDK_LIB)\geos_c.lib >> nmake.local
+- echo PG_INC_DIR = $(SDK_INC) >> nmake.local
+- echo PG_LIB = $(SDK_LIB)\libpqdll.lib wsock32.lib >> nmake.local
+- echo CURL_DIR=bla >> nmake.local
+- echo CURL_INC = -I$(SDK_INC) >> nmake.local
+- echo CURL_LIB = $(SDK_LIB)\libcurl_imp.lib wsock32.lib wldap32.lib winmm.lib >> nmake.local
+- echo SQLITE_INC=-I$(SDK_INC) -DHAVE_SPATIALITE -DSPATIALITE_AMALGAMATION >> nmake.local
+- echo SQLITE_LIB=$(SDK_LIB)\spatialite_i.lib >> nmake.local
+- echo KMLSUPEROVERLAY_SUPPORTED = YES >> nmake.local
+- echo MINIZIP_INCLUDE = -I$(SDK_INC) >> nmake.local
+- echo MINIZIP_LIBRARY = $(SDK_LIB)\minizip.lib >> nmake.local
+- echo MYSQL_INC_DIR=$(SDK_INC) >> nmake.local
+- echo MYSQL_LIB=$(SDK_LIB)\libmysql.lib advapi32.lib >> nmake.local
+- echo XERCES_DIR=bla >> nmake.local
+- echo XERCES_INCLUDE=-I$(SDK_INC) -I$(SDK_INC)\xercesc >> nmake.local
+- echo XERCES_LIB=$(SDK_LIB)\xerces-c_2.lib >> nmake.local
+- echo ILI_ENABLED = YES >> nmake.local
+- echo EXPAT_DIR=bla >> nmake.local
+- echo EXPAT_INCLUDE=-I$(SDK_INC) >> nmake.local
+- echo EXPAT_LIB=$(SDK_LIB)\libexpat.lib >> nmake.local
+- echo LIBKML_DIR=bla >> nmake.local
+- echo LIBKML_INCLUDE=-I$(SDK_INC) >> nmake.local
+- echo LIBKML_LIBS=$(SDK_LIB)\libkmlbase.lib (SDK_LIB)\libkmlconvenience.lib (SDK_LIB)\libkmldom.lib (SDK_LIB)\libkmlengine.lib (SDK_LIB)\libkmlregionator.lib (SDK_LIB)\libkmlxsd.lib (SDK_LIB)\libexpat.lib (SDK_LIB)\zdll.lib >> nmake.local
+- echo POPPLER_ENABLED = YES >> nmake.local
+- echo POPPLER_CFLAGS = -I$(SDK_INC) -I$(SDK_INC)\poppler >> nmake.local
+- echo POPPLER_HAS_OPTCONTENT = YES >> nmake.local
+- echo POPPLER_0_20_OR_LATER = YES >> nmake.local
+- echo POPPLER_0_23_OR_LATER = YES >> nmake.local
+- echo POPPLER_BASE_STREAM_HAS_TWO_ARGS = YES >> nmake.local
+- echo POPPLER_LIBS = $(SDK_LIB)\poppler.lib $(SDK_LIB)\$(FT_LIB) advapi32.lib gdi32.lib >> nmake.local
+- echo OPENJPEG_ENABLED = YES >> nmake.local
+- echo OPENJPEG_CFLAGS = -I$(SDK_INC) >> nmake.local
+- echo OPENJPEG_LIB = $(SDK_LIB)\openjp2.lib >> nmake.local
+- echo OPENJPEG_VERSION = 20100 >> nmake.local
 - nmake /f makefile.vc MSVC_VER=1800 DEBUG=1 %WIN64_ARG% USER_DEFS=/WX
 - cd apps
 - nmake /f makefile.vc test_ogrsf.exe MSVC_VER=1800 DEBUG=1 %WIN64_ARG% USER_DEFS=/WX
@@ -37,7 +87,9 @@ build_script:
 
 test_script:
   - echo test_script
-  - SET PATH=%CD%\gdal;%CD%\gdal\apps;c:\proj\bin;%PATH%
+  - set SDK_PREFIX=%CD%\sdk\%SDK%
+  - set SDK_BIN=%CD%\sdk\%SDK%\bin
+  - SET PATH=%CD%\gdal;%CD%\gdal\apps;c:\proj\bin;%SDK_BIN%;%PATH%
   - SET GDAL_DATA=%CD%\gdal\data
   - cd autotest
   - cd cpp
