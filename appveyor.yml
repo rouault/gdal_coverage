@@ -77,8 +77,8 @@ install:
 - echo LIBICONV_INCLUDE = -I$(SDK_INC) >> nmake.local
 - echo LIBICONV_LIBRARY = $(SDK_LIB)\libiconv.lib >> nmake.local
 - echo LIBICONV_CFLAGS = -DICONV_CONST=const >> nmake.local
-- echo HDF4_DIR = $(SDK_PREFIX) >> nmake.local
-- echo HDF4_LIB = $(SDK_LIB)\hdfdll.lib $(SDK_LIB)\mfhdfdll.lib Ws2_32.lib >> nmake.local
+#- echo HDF4_DIR = $(SDK_PREFIX) >> nmake.local
+#- echo HDF4_LIB = $(SDK_LIB)\hdfdll.lib $(SDK_LIB)\mfhdfdll.lib Ws2_32.lib >> nmake.local
 - echo HDF5_DIR = $(SDK_PREFIX) >> nmake.local
 - echo HDF5_LIB = $(SDK_LIB)\hdf5dll.lib  >> nmake.local
 - echo KEA_CFLAGS = -I$(SDK_INC) >> nmake.local
