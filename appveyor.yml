@@ -69,6 +69,17 @@ install:
 - echo OPENJPEG_CFLAGS = -I$(SDK_INC) >> nmake.local
 - echo OPENJPEG_LIB = $(SDK_LIB)\openjp2.lib >> nmake.local
 - echo OPENJPEG_VERSION = 20100 >> nmake.local
+- echo ECWDIR=bla >> nmake.local
+- echo ECWLIB=$(SDK_LIB)\libecwj2.lib >> nmake.local
+- echo ECWFLAGS=-DECWSDK_VERSION=33 -I$(SDK_INC) /D_MBCS /D_UNICODE /DUNICODE /D_WINDOWS  /DLIBECWJ2 /DWIN32 /D_WINDLL -DNO_X86_MMI >> nmake.local
+- echo LIBICONV_DIR = bla >> nmake.local
+- echo LIBICONV_INCLUDE = -I$(SDK_INC) >> nmake.local
+- echo LIBICONV_LIBRARY = $(SDK_LIB)\libiconv.lib >> nmake.local
+- echo LIBICONV_CFLAGS = -DICONV_CONST=const >> nmake.local
+- echo HDF4_DIR = $(SDK_PREFIX) >> nmake.local
+- echo HDF4_LIB = $(SDK_LIB)\hdfdll.lib $(SDK_LIB)\mfhdfdll.lib Ws2_32.lib >> nmake.local
+- echo HDF5_DIR = $(SDK_PREFIX) >> nmake.local
+- echo HDF5_LIB = $(SDK_LIB)\hdf5dll.lib  >> nmake.local
 - nmake /f makefile.vc MSVC_VER=1800 DEBUG=1 %WIN64_ARG% USER_DEFS=/WX
 - cd apps
 - nmake /f makefile.vc test_ogrsf.exe MSVC_VER=1800 DEBUG=1 %WIN64_ARG% USER_DEFS=/WX
