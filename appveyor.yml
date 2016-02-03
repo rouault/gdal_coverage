@@ -43,7 +43,7 @@ install:
 - echo CURL_INC = -I$(SDK_INC) >> nmake.local
 - echo CURL_LIB = $(SDK_LIB)\libcurl_imp.lib wsock32.lib wldap32.lib winmm.lib >> nmake.local
 - echo SQLITE_INC=-I$(SDK_INC) -DHAVE_SPATIALITE -DSPATIALITE_AMALGAMATION >> nmake.local
-- echo SQLITE_LIB=$(SDK_LIB)\spatialite_i.lib >> nmake.local
+- echo SQLITE_LIB=$(SDK_LIB)\spatialite_i.lib $(SDK_LIB)\sqlite3_i.lib >> nmake.local
 - echo KMLSUPEROVERLAY_SUPPORTED = YES >> nmake.local
 - echo MINIZIP_INCLUDE = -I$(SDK_INC) >> nmake.local
 - echo MINIZIP_LIBRARY = $(SDK_LIB)\minizip.lib >> nmake.local
