@@ -55,7 +55,7 @@ install:
 - echo ILI_ENABLED = YES >> nmake.local
 - echo EXPAT_DIR=bla >> nmake.local
 - echo EXPAT_INCLUDE=-I$(SDK_INC) >> nmake.local
-- echo EXPAT_LIB=$(SDK_LIB)\libexpat.lib >> nmake.local
+- echo EXPAT_LIB=$(SDK_LIB)\expat.lib >> nmake.local
 - echo LIBKML_DIR=bla >> nmake.local
 - echo LIBKML_INCLUDE=-I$(SDK_INC) >> nmake.local
 - echo LIBKML_LIBS=$(SDK_LIB)\libkmlbase.lib (SDK_LIB)\libkmlconvenience.lib (SDK_LIB)\libkmldom.lib (SDK_LIB)\libkmlengine.lib (SDK_LIB)\libkmlregionator.lib (SDK_LIB)\libkmlxsd.lib (SDK_LIB)\libexpat.lib (SDK_LIB)\zdll.lib >> nmake.local
