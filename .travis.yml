@@ -57,6 +57,11 @@ before_install:
   - pyflakes autotest
   - pyflakes gdal/swig/python/scripts
   - pyflakes gdal/swig/python/samples
+# For cfchecks
+  - sudo apt-get install libudunits2-dev udunits-bin
+  - pip install --user cdat-lite
+  - wget http://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml -O autotest/gdrivers/tmp/cache/cf-standard-name-table-v18.xml
+#
   - psql -c "drop database if exists autotest" -U postgres
   - psql -c "create database autotest" -U postgres
   - psql -c "create extension postgis" -d autotest -U postgres
