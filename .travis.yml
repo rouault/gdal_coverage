@@ -60,6 +60,7 @@ before_install:
 # For cfchecks
   - sudo apt-get install libudunits2-dev udunits-bin
   - pip install --user cdat-lite
+  - mkdir -p autotest/gdrivers/tmp/cache
   - wget http://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml -O autotest/gdrivers/tmp/cache/cf-standard-name-table-v18.xml
 #
   - psql -c "drop database if exists autotest" -U postgres
