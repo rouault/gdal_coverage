@@ -6,10 +6,11 @@ use Test::More qw(no_plan);
 BEGIN { use_ok('Geo::GDAL') };
 
 # test measured geometries in pg driver
-ok(1);
-exit;
 
 my @data = (
+    Point => 'POINT (1 2)',
+    PointZ => 'POINT Z (1 2 3)',
+
     PointM => 'POINT M (1 2 3)',
     LineStringM => 'LINESTRING M (1 2 3)',
     PointZM => 'POINT ZM (1 2 3 4)',
@@ -45,6 +46,9 @@ for (my $i = 0; $i < @data; $i+=2) {
         Geo::OGR::Open('PG:dbname=autotest', 1)->DeleteLayer(lc($type));
     };
     my $l = Geo::OGR::Open('PG:dbname=autotest', 1)->CreateLayer(Name => $type, GeometryType => $type);
+    my $t = $l->GeometryType;
+    $t = 'PointZ' if $t eq 'Point25D';
+    ok($t eq $type, "$driver layer geom type: expected: $type, got: $t");
     eval {
         $l->InsertFeature({Geometry => {WKT => $data[$i+1]} });
     };
@@ -60,6 +64,7 @@ for (my $i = 0; $i < @data; $i+=2) {
     while (my $f = $l->GetNextFeature()) {
         my $g = $f->GetGeometryRef;
         my $t = $g->GeometryType;
+        $t = 'PointZ' if $t eq 'Point25D';
         ok($t eq $type, "$driver retrieve feature: expected: $type, got: $t");
         my $wkt = $g->As(Format => 'ISO WKT');
         ok($wkt eq $data[$i+1], "$driver retrieve feature: $type, expected: $data[$i+1] got: $wkt");
