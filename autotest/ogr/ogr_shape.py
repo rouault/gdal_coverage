@@ -2857,7 +2857,7 @@ def ogr_shape_59():
     geom = feat.GetGeometryRef()
 
     if geom.GetGeometryName() != 'POINT':
-        print geom.GetGeometryName()
+        print (geom.GetGeometryName())
         gdaltest.post_reason( 'Geometry of wrong type.' )
         return 'fail'
 
@@ -2875,7 +2875,7 @@ def ogr_shape_59():
     feat = shp_lyr.GetNextFeature()
     geom = feat.GetGeometryRef()
     if geom.ExportToIsoWkt() != 'LINESTRING M (0 0 10,1 1 20)':
-        print geom.ExportToIsoWkt()
+        print (geom.ExportToIsoWkt())
         gdaltest.post_reason( 'fail' )
         return 'fail'
     feat = shp_lyr.GetNextFeature()
@@ -2891,13 +2891,13 @@ def ogr_shape_59():
     feat = shp_lyr.GetNextFeature()
     geom = feat.GetGeometryRef()
     if geom.ExportToIsoWkt() != 'POLYGON M ((0 0 10,0 1 20,1 1 30,0 0 40))':
-        print geom.ExportToIsoWkt()
+        print (geom.ExportToIsoWkt())
         gdaltest.post_reason( 'fail' )
         return 'fail'
     feat = shp_lyr.GetNextFeature()
     geom = feat.GetGeometryRef()
     if geom.ExportToIsoWkt() != 'POLYGON M ((0 0 10,0 1 20,1 1 30,0 0 40),(0.25 0.25 50,0.75 0.75 60,0.25 0.75 70,0.25 0.25 80))':
-        print geom.ExportToIsoWkt()
+        print (geom.ExportToIsoWkt())
         gdaltest.post_reason( 'fail' )
         return 'fail'
     geom = None
@@ -4256,6 +4256,38 @@ def ogr_shape_91():
     return 'success'
 
 ###############################################################################
+# Test reading multipoint Z geometries without M
+
+def ogr_shape_92():
+
+    ds = ogr.Open('data/multipointz_without_m.shp')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    wkt = f.GetGeometryRef().ExportToIsoWkt()
+    if wkt != 'MULTIPOINT Z ((0 1 2),(3 4 5))':
+        gdaltest.post_reason('fail')
+        print(wkt)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test reading point Z geometries without M
+
+def ogr_shape_93():
+
+    ds = ogr.Open('data/pointz_without_m.shp')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    wkt = f.GetGeometryRef().ExportToIsoWkt()
+    if wkt != 'POINT Z (1 2 3)':
+        gdaltest.post_reason('fail')
+        print(wkt)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
 #
 
 def ogr_shape_cleanup():
@@ -4390,6 +4422,8 @@ gdaltest_list = [
     ogr_shape_89,
     ogr_shape_90,
     ogr_shape_91,
+    ogr_shape_92,
+    ogr_shape_93,
     ogr_shape_cleanup ]
 
 if __name__ == '__main__':
