@@ -1587,6 +1587,7 @@ netCDFDataset::~netCDFDataset()
 
     for(int i=0;i<nLayers;i++)
         delete papoLayers[i];
+    CPLFree(papoLayers);
 
     /* make sure projection variable is written to band variable */
     if( (GetAccess() == GA_Update) && ! bAddedGridMappingRef )
@@ -3692,9 +3693,9 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
                empty values from dfNN, dfSN, dfEE, dfWE; */
             /* TODO: fix this in 1.8 branch, and then remove this here */
             if ( bWriteGeoTransform && bSetGeoTransform ) {
-                nc_put_att_text( cdfid, NCDFVarID, NCDF_GEOTRANSFORM,
+                CPL_IGNORE_RET_VAL(nc_put_att_text( cdfid, NCDFVarID, NCDF_GEOTRANSFORM,
                                  osGeoTransform.size(),
-                                 osGeoTransform.c_str() );
+                                 osGeoTransform.c_str() ));
             }
         }
 
@@ -4455,7 +4456,7 @@ OGRLayer* netCDFDataset::ICreateLayer( const char *pszName,
         delete poLayer;
         return NULL;
     }
-    papoLayers = static_cast<OGRLayer**>(CPLRealloc(papoLayers, (nLayers + 1) * sizeof(OGRLayer)));
+    papoLayers = static_cast<OGRLayer**>(CPLRealloc(papoLayers, (nLayers + 1) * sizeof(OGRLayer*)));
     papoLayers[nLayers++] = poLayer;
     return poLayer;
 }
@@ -4709,7 +4710,8 @@ void netCDFLayer::SetRecordDimID(int nRecordDimID)
     m_nRecordDimID = nRecordDimID;
     char szTemp[NC_MAX_NAME+1];
     szTemp[0] = 0;
-    nc_inq_dimname( m_poDS->GetCDFID(), m_nRecordDimID, szTemp);
+    int status = nc_inq_dimname( m_poDS->GetCDFID(), m_nRecordDimID, szTemp);
+    NCDF_ERR(status);
     m_osRecordDimName = szTemp;
 }
 
@@ -6625,7 +6627,7 @@ GDALDataset *netCDFDataset::Open( GDALOpenInfo * poOpenInfo )
                 poLayer->SetWKTGeometryField( osGeometryField );
             }
             poDS->papoLayers = static_cast<OGRLayer**>(
-                CPLRealloc(poDS->papoLayers, (poDS->nLayers + 1) * sizeof(OGRLayer)));
+                CPLRealloc(poDS->papoLayers, (poDS->nLayers + 1) * sizeof(OGRLayer*)));
             poDS->papoLayers[poDS->nLayers++] = poLayer;
 
             for( size_t j = 0; j < anPotentialVectorVarID.size(); j++ )
@@ -8037,13 +8039,13 @@ static void NCDFAddGDALHistory( int fpImage,
                          const char * pszFunctionName,
                                 const char * pszCFVersion )
 {
-    nc_put_att_text( fpImage, NC_GLOBAL, "Conventions", 
+    CPL_IGNORE_RET_VAL(nc_put_att_text( fpImage, NC_GLOBAL, "Conventions", 
                      strlen(pszCFVersion),
-                     pszCFVersion ); 
+                     pszCFVersion )); 
 
     const char* pszNCDF_GDAL = GDALVersionInfo("--version");
-    nc_put_att_text( fpImage, NC_GLOBAL, "GDAL", 
-                     strlen(pszNCDF_GDAL), pszNCDF_GDAL );
+    CPL_IGNORE_RET_VAL(nc_put_att_text( fpImage, NC_GLOBAL, "GDAL", 
+                     strlen(pszNCDF_GDAL), pszNCDF_GDAL ));
 
     /* Add history */
     CPLString osTmp;
