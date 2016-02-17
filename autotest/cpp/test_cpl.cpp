@@ -137,11 +137,12 @@ namespace tut
             { "25.e3", CPL_VALUE_REAL },
             { "25e3", CPL_VALUE_REAL },
             { " 25e3 ", CPL_VALUE_REAL },
-    
+            { ".1e3", CPL_VALUE_REAL },
+
             { "25", CPL_VALUE_INTEGER },
             { "-25", CPL_VALUE_INTEGER },
             { "+25", CPL_VALUE_INTEGER },
-    
+
             { "25e 3", CPL_VALUE_STRING },
             { "25e.3", CPL_VALUE_STRING },
             { "-2-5e3", CPL_VALUE_STRING },
@@ -149,6 +150,8 @@ namespace tut
             { "25.25.3", CPL_VALUE_STRING },
             { "25e25e3", CPL_VALUE_STRING },
             { "25e2500", CPL_VALUE_STRING }, /* #6128 */
+
+            { "d1", CPL_VALUE_STRING } /* #6305 */
         };
     
         size_t i;
@@ -468,7 +471,7 @@ namespace tut
             bool bOK = (memcmp(pszDecodedString, oReferenceString.szString,
                            nLength) == 0);
             // FIXME Some tests fail on Mac. Not sure why, but do not error out just for that
-            if( !bOK && getenv("TRAVIS") && getenv("TRAVIS_XCODE_SDK") )
+            if( !bOK && ((getenv("TRAVIS") && getenv("TRAVIS_XCODE_SDK")) || getenv("DO_NOT_FAIL_ON_RECODE_ERRORS")))
             {
                 fprintf(stderr, "Recode from %s failed\n", oTestString.szEncoding);
             }

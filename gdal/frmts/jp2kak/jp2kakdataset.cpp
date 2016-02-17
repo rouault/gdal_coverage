@@ -28,6 +28,10 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#ifdef DEBUG_BOOL
+#define DO_NOT_USE_DEBUG_BOOL
+#endif
+
 #include "cpl_string.h"
 #include "cpl_multiproc.h"
 #include "gdal_frmts.h"
@@ -196,6 +200,8 @@ class JP2KAKRasterBand : public GDALPamRasterBand
 class kdu_cpl_error_message : public kdu_thread_safe_message 
 {
 public: // Member classes
+    using kdu_thread_safe_message::put_text;
+
     kdu_cpl_error_message( CPLErr eErrClass ) 
     {
         m_eErrClass = eErrClass;
@@ -955,11 +961,11 @@ GDALDataset *JP2KAKDataset::Open( GDALOpenInfo * poOpenInfo )
     if( !Identify( poOpenInfo ) )
         return NULL;
 
-    int bResilient = CSLTestBoolean(
+    int bResilient = CPLTestBool(
         CPLGetConfigOption( "JP2KAK_RESILIENT", "NO" ) );
 
     /* Doesn't seem to bring any real performance gain on Linux */
-    int bBuffered = CSLTestBoolean(
+    int bBuffered = CPLTestBool(
         CPLGetConfigOption( "JP2KAK_BUFFERED",
 #ifdef WIN32
                             "YES"
@@ -1179,7 +1185,7 @@ GDALDataset *JP2KAKDataset::Open( GDALOpenInfo * poOpenInfo )
 
         poDS->bCached = bBuffered;
         poDS->bResilient = bResilient;
-        poDS->bFussy = CSLTestBoolean(
+        poDS->bFussy = CPLTestBool(
             CPLGetConfigOption( "JP2KAK_FUSSY", "NO" ) );
 
         if( poDS->bFussy )
@@ -1270,10 +1276,10 @@ GDALDataset *JP2KAKDataset::Open( GDALOpenInfo * poOpenInfo )
                 poDS->bPreferNPReads = true;
         }
         else
-            poDS->bPreferNPReads = !CSLTestBoolean(pszPersist);
+            poDS->bPreferNPReads = !CPLTestBool(pszPersist);
 
         CPLDebug( "JP2KAK", "Cuse_precincts=%d, PreferNonPersistentReads=%d", 
-                  (int) use_precincts, poDS->bPreferNPReads );
+                  use_precincts ? 1 : 0, poDS->bPreferNPReads ? 1 : 0 );
 
 /* -------------------------------------------------------------------- */
 /*      Deduce some other info about the dataset.                       */
@@ -1882,7 +1888,7 @@ JP2KAKDataset::TestUseBlockIO( int nXOff, int nYOff, int nXSize, int nYSize,
 
     if( strlen(CPLGetConfigOption( "GDAL_ONE_BIG_READ", "")) > 0 )
         bUseBlockedIO = 
-            !CSLTestBoolean(CPLGetConfigOption( "GDAL_ONE_BIG_READ", ""));
+            !CPLTestBool(CPLGetConfigOption( "GDAL_ONE_BIG_READ", ""));
 
     return bUseBlockedIO;
 }
@@ -2309,7 +2315,7 @@ JP2KAKCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     if( nTileXSize > 25000 )
     {
         // Don't generate tiles that are terrible wide by default, as
-        // they consume alot of memory for the compression engine.
+        // they consume a lot of memory for the compression engine.
         nTileXSize = 20000;
     }
 

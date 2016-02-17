@@ -28,6 +28,10 @@
 #ifndef PCIDSK_CONFIG_H_INCLUDED
 #define PCIDSK_CONFIG_H_INCLUDED
 
+#if defined(DEBUG_BOOL) || defined(NULL_AS_NULLPTR)
+#include "cpl_port.h"
+#endif
+
 namespace PCIDSK {
 
     typedef unsigned char  uint8;

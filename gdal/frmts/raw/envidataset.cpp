@@ -340,9 +340,19 @@ ENVIDataset::~ENVIDataset()
 {
     FlushCache();
     if( fpImage )
-        VSIFCloseL( fpImage );
+    {
+        if( VSIFCloseL( fpImage ) != 0 )
+        {
+            CPLError(CE_Failure, CPLE_FileIO, "I/O error");
+        }
+    }
     if( fp )
-        VSIFCloseL( fp );
+    {
+        if( VSIFCloseL( fp ) != 0 )
+        {
+            CPLError(CE_Failure, CPLE_FileIO, "I/O error");
+        }
+    }
     CPLFree( pszProjection );
     CSLDestroy( papszHeader );
     CPLFree(pszHDRFilename);
@@ -390,7 +400,7 @@ void ENVIDataset::FlushCache()
     char** catNames = band->GetCategoryNames();
 
     bOK &= VSIFPrintfL( fp, "header offset = 0\n") >= 0;
-    if (0 == catNames)
+    if (NULL == catNames)
         bOK &= VSIFPrintfL( fp, "file type = ENVI Standard\n" ) >= 0;
     else
         bOK &= VSIFPrintfL( fp, "file type = ENVI Classification\n" ) >= 0;
@@ -420,7 +430,7 @@ void ENVIDataset::FlushCache()
 /*      Write class and color information                               */
 /* -------------------------------------------------------------------- */
     catNames = band->GetCategoryNames();
-    if (0 != catNames)
+    if (NULL != catNames)
     {
         int nrClasses = 0;
         while (*catNames++)
@@ -431,7 +441,7 @@ void ENVIDataset::FlushCache()
             bOK &= VSIFPrintfL( fp, "classes = %d\n", nrClasses ) >= 0;
 
             GDALColorTable* colorTable = band->GetColorTable();
-            if (0 != colorTable)
+            if (NULL != colorTable)
             {
                 int nrColors = colorTable->GetColorEntryCount();
                 if (nrColors > nrClasses)
@@ -452,7 +462,7 @@ void ENVIDataset::FlushCache()
             }
 
             catNames = band->GetCategoryNames();
-            if (0 != *catNames)
+            if (NULL != *catNames)
             {
                 bOK &= VSIFPrintfL( fp, "class names = {\n%s", *catNames) >= 0;
                 catNames ++;
@@ -1732,7 +1742,7 @@ void ENVIDataset::ProcessStatsFile()
     int lTestHeader[10];
     if( VSIFReadL( lTestHeader, sizeof(int), 10, fpStaFile ) != 10 )
     {
-        VSIFCloseL( fpStaFile );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpStaFile ));
         osStaFilename = "";
         return;
     }
@@ -1790,7 +1800,7 @@ void ENVIDataset::ProcessStatsFile()
             CPLFree(dStats);
         }
     }
-    VSIFCloseL( fpStaFile );
+    CPL_IGNORE_RET_VAL(VSIFCloseL( fpStaFile ));
 }
 
 int ENVIDataset::byteSwapInt(int swapMe)
@@ -1981,12 +1991,12 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
 
     if( VSIFReadL( szTestHdr, 4, 1, fpHeader ) != 1 )
     {
-        VSIFCloseL( fpHeader );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpHeader ));
         return NULL;
     }
     if( !STARTS_WITH(szTestHdr, "ENVI") )
     {
-        VSIFCloseL( fpHeader );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpHeader ));
         return NULL;
     }
 
@@ -2247,7 +2257,6 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
     int	nDataSize = GDALGetDataTypeSize(eType)/8;
     int nPixelOffset, nLineOffset;
     vsi_l_offset nBandOffset;
-    bool bIntOverflow = false;
     CPLAssert(nDataSize != 0);
     CPLAssert(nBands != 0);
 
@@ -2255,7 +2264,13 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
     {
         poDS->interleave = BIL;
         poDS->SetMetadataItem( "INTERLEAVE", "LINE", "IMAGE_STRUCTURE" );
-        if (nSamples > INT_MAX / (nDataSize * nBands)) bIntOverflow = true;
+        if (nSamples > INT_MAX / (nDataSize * nBands))
+        {
+            delete poDS;
+            CPLError( CE_Failure, CPLE_AppDefined,
+                      "Int overflow occurred.");
+            return NULL;
+        }
         nLineOffset = nDataSize * nSamples * nBands;
         nPixelOffset = nDataSize;
         nBandOffset = (vsi_l_offset)nDataSize * nSamples;
@@ -2264,7 +2279,13 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
     {
         poDS->interleave = BIP;
         poDS->SetMetadataItem( "INTERLEAVE", "PIXEL", "IMAGE_STRUCTURE" );
-        if (nSamples > INT_MAX / (nDataSize * nBands)) bIntOverflow = true;
+        if (nSamples > INT_MAX / (nDataSize * nBands))
+        {
+            delete poDS;
+            CPLError( CE_Failure, CPLE_AppDefined,
+                      "Int overflow occurred.");
+            return NULL;
+        }
         nLineOffset = nDataSize * nSamples * nBands;
         nPixelOffset = nDataSize * nBands;
         nBandOffset = nDataSize;
@@ -2273,24 +2294,23 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
     {
         poDS->interleave = BSQ;
         poDS->SetMetadataItem( "INTERLEAVE", "BAND", "IMAGE_STRUCTURE" );
-        if (nSamples > INT_MAX / nDataSize) bIntOverflow = true;
+        if (nSamples > INT_MAX / nDataSize)
+        {
+            delete poDS;
+            CPLError( CE_Failure, CPLE_AppDefined,
+                      "Int overflow occurred.");
+            return NULL;
+        }
         nLineOffset = nDataSize * nSamples;
         nPixelOffset = nDataSize;
         nBandOffset = (vsi_l_offset)nLineOffset * nLines;
-    }
-
-    if (bIntOverflow)
-    {
-        delete poDS;
-        CPLError( CE_Failure, CPLE_AppDefined,
-                  "Int overflow occurred.");
-        return NULL;
     }
 
 /* -------------------------------------------------------------------- */
 /*      Create band information objects.                                */
 /* -------------------------------------------------------------------- */
     poDS->nBands = nBands;
+    CPLErrorReset();
     for( int i = 0; i < poDS->nBands; i++ )
     {
         poDS->SetBand( i + 1,
@@ -2298,6 +2318,12 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
                                          nHeaderSize + nBandOffset * i,
                                          nPixelOffset, nLineOffset, eType,
                                          bNativeOrder, TRUE) );
+        if( CPLGetLastErrorType() != CE_None )
+        {
+            poDS->nBands = i + 1;
+            delete poDS;
+            return NULL;
+        }
     }
 
 /* -------------------------------------------------------------------- */
@@ -2326,7 +2352,7 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo * poOpenInfo )
                 /* Don't show unknown or index units */
                 if (EQUAL(pszWLUnits,"Unknown") ||
                     EQUAL(pszWLUnits,"Index") )
-                    pszWLUnits=0;
+                    pszWLUnits=NULL;
             }
             if (pszWLUnits)
             {
@@ -2561,7 +2587,7 @@ GDALDataset *ENVIDataset::Create( const char * pszFilename,
 /* -------------------------------------------------------------------- */
     int	iENVIType = GetEnviType(eType);
     if (0 == iENVIType)
-      return 0;
+      return NULL;
 
 /* -------------------------------------------------------------------- */
 /*      Try to create the file.                                         */
@@ -2582,7 +2608,8 @@ GDALDataset *ENVIDataset::Create( const char * pszFilename,
 /* -------------------------------------------------------------------- */
     bool bRet = VSIFWriteL( reinterpret_cast<void *>( const_cast<char *>( "\0\0" ) ),
                 2, 1, fp ) == 1;
-    VSIFCloseL( fp );
+    if( VSIFCloseL( fp ) != 0 )
+        bRet = false;
     if( !bRet )
         return NULL;
 
@@ -2639,10 +2666,11 @@ GDALDataset *ENVIDataset::Create( const char * pszFilename,
     bRet &= VSIFPrintfL( fp, "interleave = %s\n", pszInterleaving) > 0;
     bRet &= VSIFPrintfL( fp, "byte order = %d\n", iBigEndian ) > 0;
 
-    VSIFCloseL( fp );
+    if( VSIFCloseL( fp ) != 0 )
+        bRet = false;
 
     if( !bRet )
-        return FALSE;
+        return NULL;
 
     return reinterpret_cast<GDALDataset *>(
         GDALOpen( pszFilename, GA_Update ) );

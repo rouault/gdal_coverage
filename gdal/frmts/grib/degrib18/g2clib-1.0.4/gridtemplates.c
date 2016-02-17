@@ -23,7 +23,7 @@ static const struct gridtemplate templatesgrid[MAXGRIDTEMP] = {
          {30, 22, 0, {1,1,4,1,4,1,4,4,4,-4,-4,1,-4,-4,4,4,1,1,-4,-4,-4,-4} },
              // 3.31: Albers equal area
          {31, 22, 0, {1,1,4,1,4,1,4,4,4,-4,4,1,-4,4,4,4,1,1,-4,-4,-4,4} },
-             // 3.40: Guassian Lat/Lon
+             // 3.40: Gaussian Lat/Lon
          {40, 19, 0, {1,1,4,1,4,1,4,4,4,4,4,-4,4,1,-4,4,4,4,1} },
              // 3.41: Rotated Gaussian Lat/Lon
          {41, 22, 0, {1,1,4,1,4,1,4,4,4,4,4,-4,4,1,-4,4,4,4,1,-4,4,4} },
@@ -198,6 +198,7 @@ xxtemplate *extgridtemplate(g2int number,g2int *list)
            if (l_index == -1) return(0);
 
            new=getgridtemplate(number);
+           if( new == NULL ) return(NULL);
 
            if ( ! new->needext ) return(new);
 

@@ -333,13 +333,22 @@ def testCreateCopyInterruptCallback(pct, message, user_data):
 class GDALTest:
     def __init__(self, drivername, filename, band, chksum,
                  xoff = 0, yoff = 0, xsize = 0, ysize = 0, options = [],
-                 filename_absolute = 0 ):
+                 filename_absolute = 0, chksum_after_reopening = None ):
         self.driver = None
         self.drivername = drivername
         self.filename = filename
         self.filename_absolute = filename_absolute
         self.band = band
         self.chksum = chksum
+        if chksum_after_reopening is not None:
+            if type(chksum_after_reopening) == type([]):
+                self.chksum_after_reopening = chksum_after_reopening
+            else:
+                self.chksum_after_reopening = [ chksum_after_reopening ]
+        elif chksum is None:
+            self.chksum_after_reopening = None
+        else:
+            self.chksum_after_reopening = [ chksum ]
         self.xoff = xoff
         self.yoff = yoff
         self.xsize = xsize
@@ -578,10 +587,10 @@ class GDALTest:
                 if bnd.Checksum() == 0:
                     post_reason('Got null checksum on reopened file.')
                     return 'fail'
-            elif self.chksum is not None and bnd.Checksum() != self.chksum:
+            elif self.chksum_after_reopening is not None and bnd.Checksum() not in self.chksum_after_reopening:
                 post_reason( 'Did not get expected checksum on reopened file.\n'
-                             '    Got %d instead of %d.' \
-                             % (bnd.Checksum(), self.chksum) )
+                             '    Got %d instead of %s.' \
+                             % (bnd.Checksum(), str(self.chksum_after_reopening)) )
                 return 'fail'
 
             if check_minmax:
@@ -967,6 +976,50 @@ class GDALTest:
 
         if description != new_ds.GetRasterBand(1).GetDescription():
             post_reason( 'Did not get expected description string.' )
+            return 'fail'
+
+        new_ds = None
+
+        if gdal.GetConfigOption( 'CPL_DEBUG', 'OFF' ) != 'ON':
+            self.driver.Delete( new_filename )
+
+        return 'success'
+
+    def testSetUnitType(self):
+        if self.testDriver() == 'fail':
+            return 'skip'
+
+        src_ds = gdal.Open( 'data/' + self.filename )
+        xsize = src_ds.RasterXSize
+        ysize = src_ds.RasterYSize
+
+        new_filename = 'tmp/' + self.filename + '.tst'
+        new_ds = self.driver.Create( new_filename, xsize, ysize, 1,
+                                     src_ds.GetRasterBand(self.band).DataType,
+                                     options = self.options  )
+        if new_ds is None:
+            post_reason( 'Failed to create test file using Create method.' )
+            return 'fail'
+
+        unit = 'mg/m3'
+        if new_ds.GetRasterBand(1).SetUnitType( unit ) is not gdal.CE_None:
+            post_reason( 'Failed to set unit type.' )
+            return 'fail'
+
+        src_ds = None
+        new_ds = None
+
+        new_ds = gdal.Open( new_filename )
+        if new_ds is None:
+            post_reason( 'Failed to open dataset: ' + new_filename )
+            return 'fail'
+
+        new_unit = new_ds.GetRasterBand(1).GetUnitType()
+        if new_unit != unit:
+            print('')
+            print('old = ', unit)
+            print('new = ', new_unit)
+            post_reason( 'Did not get expected unit type.' )
             return 'fail'
 
         new_ds = None

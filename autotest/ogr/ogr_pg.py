@@ -1017,10 +1017,12 @@ def ogr_pg_21():
     feat = layer.GetNextFeature()
     while feat is not None:
         geom = feat.GetGeometryRef()
-        if geom is not None:
-            gdaltest.post_reason( 'expected feature with None geometry' )
+        if geom.GetGeometryType() < 3001:
+            gdaltest.post_reason( 'expected feature with type >3000' )
             feat.Destroy()
             feat = None
+            gdaltest.pg_ds.ReleaseResultSet(layer)
+            layer = None
             return 'fail'
 
         feat.Destroy()
@@ -4764,12 +4766,14 @@ def ogr_pg_78():
     if gdaltest.pg_ds is None or not gdaltest.pg_has_postgis_2:
         return 'skip'
 
-    gdaltest.pg_ds.CreateLayer('ogr_pg_78', options = ['GEOMETRY_NAME=my_geom'])
+    gdaltest.pg_ds.ExecuteSQL("CREATE TABLE ogr_pg_78 (ID INTEGER PRIMARY KEY)")
+    gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78 ADD COLUMN my_geom GEOMETRY")
     gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78 ADD CONSTRAINT ogr_pg_78_my_geom_type CHECK (geometrytype(my_geom)='POINT')")
     gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78 ADD CONSTRAINT ogr_pg_78_my_geom_dim CHECK (st_ndims(my_geom)=3)")
     gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78 ADD CONSTRAINT ogr_pg_78_my_geom_srid CHECK (st_srid(my_geom)=4326)")
 
-    gdaltest.pg_ds.CreateLayer('ogr_pg_78_2', options = ['GEOMETRY_NAME=my_geog', 'GEOM_TYPE=geography'])
+    gdaltest.pg_ds.ExecuteSQL("CREATE TABLE ogr_pg_78_2 (ID INTEGER PRIMARY KEY)")
+    gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78_2 ADD COLUMN my_geog GEOGRAPHY")
     gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78_2 ADD CONSTRAINT ogr_pg_78_2_my_geog_type CHECK (geometrytype(my_geog::geometry)='POINT')")
     gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78_2 ADD CONSTRAINT ogr_pg_78_2_my_geog_dim CHECK (st_ndims(my_geog::geometry)=3)")
     gdaltest.pg_ds.ExecuteSQL("ALTER TABLE ogr_pg_78_2 ADD CONSTRAINT ogr_pg_78_2_my_geog_srid CHECK (st_srid(my_geog::geometry)=4326)")
@@ -4956,6 +4960,70 @@ def ogr_pg_80():
     return 'success'
 
 ###############################################################################
+# Test that ogr2ogr -skip properly rollbacks transactions (#6328)
+
+def ogr_pg_81():
+
+    if gdaltest.pg_ds is None or gdaltest.ogr_pg_second_run:
+        return 'skip'
+
+    gdaltest.pg_ds.ReleaseResultSet(gdaltest.pg_ds.ExecuteSQL("create table ogr_pg_81_1(id varchar unique, foo varchar); SELECT AddGeometryColumn('ogr_pg_81_1','dummy',-1,'POINT',2);"))
+    gdaltest.pg_ds.ReleaseResultSet(gdaltest.pg_ds.ExecuteSQL("create table ogr_pg_81_2(id varchar unique, foo varchar); SELECT AddGeometryColumn('ogr_pg_81_2','dummy',-1,'POINT',2);"))
+
+    # 0755 = 493
+    gdal.Mkdir('/vsimem/ogr_pg_81', 493)
+    gdal.FileFromMemBuffer('/vsimem/ogr_pg_81/ogr_pg_81_1.csv',
+"""id,foo
+1,1""")
+
+    gdal.FileFromMemBuffer('/vsimem/ogr_pg_81/ogr_pg_81_2.csv',
+"""id,foo
+1,1""")
+
+    gdal.VectorTranslate('PG:' + gdaltest.pg_connection_string, '/vsimem/ogr_pg_81', accessMode = 'append')
+
+    gdal.FileFromMemBuffer('/vsimem/ogr_pg_81/ogr_pg_81_2.csv',
+"""id,foo
+2,2""")
+
+    with gdaltest.error_handler():
+        gdal.VectorTranslate('PG:' + gdaltest.pg_connection_string, '/vsimem/ogr_pg_81', accessMode = 'append', skipFailures = True)
+
+    gdal.Unlink('/vsimem/ogr_pg_81/ogr_pg_81_1.csv')
+    gdal.Unlink('/vsimem/ogr_pg_81/ogr_pg_81_2.csv')
+    gdal.Unlink('/vsimem/ogr_pg_81')
+
+    lyr = gdaltest.pg_ds.GetLayer('ogr_pg_81_2')
+    f = lyr.GetNextFeature()
+    f = lyr.GetNextFeature()
+    if f['id'] != '2':
+        gdaltest.post_reason('fail')
+        f.DumpReadable()
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test that GEOMETRY_NAME works even when the geometry column creation is
+# done through CreateGeomField (#6366)
+# This is important for the ogr2ogr use case when the source geometry column
+# is not-nullable, and hence the CreateGeomField() interface is used.
+
+def ogr_pg_82():
+
+    if gdaltest.pg_ds is None or not gdaltest.pg_has_postgis or gdaltest.ogr_pg_second_run :
+        return 'skip'
+
+    lyr = gdaltest.pg_ds.CreateLayer('ogr_pg_82', geom_type = ogr.wkbNone, options = ['GEOMETRY_NAME=another_name'])
+    lyr.CreateGeomField(ogr.GeomFieldDefn('my_geom', ogr.wkbPoint))
+    if lyr.GetLayerDefn().GetGeomFieldDefn(0).GetName() != 'another_name':
+        gdaltest.post_reason('fail')
+        print(lyr.GetLayerDefn().GetGeomFieldDefn(0).GetName())
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
 #
 
 def ogr_pg_table_cleanup():
@@ -5013,6 +5081,9 @@ def ogr_pg_table_cleanup():
     gdaltest.pg_ds.ExecuteSQL( 'DELLAYER:ogr_pg_77_2' )
     gdaltest.pg_ds.ExecuteSQL( 'DELLAYER:ogr_pg_78' )
     gdaltest.pg_ds.ExecuteSQL( 'DELLAYER:ogr_pg_78_2' )
+    gdaltest.pg_ds.ExecuteSQL( 'DELLAYER:ogr_pg_81_1' )
+    gdaltest.pg_ds.ExecuteSQL( 'DELLAYER:ogr_pg_81_2' )
+    gdaltest.pg_ds.ExecuteSQL( 'DELLAYER:ogr_pg_82' )
 
     # Drop second 'tpoly' from schema 'AutoTest-schema' (do NOT quote names here)
     gdaltest.pg_ds.ExecuteSQL( 'DELLAYER:AutoTest-schema.tpoly' )
@@ -5125,12 +5196,14 @@ gdaltest_list_internal = [
     ogr_pg_78,
     ogr_pg_79,
     ogr_pg_80,
+    ogr_pg_81,
+    ogr_pg_82,
     ogr_pg_cleanup
 ]
 
-DISABLED_gdaltest_list_internal = [
+disabled_gdaltest_list_internal = [
     ogr_pg_table_cleanup,
-    ogr_pg_79,
+    ogr_pg_81,
     ogr_pg_cleanup ]
 
 ###############################################################################

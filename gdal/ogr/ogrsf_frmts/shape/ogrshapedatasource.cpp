@@ -37,7 +37,6 @@
 
 CPL_CVSID("$Id$");
 
-
 /************************************************************************/
 /*                          DS_SHPOpen()                                */
 /************************************************************************/
@@ -77,7 +76,7 @@ OGRShapeDataSource::OGRShapeDataSource() :
     papszOpenOptions(NULL)
 {
     poPool = new OGRLayerPool();
-    b2GBLimit = CSLTestBoolean(CPLGetConfigOption("SHAPE_2GB_LIMIT", "FALSE"));
+    b2GBLimit = CPLTestBool(CPLGetConfigOption("SHAPE_2GB_LIMIT", "FALSE"));
 }
 
 
@@ -124,11 +123,12 @@ int OGRShapeDataSource::Open( GDALOpenInfo* poOpenInfo,
     bSingleFileDataSource = bForceSingleFileDataSource;
 
 /* -------------------------------------------------------------------- */
-/*      If  bSingleFileDataSource is TRUE we don't try to do anything else.     */
+/*      If bSingleFileDataSource is TRUE we don't try to do anything    */
+/*      else.                                                           */
 /*      This is only utilized when the OGRShapeDriver::Create()         */
 /*      method wants to create a stub OGRShapeDataSource for a          */
 /*      single shapefile.  The driver will take care of creating the    */
-/*      file by callingICreateLayer().                                  */
+/*      file by calling ICreateLayer().                                 */
 /* -------------------------------------------------------------------- */
     if( bSingleFileDataSource )
         return TRUE;
@@ -477,19 +477,43 @@ OGRShapeDataSource::ICreateLayer( const char * pszLayerName,
         nShapeType = SHPT_MULTIPOINT;
     else if( eType == wkbPoint25D )
         nShapeType = SHPT_POINTZ;
+    else if( eType == wkbPointM )
+        nShapeType = SHPT_POINTM;
+    else if( eType == wkbPointZM )
+        nShapeType = SHPT_POINTZ;
     else if( eType == wkbLineString25D )
+        nShapeType = SHPT_ARCZ;
+    else if( eType == wkbLineStringM )
+        nShapeType = SHPT_ARCM;
+    else if( eType == wkbLineStringZM )
         nShapeType = SHPT_ARCZ;
     else if( eType == wkbMultiLineString )
         nShapeType = SHPT_ARC;
     else if( eType == wkbMultiLineString25D )
         nShapeType = SHPT_ARCZ;
+    else if( eType == wkbMultiLineStringM )
+        nShapeType = SHPT_ARCM;
+    else if( eType == wkbMultiLineStringZM )
+        nShapeType = SHPT_ARCZ;
     else if( eType == wkbPolygon25D )
+        nShapeType = SHPT_POLYGONZ;
+    else if( eType == wkbPolygonM )
+        nShapeType = SHPT_POLYGONM;
+    else if( eType == wkbPolygonZM )
         nShapeType = SHPT_POLYGONZ;
     else if( eType == wkbMultiPolygon )
         nShapeType = SHPT_POLYGON;
     else if( eType == wkbMultiPolygon25D )
         nShapeType = SHPT_POLYGONZ;
+    else if( eType == wkbMultiPolygonM )
+        nShapeType = SHPT_POLYGONM;
+    else if( eType == wkbMultiPolygonZM )
+        nShapeType = SHPT_POLYGONZ;
     else if( eType == wkbMultiPoint25D )
+        nShapeType = SHPT_MULTIPOINTZ;
+    else if( eType == wkbMultiPointM )
+        nShapeType = SHPT_MULTIPOINTM;
+    else if( eType == wkbMultiPointZM )
         nShapeType = SHPT_MULTIPOINTZ;
     else if( eType == wkbNone )
         nShapeType = SHPT_NULL;
@@ -543,6 +567,46 @@ OGRShapeDataSource::ICreateLayer( const char * pszLayerName,
     {
         nShapeType = SHPT_MULTIPOINTZ;
         eType = wkbMultiPoint25D;
+    }
+    else if( EQUAL(pszOverride,"POINTM") )
+    {
+        nShapeType = SHPT_POINTM;
+        eType = wkbPointM;
+    }
+    else if( EQUAL(pszOverride,"ARCM") )
+    {
+        nShapeType = SHPT_ARCM;
+        eType = wkbLineStringM;
+    }
+    else if( EQUAL(pszOverride,"POLYGONM") )
+    {
+        nShapeType = SHPT_POLYGONM;
+        eType = wkbPolygonM;
+    }
+    else if( EQUAL(pszOverride,"MULTIPOINTM") )
+    {
+        nShapeType = SHPT_MULTIPOINTM;
+        eType = wkbMultiPointM;
+    }
+    else if( EQUAL(pszOverride,"POINTZM") )
+    {
+        nShapeType = SHPT_POINTZ;
+        eType = wkbPointZM;
+    }
+    else if( EQUAL(pszOverride,"ARCZM") )
+    {
+        nShapeType = SHPT_ARCZ;
+        eType = wkbLineStringZM;
+    }
+    else if( EQUAL(pszOverride,"POLYGONZM") )
+    {
+        nShapeType = SHPT_POLYGONZ;
+        eType = wkbPolygonZM;
+    }
+    else if( EQUAL(pszOverride,"MULTIPOINTZM") )
+    {
+        nShapeType = SHPT_MULTIPOINTZ;
+        eType = wkbMultiPointZM;
     }
     else if( EQUAL(pszOverride,"NONE") || EQUAL(pszOverride,"NULL") )
     {
@@ -604,7 +668,7 @@ OGRShapeDataSource::ICreateLayer( const char * pszLayerName,
 /* -------------------------------------------------------------------- */
     char        *pszFilename;
 
-    int l_b2GBLimit = CSLTestBoolean(CSLFetchNameValueDef( papszOptions, "2GB_LIMIT", "FALSE" ));
+    int l_b2GBLimit = CPLTestBool(CSLFetchNameValueDef( papszOptions, "2GB_LIMIT", "FALSE" ));
 
     if( nShapeType != SHPT_NULL )
     {
@@ -722,6 +786,8 @@ int OGRShapeDataSource::TestCapability( const char * pszCap )
         return bDSUpdate;
     else if( EQUAL(pszCap,ODsCDeleteLayer) )
         return bDSUpdate;
+    else if( EQUAL(pszCap,ODsCMeasuredGeometries) )
+        return TRUE;
     else
         return FALSE;
 }
@@ -975,10 +1041,11 @@ OGRLayer * OGRShapeDataSource::ExecuteSQL( const char *pszStatement,
         || (CSLCount(papszTokens) == 7 && !EQUAL(papszTokens[5],"DEPTH")) )
     {
         CSLDestroy( papszTokens );
-        CPLError( CE_Failure, CPLE_AppDefined, 
+        CPLError( CE_Failure, CPLE_AppDefined,
                   "Syntax error in CREATE SPATIAL INDEX command.\n"
                   "Was '%s'\n"
-                  "Should be of form 'CREATE SPATIAL INDEX ON <table> [DEPTH <n>]'",
+                  "Should be of form 'CREATE SPATIAL INDEX ON <table> "
+                  "[DEPTH <n>]'",
                   pszStatement );
         return NULL;
     }
@@ -997,8 +1064,8 @@ OGRLayer * OGRShapeDataSource::ExecuteSQL( const char *pszStatement,
 
     if( poLayer == NULL )
     {
-        CPLError( CE_Failure, CPLE_AppDefined, 
-                  "Layer %s not recognised.", 
+        CPLError( CE_Failure, CPLE_AppDefined,
+                  "Layer %s not recognised.",
                   papszTokens[4] );
         CSLDestroy( papszTokens );
         return NULL;
@@ -1018,8 +1085,6 @@ OGRLayer * OGRShapeDataSource::ExecuteSQL( const char *pszStatement,
 OGRErr OGRShapeDataSource::DeleteLayer( int iLayer )
 
 {
-    char *pszFilename;
-
 /* -------------------------------------------------------------------- */
 /*      Verify we are in update mode.                                   */
 /* -------------------------------------------------------------------- */
@@ -1027,7 +1092,7 @@ OGRErr OGRShapeDataSource::DeleteLayer( int iLayer )
     {
         CPLError( CE_Failure, CPLE_NoWriteAccess,
                   "Data source %s opened read-only.\n"
-                  "Layer %d cannot be deleted.\n",
+                  "Layer %d cannot be deleted.",
                   pszName, iLayer );
 
         return OGRERR_FAILURE;
@@ -1035,15 +1100,15 @@ OGRErr OGRShapeDataSource::DeleteLayer( int iLayer )
 
     if( iLayer < 0 || iLayer >= nLayers )
     {
-        CPLError( CE_Failure, CPLE_AppDefined, 
-                  "Layer %d not in legal range of 0 to %d.", 
+        CPLError( CE_Failure, CPLE_AppDefined,
+                  "Layer %d not in legal range of 0 to %d.",
                   iLayer, nLayers-1 );
         return OGRERR_FAILURE;
     }
 
     OGRShapeLayer* poLayerToDelete = (OGRShapeLayer*) papoLayers[iLayer];
 
-    pszFilename = CPLStrdup(poLayerToDelete->GetFullName());
+    char *pszFilename = CPLStrdup(poLayerToDelete->GetFullName());
 
     delete poLayerToDelete;
 

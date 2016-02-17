@@ -214,7 +214,7 @@ GDALDataset * GDALDriver::Create( const char * pszFilename,
 /* -------------------------------------------------------------------- */
 /*      Validate creation options.                                      */
 /* -------------------------------------------------------------------- */
-    if (CSLTestBoolean(CPLGetConfigOption("GDAL_VALIDATE_CREATION_OPTIONS", "YES")))
+    if (CPLTestBool(CPLGetConfigOption("GDAL_VALIDATE_CREATION_OPTIONS", "YES")))
         GDALValidateCreationOptions( this, papszOptions );
 
 /* -------------------------------------------------------------------- */
@@ -437,10 +437,10 @@ GDALDataset *GDALDriver::DefaultCreateCopy( const char * pszFilename,
 
         // Does this appear to be a supported creation option on this driver?
         const char *pszOptionList =
-            GetMetadataItem( GDAL_DMD_CREATIONDATATYPES );
+            GetMetadataItem( GDAL_DMD_CREATIONOPTIONLIST );
 
         if( pszOptionList == NULL 
-            || strstr(pszOptionList,apszOptItems[iOptItem]) != NULL )
+            || strstr(pszOptionList,apszOptItems[iOptItem]) == NULL )
             continue;
 
         papszCreateOptions = CSLSetNameValue( papszCreateOptions,
@@ -594,7 +594,7 @@ GDALDataset *GDALDriver::DefaultCreateCopy( const char * pszFilename,
 
         char** papszCatNames;
         papszCatNames = poSrcBand->GetCategoryNames();
-        if (0 != papszCatNames)
+        if (NULL != papszCatNames)
             poDstBand->SetCategoryNames( papszCatNames );
 
         if( !bStrict )
@@ -788,7 +788,7 @@ GDALDataset *GDALDriver::CreateCopy( const char * pszFilename,
 /* -------------------------------------------------------------------- */
 /*      Validate creation options.                                      */
 /* -------------------------------------------------------------------- */
-    if (CSLTestBoolean(CPLGetConfigOption("GDAL_VALIDATE_CREATION_OPTIONS", "YES")))
+    if (CPLTestBool(CPLGetConfigOption("GDAL_VALIDATE_CREATION_OPTIONS", "YES")))
         GDALValidateCreationOptions( this, papszOptions);
 
 /* -------------------------------------------------------------------- */
@@ -797,7 +797,7 @@ GDALDataset *GDALDriver::CreateCopy( const char * pszFilename,
 /*      Create() method.                                                */
 /* -------------------------------------------------------------------- */
     GDALDataset *poDstDS;
-    if( pfnCreateCopy != NULL && !CSLTestBoolean(CPLGetConfigOption("GDAL_DEFAULT_CREATE_COPY", "NO")) )
+    if( pfnCreateCopy != NULL && !CPLTestBool(CPLGetConfigOption("GDAL_DEFAULT_CREATE_COPY", "NO")) )
     {
         poDstDS = pfnCreateCopy( pszFilename, poSrcDS, bStrict, papszOptions,
                                  pfnProgress, pProgressData );

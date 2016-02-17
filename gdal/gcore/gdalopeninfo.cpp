@@ -107,8 +107,15 @@ retry:
         STARTS_WITH(pszFilename, "/vsitar/") )
     {
         const char* pszExt = CPLGetExtension(pszFilename);
-        if( EQUAL(pszExt, "zip") || EQUAL(pszExt, "tar") || EQUAL(pszExt, "gz") )
+        if( EQUAL(pszExt, "zip") || EQUAL(pszExt, "tar") || EQUAL(pszExt, "gz")
+#ifdef DEBUG
+            /* For AFL, so that .cur_input is detected as the archive filename */
+            || EQUAL( CPLGetFilename(pszFilename), ".cur_input" )
+#endif
+          )
+        {
             bPotentialDirectory = true;
+        }
     }
     else if( STARTS_WITH(pszFilename, "/vsicurl/") )
     {
@@ -145,7 +152,7 @@ retry:
                         VSI_STAT_EXISTS_FLAG | VSI_STAT_NATURE_FLAG ) == 0 &&
             VSI_ISDIR( sStat.st_mode ) )
         {
-            VSIFCloseL(fpL);
+            CPL_IGNORE_RET_VAL(VSIFCloseL(fpL));
             fpL = NULL;
             CPLFree(pabyHeader);
             pabyHeader = NULL;
@@ -200,7 +207,7 @@ retry:
             papszSiblingFiles = CSLAddString( NULL, CPLGetFilename(pszFilename) );
             bHasGotSiblingFiles = TRUE;
         }
-        else if( CSLTestBoolean(pszOptionVal) )
+        else if( CPLTestBool(pszOptionVal) )
         {
             /* skip reading the directory */
             papszSiblingFiles = NULL;
@@ -231,7 +238,7 @@ GDALOpenInfo::~GDALOpenInfo()
     CPLFree( pszFilename );
 
     if( fpL != NULL )
-        VSIFCloseL( fpL );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpL ));
     CSLDestroy( papszSiblingFiles );
 }
 

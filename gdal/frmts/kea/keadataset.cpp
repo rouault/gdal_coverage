@@ -32,17 +32,6 @@
 #include "keaband.h"
 #include "keacopy.h"
 
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4290 )  /* C++ exception specification ignored except to indicate a function is not __declspec(nothrow)*/
-#endif
-
-#include "libkea/KEACommon.h"
-
-#ifdef _MSC_VER
-#pragma warning( pop ) 
-#endif
-
 // Function for converting a libkea type into a GDAL type
 GDALDataType KEA_to_GDAL_Type( kealib::KEADataType ekeaType )
 {
@@ -286,11 +275,12 @@ GDALDataset *KEADataset::Create( const char * pszFilename,
     if( keaImgH5File == NULL )
         return NULL;
 
-    bool bThematic = CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef( papszParmList, "THEMATIC", "FALSE" )));
+    bool bThematic =
+        CPLTestBool(CSLFetchNameValueDef( papszParmList, "THEMATIC", "FALSE" ));
 
     try
     {
-        // create our dataset object                            
+        // create our dataset object
         KEADataset *pDataset = new KEADataset( keaImgH5File, GA_Update );
 
         pDataset->SetDescription( pszFilename );
@@ -331,7 +321,8 @@ GDALDataset *KEADataset::CreateCopy( const char * pszFilename, GDALDataset *pSrc
     if( keaImgH5File == NULL )
         return NULL;
 
-    bool bThematic = CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef( papszParmList, "THEMATIC", "FALSE" )));
+    bool bThematic =
+        CPLTestBool(CSLFetchNameValueDef( papszParmList, "THEMATIC", "FALSE" ));
 
     try
     {
@@ -648,7 +639,7 @@ const char *KEADataset::GetMetadataItem (const char *pszName, const char *pszDom
     // only deal with 'default' domain - no geolocation etc
     if( ( pszDomain != NULL ) && ( *pszDomain != '\0' ) )
         return NULL;
-    // string returned from CSLFetchNameValue should be persistant
+    // string returned from CSLFetchNameValue should be persistent
     return CSLFetchNameValue(m_papszMetadataList, pszName);
 }
 

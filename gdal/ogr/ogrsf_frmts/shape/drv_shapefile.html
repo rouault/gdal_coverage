@@ -1,15 +1,16 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html lang=en>
 <head>
-<title>ESRI Shapefile</title>
+<title>ESRI Shapefile / DBF</title>
 </head>
 
 <body>
 
-<h1>ESRI Shapefile</h1>
+<h1>ESRI Shapefile / DBF</h1>
 
 <p>All varieties of ESRI Shapefiles should be available for reading, and
-simple 3D files can be created.</p>
+simple 3D files can be created. The driver can also handle standalone DBF
+files without associated .shp files.</p>
 
 <p>Normally the OGR Shapefile driver treats a whole directory of shapefiles
 as a dataset, and a single shapefile within that directory as a layer.  In
@@ -26,9 +27,18 @@ The same applies for SHPT_POLYGON shapefiles, reported as layers of type
 wkbPolygon, but depending on the number of parts of each geometry, the
 actual type can be either OGRPolygon or OGRMultiPolygon.</p>
 
-<p>ESRI measure values (XYM) are read as XYZ geometries. MultiPatch
-files are read and each patch geometry is turned into a multi-polygon 
-representation with one polygon per triangle in triangle fans and meshes.</p>
+<p>Starting with GDAL 2.1 measures (M coordinate) are supported. A
+Shapefile with measures is created if the specified geometry type is
+measured or an appropriate layer creation option is used. When a
+shapefile which may have measured geometries is opened, the first
+shape is examined and if it uses measures, the geometry type of the
+layer is set accordingly. Note that currently "no data" values for the
+M coordinate (a floating point value smaller than -10^38) are not
+supported.</p>
+
+<p>MultiPatch files are read and each patch geometry is turned into a
+multi-polygon representation with one polygon per triangle in triangle
+fans and meshes.</p>
 
 <p>If a .prj files in old Arc/Info style or new ESRI OGC WKT style is present,
 it will be read and used to associate a projection with features.</p>
@@ -225,12 +235,14 @@ emitted when the 2GB limit is reached.</p>
 <h3>Layer Creation Options</h3>
 
 <ul>
-<li>
-<b>SHPT=type</b>: Override the type of shapefile created.  Can be one of
-NULL for a simple .dbf file with no .shp file, 
- POINT, ARC, POLYGON or MULTIPOINT for 2D, or 
-POINTZ, ARCZ, POLYGONZ or MULTIPOINTZ for 3D.  Shapefiles with <i>measure</i>
-values are not supported, nor are MULTIPATCH files.</li>
+
+<li><b>SHPT=type</b>: Override the type of shapefile created.  Can be
+one of NULL for a simple .dbf file with no .shp file, POINT, ARC,
+POLYGON or MULTIPOINT for 2D; POINTZ, ARCZ, POLYGONZ or MULTIPOINTZ
+for 3D; POINTM, ARCM, POLYGONM or MULTIPOINTM for measured geometries;
+and POINTZM, ARCZM, POLYGONZM or MULTIPOINTZM for 3D measured
+geometries. The measure support was added in GDAL 2.1. MULTIPATCH
+files are not supported.</li>
 
 <li> <b>ENCODING=</b><i>value</i>: set the encoding value in the DBF file. The
 default value is "LDID/87".  It is not clear what other values may be

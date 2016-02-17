@@ -393,7 +393,7 @@ NITFRasterBand::NITFRasterBand( NITFDataset *poDSIn, int nBandIn )
     /* ERO : note I'm not sure if CFloat64 can be transmitted as NBPP is only 2 characters */
     else
     {
-        int bOpenUnderlyingDS = CSLTestBoolean(
+        int bOpenUnderlyingDS = CPLTestBool(
                 CPLGetConfigOption("NITF_OPEN_UNDERLYING_DS", "YES"));
         if (!bOpenUnderlyingDS && psImage->nBitsPerSample > 8 && psImage->nBitsPerSample < 16)
         {
@@ -445,12 +445,23 @@ NITFRasterBand::NITFRasterBand( NITFDataset *poDSIn, int nBandIn )
     ||  psImage->nBitsPerSample == 12 )
         SetMetadataItem( "NBITS", CPLString().Printf("%d", psImage->nBitsPerSample), "IMAGE_STRUCTURE" );
 
-    pUnpackData = 0;
+    pUnpackData = NULL;
     if (psImage->nBitsPerSample == 3
     ||  psImage->nBitsPerSample == 5
     ||  psImage->nBitsPerSample == 6
     ||  psImage->nBitsPerSample == 7)
-      pUnpackData = new GByte[((nBlockXSize*nBlockYSize+7)/8)*8];
+    {
+        if( nBlockXSize > (INT_MAX - 7) / nBlockYSize )
+        {
+            eDataType = GDT_Unknown;
+        }
+        else
+        {
+            pUnpackData = static_cast<GByte*>(VSI_MALLOC_VERBOSE(((nBlockXSize*nBlockYSize+7)/8)*8));
+            if( pUnpackData == NULL )
+                eDataType = GDT_Unknown;
+        }
+    }
 }
 
 /************************************************************************/
@@ -463,7 +474,7 @@ NITFRasterBand::~NITFRasterBand()
     if( poColorTable != NULL )
         delete poColorTable;
 
-    delete[] pUnpackData;
+    VSIFree(pUnpackData);
 }
 
 /************************************************************************/

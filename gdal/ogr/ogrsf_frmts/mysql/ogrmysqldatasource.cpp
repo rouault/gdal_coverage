@@ -37,7 +37,14 @@
 #pragma warning( push )
 #pragma warning( disable : 4201 ) /* nonstandard extension used : nameless struct/union */
 #endif
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wzero-as-null-pointer-constant"
+#endif
 #include <my_sys.h>
+#if defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8))
+#pragma GCC diagnostic pop
+#endif
 #ifdef _MSC_VER
 #pragma warning( pop ) 
 #endif
@@ -55,7 +62,7 @@ OGRMySQLDataSource::OGRMySQLDataSource() :
     nLayers(0),
     pszName(NULL),
     bDSUpdate(FALSE),
-    hConn(0),
+    hConn(NULL),
     nKnownSRID(0),
     panSRID(NULL),
     papoSRS(NULL),
@@ -182,6 +189,7 @@ int OGRMySQLDataSource::Open( const char * pszNewName, char** papszOpenOptionsIn
             nPort = atoi(papszItems[i] + 5);
         else if( STARTS_WITH_CI(papszItems[i], "tables=") )
         {
+            CSLDestroy(papszTableNames);
             papszTableNames = CSLTokenizeStringComplex( 
                 papszItems[i] + 7, ";", FALSE, FALSE );
         }
@@ -343,11 +351,10 @@ int OGRMySQLDataSource::OpenTable( const char *pszNewName, int bUpdate )
 int OGRMySQLDataSource::TestCapability( const char * pszCap )
 
 {
-	
     if( EQUAL(pszCap, ODsCCreateLayer) )
         return TRUE;
-	if( EQUAL(pszCap, ODsCDeleteLayer))
-		return TRUE;
+    if( EQUAL(pszCap, ODsCDeleteLayer))
+        return TRUE;
     else
         return FALSE;
 }
@@ -1043,7 +1050,7 @@ OGRMySQLDataSource::ICreateLayer( const char * pszLayerNameIn,
 /* -------------------------------------------------------------------- */
     const char *pszSI = CSLFetchNameValue( papszOptions, "SPATIAL_INDEX" );
 
-    if( eType != wkbNone && (pszSI == NULL || CSLTestBoolean(pszSI)) )
+    if( eType != wkbNone && (pszSI == NULL || CPLTestBool(pszSI)) )
     {
         osCommand.Printf(
                  "ALTER TABLE `%s` ADD SPATIAL INDEX(`%s`) ",

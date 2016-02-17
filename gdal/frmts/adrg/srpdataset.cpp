@@ -33,6 +33,7 @@
 #include "gdal_frmts.h"
 #include "iso8211.h"
 #include "ogr_spatialref.h"
+#include <algorithm>
 
 // Uncomment to recognize also .gen files in addition to .img files
 // #define OPEN_GEN
@@ -480,6 +481,15 @@ int SRPDataset::GetFromRecord(const char* pszFileName, DDFRecord * record)
 
     NFC = record->GetIntSubfield( "SPR", 0, "NFC", 0, &bSuccess );
     CPLDebug("SRP", "NFC=%d", NFC);
+    
+    if( NFL <= 0 || NFC <= 0 ||
+        NFL > INT_MAX / 128 ||
+        NFC > INT_MAX / 128 ||
+        NFL > INT_MAX / NFC )
+    {
+        CPLError( CE_Failure, CPLE_AppDefined,"Invalid NFL / NFC values");
+        return FALSE;
+    }
 
     int PNC = record->GetIntSubfield( "SPR", 0, "PNC", 0, &bSuccess );
     CPLDebug("SRP", "PNC=%d", PNC);
@@ -535,12 +545,20 @@ int SRPDataset::GetFromRecord(const char* pszFileName, DDFRecord * record)
 
         /* Should be strict comparison, but apparently a few datasets */
         /* have GetDataSize() greater than the required minimum (#3862) */
-        if (field->GetDataSize() < nIndexValueWidth * NFL * NFC + 1)
+        if (nIndexValueWidth > (INT_MAX - 1) / (NFL * NFC) ||
+            field->GetDataSize() < nIndexValueWidth * NFL * NFC + 1)
         {
             return FALSE;
         }
 
-        TILEINDEX = new int [NFL * NFC];
+        try
+        {
+            TILEINDEX = new int [NFL * NFC];
+        }
+        catch( const std::bad_alloc& )
+        {
+            return FALSE;
+        }
         const char* ptr = field->GetData();
         char offset[30]={0};
         offset[nIndexValueWidth] = '\0';
@@ -656,8 +674,8 @@ int SRPDataset::GetFromRecord(const char* pszFileName, DDFRecord * record)
             if( record->FindField( "COL" ) != NULL ) 
             {
                 int            iColor;
-                int            nColorCount = 
-                    record->FindField("COL")->GetRepeatCount();
+                int            nColorCount = std::min(256,
+                    record->FindField("COL")->GetRepeatCount());
 
                 for( iColor = 0; iColor < nColorCount; iColor++ )
                 {
@@ -666,7 +684,7 @@ int SRPDataset::GetFromRecord(const char* pszFileName, DDFRecord * record)
 
                     nCCD = record->GetIntSubfield( "COL", 0, "CCD", iColor,
                         &bSuccess );
-                    if( !bSuccess )
+                    if( !bSuccess || nCCD < 0 || nCCD > 255 )
                         break;
 
                     nNSR = record->GetIntSubfield( "COL", 0, "NSR", iColor );
@@ -1430,7 +1448,7 @@ GDALDataset *SRPDataset::Open( GDALOpenInfo * poOpenInfo )
             if (papszFileNames == NULL)
                 return NULL;
             if (papszFileNames[1] == NULL &&
-                CSLTestBoolean(CPLGetConfigOption("SRP_SINGLE_GEN_IN_THF_AS_DATASET", "TRUE")))
+                CPLTestBool(CPLGetConfigOption("SRP_SINGLE_GEN_IN_THF_AS_DATASET", "TRUE")))
             {
                 osFileName = papszFileNames[0];
                 CSLDestroy(papszFileNames);

@@ -263,7 +263,7 @@ static int OGRPGEqualTableEntry(const void* _psTableEntry1, const void* _psTable
 static void OGRPGTableEntryAddGeomColumn(PGTableEntry* psTableEntry,
                                          const char* pszName,
                                          const char* pszGeomType = NULL,
-                                         int nCoordDimension = 0,
+                                         int GeometryTypeFlags = 0,
                                          int nSRID = UNDETERMINED_SRID,
                                          PostgisType ePostgisType = GEOM_TYPE_UNKNOWN,
                                          int bNullable = TRUE)
@@ -273,7 +273,7 @@ static void OGRPGTableEntryAddGeomColumn(PGTableEntry* psTableEntry,
                sizeof(PGGeomColumnDesc) * (psTableEntry->nGeomColumnCount + 1));
     psTableEntry->pasGeomColumns[psTableEntry->nGeomColumnCount].pszName = CPLStrdup(pszName);
     psTableEntry->pasGeomColumns[psTableEntry->nGeomColumnCount].pszGeomType = (pszGeomType) ? CPLStrdup(pszGeomType) : NULL;
-    psTableEntry->pasGeomColumns[psTableEntry->nGeomColumnCount].nCoordDimension = nCoordDimension;
+    psTableEntry->pasGeomColumns[psTableEntry->nGeomColumnCount].GeometryTypeFlags = GeometryTypeFlags;
     /* With PostGIS 2.0, querying geometry_columns can return 0, not only when */
     /* the SRID is truly set to 0, but also when there's no constraint */
     psTableEntry->pasGeomColumns[psTableEntry->nGeomColumnCount].nSRID = nSRID > 0 ? nSRID : UNDETERMINED_SRID;
@@ -288,7 +288,7 @@ static void OGRPGTableEntryAddGeomColumn(PGTableEntry* psTableEntry,
     OGRPGTableEntryAddGeomColumn(psTableEntry,
                                  psGeomColumnDesc->pszName,
                                  psGeomColumnDesc->pszGeomType,
-                                 psGeomColumnDesc->nCoordDimension,
+                                 psGeomColumnDesc->GeometryTypeFlags,
                                  psGeomColumnDesc->nSRID,
                                  psGeomColumnDesc->ePostgisType,
                                  psGeomColumnDesc->bNullable);
@@ -726,7 +726,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
                         "SELECT oid, typname FROM pg_type WHERE typname IN ('geometry', 'geography')" );
 
     if( hResult && PQresultStatus(hResult) == PGRES_TUPLES_OK
-        && PQntuples(hResult) > 0  && CSLTestBoolean(CPLGetConfigOption("PG_USE_POSTGIS", "YES")))
+        && PQntuples(hResult) > 0  && CPLTestBool(CPLGetConfigOption("PG_USE_POSTGIS", "YES")))
     {
         for( int iRecord = 0; iRecord < PQntuples(hResult); iRecord++ )
         {
@@ -737,7 +737,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
                 bHavePostGIS = TRUE;
                 nGeometryOID = atoi(pszOid);
             }
-            else if( CSLTestBoolean(CPLGetConfigOption("PG_USE_GEOGRAPHY", "YES")) )
+            else if( CPLTestBool(CPLGetConfigOption("PG_USE_GEOGRAPHY", "YES")) )
             {
                 bHaveGeography = TRUE;
                 nGeographyOID = atoi(pszOid);
@@ -809,7 +809,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
 
     GetCurrentSchema();
 
-    bListAllTables = CSLTestBoolean(CSLFetchNameValueDef(
+    bListAllTables = CPLTestBool(CSLFetchNameValueDef(
         papszOpenOptions, "LIST_ALL_TABLES",
         CPLGetConfigOption("PG_LIST_ALL_TABLES", "NO")));
 
@@ -895,7 +895,7 @@ void OGRPGDataSource::LoadTables()
 /*      specified through the TABLES connection string param           */
 /* -------------------------------------------------------------------- */
     const char* pszAllowedRelations;
-    if( CSLTestBoolean(CPLGetConfigOption("PG_SKIP_VIEWS", "NO")) )
+    if( CPLTestBool(CPLGetConfigOption("PG_SKIP_VIEWS", "NO")) )
         pszAllowedRelations = "'r'";
     else
         pszAllowedRelations = "'r','v','m','f'";
@@ -905,7 +905,7 @@ void OGRPGDataSource::LoadTables()
     if( nTableCount == 0 && bHavePostGIS && sPostGISVersion.nMajor >= 2 &&
         !bListAllTables &&
         /* Config option mostly for comparison/debugging/etc... */
-        CSLTestBoolean(CPLGetConfigOption("PG_USE_POSTGIS2_OPTIM", "YES")) )
+        CPLTestBool(CPLGetConfigOption("PG_USE_POSTGIS2_OPTIM", "YES")) )
     {
 /* -------------------------------------------------------------------- */
 /*      With PostGIS 2.0, the geometry_columns and geography_columns    */
@@ -969,6 +969,7 @@ void OGRPGDataSource::LoadTables()
                 ePostgisType = GEOM_TYPE_GEOGRAPHY;
 
             int nGeomCoordDimension = atoi(pszDim);
+            bool bHasM = pszGeomType[strlen(pszGeomType)-1] == 'M';
             int nSRID = atoi(pszSRID);
 
             /* Analyze constraints that might override geometrytype, */
@@ -990,6 +991,7 @@ void OGRPGDataSource::LoadTables()
                         osGeometryType = pszNeedle;
                         osGeometryType.resize(pszEnd - pszNeedle);
                         pszGeomType = osGeometryType.c_str();
+                        bHasM = pszGeomType[strlen(pszGeomType)-1] == 'M';
                     }
                 }
             }
@@ -1016,6 +1018,19 @@ void OGRPGDataSource::LoadTables()
                 }
             }
 
+            int GeomTypeFlags = 0;
+            if( nGeomCoordDimension == 3 )
+            {
+                if (bHasM)
+                    GeomTypeFlags |= OGRGeometry::OGR_G_MEASURED;
+                else
+                    GeomTypeFlags |= OGRGeometry::OGR_G_3D;
+            }
+            else if( nGeomCoordDimension == 4 )
+            {
+                GeomTypeFlags |= OGRGeometry::OGR_G_3D | OGRGeometry::OGR_G_MEASURED;
+            }
+
             papsTables = (PGTableEntry**)CPLRealloc(papsTables, sizeof(PGTableEntry*) * (nTableCount + 1));
             papsTables[nTableCount] = (PGTableEntry*) CPLCalloc(1, sizeof(PGTableEntry));
             papsTables[nTableCount]->pszTableName = CPLStrdup( pszTable );
@@ -1023,7 +1038,7 @@ void OGRPGDataSource::LoadTables()
 
             OGRPGTableEntryAddGeomColumn(papsTables[nTableCount],
                                             pszGeomColumnName,
-                                            pszGeomType, nGeomCoordDimension,
+                                            pszGeomType, GeomTypeFlags,
                                             nSRID, ePostgisType, bNullable);
             nTableCount ++;
 
@@ -1033,7 +1048,7 @@ void OGRPGDataSource::LoadTables()
             OGRPGTableEntryAddGeomColumn(psEntry,
                                             pszGeomColumnName,
                                             pszGeomType,
-                                            nGeomCoordDimension,
+                                            GeomTypeFlags,
                                             nSRID, ePostgisType, bNullable);
         }
 
@@ -1088,6 +1103,7 @@ void OGRPGDataSource::LoadTables()
             const char *pszGeomColumnName = NULL;
             const char *pszGeomType = NULL;
             int nGeomCoordDimension = 0;
+            bool bHasM = false;
             int nSRID = 0;
             int bNullable = TRUE;
             PostgisType ePostgisType = GEOM_TYPE_UNKNOWN;
@@ -1095,6 +1111,7 @@ void OGRPGDataSource::LoadTables()
             {
                 pszGeomColumnName = PQgetvalue(hResult, iRecord, 3);
                 pszGeomType = PQgetvalue(hResult, iRecord, 4);
+                bHasM = pszGeomType[strlen(pszGeomType)-1] == 'M';
                 nGeomCoordDimension = atoi(PQgetvalue(hResult, iRecord, 5));
                 nSRID = atoi(PQgetvalue(hResult, iRecord, 6));
                 ePostgisType = (PostgisType) atoi(PQgetvalue(hResult, iRecord, 7));
@@ -1116,6 +1133,19 @@ void OGRPGDataSource::LoadTables()
             if( EQUAL(pszSchemaName,"information_schema") )
                 continue;
 
+            int GeomTypeFlags = 0;
+            if( nGeomCoordDimension == 3 )
+            {
+                if (bHasM)
+                    GeomTypeFlags |= OGRGeometry::OGR_G_MEASURED;
+                else
+                    GeomTypeFlags |= OGRGeometry::OGR_G_3D;
+            }
+            else if( nGeomCoordDimension == 4 )
+            {
+                GeomTypeFlags |= OGRGeometry::OGR_G_3D | OGRGeometry::OGR_G_MEASURED;
+            }
+
             papsTables = (PGTableEntry**)CPLRealloc(papsTables, sizeof(PGTableEntry*) * (nTableCount + 1));
             papsTables[nTableCount] = (PGTableEntry*) CPLCalloc(1, sizeof(PGTableEntry));
             papsTables[nTableCount]->pszTableName = CPLStrdup( pszTable );
@@ -1123,7 +1153,7 @@ void OGRPGDataSource::LoadTables()
             if (pszGeomColumnName)
                 OGRPGTableEntryAddGeomColumn(papsTables[nTableCount],
                                              pszGeomColumnName,
-                                             pszGeomType, nGeomCoordDimension,
+                                             pszGeomType, GeomTypeFlags,
                                              nSRID, ePostgisType, bNullable);
             nTableCount ++;
 
@@ -1134,7 +1164,7 @@ void OGRPGDataSource::LoadTables()
                 OGRPGTableEntryAddGeomColumn(psEntry,
                                              pszGeomColumnName,
                                              pszGeomType,
-                                             nGeomCoordDimension,
+                                             GeomTypeFlags,
                                              nSRID, ePostgisType, bNullable);
         }
 
@@ -1413,7 +1443,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
     const char          *pszGeomType = NULL;
     char                *pszTableName = NULL;
     char                *pszSchemaName = NULL;
-    int                 nDimension = 3;
+    int                 GeometryTypeFlags = 0;
 
     if (pszLayerName == NULL)
         return NULL;
@@ -1443,25 +1473,33 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
                  "The layer name should not begin by 'pg' as it is a reserved prefix");
     }
 
-    if( wkbFlatten(eType) == eType )
-        nDimension = 2;
+    if( OGR_GT_HasZ((OGRwkbGeometryType)eType) )
+        GeometryTypeFlags |= OGRGeometry::OGR_G_3D;
+    if( OGR_GT_HasM((OGRwkbGeometryType)eType) )
+        GeometryTypeFlags |= OGRGeometry::OGR_G_MEASURED;
 
-    int nForcedDimension = -1;
+    int ForcedGeometryTypeFlags = -1;
     if( CSLFetchNameValue( papszOptions, "DIM") != NULL )
     {
-        nDimension = atoi(CSLFetchNameValue( papszOptions, "DIM"));
-        nForcedDimension = nDimension;
+        int nDimension = atoi(CSLFetchNameValue( papszOptions, "DIM"));
+        if( nDimension == 2 )
+            GeometryTypeFlags &= ~OGRGeometry::OGR_G_3D;
+        else if( nDimension == 3 )
+            GeometryTypeFlags |= OGRGeometry::OGR_G_3D;
+        else if( nDimension == 4 )
+            GeometryTypeFlags |= OGRGeometry::OGR_G_3D | OGRGeometry::OGR_G_MEASURED;
+        ForcedGeometryTypeFlags = GeometryTypeFlags;
     }
 
     /* Should we turn layers with None geometry type as Unknown/GEOMETRY */
     /* so they are still recorded in geometry_columns table ? (#4012) */
-    int bNoneAsUnknown = CSLTestBoolean(CSLFetchNameValueDef(
+    int bNoneAsUnknown = CPLTestBool(CSLFetchNameValueDef(
                                     papszOptions, "NONE_AS_UNKNOWN", "NO"));
     if (bNoneAsUnknown && eType == wkbNone)
         eType = wkbUnknown;
 
 
-    int bExtractSchemaFromLayerName = CSLTestBoolean(CSLFetchNameValueDef(
+    int bExtractSchemaFromLayerName = CPLTestBool(CSLFetchNameValueDef(
                                     papszOptions, "EXTRACT_SCHEMA_FROM_LAYER_NAME", "YES"));
 
     /* Postgres Schema handling:
@@ -1569,7 +1607,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
             pszGeomType = "bytea";
     }
 
-    const char *pszGFldName = NULL;
+    const char *pszGFldName = CSLFetchNameValue( papszOptions, "GEOMETRY_NAME");
     if( eType != wkbNone && EQUAL(pszGeomType, "geography") )
     {
         if( !bHaveGeography )
@@ -1583,16 +1621,12 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
             return NULL;
         }
 
-        if( CSLFetchNameValue( papszOptions, "GEOMETRY_NAME") != NULL )
-            pszGFldName = CSLFetchNameValue( papszOptions, "GEOMETRY_NAME");
-        else
+        if( pszGFldName == NULL )
             pszGFldName = "the_geog";
     }
     else if ( eType != wkbNone && bHavePostGIS && !EQUAL(pszGeomType, "geography") )
     {
-        if( CSLFetchNameValue( papszOptions, "GEOMETRY_NAME") != NULL )
-            pszGFldName = CSLFetchNameValue( papszOptions, "GEOMETRY_NAME");
-        else
+        if( pszGFldName == NULL )
             pszGFldName = "wkb_geometry";
     }
 
@@ -1626,7 +1660,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
 
     const char *pszGeometryType = OGRToOGCGeomType(eType);
 
-    int bDifferedCreation = CSLTestBoolean(CPLGetConfigOption( "OGR_PG_DIFFERED_CREATION", "YES" ));
+    int bDifferedCreation = CPLTestBool(CPLGetConfigOption( "OGR_PG_DIFFERED_CREATION", "YES" ));
     if( !bHavePostGIS )
         bDifferedCreation = FALSE;  /* to avoid unnecessary implementation and testing burden */
 
@@ -1652,6 +1686,16 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
                              OGRPGEscapeColumnName(pszSchemaName).c_str(), 
                              OGRPGEscapeColumnName(pszTableName).c_str());
 
+    const char *suffix;
+    if( (GeometryTypeFlags & OGRGeometry::OGR_G_3D) && (GeometryTypeFlags & OGRGeometry::OGR_G_MEASURED) )
+        suffix = "ZM";
+    else if( GeometryTypeFlags & OGRGeometry::OGR_G_MEASURED )
+        suffix = "M";
+    else if( GeometryTypeFlags & OGRGeometry::OGR_G_3D )
+        suffix = "Z";
+    else 
+        suffix = "";
+
     if( eType != wkbNone && !bHavePostGIS )
     {
         pszGFldName = "wkb_geometry";
@@ -1675,7 +1719,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
                     osFIDColumnNameEscaped.c_str(),
                     pszSerialType,
                     OGRPGEscapeColumnName(pszGFldName).c_str(), pszGeometryType,
-                    nDimension == 2 ? "" : "Z",
+                    suffix,
                     nSRSId ? CPLSPrintf(",%d", nSRSId) : "", 
                     osFIDColumnNameEscaped.c_str());
     }
@@ -1688,7 +1732,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
                     osFIDColumnNameEscaped.c_str(),
                     pszSerialType,
                     OGRPGEscapeColumnName(pszGFldName).c_str(), pszGeometryType,
-                    nDimension == 2 ? "" : "Z",
+                    suffix,
                     nSRSId ? CPLSPrintf(",%d", nSRSId) : "", 
                     osFIDColumnNameEscaped.c_str());
     }
@@ -1704,7 +1748,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
     osCreateTable = osCommand;
 
     const char *pszSI = CSLFetchNameValue( papszOptions, "SPATIAL_INDEX" );
-    int bCreateSpatialIndex = ( pszSI == NULL || CSLTestBoolean(pszSI) );
+    int bCreateSpatialIndex = ( pszSI == NULL || CPLTestBool(pszSI) );
     if( eType != wkbNone &&
         pszSI == NULL &&
         CSLFetchBoolean( papszOptions, "UNLOGGED", FALSE ) &&
@@ -1767,11 +1811,16 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
         if( eType != wkbNone && bHavePostGIS && !EQUAL(pszGeomType, "geography") &&
             sPostGISVersion.nMajor <= 1 )
         {
+            int dim = 2;
+            if( GeometryTypeFlags & OGRGeometry::OGR_G_3D )
+                dim++;
+            if( GeometryTypeFlags & OGRGeometry::OGR_G_MEASURED )
+                dim++;
             osCommand.Printf(
                     "SELECT AddGeometryColumn(%s,%s,%s,%d,'%s',%d)",
                     pszEscapedSchemaNameSingleQuote, pszEscapedTableNameSingleQuote,
                     OGRPGEscapeString(hPGConn, pszGFldName).c_str(),
-                    nSRSId, pszGeometryType, nDimension );
+                    nSRSId, pszGeometryType, dim );
 
             hResult = OGRPG_PQexec(hPGConn, osCommand.c_str());
 
@@ -1846,11 +1895,11 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
     poLayer = new OGRPGTableLayer( this, osCurrentSchema, pszTableName,
                                    pszSchemaName, NULL, TRUE );
     poLayer->SetTableDefinition(osFIDColumnName, pszGFldName, eType,
-                                pszGeomType, nSRSId, nDimension);
+                                pszGeomType, nSRSId, GeometryTypeFlags);
     poLayer->SetLaunderFlag( CSLFetchBoolean(papszOptions,"LAUNDER",TRUE) );
     poLayer->SetPrecisionFlag( CSLFetchBoolean(papszOptions,"PRECISION",TRUE));
     //poLayer->SetForcedSRSId(nForcedSRSId);
-    poLayer->SetForcedDimension(nForcedDimension);
+    poLayer->SetForcedGeometryTypeFlags(ForcedGeometryTypeFlags);
     poLayer->SetCreateSpatialIndexFlag(bCreateSpatialIndex);
     poLayer->SetDifferedCreation(bDifferedCreation, osCreateTable);
 
@@ -1864,7 +1913,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
     poLayer->SetOverrideColumnTypes(pszOverrideColumnTypes);
 
     poLayer->AllowAutoFIDOnCreateViaCopy();
-    if( CSLTestBoolean(CPLGetConfigOption("PG_USE_COPY", "YES")) )
+    if( CPLTestBool(CPLGetConfigOption("PG_USE_COPY", "YES")) )
         poLayer->SetUseCopy();
 
     if( bFID64 )
@@ -1898,6 +1947,8 @@ int OGRPGDataSource::TestCapability( const char * pszCap )
     else if( EQUAL(pszCap,ODsCCurveGeometries) )
         return TRUE;
     else if( EQUAL(pszCap,ODsCTransactions) )
+        return TRUE;
+    else if ( EQUAL(pszCap,ODsCMeasuredGeometries) )
         return TRUE;
     else
         return FALSE;

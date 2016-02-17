@@ -137,9 +137,13 @@ int main( int nArgc, char ** papszArgv )
 /*      Processing command line arguments.                              */
 /* -------------------------------------------------------------------- */
     nArgc = OGRGeneralCmdLineProcessor( nArgc, &papszArgv, 0 );
-    
+
     if( nArgc < 1 )
+    {
+        papszArgv = NULL;
+        nRetCode = -nArgc;
         goto exit;
+    }
 
     for( int iArg = 1; iArg < nArgc; iArg++ )
     {
@@ -182,6 +186,9 @@ int main( int nArgc, char ** papszArgv )
         GDALVectorTranslateOptionsForBinaryFree(psOptionsForBinary);
         goto exit;
     }
+
+    if( strcmp(psOptionsForBinary->pszDestDataSource, "/vsistdout/") == 0 )
+        psOptionsForBinary->bQuiet = TRUE;
 
     if (!psOptionsForBinary->bQuiet && psOptionsForBinary->bFormatExplicitlySet)
     {
@@ -231,7 +238,7 @@ int main( int nArgc, char ** papszArgv )
     if( hDS == NULL )
     {
         OGRSFDriverRegistrar    *poR = OGRSFDriverRegistrar::GetRegistrar();
-        
+
         fprintf( stderr, "FAILURE:\n"
                 "Unable to open datasource `%s' with the following drivers.\n",
                 psOptionsForBinary->pszDataSource );
@@ -335,7 +342,7 @@ static void Usage(const char* pszAdditionalMsg, int bShort)
     {
         GDALDriver *poDriver = poR->GetDriver(iDriver);
 
-        if( CSLTestBoolean( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
+        if( CPLTestBool( CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE, "FALSE") ) )
             printf( "     -f \"%s\"\n", poDriver->GetDescription() );
     }
 

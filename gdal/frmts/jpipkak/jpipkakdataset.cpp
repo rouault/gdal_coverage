@@ -29,6 +29,10 @@
  * DEALINGS IN THE SOFTWARE.
 **/
 
+#ifdef DEBUG_BOOL
+#define DO_NOT_USE_DEBUG_BOOL
+#endif
+
 #include "gdal_frmts.h"
 #include "jpipkakdataset.h"
 
@@ -59,6 +63,8 @@ static int nPSTTargetOffset = -1;
 class jpipkak_kdu_cpl_error_message : public kdu_message 
 {
 public: // Member classes
+    using kdu_message::put_text;
+
     jpipkak_kdu_cpl_error_message( CPLErr eErrClass ) 
     {
         m_eErrClass = eErrClass;
@@ -1236,7 +1242,7 @@ JPIPKAKDataset::TestUseBlockIO( CPL_UNUSED int nXOff, CPL_UNUSED int nYOff,
         bUseBlockedIO = TRUE;
 
     if( bUseBlockedIO
-        && CSLTestBoolean( CPLGetConfigOption( "GDAL_ONE_BIG_READ", "NO") ) )
+        && CPLTestBool( CPLGetConfigOption( "GDAL_ONE_BIG_READ", "NO") ) )
         bUseBlockedIO = FALSE;
 
     return bUseBlockedIO;

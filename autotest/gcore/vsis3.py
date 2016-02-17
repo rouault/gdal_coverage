@@ -94,6 +94,10 @@ def vsis3_1():
     with gdaltest.error_handler():
         f = gdal.VSIFOpenL('/vsis3/foo/bar.baz', 'rb')
     if f is not None or gdal.GetLastErrorMsg() == '':
+        if f is not None:
+            gdal.VSIFCloseL(f)
+        if gdal.GetConfigOption('APPVEYOR') is not None:
+            return 'success'
         gdaltest.post_reason('fail')
         print(gdal.GetLastErrorMsg())
         return 'fail'
@@ -166,6 +170,16 @@ def vsis3_2():
         gdaltest.post_reason('fail')
         print(data)
         return 'fail'
+
+    # Test with temporary credentials
+    gdal.SetConfigOption('AWS_SESSION_TOKEN', 'AWS_SESSION_TOKEN')
+    f = gdal.VSIFOpenL('/vsis3/s3_fake_bucket_with_session_token/resource', 'rb')
+    if f is None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    data = gdal.VSIFReadL(1, 4, f).decode('ascii')
+    gdal.VSIFCloseL(f)
+    gdal.SetConfigOption('AWS_SESSION_TOKEN', None)
 
     #old_val = gdal.GetConfigOption('GDAL_DISABLE_READDIR_ON_OPEN')
     #gdal.SetConfigOption('GDAL_DISABLE_READDIR_ON_OPEN', 'EMPTY_DIR')

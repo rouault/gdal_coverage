@@ -937,7 +937,7 @@ bool VSICurlHandle::DownloadRegion(vsi_l_offset startOffset, int nBlocks)
     long response_code = 0;
     curl_easy_getinfo(hCurlHandle, CURLINFO_HTTP_CODE, &response_code);
 
-    char *content_type = 0;
+    char *content_type = NULL;
     curl_easy_getinfo(hCurlHandle, CURLINFO_CONTENT_TYPE, &content_type);
 
     if (ENABLE_DEBUG)
@@ -1271,7 +1271,7 @@ int VSICurlHandle::ReadMultiRange( int const nRanges, void ** const ppData,
     long response_code = 0;
     curl_easy_getinfo(hCurlHandle, CURLINFO_HTTP_CODE, &response_code);
 
-    char *content_type = 0;
+    char *content_type = NULL;
     curl_easy_getinfo(hCurlHandle, CURLINFO_CONTENT_TYPE, &content_type);
 
     if ((response_code != 200 && response_code != 206 &&
@@ -1698,7 +1698,7 @@ VSICurlFilesystemHandler::GetRegionFromCacheDisk(const char* pszURL,
                 {
                     AddRegion(pszURL, nFileOffsetStart, 0, NULL);
                 }
-                VSIFCloseL(fp);
+                CPL_IGNORE_RET_VAL(VSIFCloseL(fp));
                 return GetRegion(pszURL, nFileOffsetStart);
             }
             else
@@ -1707,7 +1707,7 @@ VSICurlFilesystemHandler::GetRegionFromCacheDisk(const char* pszURL,
                     break;
             }
         }
-        VSIFCloseL(fp);
+        CPL_IGNORE_RET_VAL(VSIFCloseL(fp));
     }
     return NULL;
 }
@@ -1737,7 +1737,7 @@ void VSICurlFilesystemHandler::AddRegionToCacheDisk(CachedRegion* psRegion)
                 psRegion->nFileOffsetStart == nFileOffsetStartCached)
             {
                 CPLAssert(psRegion->nSize == nSizeCached);
-                VSIFCloseL(fp);
+                CPL_IGNORE_RET_VAL(VSIFCloseL(fp));
                 return;
             }
             else
@@ -1761,7 +1761,7 @@ void VSICurlFilesystemHandler::AddRegionToCacheDisk(CachedRegion* psRegion)
         if (psRegion->nSize)
             CPL_IGNORE_RET_VAL(VSIFWriteL(psRegion->pData, 1, psRegion->nSize, fp));
 
-        VSIFCloseL(fp);
+        CPL_IGNORE_RET_VAL(VSIFCloseL(fp));
     }
     return;
 }
@@ -2277,7 +2277,7 @@ char** VSICurlFilesystemHandler::ParseHTMLFileList(const char* pszFilename,
                     oFileList.AddString( beginFilename );
                     if (ENABLE_DEBUG)
                         CPLDebug("VSICURL", "File[%d] = %s, is_dir = %d, size = " CPL_FRMT_GUIB ", time = %04d/%02d/%02d %02d:%02d:%02d",
-                                nCount, beginFilename, bIsDirectory, nFileSize,
+                                nCount, beginFilename, bIsDirectory ? 1 : 0, nFileSize,
                                 brokendowntime.tm_year + 1900, brokendowntime.tm_mon + 1, brokendowntime.tm_mday,
                                 brokendowntime.tm_hour, brokendowntime.tm_min, brokendowntime.tm_sec);
                     nCount ++;
@@ -2651,7 +2651,7 @@ char** VSICurlFilesystemHandler::GetFileList(const char *pszDirname,
                             struct tm brokendowntime;
                             CPLUnixTimeToYMDHMS(mUnixTime, &brokendowntime);
                             CPLDebug("VSICURL", "File[%d] = %s, is_dir = %d, size = " CPL_FRMT_GUIB ", time = %04d/%02d/%02d %02d:%02d:%02d",
-                                    nCount, pszFilename, bIsDirectory, nFileSize,
+                                    nCount, pszFilename, bIsDirectory ? 1 : 0, nFileSize,
                                     brokendowntime.tm_year + 1900, brokendowntime.tm_mon + 1, brokendowntime.tm_mday,
                                     brokendowntime.tm_hour, brokendowntime.tm_min, brokendowntime.tm_sec);
                         }
@@ -3034,7 +3034,7 @@ int VSICurlUninstallReadCbk(VSILFILE* fp)
 /*                         VSIS3FSHandler                               */
 /************************************************************************/
 
-class VSIS3FSHandler: public VSICurlFilesystemHandler
+class VSIS3FSHandler CPL_FINAL : public VSICurlFilesystemHandler
 {
     std::map< CPLString, VSIS3UpdateParams > oMapBucketsToS3Params;
 
@@ -3062,7 +3062,7 @@ public:
 /*                            VSIS3Handle                               */
 /************************************************************************/
 
-class VSIS3Handle: public VSICurlHandle
+class VSIS3Handle CPL_FINAL : public VSICurlHandle
 {
     VSIS3HandleHelper* m_poS3HandleHelper;
 
@@ -3082,7 +3082,7 @@ class VSIS3Handle: public VSICurlHandle
 /*                            VSIS3WriteHandle                          */
 /************************************************************************/
 
-class VSIS3WriteHandle: public VSIVirtualHandle
+class VSIS3WriteHandle CPL_FINAL : public VSIVirtualHandle
 {
     VSIS3FSHandler     *m_poFS;
     CPLString           m_osFilename;
@@ -4043,6 +4043,8 @@ void VSIS3Handle::ProcessGetFileSizeResult(const char* pszContent)
  *
  * The AWS_SECRET_ACCESS_KEY and AWS_ACCESS_KEY_ID configuration options *must* be
  * set.
+ * The AWS_SESSION_TOKEN configuration option must be set when temporary credentials
+ * are used.
  * The AWS_REGION configuration option may be set to one of the supported
  * <a href="http://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region">S3 regions</a>
  * and defaults to 'us-east-1'

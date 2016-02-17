@@ -369,8 +369,7 @@ template<class T> static inline void ClampAndRound(double& dfValue, int& bClampe
         bClamped = TRUE;
         dfValue = static_cast<double>(std::numeric_limits<T>::max());
     }
-    else if (std::numeric_limits<T>::is_integer &&
-             dfValue != static_cast<double>(static_cast<T>(dfValue)))
+    else if (dfValue != static_cast<double>(static_cast<T>(dfValue)))
     {
         bRounded = TRUE;
         dfValue = static_cast<double>(static_cast<T>(floor(dfValue + 0.5)));
@@ -413,8 +412,23 @@ double GDALAdjustValueToDataType( GDALDataType eDT, double dfValue, int* pbClamp
             ClampAndRound<GUInt32>(dfValue, bClamped, bRounded);
             break;
         case GDT_Float32:
-            ClampAndRound<float>(dfValue, bClamped, bRounded);
+        {
+            if ( dfValue < -std::numeric_limits<float>::max())
+            {
+                bClamped = TRUE;
+                dfValue = static_cast<double>(-std::numeric_limits<float>::max());
+            }
+            else if (dfValue > std::numeric_limits<float>::max())
+            {
+                bClamped = TRUE;
+                dfValue = static_cast<double>(std::numeric_limits<float>::max());
+            }
+            else
+            {
+                dfValue = static_cast<double>(static_cast<float>(dfValue));
+            }
             break;
+        }
         default:
             break;
     }
@@ -1118,7 +1132,7 @@ int CPL_STDCALL GDALLoadOziMapFile( const char *pszFilename,
 /*      possible.  Otherwise we will need to use them as GCPs.          */
 /* -------------------------------------------------------------------- */
     if( !GDALGCPsToGeoTransform( nCoordinateCount, asGCPs, padfGeoTransform, 
-                                 CSLTestBoolean(CPLGetConfigOption("OZI_APPROX_GEOTRANSFORM", "NO")) ) )
+                                 CPLTestBool(CPLGetConfigOption("OZI_APPROX_GEOTRANSFORM", "NO")) ) )
     {
         if ( pnGCPCount && ppasGCPs )
         {
@@ -1169,7 +1183,7 @@ int CPL_STDCALL GDALReadOziMapFile( const char * pszBaseFilename,
     if ( fpOzi == NULL )
         return FALSE;
 
-    VSIFClose( fpOzi );
+    CPL_IGNORE_RET_VAL(VSIFClose( fpOzi ));
 
 /* -------------------------------------------------------------------- */
 /*      We found the file, now load and parse it.                       */
@@ -1302,7 +1316,7 @@ int CPL_STDCALL GDALLoadTabFile( const char *pszFilename,
 /*      possible.  Otherwise we will need to use them as GCPs.          */
 /* -------------------------------------------------------------------- */
     if( !GDALGCPsToGeoTransform( nCoordinateCount, asGCPs, padfGeoTransform, 
-                                 CSLTestBoolean(CPLGetConfigOption("TAB_APPROX_GEOTRANSFORM", "NO")) ) )
+                                 CPLTestBool(CPLGetConfigOption("TAB_APPROX_GEOTRANSFORM", "NO")) ) )
     {
         if (pnGCPCount && ppasGCPs)
         {
@@ -1397,7 +1411,7 @@ int GDALReadTabFile2( const char * pszBaseFilename,
     if( fpTAB == NULL )
         return FALSE;
 
-    VSIFCloseL( fpTAB );
+    CPL_IGNORE_RET_VAL(VSIFCloseL( fpTAB ));
 
 /* -------------------------------------------------------------------- */
 /*      We found the file, now load and parse it.                       */
@@ -1613,7 +1627,6 @@ int GDALReadWorldFile2( const char *pszBaseFilename, const char *pszExtension,
     }
 
     VSIStatBufL sStatBuf;
-    int bGotTFW;
 
     pszTFW = CPLResetExtension( pszBaseFilename, szExtLower );
 
@@ -1640,7 +1653,7 @@ int GDALReadWorldFile2( const char *pszBaseFilename, const char *pszExtension,
 /*      Try lower case, then upper case.                                */
 /* -------------------------------------------------------------------- */
 
-    bGotTFW = VSIStatExL( pszTFW, &sStatBuf, VSI_STAT_EXISTS_FLAG ) == 0;
+    bool bGotTFW = VSIStatExL( pszTFW, &sStatBuf, VSI_STAT_EXISTS_FLAG ) == 0;
 
     if( !bGotTFW  && VSIIsCaseSensitiveFS(pszTFW) )
     {
@@ -1733,7 +1746,8 @@ GDALWriteWorldFile( const char * pszBaseFilename, const char *pszExtension,
         return FALSE;
 
     int bRet = ( VSIFWriteL( (void *) osTFWText.c_str(), osTFWText.size(), 1, fpTFW ) == 1 );
-    VSIFCloseL( fpTFW );
+    if( VSIFCloseL( fpTFW ) != 0 )
+        bRet = FALSE;
 
     return bRet;
 }
@@ -1823,7 +1837,7 @@ const char * CPL_STDCALL GDALVersionInfo( const char *pszRequest )
                 }
             }
 
-            VSIFCloseL( fp );
+            CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
         }
 
         if (!pszResultLicence)
@@ -2513,7 +2527,7 @@ GDALGeneralCmdLineProcessor( int nArgc, char ***ppapszArgv, int nOptions )
                 CSLDestroy( papszTokens );
             }
 
-            VSIFClose( fpOptFile );
+            CPL_IGNORE_RET_VAL(VSIFClose( fpOptFile ));
 
             iArg += 1;
         }
@@ -2918,7 +2932,7 @@ GDALDataset *GDALFindAssociatedAuxFile( const char *pszBasename,
                 poODS = (GDALDataset *) GDALOpen( osAuxFilename, eAccess );
             CPLTurnFailureIntoWarning(FALSE);
         }
-        VSIFCloseL( fp );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
     }
 
 /* -------------------------------------------------------------------- */
@@ -3015,7 +3029,7 @@ GDALDataset *GDALFindAssociatedAuxFile( const char *pszBasename,
                     poODS = (GDALDataset *) GDALOpen( osAuxFilename, eAccess );
                 CPLTurnFailureIntoWarning(FALSE);
             }
-            VSIFCloseL( fp );
+            CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
         }
 
         if( poODS != NULL )

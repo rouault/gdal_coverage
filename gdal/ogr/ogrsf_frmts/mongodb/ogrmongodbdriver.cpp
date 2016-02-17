@@ -28,10 +28,10 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "mongocxx_headers.h"
+
 #include "gdal_priv.h"
 #include "ogrsf_frmts.h"
-
-#include "mongocxx_headers.h"
 
 #include "ogr_p.h"
 #include "cpl_time.h"
@@ -1983,6 +1983,7 @@ OGRMongoDBDataSource::OGRMongoDBDataSource()
     m_bJSonField = FALSE;
     m_bUseOGRMetadata = TRUE;
     m_bBulkInsert = TRUE;
+    m_bFlattenNestedAttributes = TRUE;
 }
 
 /************************************************************************/
@@ -2044,12 +2045,12 @@ OGRLayer *OGRMongoDBDataSource::GetLayerByName(const char* pszLayerName)
             std::list<std::string> l = m_poConn->getCollectionNames( osDatabase );
             for ( std::list<std::string>::iterator oIter = l.begin(); oIter != l.end(); oIter++ )
             {
-                const std::string& m_osCollection(*oIter);
-                if( EQUAL(m_osCollection.c_str(),pszLayerName) )
+                const std::string& osCollection(*oIter);
+                if( EQUAL(osCollection.c_str(),pszLayerName) )
                 {
                     OGRMongoDBLayer* l_poLayer = new OGRMongoDBLayer(this,
                                                           osDatabase,
-                                                          m_osCollection.c_str());
+                                                          osCollection.c_str());
                     m_apoLayers.push_back(l_poLayer);
                     return l_poLayer;
                 }
@@ -2413,17 +2414,17 @@ int OGRMongoDBDataSource::ListLayers(const char* pszDatabase)
 {
     try
     {
-        std::list<std::string> l = m_poConn->getCollectionNames( pszDatabase );
-        for ( std::list<std::string>::iterator i = l.begin(); i != l.end(); i++ )
+        std::list<std::string> aoListNames = m_poConn->getCollectionNames( pszDatabase );
+        for ( std::list<std::string>::iterator oIter = aoListNames.begin(); oIter != aoListNames.end(); ++oIter )
         {
-            const std::string& m_osCollection(*i);
-            if( !STARTS_WITH(m_osCollection.c_str(), "system.") &&
-                m_osCollection != "startup_log" &&
-                m_osCollection != "_ogr_metadata" )
+            const std::string& osCollection(*oIter);
+            if( !STARTS_WITH(osCollection.c_str(), "system.") &&
+                osCollection != "startup_log" &&
+                osCollection != "_ogr_metadata" )
             {
                 m_apoLayers.push_back(new OGRMongoDBLayer(this,
                                                       pszDatabase,
-                                                      m_osCollection.c_str()));
+                                                      osCollection.c_str()));
             }
         }
         return TRUE;
@@ -2716,7 +2717,17 @@ static void OGRMongoDBDriverUnload( CPL_UNUSED GDALDriver* poDriver )
 static int OGRMongoDBDriverIdentify( GDALOpenInfo* poOpenInfo )
 
 {
-    return STARTS_WITH_CI(poOpenInfo->pszFilename, "MongoDB:");
+    if( STARTS_WITH_CI(poOpenInfo->pszFilename, "MongoDB:") )
+    {
+#ifdef DEBUG_BOOL
+        // Defining -DDO_NOT_USE_DEBUG_BOOL doesn't solve runtime problems
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "MongoDB incompatible at runtime with DEBUG_BOOL");
+#else
+        return TRUE;
+#endif
+    }
+    return FALSE;
 }
 
 /************************************************************************/

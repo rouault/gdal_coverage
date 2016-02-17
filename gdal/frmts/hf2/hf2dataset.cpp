@@ -32,6 +32,8 @@
 #include "gdal_pam.h"
 #include "ogr_spatialref.h"
 
+#include <limits>
+
 CPL_CVSID("$Id$");
 
 /************************************************************************/
@@ -126,9 +128,10 @@ CPLErr HF2RasterBand::IReadBlock( int nBlockXOff, int nLineYOff,
 
 {
     HF2Dataset *poGDS = (HF2Dataset *) poDS;
+    // NOTE: the use of nBlockXSize for the y dimensions is intended
 
-    const int nXBlocks = (nRasterXSize + nBlockXSize - 1) / nBlockXSize;
-    const int nYBlocks = (nRasterYSize + nBlockXSize - 1) / nBlockXSize;
+    const int nXBlocks = DIV_ROUND_UP(nRasterXSize, nBlockXSize);
+    const int nYBlocks = DIV_ROUND_UP(nRasterYSize, nBlockXSize);
 
     if (!poGDS->LoadBlockMap())
         return CE_Failure;
@@ -180,22 +183,47 @@ CPLErr HF2RasterBand::IReadBlock( int nBlockXOff, int nLineYOff,
                 GInt32 nVal;
                 VSIFReadL(&nVal, 4, 1, poGDS->fp);
                 CPL_LSBPTR32(&nVal);
-                VSIFReadL(pabyData, static_cast<size_t>(nWordSize * (nTileWidth - 1)), 1, poGDS->fp);
+                if( VSIFReadL(pabyData, static_cast<size_t>(nWordSize * (nTileWidth - 1)), 1, poGDS->fp) != 1 )
+                {
+                    CPLError(CE_Failure, CPLE_FileIO, "File too short");
+                    CPLFree(pabyData);
+                    return CE_Failure;
+                }
 #if defined(CPL_MSB)
                 if (nWordSize > 1)
                     GDALSwapWords(pabyData, nWordSize, nTileWidth - 1, nWordSize);
 #endif
 
-                pafBlockData[nxoff * nBlockXSize * nBlockXSize + j * nBlockXSize + 0] = nVal * fScale + fOff;
+                double dfVal = nVal * (double)fScale + fOff;
+                if( dfVal > std::numeric_limits<float>::max() )
+                    dfVal = std::numeric_limits<float>::max();
+                else if( dfVal < std::numeric_limits<float>::min() )
+                    dfVal = std::numeric_limits<float>::min();
+                pafBlockData[nxoff * nBlockXSize * nBlockXSize + j * nBlockXSize + 0] = static_cast<float>(dfVal);
                 for(int i=1;i<nTileWidth;i++)
                 {
+                    int nInc;
                     if (nWordSize == 1)
-                        nVal += ((signed char*)pabyData)[i-1];
+                        nInc = ((signed char*)pabyData)[i-1];
                     else if (nWordSize == 2)
-                        nVal += ((GInt16*)pabyData)[i-1];
+                        nInc = ((GInt16*)pabyData)[i-1];
                     else
-                        nVal += ((GInt32*)pabyData)[i-1];
-                    pafBlockData[nxoff * nBlockXSize * nBlockXSize + j * nBlockXSize + i] = nVal * fScale + fOff;
+                        nInc = ((GInt32*)pabyData)[i-1];
+                    if( (nInc >= 0 && nVal > INT_MAX - nInc) ||
+                        (nInc == INT_MIN && nVal < 0) ||
+                        (nInc < 0 && nVal < INT_MIN - nInc ) )
+                    {
+                        CPLError(CE_Failure, CPLE_FileIO, "int32 overflow");
+                        CPLFree(pabyData);
+                        return CE_Failure;
+                    }
+                    nVal += nInc;
+                    dfVal = nVal * (double)fScale + fOff;
+                    if( dfVal > std::numeric_limits<float>::max() )
+                        dfVal = std::numeric_limits<float>::max();
+                    else if( dfVal < std::numeric_limits<float>::min() )
+                        dfVal = std::numeric_limits<float>::min();
+                    pafBlockData[nxoff * nBlockXSize * nBlockXSize + j * nBlockXSize + i] = static_cast<float>(dfVal);
                 }
             }
         }
@@ -280,7 +308,13 @@ int HF2Dataset::LoadBlockMap()
             for(int k = 0; k < nLines; k++)
             {
                 GByte nWordSize;
-                VSIFReadL(&nWordSize, 1, 1, fp);
+                if( VSIFReadL(&nWordSize, 1, 1, fp) != 1 )
+                {
+                    CPLError(CE_Failure, CPLE_FileIO, "File too short");
+                    VSIFree(panBlockOffset);
+                    panBlockOffset = NULL;
+                    return FALSE;
+                }
                 //printf("nWordSize=%d\n", nWordSize);
                 if (nWordSize == 1 || nWordSize == 2 || nWordSize == 4)
                     VSIFSeekL(fp, static_cast<vsi_l_offset>(4 + nWordSize * (nCols - 1)), SEEK_CUR);
@@ -717,8 +751,8 @@ GDALDataset* HF2Dataset::CreateCopy( const char * pszFilename,
 /* -------------------------------------------------------------------- */
     const char* pszCompressed = CSLFetchNameValue(papszOptions, "COMPRESS");
     bool bCompress = false;
-    if (pszCompressed)
-        bCompress = CPL_TO_BOOL(CSLTestBoolean(pszCompressed));
+    if( pszCompressed )
+        bCompress = CPLTestBool(pszCompressed);
 
     const char* pszVerticalPrecision = CSLFetchNameValue(papszOptions, "VERTICAL_PRECISION");
     if (pszVerticalPrecision)

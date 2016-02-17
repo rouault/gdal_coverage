@@ -314,13 +314,19 @@ CPLErr RIKRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
 
     if( poRDS->options == 0x00 || poRDS->options == 0x40 )
     {
-        VSIFReadL( pImage, 1, nBlockSize, poRDS->fp );
+        VSIFReadL( pImage, 1, nBlockXSize * nBlockYSize, poRDS->fp );
         return CE_None;
     }
 
     // Read block to memory
-    GByte *blockData = reinterpret_cast<GByte *>( CPLMalloc(nBlockSize) );
-    VSIFReadL( blockData, 1, nBlockSize, poRDS->fp );
+    GByte *blockData = reinterpret_cast<GByte *>( VSI_MALLOC_VERBOSE(nBlockSize) );
+    if( blockData == NULL )
+        return CE_Failure;
+    if( VSIFReadL( blockData, 1, nBlockSize, poRDS->fp ) != nBlockSize )
+    {
+        VSIFree(blockData);
+        return CE_Failure;
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Read RLE block.                                                 */
@@ -329,16 +335,19 @@ CPLErr RIKRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
     GUInt32 imagePos = 0;
 
     if( poRDS->options == 0x01 ||
-        poRDS->options == 0x41 ) do
+        poRDS->options == 0x41 )
     {
-        GByte count = blockData[filePos++];
-        GByte color = blockData[filePos++];
-
-        for (GByte i = 0; i <= count; i++)
+        while( filePos+1 < nBlockSize && imagePos < pixels )
         {
-          reinterpret_cast<GByte *>( pImage )[imagePos++] = color;
+            GByte count = blockData[filePos++];
+            GByte color = blockData[filePos++];
+
+            for (GByte i = 0; imagePos < pixels && i <= count; i++)
+            {
+                reinterpret_cast<GByte *>( pImage )[imagePos++] = color;
+            }
         }
-    } while( filePos < nBlockSize && imagePos < pixels );
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Read LZW block.                                                 */
@@ -348,6 +357,14 @@ CPLErr RIKRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
     {
         const bool LZW_HAS_CLEAR_CODE = !!(blockData[4] & 0x80);
         const int LZW_MAX_BITS = blockData[4] & 0x1f; // Max 13
+        if( LZW_MAX_BITS > 13 )
+        {
+            CPLFree( blockData );
+            CPLError( CE_Failure, CPLE_AppDefined,
+                      "RIK decompression failed. "
+                      "Invalid LZW_MAX_BITS." );
+            return CE_Failure;
+        }
         const int LZW_BITS_PER_PIXEL = 8;
         const int LZW_OFFSET = 5;
 
@@ -839,9 +856,9 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
         CPL_SWAP32PTR( &header.iMPPNum );
 #endif
 
-        if (!CPLIsFinite(header.fSouth) |
-            !CPLIsFinite(header.fWest) |
-            !CPLIsFinite(header.fNorth) |
+        if (!CPLIsFinite(header.fSouth) ||
+            !CPLIsFinite(header.fWest) ||
+            !CPLIsFinite(header.fNorth) ||
             !CPLIsFinite(header.fEast))
             return NULL;
 
@@ -893,9 +910,11 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
 
         if( offsetBounds || !header.iVertBlocks )
         {
-            header.iVertBlocks = (GUInt32)
-                ceil( (header.fNorth - header.fSouth) /
+            double dfVertBlocks = ceil( (header.fNorth - header.fSouth) /
                       (header.iBlockHeight * metersPerPixel) );
+            if( dfVertBlocks < 1 || dfVertBlocks > INT_MAX )
+                return NULL;
+            header.iVertBlocks = static_cast<GUInt32>(dfVertBlocks);
         }
 
 #if RIK_HEADER_DEBUG
@@ -916,9 +935,6 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
 
         VSIFReadL( &header.iOptions, 1, sizeof(header.iOptions), poOpenInfo->fpL );
 
-        if( !header.iHorBlocks || !header.iVertBlocks )
-           return NULL;
-
         if( header.iOptions != 0x00 && // Uncompressed
             header.iOptions != 0x40 && // Uncompressed
             header.iOptions != 0x01 && // RLE
@@ -931,6 +947,19 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
                       poOpenInfo->pszFilename );
             return NULL;
         }
+    }
+
+    if( header.iBlockWidth == 0 ||
+        header.iHorBlocks == 0 ||
+        header.iBlockWidth >= INT_MAX / header.iHorBlocks ||
+        header.iBlockHeight == 0 ||
+        header.iVertBlocks == 0 ||
+        header.iBlockHeight >= INT_MAX / header.iVertBlocks ||
+        header.iBlockHeight >= INT_MAX / header.iBlockWidth ||
+        header.iVertBlocks >= INT_MAX / (int)sizeof(GUInt32) ||
+        header.iHorBlocks >= INT_MAX / (header.iVertBlocks * (int)sizeof(GUInt32)) )
+    {
+        return NULL;
     }
 
 /* -------------------------------------------------------------------- */
@@ -950,9 +979,9 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
 /*      Find block offsets.                                             */
 /* -------------------------------------------------------------------- */
 
-    const GUInt32 blocks = header.iHorBlocks * header.iVertBlocks;
+    GUInt32 blocks = header.iHorBlocks * header.iVertBlocks;
     GUInt32 *offsets = reinterpret_cast<GUInt32 *>(
-        CPLMalloc( blocks * sizeof(GUInt32) ) );
+        VSIMalloc( blocks * sizeof(GUInt32) ) );
 
     if( !offsets )
     {
@@ -966,6 +995,37 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
     {
         offsets[0] = static_cast<GUInt32>(VSIFTellL( poOpenInfo->fpL ));
 
+        if( VSIFEofL( poOpenInfo->fpL ) )
+        {
+            CPLError( CE_Failure, CPLE_OpenFailed,
+                    "File %s. Read past end of file.\n",
+                    poOpenInfo->pszFilename );
+            CPLFree(offsets);
+            return NULL;
+        }
+
+        VSIFSeekL( poOpenInfo->fpL, 0, SEEK_END );
+        vsi_l_offset nBigFileSize = VSIFTellL( poOpenInfo->fpL );
+        if( nBigFileSize > 0xFFFFFFFFU )
+            nBigFileSize = 0xFFFFFFFFU;
+        GUInt32 fileSize = static_cast<GUInt32>(nBigFileSize);
+
+        GUInt32 nBlocksFromFileSize = (fileSize - offsets[0]) / (header.iBlockWidth * header.iBlockHeight);
+        if( nBlocksFromFileSize < blocks )
+        {
+            blocks = nBlocksFromFileSize;
+            header.iVertBlocks = blocks / header.iHorBlocks;
+        }
+
+        if( header.iVertBlocks == 0 )
+        {
+            CPLError( CE_Failure, CPLE_OpenFailed,
+                        "File %s too short.\n",
+                        poOpenInfo->pszFilename );
+            CPLFree( offsets );
+            return NULL;
+        }
+
         for( GUInt32 i = 1; i < blocks; i++ )
         {
             offsets[i] = offsets[i - 1] +
@@ -976,14 +1036,16 @@ GDALDataset *RIKDataset::Open( GDALOpenInfo * poOpenInfo )
     {
         for( GUInt32 i = 0; i < blocks; i++ )
         {
-            VSIFReadL( &offsets[i], 1, sizeof(offsets[i]), poOpenInfo->fpL );
+            if( VSIFReadL( &offsets[i], sizeof(offsets[i]), 1, poOpenInfo->fpL ) != 1 )
+                break;
 #ifdef CPL_MSB
             CPL_SWAP32PTR( &offsets[i] );
 #endif
             if( rik3header )
             {
                 GUInt32 blockSize;
-                VSIFReadL( &blockSize, 1, sizeof(blockSize), poOpenInfo->fpL );
+                if( VSIFReadL( &blockSize, sizeof(blockSize), 1, poOpenInfo->fpL ) != 1 )
+                    break;
 #ifdef CPL_MSB
                 CPL_SWAP32PTR( &blockSize );
 #endif

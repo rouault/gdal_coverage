@@ -56,7 +56,8 @@ static char *szConfiguredFormats = "GDAL_FORMATS";
  * GDAL.  See <a href="http://gdal.org/formats_list.html">raster list</a> and
  * <a href="http://gdal.org/ogr_formats.html">vector full list</a>
  *
- * This function should generally be called once at the beginning of the application.
+ * This function should generally be called once at the beginning of the
+ * application.
  */
 
 void CPL_STDCALL GDALAllRegister()
@@ -66,15 +67,11 @@ void CPL_STDCALL GDALAllRegister()
 
 #ifdef FRMT_vrt
     GDALRegister_VRT();
-#endif    
+#endif
 
-#ifdef FRMT_gdb    
-    GDALRegister_GDB();
-#endif    
-
-#ifdef FRMT_gtiff    
+#ifdef FRMT_gtiff
     GDALRegister_GTiff();
-#endif    
+#endif
 
 #ifdef FRMT_nitf
     GDALRegister_NITF();
@@ -85,19 +82,19 @@ void CPL_STDCALL GDALAllRegister()
 #ifdef FRMT_hfa
     GDALRegister_HFA();
 #endif
-    
+
 #ifdef FRMT_ceos2
     GDALRegister_SAR_CEOS();
 #endif
-    
+
 #ifdef FRMT_ceos
     GDALRegister_CEOS();
 #endif
-    
+
 #ifdef FRMT_jaxapalsar
     GDALRegister_PALSARJaxa();
 #endif
-    
+
 #ifdef FRMT_gff
     GDALRegister_GFF();
 #endif
@@ -105,7 +102,7 @@ void CPL_STDCALL GDALAllRegister()
 #ifdef FRMT_elas
     GDALRegister_ELAS();
 #endif
-    
+
 #ifdef FRMT_aigrid
 //    GDALRegister_AIGrid2();
     GDALRegister_AIGrid();
@@ -135,7 +132,7 @@ void CPL_STDCALL GDALAllRegister()
 #ifdef FRMT_dds
     GDALRegister_DDS();
 #endif
-    
+
 #ifdef FRMT_gta
     GDALRegister_GTA();
 #endif
@@ -359,6 +356,46 @@ void CPL_STDCALL GDALAllRegister()
     GDALRegister_MAP();
 #endif
 
+#ifdef FRMT_kmlsuperoverlay
+    GDALRegister_KMLSUPEROVERLAY();
+#endif
+
+#ifdef FRMT_webp
+    GDALRegister_WEBP();
+#endif
+
+#ifdef FRMT_pdf
+    GDALRegister_PDF();
+#endif
+
+#ifdef FRMT_rasterlite
+    GDALRegister_Rasterlite();
+#endif
+
+#ifdef FRMT_mbtiles
+    GDALRegister_MBTiles();
+#endif
+
+#ifdef FRMT_plmosaic
+    GDALRegister_PLMOSAIC();
+#endif
+
+#ifdef FRMT_cals
+    GDALRegister_CALS();
+#endif
+
+#ifdef FRMT_wmts
+    GDALRegister_WMTS();
+#endif
+
+#ifdef FRMT_sentinel2
+    GDALRegister_SENTINEL2();
+#endif
+
+#ifdef FRMT_mrf
+    GDALRegister_mrf();
+#endif
+
 /* -------------------------------------------------------------------- */
 /*      Put raw formats at the end of the list. These drivers support   */
 /*      various ASCII-header labeled formats, so the driver could be    */
@@ -370,8 +407,6 @@ void CPL_STDCALL GDALAllRegister()
     GDALRegister_PNM();
     GDALRegister_DOQ1();
     GDALRegister_DOQ2();
-    GDALRegister_ENVI();
-    GDALRegister_EHdr();
     GDALRegister_GenBin();
     GDALRegister_PAux();
     GDALRegister_MFF();
@@ -395,6 +430,10 @@ void CPL_STDCALL GDALAllRegister()
     GDALRegister_SNODAS();
     GDALRegister_KRO();
     GDALRegister_ROIPAC();
+
+    // Those ones need to look for side car files so put them at end
+    GDALRegister_ENVI();
+    GDALRegister_EHdr();
     GDALRegister_ISCE();
 #endif
 
@@ -417,7 +456,7 @@ void CPL_STDCALL GDALAllRegister()
 
 #ifdef FRMT_gxf
     GDALRegister_GXF();
-#endif    
+#endif
 
 #ifdef FRMT_grass
     GDALRegister_GRASS();
@@ -452,16 +491,8 @@ void CPL_STDCALL GDALAllRegister()
     GDALRegister_BLX();
 #endif
 
-#ifdef FRMT_pgchip
-    GDALRegister_PGCHIP();
-#endif
-
 #ifdef FRMT_georaster
     GDALRegister_GEOR();
-#endif
-
-#ifdef FRMT_rasterlite
-    GDALRegister_Rasterlite();
 #endif
 
 #ifdef FRMT_epsilon
@@ -476,20 +507,12 @@ void CPL_STDCALL GDALAllRegister()
     GDALRegister_SAGA();
 #endif
 
-#ifdef FRMT_kmlsuperoverlay
-    GDALRegister_KMLSUPEROVERLAY();
-#endif
-
 #ifdef FRMT_xyz
     GDALRegister_XYZ();
 #endif
 
 #ifdef FRMT_hf2
     GDALRegister_HF2();
-#endif
-
-#ifdef FRMT_pdf
-    GDALRegister_PDF();
 #endif
 
 #ifdef FRMT_jpegls
@@ -508,10 +531,6 @@ void CPL_STDCALL GDALAllRegister()
     GDALRegister_E00GRID();
 #endif
 
-#ifdef FRMT_webp
-    GDALRegister_WEBP();
-#endif
-
 #ifdef FRMT_zmap
     GDALRegister_ZMap();
 #endif
@@ -520,28 +539,8 @@ void CPL_STDCALL GDALAllRegister()
     GDALRegister_NGSGEOID();
 #endif
 
-#ifdef FRMT_mbtiles
-    GDALRegister_MBTiles();
-#endif
-
 #ifdef FRMT_iris
     GDALRegister_IRIS();
-#endif
-
-#ifdef FRMT_plmosaic
-    GDALRegister_PLMOSAIC();
-#endif
-
-#ifdef FRMT_cals
-    GDALRegister_CALS();
-#endif
-
-#ifdef FRMT_wmts
-    GDALRegister_WMTS();
-#endif
-
-#ifdef FRMT_sentinel2
-    GDALRegister_SENTINEL2();
 #endif
 
 #ifdef GNM_ENABLED
@@ -553,7 +552,7 @@ void CPL_STDCALL GDALAllRegister()
 #ifdef FRMT_wcs
     GDALRegister_HTTP();
 #endif
-    
+
 /* -------------------------------------------------------------------- */
 /*      Deregister any drivers explicitly marked as suppressed by the   */
 /*      GDAL_SKIP environment variable.                                 */

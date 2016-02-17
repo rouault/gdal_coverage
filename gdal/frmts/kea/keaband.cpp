@@ -35,20 +35,6 @@
 
 #include "gdal_rat.h"
 
-
-#ifdef _MSC_VER
-#pragma warning( push )
-#pragma warning( disable : 4290 )  /* C++ exception specification ignored except to indicate a function is not __declspec(nothrow)*/
-#endif
-
-#include "libkea/KEAAttributeTable.h"
-
-#ifdef _MSC_VER
-#pragma warning( pop ) 
-#endif
-
-
-
 #include <map>
 #include <vector>
 
@@ -286,7 +272,7 @@ CPLErr KEARasterBand::SetMetadataItem(const char *pszName, const char *pszValue,
         return CE_Failure;
     try
     {
-        // if it is LAYER_TYPE handle it seperately
+        // if it is LAYER_TYPE handle it separately
         if( EQUAL( pszName, "LAYER_TYPE" ) )
         {
             if( EQUAL( pszValue, "athematic" ) )
@@ -319,7 +305,7 @@ const char *KEARasterBand::GetMetadataItem (const char *pszName, const char *psz
     // only deal with 'default' domain - no geolocation etc
     if( ( pszDomain != NULL ) && ( *pszDomain != '\0' ) )
         return NULL;
-    // get it out of the CSLStringList so we can be sure it is persistant
+    // get it out of the CSLStringList so we can be sure it is persistent
     return CSLFetchNameValue(m_papszMetadataList, pszName);
 }
 
@@ -353,7 +339,7 @@ CPLErr KEARasterBand::SetMetadata(char **papszMetadata, const char *pszDomain)
                 pszValue = "";
             if( pszName != NULL )
             {
-                // it is LAYER_TYPE? if so handle seperately
+                // it is LAYER_TYPE? if so handle separately
                 if( EQUAL( pszName, "LAYER_TYPE" ) )
                 {
                     if( EQUAL( pszValue, "athematic" ) )

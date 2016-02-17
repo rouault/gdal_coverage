@@ -223,7 +223,7 @@ class CPL_DLL OGRSpatialReference
                          const char *pszYAxisName, 
                          OGRAxisOrientation eYAxisOrientation );
 
-    // Machinary for accessing parse nodes
+    // Machinery for accessing parse nodes
     OGR_SRSNode *GetRoot() { return poRoot; }
     const OGR_SRSNode *GetRoot() const { return poRoot; }
     void        SetRoot( OGR_SRSNode * );
@@ -539,6 +539,9 @@ class CPL_DLL OGRSpatialReference
     /** Quadrilateralized Spherical Cube */
     OGRErr      SetQSC(double dfCenterLat, double dfCenterLong);
 
+    /** Spherical, Cross-track, Height */
+    OGRErr      SetSCH( double dfPegLat, double dfPegLong,
+                        double dfPegHeading, double dfPegHgt);
     /** State Plane */
     OGRErr      SetStatePlane( int nZone, int bNAD83 = TRUE,
                                const char *pszOverrideUnitName = NULL,
@@ -546,10 +549,10 @@ class CPL_DLL OGRSpatialReference
 
     OGRErr      ImportFromESRIStatePlaneWKT( 
         int nCode, const char* pszDatumName, const char* pszUnitsName, 
-        int nPCSCode, const char* pszCSName = 0 );
+        int nPCSCode, const char* pszCSName = NULL );
     OGRErr      ImportFromESRIWisconsinWKT( 
         const char* pszPrjName, double dfCentralMeridian, double dfLatOfOrigin, 
-        const char* pszUnitsName, const char* pszCSName = 0 );
+        const char* pszUnitsName, const char* pszCSName = NULL );
 
     static OGRSpatialReference* GetWGS84SRS();
 };

@@ -90,11 +90,11 @@ CPCIDSKFile::CPCIDSKFile( std::string filename )
     pixel_group_size = 0;
     first_line_offset = 0;
     last_block_index = 0;
-    last_block_dirty = 0;
+    last_block_dirty = false;
     last_block_xoff = 0;
     last_block_xsize = 0;
-    last_block_data = 0;
-    last_block_mutex = 0;
+    last_block_data = NULL;
+    last_block_mutex = NULL;
     file_size = 0;
 
 /* -------------------------------------------------------------------- */
@@ -430,7 +430,7 @@ void CPCIDSKFile::InitializeFromHeader()
 
     block_size = 0;
     last_block_index = -1;
-    last_block_dirty = 0;
+    last_block_dirty = false;
     last_block_data = NULL;
     last_block_mutex = NULL;
 
@@ -523,7 +523,9 @@ void CPCIDSKFile::InitializeFromHeader()
         
         if (STARTS_WITH(pixel_type_string,"        ")) 
         {
-            assert( count_c32r == 0 && count_c16u == 0 && count_c16s == 0 );
+            if( !( count_c32r == 0 && count_c16u == 0 && count_c16s == 0 ) )
+                return ThrowPCIDSKException("Assertion 'count_c32r == 0 && count_c16u == 0 && count_c16s == 0' failed");
+
             if( channelnum <= count_8u )
                 pixel_type = CHN_8U;
             else if( channelnum <= count_8u + count_16s )
@@ -595,8 +597,8 @@ void CPCIDSKFile::ReadFromFile( void *buffer, uint64 offset, uint64 size )
 
     interfaces.io->Seek( io_handle, offset, SEEK_SET );
     if( interfaces.io->Read( buffer, 1, size, io_handle ) != size )
-        return ThrowPCIDSKException( "PCIDSKFile:Failed to read %d bytes at %d.", 
-                                   (int) size, (int) offset );
+        return ThrowPCIDSKException( "PCIDSKFile:Failed to read %u bytes at %u.", 
+                                   (unsigned int) size, (unsigned int) offset );
 }
 
 /************************************************************************/
@@ -613,8 +615,8 @@ void CPCIDSKFile::WriteToFile( const void *buffer, uint64 offset, uint64 size )
 
     interfaces.io->Seek( io_handle, offset, SEEK_SET );
     if( interfaces.io->Write( buffer, 1, size, io_handle ) != size )
-        return ThrowPCIDSKException( "PCIDSKFile:Failed to write %d bytes at %d.",
-                                   (int) size, (int) offset );
+        return ThrowPCIDSKException( "PCIDSKFile:Failed to write %u bytes at %u.",
+                                   (unsigned int) size, (unsigned int) offset );
 }
 
 /************************************************************************/
@@ -717,7 +719,7 @@ void CPCIDSKFile::FlushBlock()
         if( last_block_dirty ) // is it still dirty?
         {
             WriteBlock( last_block_index, last_block_data );
-            last_block_dirty = 0;
+            last_block_dirty = false;
         }
         last_block_mutex->Release();
     }

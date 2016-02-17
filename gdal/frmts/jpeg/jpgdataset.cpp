@@ -924,7 +924,7 @@ CPLErr JPGRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
 /* -------------------------------------------------------------------- */
     if( poGDS->GetRasterCount() == 1 )
     {
-#ifdef JPEG_LIB_MK1_OR_12BIT
+#ifdef JPEG_LIB_MK1
         GDALCopyWords( poGDS->pabyScanline, GDT_UInt16, 2, 
                        pImage, eDataType, nWordSize, 
                        nXSize );
@@ -934,16 +934,16 @@ CPLErr JPGRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
     }
     else
     {
-#ifdef JPEG_LIB_MK1_OR_12BIT
+#ifdef JPEG_LIB_MK1
         GDALCopyWords( poGDS->pabyScanline + (nBand-1) * 2, 
                        GDT_UInt16, 6, 
                        pImage, eDataType, nWordSize, 
                        nXSize );
 #else
         if (poGDS->eGDALColorSpace == JCS_RGB &&
-            poGDS->GetOutColorSpace() == JCS_CMYK)
+            poGDS->GetOutColorSpace() == JCS_CMYK &&
+            eDataType == GDT_Byte)
         {
-            CPLAssert(eDataType == GDT_Byte);
             if (nBand == 1)
             {
                 for(int i=0;i<nXSize;i++)
@@ -1071,7 +1071,7 @@ GDALRasterBand *JPGRasterBand::GetMaskBand()
 
     if( !poGDS->bHasCheckedForMask)
     {
-        if( CSLTestBoolean(CPLGetConfigOption("JPEG_READ_MASK", "YES")))
+        if( CPLTestBool(CPLGetConfigOption("JPEG_READ_MASK", "YES")))
             poGDS->CheckForMask();
         poGDS->bHasCheckedForMask = TRUE;
     }
@@ -1253,12 +1253,13 @@ GDALDataset* JPGDatasetCommon::InitEXIFOverview()
 /* -------------------------------------------------------------------- */
 /*      Read number of entry in directory                               */
 /* -------------------------------------------------------------------- */
-    if( VSIFSeekL(fpImage, nTiffDirStart+nTIFFHEADER, SEEK_SET) != 0
+    if( nTiffDirStart > INT_MAX - nTIFFHEADER ||
+        VSIFSeekL(fpImage, nTiffDirStart+nTIFFHEADER, SEEK_SET) != 0
         || VSIFReadL(&nEntryCount,1,sizeof(GUInt16),fpImage) != sizeof(GUInt16) )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
-                "Error reading EXIF Directory count at %d.",
-                nTiffDirStart + nTIFFHEADER );
+                "Error reading EXIF Directory count at " CPL_FRMT_GUIB,
+                 static_cast<vsi_l_offset>(nTiffDirStart) + nTIFFHEADER );
         return NULL;
     }
 
@@ -1421,7 +1422,7 @@ void JPGDatasetCommon::InitInternalOverviews()
         int nImplicitOverviews = 0;
 
         /* For the needs of the implicit JPEG-in-TIFF overview mechanism */
-        if( CSLTestBoolean(CPLGetConfigOption("JPEG_FORCE_INTERNAL_OVERVIEWS", "NO")) )
+        if( CPLTestBool(CPLGetConfigOption("JPEG_FORCE_INTERNAL_OVERVIEWS", "NO")) )
             nImplicitOverviews = 3;
         else
         {
@@ -2379,7 +2380,7 @@ GDALDataset *JPGDataset::Open( JPGDatasetOpenArgs* psArgs )
     else if( poDS->sDInfo.jpeg_color_space == JCS_YCbCr )
     {
         poDS->nBands = 3;
-        if (CSLTestBoolean(CPLGetConfigOption("GDAL_JPEG_TO_RGB", "YES")))
+        if (CPLTestBool(CPLGetConfigOption("GDAL_JPEG_TO_RGB", "YES")))
         {
             poDS->sDInfo.out_color_space = JCS_RGB;
             poDS->eGDALColorSpace = JCS_RGB;
@@ -2388,7 +2389,8 @@ GDALDataset *JPGDataset::Open( JPGDatasetOpenArgs* psArgs )
     }
     else if( poDS->sDInfo.jpeg_color_space == JCS_CMYK )
     {
-        if (CSLTestBoolean(CPLGetConfigOption("GDAL_JPEG_TO_RGB", "YES")))
+        if (poDS->sDInfo.data_precision == 8 &&
+            CPLTestBool(CPLGetConfigOption("GDAL_JPEG_TO_RGB", "YES")))
         {
             poDS->eGDALColorSpace = JCS_RGB;
             poDS->nBands = 3;
@@ -2401,7 +2403,8 @@ GDALDataset *JPGDataset::Open( JPGDatasetOpenArgs* psArgs )
     }
     else if( poDS->sDInfo.jpeg_color_space == JCS_YCCK )
     {
-        if (CSLTestBoolean(CPLGetConfigOption("GDAL_JPEG_TO_RGB", "YES")))
+        if (poDS->sDInfo.data_precision == 8 &&
+            CPLTestBool(CPLGetConfigOption("GDAL_JPEG_TO_RGB", "YES")))
         {
             poDS->eGDALColorSpace = JCS_RGB;
             poDS->nBands = 3;
@@ -2753,7 +2756,7 @@ void JPGDataset::EmitMessage(j_common_ptr cinfo, int msg_level)
             /* Create the message */
             (*cinfo->err->format_message) (cinfo, buffer);
 
-            if( CSLTestBoolean(CPLGetConfigOption("GDAL_ERROR_ON_LIBJPEG_WARNING", "NO")) )
+            if( CPLTestBool(CPLGetConfigOption("GDAL_ERROR_ON_LIBJPEG_WARNING", "NO")) )
             {
                 psErrorStruct->bNonFatalErrorEncountered = TRUE;
                 CPLError( CE_Failure, CPLE_AppDefined, "libjpeg: %s", buffer );
@@ -2990,7 +2993,7 @@ void   JPGAddEXIFOverview( GDALDataType eWorkDT,
     const int nYSize = poSrcDS->GetRasterYSize();
 
     int bGenerateEXIFThumbnail =
-        CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "EXIF_THUMBNAIL", "NO"));
+        CPLTestBool(CSLFetchNameValueDef(papszOptions, "EXIF_THUMBNAIL", "NO"));
     const char* pszThumbnailWidth = CSLFetchNameValue(papszOptions, "THUMBNAIL_WIDTH");
     const char* pszThumbnailHeight = CSLFetchNameValue(papszOptions, "THUMBNAIL_HEIGHT");
     int nOvrWidth = 0;
@@ -3377,7 +3380,7 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 
     const char* pszVal = CSLFetchNameValue(papszOptions, "ARITHMETIC");
     if( pszVal )
-        sCInfo.arith_code = static_cast<boolean>(CSLTestBoolean(pszVal));
+        sCInfo.arith_code = CPLTestBool(pszVal);
 
     /* Optimized Huffman coding. Supposedly slower according to libjpeg doc */
     /* but no longer significant with today computer standards */
@@ -3402,7 +3405,7 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 #endif
 
     /* Mostly for debugging purposes */
-    if( nBands == 3 && CSLTestBoolean(CPLGetConfigOption("JPEG_WRITE_RGB", "NO")) )
+    if( nBands == 3 && CPLTestBool(CPLGetConfigOption("JPEG_WRITE_RGB", "NO")) )
     {
         jpeg_set_colorspace(&sCInfo, JCS_RGB);
     }
@@ -3570,7 +3573,7 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 
     /* If writing to stdout, we can't reopen it, so return */
     /* a fake dataset to make the caller happy */
-    if( CSLTestBoolean(CPLGetConfigOption("GDAL_OPEN_AFTER_COPY", "YES")) )
+    if( CPLTestBool(CPLGetConfigOption("GDAL_OPEN_AFTER_COPY", "YES")) )
     {
         CPLPushErrorHandler(CPLQuietErrorHandler);
 

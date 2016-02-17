@@ -116,11 +116,11 @@ def ogr_mysql_2():
 
     if gdaltest.mysql_lyr.GetFeatureCount() != shp_lyr.GetFeatureCount():
         gdaltest.post_reason( 'not matching feature count' )
-        return 'failure'
+        return 'fail'
 
     if not gdaltest.mysql_lyr.GetSpatialRef().IsSame(shp_lyr.GetSpatialRef()):
         gdaltest.post_reason( 'not matching spatial ref' )
-        return 'failure'
+        return 'fail'
 
     return 'success'
 
@@ -245,7 +245,7 @@ def ogr_mysql_5():
     if gdaltest.mysql_ds is None:
         return 'skip'
 
-    # E. Rouault : unlike PostgresSQL driver : None is sorted in last position 
+    # E. Rouault : unlike PostgreSQL driver : None is sorted in last position 
     expect = [ 179, 173, 172, 171, 170, 169, 168, 166, 165, 158, None ]
 
     sql_lyr = gdaltest.mysql_ds.ExecuteSQL( 'select distinct eas_id from tpoly order by eas_id desc' )

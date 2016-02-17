@@ -27,6 +27,8 @@
  * DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
+#include "libkml_headers.h"
+
 #include "ogr_libkml.h"
 //#include "cpl_conv.h"
 //#include "cpl_string.h"
@@ -105,7 +107,7 @@ CPLString OGRLIBKMLGetSanitizedNCName(const char* pszName)
                 poKmlContainer  pointer to the kml container of the layer
                 pszFileName     the filename of the layer
                 bNew            true if its a new layer
-                bUpdate         true if the layer is writeable
+                bUpdate         true if the layer is writable
 
  Returns:       nothing
 
@@ -171,9 +173,9 @@ OGRLIBKMLLayer::OGRLIBKMLLayer ( const char *pszLayerName,
     m_dfRegionMaxY = -200;
 
 
-    m_bReadGroundOverlay = CSLTestBoolean(
+    m_bReadGroundOverlay = CPLTestBool(
         CPLGetConfigOption("LIBKML_READ_GROUND_OVERLAY", "YES"));
-    m_bUseSimpleField = CSLTestBoolean(
+    m_bUseSimpleField = CPLTestBool(
         CPLGetConfigOption("LIBKML_USE_SIMPLEFIELD", "YES"));
 
     m_bUpdateIsFolder = FALSE;
@@ -345,7 +347,7 @@ OGRLIBKMLLayer::OGRLIBKMLLayer ( const char *pszLayerName,
                     /* Use the <Data> of the first placemark to build the feature definition */
                     /* If others have different fields, too bad... */
                     int bLaunderFieldNames =
-                        CSLTestBoolean(CPLGetConfigOption("LIBKML_LAUNDER_FIELD_NAMES", "YES"));
+                        CPLTestBool(CPLGetConfigOption("LIBKML_LAUNDER_FIELD_NAMES", "YES"));
                     size_t nDataArraySize = poKmlExtendedData->get_data_array_size();
                     for(size_t i=0; i < nDataArraySize; i++)
                     {
@@ -508,7 +510,7 @@ OGRFeature *OGRLIBKMLLayer::GetNextRawFeature (
  Args:          poOgrFeat   pointer to the feature to add
 
  Returns:       OGRERR_NONE, or OGRERR_UNSUPPORTED_OPERATION of the layer is
-                not writeable
+                not writable
 
 ******************************************************************************/
 
@@ -599,7 +601,7 @@ OGRErr OGRLIBKMLLayer::ICreateFeature (
  Args:          poOgrFeat   pointer to the feature to update
 
  Returns:       OGRERR_NONE, or OGRERR_UNSUPPORTED_OPERATION of the layer is
-                not writeable
+                not writable
 
 ******************************************************************************/
 
@@ -637,7 +639,7 @@ OGRErr OGRLIBKMLLayer::ISetFeature ( OGRFeature * poOgrFeat )
  Args:          nFID   id of the feature to delete
 
  Returns:       OGRERR_NONE, or OGRERR_UNSUPPORTED_OPERATION of the layer is
-                not writeable
+                not writable
 
 ******************************************************************************/
 
@@ -759,7 +761,7 @@ OGRErr OGRLIBKMLLayer::GetExtent (
                 bApproxOK   no effect as of now
 
  Returns:       OGRERR_NONE on success or OGRERR_UNSUPPORTED_OPERATION if the
-                layer is not writeable
+                layer is not writable
 
 ******************************************************************************/
 

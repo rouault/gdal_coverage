@@ -649,7 +649,7 @@ OGRGeometryH OGR_F_GetGeomFieldRef( OGRFeatureH hFeat, int iField )
  * without assigning new one.
  *
  * @return OGRERR_NONE if successful, or OGRERR_FAILURE if the index is invalid,
- * or OGR_UNSUPPORTED_GEOMETRY_TYPE if the geometry type is illegal for the
+ * or OGRERR_UNSUPPORTED_GEOMETRY_TYPE if the geometry type is illegal for the
  * OGRFeatureDefn (checking not yet implemented).
  *
  * @since GDAL 1.11
@@ -664,10 +664,45 @@ OGRErr OGRFeature::SetGeomFieldDirectly( int iField, OGRGeometry * poGeomIn )
         return OGRERR_FAILURE;
     }
 
-    delete papoGeometries[iField];
-    papoGeometries[iField] = poGeomIn;
-
-    // I should be verifying that the geometry matches the defn's type.
+    /*
+    // (Verify the type) and set/unset flags.
+    OGRwkbGeometryType eMyGeomType = poDefn->GetGeomFieldDefn(iField)->GetType();
+    
+    if( eMyGeomType != wkbUnknown )
+    {
+        OGRwkbGeometryType eGeomInType = poGeomIn->getGeometryType();
+        
+          This leads to segfaults in tests probably because issues with simple vs multi geometries
+          if( wkbFlatten(eGeomInType) != wkbFlatten(eMyGeomType) )
+          {
+          delete poGeomIn;
+          return OGRERR_UNSUPPORTED_GEOMETRY_TYPE;
+          }
+        
+        if( wkbHasZ(eMyGeomType) && !wkbHasZ(eGeomInType) )
+        {
+            poGeomIn->set3D(TRUE);
+        }
+        else if( !wkbHasZ(eMyGeomType) && wkbHasZ(eGeomInType) )
+        {
+            poGeomIn->set3D(FALSE);
+        }
+        if( wkbHasM(eMyGeomType) && !wkbHasM(eGeomInType) )
+        {
+            poGeomIn->setMeasured(TRUE);
+        }
+        else if( !wkbHasM(eMyGeomType) && wkbHasM(eGeomInType) )
+        {
+            poGeomIn->setMeasured(FALSE);
+        }
+    }
+    */
+        
+    if( papoGeometries[iField] != poGeomIn )
+    {
+        delete papoGeometries[iField];
+        papoGeometries[iField] = poGeomIn;
+    }
 
     return OGRERR_NONE;
 }
@@ -738,12 +773,15 @@ OGRErr OGRFeature::SetGeomField( int iField, OGRGeometry * poGeomIn )
     if( iField < 0 || iField >= GetGeomFieldCount() )
         return OGRERR_FAILURE;
 
-    delete papoGeometries[iField];
+    if( papoGeometries[iField] != poGeomIn )
+    {
+        delete papoGeometries[iField];
 
-    if( poGeomIn != NULL )
-        papoGeometries[iField] = poGeomIn->clone();
-    else
-        papoGeometries[iField] = NULL;
+        if( poGeomIn != NULL )
+            papoGeometries[iField] = poGeomIn->clone();
+        else
+            papoGeometries[iField] = NULL;
+    }
 
     // I should be verifying that the geometry matches the defn's type.
 
@@ -3158,7 +3196,7 @@ void OGRFeature::SetField( int iField, const char * pszValue )
             }
             else
             {
-                const char *papszValues[2] = { pszValue, 0 };
+                const char *papszValues[2] = { pszValue, NULL };
                 SetField( iField, (char **) papszValues );
             }
         }
@@ -3358,7 +3396,7 @@ void OGRFeature::SetField( int iField, int nCount, const GIntBig *panValues )
             if( (GIntBig)nVal32 != nValue )
             {
                 CPLError( CE_Warning, CPLE_AppDefined,
-                          "Integer overflow occured when trying to set "
+                          "Integer overflow occurred when trying to set "
                           "32bit field." );
             }
             anValues.push_back( nVal32 );

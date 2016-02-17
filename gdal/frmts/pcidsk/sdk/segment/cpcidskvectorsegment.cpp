@@ -32,6 +32,7 @@
 #include <cassert>
 #include <cstring>
 #include <cstdio>
+#include <limits>
 
 using namespace PCIDSK;
 
@@ -266,6 +267,8 @@ uint32 CPCIDSKVectorSegment::ReadField( uint32 offset, ShapeField& field,
           value.resize( count );
           if( count > 0 )
           {
+              if( offset > std::numeric_limits<uint32>::max() - 8 )
+                    return ThrowPCIDSKException(0, "Invalid offset = %u", offset);
               memcpy( &(value[0]), GetData(section,offset+4,NULL,4*count), 4*count );
               if( needs_swap )
                   SwapData( &(value[0]), 4, count );
@@ -276,8 +279,7 @@ uint32 CPCIDSKVectorSegment::ReadField( uint32 offset, ShapeField& field,
       }
 
       default:
-        assert( 0 );
-        return offset;
+        return ThrowPCIDSKException(0, "Unhandled field type %d", field_type);
     }
 }
 
@@ -435,20 +437,23 @@ char *CPCIDSKVectorSegment::GetData( int section, uint32 offset,
     {
         return (char*)ThrowPCIDSKExceptionPtr("Unexpected case");
     }
+    
+    if( offset > std::numeric_limits<uint32>::max() - static_cast<uint32>(min_bytes) )
+        return (char*)ThrowPCIDSKExceptionPtr("Invalid offset : %u", offset);
 
 /* -------------------------------------------------------------------- */
 /*      If the desired data is not within our loaded section, reload    */
 /*      one or more blocks around the request.                          */
 /* -------------------------------------------------------------------- */
     if( offset < *pbuf_offset
-        || offset+min_bytes > *pbuf_offset + pbuf->buffer_size )
+        || offset+static_cast<uint32>(min_bytes) > *pbuf_offset + static_cast<uint32>(pbuf->buffer_size) )
     {
         if( *pbuf_dirty )
             FlushDataBuffer( section );
 
         // we want whole 8K blocks around the target region.
         uint32 load_offset = offset - (offset % block_page_size);
-        int size = (offset + min_bytes - load_offset + block_page_size - 1);
+        int size = (offset + static_cast<uint32>(min_bytes) - load_offset + block_page_size - 1);
 
         size -= (size % block_page_size);
 
@@ -513,7 +518,7 @@ void CPCIDSKVectorSegment::ReadSecFromFile( int section, char *buffer,
 /* -------------------------------------------------------------------- */
     if( section == sec_raw )
     {
-        ReadFromFile( buffer, block_offset*block_page_size,
+        ReadFromFile( buffer, static_cast<uint64>(block_offset)*static_cast<uint32>(block_page_size),
                       block_count*block_page_size );
         return;
     }
@@ -525,12 +530,16 @@ void CPCIDSKVectorSegment::ReadSecFromFile( int section, char *buffer,
     int i;
     const std::vector<uint32> *block_map = di[section].GetIndex();
 
-    assert( block_count + block_offset <= (int) block_map->size() );
+    if(  block_count + block_offset > (int) block_map->size() )
+    {
+        return ThrowPCIDSKException("Assertion failed: block_count(=%d) + block_offset(=%d) <= block_map->size()(=%d)",
+                                    block_count, block_offset, (int) block_map->size() );
+    }
 
     for( i = 0; i < block_count; i++ )
     {
         ReadFromFile( buffer + i * block_page_size, 
-                      block_page_size * (*block_map)[block_offset+i], 
+                      block_page_size * static_cast<uint64>((*block_map)[block_offset+i]), 
                       block_page_size );
     }
 }
@@ -774,10 +783,12 @@ void CPCIDSKVectorSegment::LoadShapeIdPage( int page )
         entries_to_load = shape_count - shape_index_start;
 
     PCIDSKBuffer wrk_index;
+    if( entries_to_load < 0 || entries_to_load > std::numeric_limits<int>::max() / 12 )
+        return ThrowPCIDSKException("Invalid entries_to_load = %d", entries_to_load);
     wrk_index.SetSize( entries_to_load * 12 );
     
     ReadFromFile( wrk_index.buffer, 
-                  shape_index_byte_offset + shape_index_start*12,
+                  shape_index_byte_offset + static_cast<uint64>(shape_index_start)*12,
                   wrk_index.buffer_size );
 
 /* -------------------------------------------------------------------- */
@@ -981,16 +992,28 @@ void CPCIDSKVectorSegment::GetVertices( ShapeId shape_id,
         return;
     }
 
+    if( vert_off > std::numeric_limits<uint32>::max() - 4 )
+        return ThrowPCIDSKException( "Invalid vert_off = %u", vert_off);
     memcpy( &vertex_count, GetData( sec_vert, vert_off+4, NULL, 4 ), 4 );
     if( needs_swap )
         SwapData( &vertex_count, 4, 1 );
 
-    vertices.resize( vertex_count );
+    try
+    {
+        vertices.resize( vertex_count );
+    }
+    catch( const std::bad_alloc& ex )
+    {
+        return ThrowPCIDSKException("Out of memory allocating vertices(%u): %s",
+                                    vertex_count, ex.what());
+    }
     
     // We ought to change this to process the available data and
     // then request more. 
     if( vertex_count > 0 )
     {
+        if( vert_off > std::numeric_limits<uint32>::max() - 8 )
+            return ThrowPCIDSKException( "Invalid vert_off = %u", vert_off);
         memcpy( &(vertices[0]), 
                 GetData( sec_vert, vert_off+8, NULL, vertex_count*24),
                 vertex_count * 24 );

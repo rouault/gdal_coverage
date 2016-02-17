@@ -31,6 +31,12 @@
 #ifndef CPL_GMLREADERP_H_INCLUDED
 #define CPL_GMLREADERP_H_INCLUDED
 
+#if defined(HAVE_XERCES)
+
+#include "xercesc_headers.h"
+
+#endif /* HAVE_XERCES */
+
 #include "gmlreader.h"
 #include "ogr_api.h"
 #include "cpl_vsi.h"
@@ -108,16 +114,16 @@ typedef enum
 class GMLHandler
 {
     char      *m_pszCurField;
-    size_t     m_nCurFieldAlloc;
-    size_t     m_nCurFieldLen;
+    unsigned int m_nCurFieldAlloc;
+    unsigned int m_nCurFieldLen;
     bool       m_bInCurField;
     int        m_nAttributeIndex;
     int        m_nAttributeDepth;
 
 
     char      *m_pszGeometry;
-    int        m_nGeomAlloc;
-    int        m_nGeomLen;
+    unsigned int m_nGeomAlloc;
+    unsigned int m_nGeomLen;
     int        m_nGeometryDepth;
     bool       m_bAlreadyFoundGeometry;
     int        m_nGeometryPropertyIndex;
@@ -199,25 +205,6 @@ public:
 
 
 #if defined(HAVE_XERCES)
-
-// This works around problems with math.h on some platforms #defining INFINITY
-#ifdef INFINITY
-#undef  INFINITY
-#define INFINITY INFINITY_XERCES
-#endif
-
-#include <util/PlatformUtils.hpp>
-#include <sax2/DefaultHandler.hpp>
-#include <sax2/ContentHandler.hpp>
-#include <sax2/SAX2XMLReader.hpp>
-#include <sax2/XMLReaderFactory.hpp>
-#include <sax2/Attributes.hpp>
-#include <sax/InputSource.hpp>
-#include <util/BinInputStream.hpp>
-
-#ifdef XERCES_CPP_NAMESPACE_USE
-XERCES_CPP_NAMESPACE_USE
-#endif
 
 /************************************************************************/
 /*                        GMLBinInputStream                             */

@@ -35,7 +35,7 @@
 CPL_CVSID("$Id$");
 
 static bool bCacheMaxInitialized = false;
-static GIntBig nCacheMax = 40 * 1024*1024; /* Will later be overriden by the default 5% if GDAL_CACHEMAX not defined */
+static GIntBig nCacheMax = 40 * 1024*1024; /* Will later be overridden by the default 5% if GDAL_CACHEMAX not defined */
 static volatile GIntBig nCacheUsed = 0;
 
 static GDALRasterBlock *poOldest = NULL;    /* tail */
@@ -70,7 +70,7 @@ static CPLLockType GetLockType()
                      pszLockType);
             nLockType = LOCK_ADAPTIVE_MUTEX;
         }
-        bDebugContention = CSLTestBoolean(CPLGetConfigOption("GDAL_RB_LOCK_DEBUG_CONTENTION", "NO"));
+        bDebugContention = CPLTestBool(CPLGetConfigOption("GDAL_RB_LOCK_DEBUG_CONTENTION", "NO"));
     }
     return (CPLLockType) nLockType;
 }
@@ -224,7 +224,7 @@ GIntBig CPL_STDCALL GDALGetCacheMax64()
         {
             INITIALIZE_LOCK;
         }
-        bSleepsForBockCacheDebug = CPL_TO_BOOL(CSLTestBoolean(CPLGetConfigOption("GDAL_DEBUG_BLOCK_CACHE", "NO")));
+        bSleepsForBockCacheDebug = CPLTestBool(CPLGetConfigOption("GDAL_DEBUG_BLOCK_CACHE", "NO"));
 
         const char* pszCacheMax = CPLGetConfigOption("GDAL_CACHEMAX","5%");
 
@@ -232,6 +232,11 @@ GIntBig CPL_STDCALL GDALGetCacheMax64()
         if( strchr(pszCacheMax, '%') != NULL )
         {
             GIntBig nUsagePhysicalRAM = CPLGetUsablePhysicalRAM();
+            // For some reason, coverity pretends that this will overflow...
+            // "Multiply operation overflows on operands static_cast<double>(nUsagePhysicalRAM)
+            // and CPLAtof(pszCacheMax). Example values for operands: CPLAtof(pszCacheMax) = 2251799813685248, 
+            // static_cast<double>(nUsagePhysicalRAM) = -9223372036854775808."
+            /* coverity[overflow] */
             double dfCacheMax = static_cast<double>(nUsagePhysicalRAM) * CPLAtof(pszCacheMax) / 100.0;
             if( dfCacheMax >= 0 && dfCacheMax < 1e15 )
                 nNewCacheMax = static_cast<GIntBig>(dfCacheMax);
@@ -264,7 +269,7 @@ GIntBig CPL_STDCALL GDALGetCacheMax64()
                  nCacheMax / (1024 * 1024));
         bCacheMaxInitialized = true;
     }
-
+    /* coverity[overflow_sink] */
     return nCacheMax;
 }
 
@@ -368,7 +373,7 @@ int CPL_STDCALL GDALFlushCacheBlock()
 /************************************************************************/
 /*                          FlushCacheBlock()                           */
 /*                                                                      */
-/*      Note, if we have alot of blocks locked for a long time, this    */
+/*      Note, if we have a lot of blocks locked for a long time, this    */
 /*      method is going to get slow because it will have to traverse    */
 /*      the linked list a long ways looking for a flushing              */
 /*      candidate.   It might help to re-touch locked blocks to push    */
@@ -447,7 +452,7 @@ int GDALRasterBlock::FlushCacheBlock(int bDirtyBlocksOnly)
  * useful when doing multi-threaded code that can trigger the block cache.
  *
  * Due to the current design of the block cache, dirty blocks belonging to a same
- * dataset could be pushed simultanously to the IWriteBlock() method of that
+ * dataset could be pushed simultaneously to the IWriteBlock() method of that
  * dataset from different threads, causing races.
  *
  * Calling this method before that code can help workarounding that issue,

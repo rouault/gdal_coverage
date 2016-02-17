@@ -97,7 +97,7 @@ static OGRLayer* GetLayerAndOverwriteIfNecessary(GDALDataset *poDstDS,
 
     /* GetLayerByName() can instantiate layers that would have been */
     /* 'hidden' otherwise, for example, non-spatial tables in a */
-    /* Postgis-enabled database, so this apparently useless command is */
+    /* PostGIS-enabled database, so this apparently useless command is */
     /* not useless... (#4012) */
     CPLPushErrorHandler(CPLQuietErrorHandler);
     OGRLayer* poDstLayer = poDstDS->GetLayerByName(pszNewLayerName);
@@ -158,9 +158,9 @@ static OGRErr CreateAndFillOutputDataset(OGRLayer* poSrcLayer,
         return OGRERR_FAILURE;
     }
 
-    if( !CSLTestBoolean(
-                CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE,
-                                     "FALSE") ) )
+    if( !CPLTestBool(
+            CSLFetchNameValueDef(poDriver->GetMetadata(), GDAL_DCAP_CREATE,
+                                 "FALSE") ) )
     {
         fprintf( stderr,  "%s driver does not support data source creation.\n",
                 pszFormat );
@@ -616,6 +616,7 @@ int main( int nArgc, char ** papszArgv )
     CSLDestroy(papszDSCO);
     CSLDestroy(papszLCO);
     CSLDestroy(papszALO);
+    CSLDestroy( papszArgv );
 
     if(poResultLayer != NULL)
         poDS->ReleaseResultSet(poResultLayer);

@@ -276,7 +276,7 @@ void GDALPamDataset::PamInitialize()
     if( psPam || (nPamFlags & GPF_DISABLED) )
         return;
 
-    if( !CSLTestBoolean( CPLGetConfigOption( "GDAL_PAM_ENABLED", 
+    if( !CPLTestBool( CPLGetConfigOption( "GDAL_PAM_ENABLED",
                                              pszPamDefault ) ) )
     {
         nPamFlags |= GPF_DISABLED;
@@ -395,7 +395,7 @@ CPLErr GDALPamDataset::XMLInit( CPLXMLNode *psTree, const char *pszUnused )
             GDALDeinitGCPs( psPam->nGCPCount, psPam->pasGCPList );
             CPLFree( psPam->pasGCPList );
             psPam->nGCPCount = 0;
-            psPam->pasGCPList = 0;
+            psPam->pasGCPList = NULL;
         }
 
         GDALDeserializeGCPListFromXML( psGCPList,

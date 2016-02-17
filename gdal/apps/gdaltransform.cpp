@@ -2,7 +2,7 @@
  * $Id: gdalwarp.cpp 12380 2007-10-12 17:35:00Z rouault $
  *
  * Project:  GDAL
- * Purpose:  Commandline point transformer.
+ * Purpose:  Command line point transformer.
  * Author:   Frank Warmerdam <warmerdam@pobox.com>
  *
  ******************************************************************************
@@ -66,7 +66,7 @@ static char *SanitizeSRS( const char *pszUserInput )
     char *pszResult = NULL;
 
     CPLErrorReset();
-    
+
     hSRS = OSRNewSpatialReference( NULL );
     if( OSRSetFromUserInput( hSRS, pszUserInput ) == OGRERR_NONE )
         OSRExportToWkt( hSRS, &pszResult );
@@ -77,7 +77,7 @@ static char *SanitizeSRS( const char *pszUserInput )
                   pszUserInput );
         exit( 1 );
     }
-    
+
     OSRDestroySpatialReference( hSRS );
 
     return pszResult;
@@ -130,6 +130,7 @@ int main( int argc, char ** argv )
         {
             printf("%s was compiled against GDAL %s and is running against GDAL %s\n",
                    argv[0], GDAL_RELEASE_NAME, GDALVersionInfo("RELEASE_NAME"));
+            CSLDestroy(argv);
             return 0;
         }
         else if( EQUAL(argv[i],"--help") )
@@ -201,8 +202,8 @@ int main( int argc, char ** argv )
             }
 
             /* should set id and info? */
-        }   
-        
+        }
+
         else if( EQUAL(argv[i],"-output_xy") )
         {
             bOutputXY = TRUE;
@@ -242,10 +243,10 @@ int main( int argc, char ** argv )
 
     if( hSrcDS != NULL && nGCPCount > 0 )
     {
-        fprintf( stderr, "Commandline GCPs and input file specified, specify one or the other.\n" );
+        fprintf( stderr, "Command line GCPs and input file specified, specify one or the other.\n" );
         exit( 1 );
     }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Create a transformation object from the source to               */
 /*      destination coordinate system.                                  */

@@ -28,6 +28,10 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#ifdef DEBUG_BOOL
+#define DO_NOT_USE_DEBUG_BOOL
+#endif
+
 #define NO_DELETE
 
 #include "cpl_string.h"
@@ -855,7 +859,7 @@ CPLErr MrSIDDataset::IRasterIO( GDALRWFlag eRWFlag,
     if( nBufYSize == 1 || nBufXSize * ((double) nBufYSize) < 100.0 )
         bUseBlockedIO = TRUE;
 
-    if( CSLTestBoolean( CPLGetConfigOption( "GDAL_ONE_BIG_READ", "NO") ) )
+    if( CPLTestBool( CPLGetConfigOption( "GDAL_ONE_BIG_READ", "NO") ) )
         bUseBlockedIO = FALSE;
 
     if( bUseBlockedIO )
@@ -1109,7 +1113,7 @@ char *MrSIDDataset::SerializeMetadataRec( const LTIMetadataRecord *poMetadataRec
             pszMetadata = (char *)CPLRealloc( pszMetadata, iLength );
             if ( !EQUAL( pszMetadata, "" ) )
                 strncat( pszMetadata, ",", 1 );
-            strncat( pszMetadata, osTemp, iLength );
+            CPLStrlcat( pszMetadata, osTemp, iLength );
         }
     }
 

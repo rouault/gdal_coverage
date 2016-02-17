@@ -139,7 +139,7 @@ int CPLSpawn(const char * const papszArgv[], VSILFILE* fin, VSILFILE* fout,
     FillFileFromPipe(err_child, ferr);
     CPLSpawnAsyncCloseErrorFileHandle(sp);
 
-    VSIFCloseL(ferr);
+    CPL_IGNORE_RET_VAL(VSIFCloseL(ferr));
     vsi_l_offset nDataLength = 0;
     GByte* pData = VSIGetMemFileBuffer(osName.c_str(), &nDataLength, TRUE);
     if( nDataLength > 0 )
@@ -664,9 +664,9 @@ CPLSpawnedProcess* CPLSpawnAsync(int (*pfnMain)(CPL_FILE_HANDLE, CPL_FILE_HANDLE
     int pipe_in[2] = { -1, -1 };
     int pipe_out[2] = { -1, -1 };
     int pipe_err[2] = { -1, -1 };
-    bool bDup2In = bCreateInputPipe;
-    bool bDup2Out = bCreateOutputPipe;
-    bool bDup2Err = bCreateErrorPipe;
+    bool bDup2In = CPL_TO_BOOL(bCreateInputPipe);
+    bool bDup2Out = CPL_TO_BOOL(bCreateOutputPipe);
+    bool bDup2Err = CPL_TO_BOOL(bCreateErrorPipe);
 
     if ((bCreateInputPipe && pipe(pipe_in)) ||
         (bCreateOutputPipe && pipe(pipe_out)) ||

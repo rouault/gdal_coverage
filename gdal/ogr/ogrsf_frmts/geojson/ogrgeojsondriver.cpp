@@ -26,9 +26,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
-#include "ogr_geojson.h"
+
 #include <cpl_conv.h>
-#include "cpl_http.h"
+#include <cpl_http.h>
+#include "ogr_geojson.h"
 
 class OGRESRIFeatureServiceDataset;
 
@@ -42,8 +43,8 @@ class OGRESRIFeatureServiceLayer: public OGRLayer
         OGRFeatureDefn* poFeatureDefn;
         GIntBig         nFeaturesRead;
         GIntBig         nLastFID;
-        int             bOtherPage;
-        int             bUseSequentialFID;
+        bool            bOtherPage;
+        bool            bUseSequentialFID;
 
     public:
         OGRESRIFeatureServiceLayer(OGRESRIFeatureServiceDataset* poDS);
@@ -53,7 +54,8 @@ class OGRESRIFeatureServiceLayer: public OGRLayer
         OGRFeature* GetNextFeature();
         GIntBig GetFeatureCount( int bForce = TRUE );
         OGRErr              GetExtent(OGREnvelope *psExtent, int bForce = TRUE);
-        virtual OGRErr      GetExtent(int iGeomField, OGREnvelope *psExtent, int bForce)
+        virtual OGRErr      GetExtent( int iGeomField, OGREnvelope *psExtent,
+                                       int bForce)
                 { return OGRLayer::GetExtent(iGeomField, psExtent, bForce); }
         int TestCapability( const char* pszCap );
         OGRFeatureDefn* GetLayerDefn() { return poFeatureDefn; }
@@ -92,13 +94,14 @@ class OGRESRIFeatureServiceDataset: public GDALDataset
 /*                       OGRESRIFeatureServiceLayer()                   */
 /************************************************************************/
 
-OGRESRIFeatureServiceLayer::OGRESRIFeatureServiceLayer(OGRESRIFeatureServiceDataset* poDSIn) :
+OGRESRIFeatureServiceLayer::OGRESRIFeatureServiceLayer(
+    OGRESRIFeatureServiceDataset* poDSIn) :
+    poDS(poDSIn),
     nFeaturesRead(0),
     nLastFID(0),
-    bOtherPage(FALSE),
-    bUseSequentialFID(FALSE)
+    bOtherPage(false),
+    bUseSequentialFID(false)
 {
-    this->poDS = poDSIn;
     OGRFeatureDefn* poSrcFeatDefn = poDS->GetUnderlyingLayer()->GetLayerDefn();
     poFeatureDefn = new OGRFeatureDefn(poSrcFeatDefn->GetName());
     SetDescription(poFeatureDefn->GetName());
@@ -128,8 +131,8 @@ void OGRESRIFeatureServiceLayer::ResetReading()
     poDS->ResetReading();
     nFeaturesRead = 0;
     nLastFID = 0;
-    bOtherPage = FALSE;
-    bUseSequentialFID = FALSE;
+    bOtherPage = false;
+    bUseSequentialFID = false;
 }
 
 /************************************************************************/
@@ -149,12 +152,12 @@ OGRFeature* OGRESRIFeatureServiceLayer::GetNextFeature()
             poSrcFeat = poDS->GetUnderlyingLayer()->GetNextFeature();
             if( poSrcFeat == NULL )
                 return NULL;
-            bOtherPage = TRUE;
+            bOtherPage = true;
         }
         if( bOtherPage && bWasInFirstPage && poSrcFeat->GetFID() == 0 &&
             nLastFID == nFeaturesRead - 1 )
         {
-            bUseSequentialFID = TRUE;
+            bUseSequentialFID = true;
         }
 
         OGRFeature* poFeature = new OGRFeature(poFeatureDefn);
@@ -418,12 +421,12 @@ static GDALDataset* OGRGeoJSONDriverOpen( GDALOpenInfo* poOpenInfo )
                 OGRGeoJSONDataSource::eGeometryAsCollection );
     }
 
-    poDS->SetAttributesTranslation( OGRGeoJSONDataSource::eAtributesPreserve );
+    poDS->SetAttributesTranslation( OGRGeoJSONDataSource::eAttributesPreserve );
     pszOpt = CPLGetConfigOption("ATTRIBUTES_SKIP", NULL);
     if( NULL != pszOpt && STARTS_WITH_CI(pszOpt, "YES") )
     {
         poDS->SetAttributesTranslation( 
-            OGRGeoJSONDataSource::eAtributesSkip );
+            OGRGeoJSONDataSource::eAttributesSkip );
     }
 
 /* -------------------------------------------------------------------- */
@@ -439,10 +442,10 @@ static GDALDataset* OGRGeoJSONDriverOpen( GDALOpenInfo* poOpenInfo )
     {
         const char* pszFSP = CSLFetchNameValue(poOpenInfo->papszOpenOptions,
                                                "FEATURE_SERVER_PAGING");
-        int bHasResultOffset = CPLURLGetValue( poOpenInfo->pszFilename,
-                                               "resultOffset").size() > 0;
-        if( (!bHasResultOffset && (pszFSP == NULL || CSLTestBoolean(pszFSP))) ||
-            (bHasResultOffset && pszFSP != NULL && CSLTestBoolean(pszFSP)) )
+        bool bHasResultOffset = CPLURLGetValue( poOpenInfo->pszFilename,
+                                                "resultOffset").size() > 0;
+        if( (!bHasResultOffset && (pszFSP == NULL || CPLTestBool(pszFSP))) ||
+            (bHasResultOffset && pszFSP != NULL && CPLTestBool(pszFSP)) )
         {
             return new OGRESRIFeatureServiceDataset(poOpenInfo->pszFilename,
                                                     poDS);
@@ -526,6 +529,7 @@ void RegisterOGRGeoJSON()
 "<LayerCreationOptionList>"
 "  <Option name='WRITE_BBOX' type='boolean' description='whether to write a bbox property with the bounding box of the geometries at the feature and feature collection level' default='NO'/>"
 "  <Option name='COORDINATE_PRECISION' type='int' description='Number of decimal for coordinates' default='15'/>"
+"  <Option name='SIGNIFICANT_FIGURES' type='int' description='Number of significant figures for floating-point values' default='17'/>"
 "  <Option name='NATIVE_DATA' type='string' description='FeatureCollection level elements.'/>"
 "  <Option name='NATIVE_MEDIA_TYPE' type='string' description='Format of NATIVE_DATA. Must be \"application/vnd.geo+json\", otherwise NATIVE_DATA will be ignored.'/>"
 "</LayerCreationOptionList>");

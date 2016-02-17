@@ -114,12 +114,13 @@ private:
     OGRFeatureDefn* poFeatureDefn_;
     int nOutCounter_;
 
-    int bWriteBBOX;
-    int bBBOX3D;
+    bool bWriteBBOX;
+    bool bBBOX3D;
     bool bWriteFC_BBOX;
     OGREnvelope3D sEnvelopeLayer;
 
-    int nCoordPrecision;
+    int nCoordPrecision_;
+    int nSignificantFigures_;
 };
 
 /************************************************************************/
@@ -165,8 +166,8 @@ public:
 
     enum AttributesTranslation
     {
-        eAtributesPreserve,
-        eAtributesSkip
+        eAttributesPreserve,
+        eAttributesSkip
     };
 
     void SetAttributesTranslation( AttributesTranslation type );
@@ -179,7 +180,6 @@ public:
     virtual void        FlushCache();
 
 private:
-
     //
     // Private data members
     //
@@ -196,9 +196,9 @@ private:
     //
     GeometryTranslation flTransGeom_;
     AttributesTranslation flTransAttrs_;
-    int bOtherPages_;  // ESRI Feature Service specific.
+    bool bOtherPages_;  // ESRI Feature Service specific.
 
-    int bFpOutputIsSeekable_;
+    bool bFpOutputIsSeekable_;
     int nBBOXInsertLocation_;
 
     bool bUpdatable_;

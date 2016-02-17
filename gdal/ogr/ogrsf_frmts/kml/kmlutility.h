@@ -34,9 +34,13 @@
 #include <vector>
 #include "ogr_geometry.h"
 
+namespace OGRKML
+{
+
 enum Nodetype
 {
-    Unknown, Empty, Mixed, Point, LineString, Polygon, Rest, MultiGeometry, MultiPoint, MultiLineString, MultiPolygon
+    Unknown, Empty, Mixed, Point, LineString, Polygon, Rest, MultiGeometry,
+    MultiPoint, MultiLineString, MultiPolygon
 };
 
 struct Attribute
@@ -74,6 +78,9 @@ struct Feature
     }
 };
 
+}
+
+using namespace OGRKML;
 
 #endif /* OGR_KMLUTILITY_H_INCLUDED */
 

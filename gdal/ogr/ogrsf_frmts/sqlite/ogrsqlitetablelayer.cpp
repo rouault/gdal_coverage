@@ -71,7 +71,7 @@ OGRSQLiteTableLayer::OGRSQLiteTableLayer( OGRSQLiteDataSource *poDSIn )
     bStatisticsNeedsToBeFlushed = FALSE;
     nFeatureCount = -1;
 
-    int bDisableInsertTriggers = CSLTestBoolean(CPLGetConfigOption(
+    int bDisableInsertTriggers = CPLTestBool(CPLGetConfigOption(
                             "OGR_SQLITE_DISABLE_INSERT_TRIGGERS", "YES"));
     bHasCheckedTriggers = !bDisableInsertTriggers;
     bDeferredCreation = FALSE;
@@ -113,6 +113,7 @@ OGRSQLiteTableLayer::~OGRSQLiteTableLayer()
                 "WHERE Lower(f_table_name) = Lower('%q') AND Lower(f_geometry_column) = Lower('%q')",
                 pszTableName, poGeomFieldDefn->GetNameRef());
             CPL_IGNORE_RET_VAL(sqlite3_exec( poDS->GetDB(), pszSQL3, NULL, NULL, NULL ));
+            sqlite3_free( pszSQL3 );
         }
     }
 
@@ -1163,7 +1164,7 @@ OGRErr OGRSQLiteTableLayer::GetExtent(int iGeomField, OGREnvelope *psExtent, int
     }
 
     if (CheckSpatialIndexTable(iGeomField) &&
-        !CSLTestBoolean(CPLGetConfigOption("OGR_SQLITE_EXACT_EXTENT", "NO")))
+        !CPLTestBool(CPLGetConfigOption("OGR_SQLITE_EXACT_EXTENT", "NO")))
     {
         const char* pszSQL;
 
@@ -1358,7 +1359,7 @@ OGRErr OGRSQLiteTableLayer::CreateField( OGRFieldDefn *poFieldIn,
 
     if( (oField.GetType() == OFTTime || oField.GetType() == OFTDate ||
          oField.GetType() == OFTDateTime) &&
-        !(CSLTestBoolean(
+        !(CPLTestBool(
             CPLGetConfigOption("OGR_SQLITE_ENABLE_DATETIME", "YES"))) )
     {
         oField.SetType(OFTString);
@@ -1367,7 +1368,7 @@ OGRErr OGRSQLiteTableLayer::CreateField( OGRFieldDefn *poFieldIn,
     if( !bDeferredCreation )
     {
         /* ADD COLUMN only available since SQLite 3.1.3 */
-        if (CSLTestBoolean(CPLGetConfigOption("OGR_SQLITE_USE_ADD_COLUMN", "YES")) &&
+        if (CPLTestBool(CPLGetConfigOption("OGR_SQLITE_USE_ADD_COLUMN", "YES")) &&
             sqlite3_libversion_number() > 3 * 1000000 + 1 * 1000 + 3)
         {
             int rc;
@@ -3480,8 +3481,11 @@ void OGRSQLiteTableLayer::LoadStatisticsSpatialite4DB()
         CPLString osSQL;
         CPLString osLastEvtDate;
         osSQL.Printf("SELECT MAX(last_insert, last_update, last_delete) FROM geometry_columns_time WHERE "
-                    "f_table_name = '%s' AND f_geometry_column = '%s'",
-                    pszEscapedTableName, OGRSQLiteEscape(pszGeomCol).c_str());
+                    "(f_table_name = '%s' AND f_geometry_column = '%s')"
+#ifdef WORKAROUND_SQLITE3_BUGS
+                    " OR 0"
+#endif
+                    ,pszEscapedTableName, OGRSQLiteEscape(pszGeomCol).c_str());
 
         sqlite3 *hDB = poDS->GetDB();
         int nRowCount = 0, nColCount = 0;
@@ -3508,8 +3512,11 @@ void OGRSQLiteTableLayer::LoadStatisticsSpatialite4DB()
 
         osSQL.Printf("SELECT last_verified, row_count, extent_min_x, extent_min_y, "
                     "extent_max_x, extent_max_y FROM geometry_columns_statistics WHERE "
-                    "f_table_name = '%s' AND f_geometry_column = '%s'",
-                    pszEscapedTableName, OGRSQLiteEscape(pszGeomCol).c_str());
+                    "(f_table_name = '%s' AND f_geometry_column = '%s')"
+#ifdef WORKAROUND_SQLITE3_BUGS
+                    " OR 0"
+#endif
+                    ,pszEscapedTableName, OGRSQLiteEscape(pszGeomCol).c_str());
 
         nRowCount = 0;
         nColCount = 0;

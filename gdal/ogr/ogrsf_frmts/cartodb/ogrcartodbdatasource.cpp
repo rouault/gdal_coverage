@@ -44,7 +44,7 @@ OGRCARTODBDataSource::OGRCARTODBDataSource() :
     bReadWrite(FALSE),
     bBatchInsert(TRUE),
     bUseHTTPS(FALSE),
-    bMustCleanPersistant(FALSE),
+    bMustCleanPersistent(FALSE),
     bHasOGRMetadataFunction(-1),
     nPostGISMajor(2),
     nPostGISMinor(0)
@@ -61,7 +61,7 @@ OGRCARTODBDataSource::~OGRCARTODBDataSource()
         delete papoLayers[i];
     CPLFree( papoLayers );
 
-    if (bMustCleanPersistant)
+    if (bMustCleanPersistent)
     {
         char** papszOptions = NULL;
         papszOptions = CSLSetNameValue(papszOptions, "CLOSE_PERSISTENT", CPLSPrintf("CARTODB:%p", this));
@@ -141,7 +141,7 @@ int OGRCARTODBDataSource::Open( const char * pszFilename,
 
 {
     bReadWrite = bUpdateIn;
-    bBatchInsert = CSLTestBoolean(CSLFetchNameValueDef(papszOpenOptionsIn, "BATCH_INSERT", "YES"));
+    bBatchInsert = CPLTestBool(CSLFetchNameValueDef(papszOpenOptionsIn, "BATCH_INSERT", "YES"));
 
     pszName = CPLStrdup( pszFilename );
     if( CSLFetchNameValue(papszOpenOptionsIn, "ACCOUNT") )
@@ -171,7 +171,7 @@ int OGRCARTODBDataSource::Open( const char * pszFilename,
         return FALSE;
     }*/
 
-    bUseHTTPS = CSLTestBoolean(CPLGetConfigOption("CARTODB_HTTPS", "YES"));
+    bUseHTTPS = CPLTestBool(CPLGetConfigOption("CARTODB_HTTPS", "YES"));
 
     OGRLayer* poSchemaLayer = ExecuteSQLInternal("SELECT current_schema()");
     if( poSchemaLayer )
@@ -524,7 +524,7 @@ OGRErr OGRCARTODBDataSource::DeleteLayer(int iLayer)
 
 char** OGRCARTODBDataSource::AddHTTPOptions()
 {
-    bMustCleanPersistant = TRUE;
+    bMustCleanPersistent = TRUE;
 
     return CSLAddString(NULL, CPLSPrintf("PERSISTENT=CARTODB:%p", this));
 }

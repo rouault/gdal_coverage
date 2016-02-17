@@ -30,6 +30,7 @@
 
 #include "hfa_p.h"
 #include "cpl_conv.h"
+#include "gdal_priv.h"
 
 /* include the compression code */
 
@@ -79,9 +80,16 @@ HFABand::HFABand( HFAInfo_t * psInfoIn, HFAEntry * poNodeIn ) :
     }
     eDataType = static_cast<EPTType>(nDataType);
 
-    /* FIXME? : risk of overflow in additions and multiplication */
-    nBlocksPerRow = (nWidth + nBlockXSize - 1) / nBlockXSize;
-    nBlocksPerColumn = (nHeight + nBlockYSize - 1) / nBlockYSize;
+    nBlocksPerRow = DIV_ROUND_UP(nWidth, nBlockXSize);
+    nBlocksPerColumn = DIV_ROUND_UP(nHeight, nBlockYSize);
+
+    if( nBlocksPerRow > INT_MAX / nBlocksPerColumn )
+    {
+        nWidth = nHeight = 0;
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "HFABand::HFABand : too big dimensions / block size");
+        return;
+    }
     nBlocks = nBlocksPerRow * nBlocksPerColumn;
 
 /* -------------------------------------------------------------------- */
@@ -121,7 +129,7 @@ HFABand::~HFABand()
     CPLFree( padfPCTBins );
 
     if( fpExternal != NULL )
-        VSIFCloseL( fpExternal );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpExternal ));
 }
 
 /************************************************************************/
@@ -350,6 +358,11 @@ CPLErr	HFABand::LoadBlockInfo()
         {
             CPLError(CE_Failure, CPLE_AppDefined, "Cannot read %s", szVarName);
             return eErr;
+        }
+        if( panBlockSize[iBlock] < 0 )
+        {
+            CPLError(CE_Failure, CPLE_AppDefined, "Invalid block size");
+            return CE_Failure;
         }
 
         snprintf( szVarName, sizeof(szVarName), "blockinfo[%d].logvalid", iBlock );
@@ -669,7 +682,9 @@ static CPLErr UncompressBlock( GByte *pabyCData, int nSrcBytes,
             }
             else
             {
-                CPLAssert( FALSE );
+                CPLError( CE_Failure, CPLE_AppDefined, 
+                      "Attempt to uncompress an unsupported pixel data type.");
+                return CE_Failure;
             }
         }
 
@@ -1695,7 +1710,9 @@ double *HFAReadBFUniqueBins( HFAEntry *poBinFunc, int nPCTColors )
     const char *pszDict = 
         poBinFunc->GetStringField( "binFunction.MIFDictionary.string" );
     if( pszDict == NULL )
-        poBinFunc->GetStringField( "binFunction.MIFDictionary" );
+        pszDict = poBinFunc->GetStringField( "binFunction.MIFDictionary" );
+    if( pszDict == NULL )
+        return NULL;
 
     HFADictionary oMiniDict( pszDict );
 
@@ -1988,7 +2005,7 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
     HFAInfo_t *psRRDInfo = psInfo;
     HFAEntry *poParent = poNode;
 
-    if( CSLTestBoolean( CPLGetConfigOption( "HFA_USE_RRD", "NO" ) ) )
+    if( CPLTestBool( CPLGetConfigOption( "HFA_USE_RRD", "NO" ) ) )
     {
         psRRDInfo = HFACreateDependent( psInfo );
         if( psRRDInfo == NULL )
@@ -2021,7 +2038,7 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
 /*      will drive our .img file size near 4GB.  For now, just base     */
 /*      it on the config options.                                       */
 /* -------------------------------------------------------------------- */
-    int bCreateLargeRaster = CSLTestBoolean(
+    int bCreateLargeRaster = CPLTestBool(
         CPLGetConfigOption("USE_SPILL","NO") );
     GIntBig nValidFlagsOffset = 0, nDataOffset = 0;
 
@@ -2048,7 +2065,7 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
     int bCompressionType = FALSE;
     const char* pszCompressOvr = CPLGetConfigOption("HFA_COMPRESS_OVR", NULL);
     if( pszCompressOvr != NULL )
-        bCompressionType = CSLTestBoolean(pszCompressOvr);
+        bCompressionType = CPLTestBool(pszCompressOvr);
     else
     {
         HFAEntry *poDMS = poNode->GetNamedChild( "RasterDMS" );

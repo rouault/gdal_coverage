@@ -18,6 +18,10 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <math.h>
+#ifndef DONT_DEPRECATE_SPRINTF
+#define DONT_DEPRECATE_SPRINTF
+#endif
+#include "cpl_port.h"
 #include "meta.h"
 #include "metaname.h"
 #include "myerror.h"
@@ -356,8 +360,8 @@ static void PrintSect4_Category (grib_MetaData *meta)
    /* Based on Grib2 Code Table 4.1 discipline 0 */
    static const char * const tbl41_0[] = {
       "Temperature", "Moisture", "Momentum", "Mass", "Short-wave Radiation",
-      "Long-wave Radiation", "Cloud", "Thermodynamic Stability indicies",
-      "Kinematic Stability indicies", "Temperature Probabilities",
+      "Long-wave Radiation", "Cloud", "Thermodynamic Stability indices",
+      "Kinematic Stability indices", "Temperature Probabilities",
       "Moisture Probabilities", "Momentum Probabilities",
       "Mass Probabilities", "Aerosols", "Trace gases (e.g. ozone, C02)",
       "Radar", "Forecast Radar Imagery", "Electro-dynamics",
@@ -824,6 +828,7 @@ static int PrintSect4 (grib_MetaData *meta, sChar f_unit)
                 sect4->upperLimit.value *
                 pow (10.0, -1 * sect4->upperLimit.factor), buffer);
          /* Intentionally fall through. */
+         // CPL_FALLTHROUGH
       case GS4_STATISTIC:
 /*         strftime (buffer, 100, "%m/%d/%Y %H:%M:%S UTC",
                    gmtime (&(sect4->validTime)));*/

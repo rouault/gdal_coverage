@@ -439,7 +439,7 @@ public:
     volatile int        nCurPair;
     int                 nBandCount;
     int                *panBandMap;
-    volatile bool       bSuccess;
+    VOLATILE_BOOL       bSuccess;
 };
 
 void JP2OpenJPEGDataset::JP2OpenJPEGReadBlockInThread(void* userdata)
@@ -835,16 +835,23 @@ CPLErr JP2OpenJPEGDataset::ReadBlock( int nBand, VSILFILE* fpIn,
 
         if (bIs420)
         {
-            CPLAssert((int)psImage->comps[0].w >= nWidthToRead);
-            CPLAssert((int)psImage->comps[0].h >= nHeightToRead);
-            CPLAssert(psImage->comps[1].w == (psImage->comps[0].w + 1) / 2);
-            CPLAssert(psImage->comps[1].h == (psImage->comps[0].h + 1) / 2);
-            CPLAssert(psImage->comps[2].w == (psImage->comps[0].w + 1) / 2);
-            CPLAssert(psImage->comps[2].h == (psImage->comps[0].h + 1) / 2);
-            if( nBands == 4 )
+            if( (int)psImage->comps[0].w < nWidthToRead ||
+                (int)psImage->comps[0].h < nHeightToRead ||
+                psImage->comps[1].w != (psImage->comps[0].w + 1) / 2 ||
+                psImage->comps[1].h != (psImage->comps[0].h + 1) / 2 ||
+                psImage->comps[2].w != (psImage->comps[0].w + 1) / 2 ||
+                psImage->comps[2].h != (psImage->comps[0].h + 1) / 2 ||
+                (nBands == 4 && (
+                    (int)psImage->comps[3].w < nWidthToRead ||
+                    (int)psImage->comps[3].h < nHeightToRead)) )
             {
-                CPLAssert((int)psImage->comps[3].w >= nWidthToRead);
-                CPLAssert((int)psImage->comps[3].h >= nHeightToRead);
+                CPLError(CE_Failure, CPLE_AssertionFailed,
+                         "Assertion at line %d of %s failed",
+                         __LINE__, __FILE__);
+                if (poBlock != NULL)
+                    poBlock->DropLock();
+                eErr = CE_Failure;
+                goto end;
             }
 
             GByte* pDst = (GByte*)pDstBuffer;
@@ -893,8 +900,17 @@ CPLErr JP2OpenJPEGDataset::ReadBlock( int nBand, VSILFILE* fpIn,
         }
         else
         {
-            CPLAssert((int)psImage->comps[iBand-1].w >= nWidthToRead);
-            CPLAssert((int)psImage->comps[iBand-1].h >= nHeightToRead);
+            if( (int)psImage->comps[iBand-1].w < nWidthToRead ||
+                (int)psImage->comps[iBand-1].h < nHeightToRead )
+            {
+                CPLError(CE_Failure, CPLE_AssertionFailed,
+                         "Assertion at line %d of %s failed",
+                         __LINE__, __FILE__);
+                if (poBlock != NULL)
+                    poBlock->DropLock();
+                eErr = CE_Failure;
+                goto end;
+            }
 
             if( bPromoteTo8Bit )
             {
@@ -1872,7 +1888,7 @@ GDALDataset *JP2OpenJPEGDataset::Open( GDALOpenInfo * poOpenInfo )
             psImage->comps[(poDS->nAlphaIndex==0 && poDS->nBands > 1) ? 1 : 0].prec == 8 &&
             psImage->comps[poDS->nAlphaIndex ].prec == 1 && 
             CSLFetchBoolean(poOpenInfo->papszOpenOptions, "1BIT_ALPHA_PROMOTION",
-                    CSLTestBoolean(CPLGetConfigOption("JP2OPENJPEG_PROMOTE_1BIT_ALPHA_AS_8BIT", "YES"))) );
+                    CPLTestBool(CPLGetConfigOption("JP2OPENJPEG_PROMOTE_1BIT_ALPHA_AS_8BIT", "YES"))) );
         if( bPromoteTo8Bit )
             CPLDebug("JP2OpenJPEG", "Alpha band is promoted from 1 bit to 8 bit");
 
@@ -1944,7 +1960,7 @@ GDALDataset *JP2OpenJPEGDataset::Open( GDALOpenInfo * poOpenInfo )
                 psImage->comps[(poDS->nAlphaIndex==0 && poDS->nBands > 1) ? 1 : 0].prec == 8 &&
                 psImage->comps[poDS->nAlphaIndex].prec == 1 && 
                 CSLFetchBoolean(poOpenInfo->papszOpenOptions, "1BIT_ALPHA_PROMOTION",
-                        CSLTestBoolean(CPLGetConfigOption("JP2OPENJPEG_PROMOTE_1BIT_ALPHA_AS_8BIT", "YES"))) );
+                        CPLTestBool(CPLGetConfigOption("JP2OPENJPEG_PROMOTE_1BIT_ALPHA_AS_8BIT", "YES"))) );
 
             poODS->SetBand( iBand, new JP2OpenJPEGRasterBand( poODS, iBand, eDataType,
                                                               bPromoteTo8Bit ? 8: psImage->comps[iBand-1].prec,
@@ -2294,8 +2310,8 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
         }
     }
 
-    int bSOP = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SOP", "FALSE"));
-    int bEPH = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "EPH", "FALSE"));
+    int bSOP = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SOP", "FALSE"));
+    int bEPH = CPLTestBool(CSLFetchNameValueDef(papszOptions, "EPH", "FALSE"));
 
     int nRedBandIndex = -1, nGreenBandIndex = -1, nBlueBandIndex = -1;
     int nAlphaBandIndex = -1;
@@ -2312,14 +2328,14 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
             nAlphaBandIndex = i;
     }
     const char* pszAlpha = CSLFetchNameValue(papszOptions, "ALPHA");
-    if( nAlphaBandIndex < 0 && nBands > 1 && pszAlpha != NULL && CSLTestBoolean(pszAlpha) )
+    if( nAlphaBandIndex < 0 && nBands > 1 && pszAlpha != NULL && CPLTestBool(pszAlpha) )
     {
         nAlphaBandIndex = nBands - 1;
     }
 
     const char* pszYCBCR420 = CSLFetchNameValue(papszOptions, "YCBCR420");
     int bYCBCR420 = FALSE;
-    if( pszYCBCR420 && CSLTestBoolean(pszYCBCR420) )
+    if( pszYCBCR420 && CPLTestBool(pszYCBCR420) )
     {
         if ((nBands == 3 || nBands == 4) && eDataType == GDT_Byte &&
             nRedBandIndex == 0 && nGreenBandIndex == 1 && nBlueBandIndex == 2)
@@ -2343,7 +2359,7 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
 
     const char* pszYCC = CSLFetchNameValue(papszOptions, "YCC");
     int bYCC = ((nBands == 3 || nBands == 4) && eDataType == GDT_Byte &&
-            CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "YCC", "TRUE")));
+            CPLTestBool(CSLFetchNameValueDef(papszOptions, "YCC", "TRUE")));
 
     /* TODO: when OpenJPEG 2.2 is released, make this conditional */
     /* Depending on the way OpenJPEG <= r2950 is built, YCC with 4 bands might work on

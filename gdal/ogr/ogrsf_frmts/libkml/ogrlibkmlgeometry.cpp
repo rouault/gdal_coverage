@@ -27,9 +27,10 @@
  * DEALINGS IN THE SOFTWARE.
  *****************************************************************************/
 
+#include "libkml_headers.h"
+
 #include <ogr_geometry.h>
 #include "ogr_p.h"
-#include "libkml_headers.h"
 
 using kmldom::KmlFactory;
 using kmldom::CoordinatesPtr;
@@ -161,7 +162,7 @@ ElementPtr geom2kml (
         if( extra >= 0 )
         {
             if( numpoints < 4 && 
-                CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
+                CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
             {
                 CPLError(CE_Failure, CPLE_NotSupported, "A linearring should have at least 4 points");
                 return NULL;
@@ -170,7 +171,7 @@ ElementPtr geom2kml (
         else
         {
             if( numpoints < 2 && 
-                CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
+                CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
             {
                 CPLError(CE_Failure, CPLE_NotSupported, "A linestring should have at least 2 points");
                 return NULL;
@@ -238,7 +239,7 @@ ElementPtr geom2kml (
         if( extra >= 0 )
         {
             if( numpoints < 4 && 
-                CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
+                CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
             {
                 CPLError(CE_Failure, CPLE_NotSupported, "A linearring should have at least 4 points");
                 return NULL;
@@ -247,7 +248,7 @@ ElementPtr geom2kml (
         else
         {
             if( numpoints < 2 && 
-                CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
+                CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
             {
                 CPLError(CE_Failure, CPLE_NotSupported, "A linestring should have at least 2 points");
                 return NULL;
@@ -304,7 +305,7 @@ ElementPtr geom2kml (
     case wkbPolygon:
 
         CPLErrorReset();
-        if( CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) &&
+        if( CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) &&
             OGRGeometryFactory::haveGEOS() && (!poOgrGeom->IsValid() ||
              CPLGetLastErrorType() != CE_None) )
         {
@@ -333,7 +334,7 @@ ElementPtr geom2kml (
     case wkbPolygon25D:
 
         CPLErrorReset();
-        if( CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) &&
+        if( CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) &&
             OGRGeometryFactory::haveGEOS() && (!poOgrGeom->IsValid() ||
              CPLGetLastErrorType() != CE_None) )
         {
@@ -373,7 +374,7 @@ ElementPtr geom2kml (
         nGeom = poOgrMultiGeom->getNumGeometries (  );
 
         if( nGeom == 1 && 
-            CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
+            CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
         {
             CPLDebug("LIBKML", "Turning multiple geometry into single geometry");
             poKmlGeometry = geom2kml( poOgrMultiGeom->getGeometryRef ( 0 ),
@@ -382,7 +383,7 @@ ElementPtr geom2kml (
         else
         {
             if( nGeom == 0 && 
-                CSLTestBoolean(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
+                CPLTestBool(CPLGetConfigOption("LIBKML_STRICT_COMPLIANCE", "TRUE")) )
             {
                 CPLError(CE_Warning, CPLE_AppDefined, "Empty multi geometry are not recommended");
             }
@@ -758,7 +759,7 @@ OGRGeometry *kml2geom (
     /***** split the geometry at the dateline? *****/
 
     const char *pszWrap = CPLGetConfigOption ( "LIBKML_WRAPDATELINE", "no" );
-    if (CSLTestBoolean(pszWrap)) {
+    if (CPLTestBool(pszWrap)) {
 
         char **papszTransformOptions = NULL;
         papszTransformOptions = CSLAddString( papszTransformOptions,
@@ -797,7 +798,7 @@ OGRGeometry *kml2geom_latlonbox (
     /***** split the geometry at the dateline? *****/
 
     const char *pszWrap = CPLGetConfigOption ( "LIBKML_WRAPDATELINE", "no" );
-    if (CSLTestBoolean(pszWrap)) {
+    if (CPLTestBool(pszWrap)) {
 
         char **papszTransformOptions = NULL;
         papszTransformOptions = CSLAddString( papszTransformOptions,
@@ -836,7 +837,7 @@ OGRGeometry *kml2geom_latlonquad (
     /***** split the geometry at the dateline? *****/
 
     const char *pszWrap = CPLGetConfigOption ( "LIBKML_WRAPDATELINE", "no" );
-    if (CSLTestBoolean(pszWrap)) {
+    if (CPLTestBool(pszWrap)) {
 
         char **papszTransformOptions = NULL;
         papszTransformOptions = CSLAddString( papszTransformOptions,

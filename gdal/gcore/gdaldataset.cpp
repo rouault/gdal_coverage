@@ -175,7 +175,7 @@ GIntBig GDALGetResponsiblePIDForCurrentThread()
 GDALDataset::GDALDataset()
 
 {
-    Init( CSLTestBoolean( 
+    Init( CPLTestBool( 
         CPLGetConfigOption( "GDAL_FORCE_CACHING", "NO") ) );
 }
 
@@ -3248,10 +3248,10 @@ void CPL_STDCALL GDALEndAsyncReader(GDALDatasetH hDS, GDALAsyncReaderH hAsyncRea
  * The driver implementation may choose to destroy its raster bands,
  * so be careful not to call any method on the raster bands afterwards.
  *
- * Basically the only safe action you can do after calling CloseDependantDatasets()
+ * Basically the only safe action you can do after calling CloseDependentDatasets()
  * is to call the destructor.
  *
- * Note: the only legitimate caller of CloseDependantDatasets() is
+ * Note: the only legitimate caller of CloseDependentDatasets() is
  * GDALDriverManager::~GDALDriverManager()
  *
  * @return TRUE if at least one reference to another dataset has been dropped.
@@ -3646,7 +3646,7 @@ OGRLayerH GDALDatasetCreateLayer( GDALDatasetH hDS,
     if (pszName == NULL)
     {
         CPLError ( CE_Failure, CPLE_ObjectNull, "Name was NULL in GDALDatasetCreateLayer");
-        return 0;
+        return NULL;
     }
     return (OGRLayerH) ((GDALDataset *)hDS)->CreateLayer( 
         pszName, (OGRSpatialReference *) hSpatialRef, eGType, papszOptions );
@@ -4453,7 +4453,7 @@ OGRErr GDALDataset::ProcessSQLCreateIndex( const char *pszSQLCommand )
         {
             poLayer = GetLayer(i);
 
-            if( EQUAL(poLayer->GetName(),papszTokens[3]) )
+            if( poLayer!= NULL && EQUAL(poLayer->GetName(),papszTokens[3]) )
                 break;
             poLayer = NULL;
         }
@@ -4563,7 +4563,7 @@ OGRErr GDALDataset::ProcessSQLDropIndex( const char *pszSQLCommand )
         {
             poLayer = GetLayer(i);
 
-            if( EQUAL(poLayer->GetName(),papszTokens[3]) )
+            if( poLayer!= NULL && EQUAL(poLayer->GetName(),papszTokens[3]) )
                 break;
             poLayer = NULL;
         }
@@ -4684,7 +4684,7 @@ OGRErr GDALDataset::ProcessSQLDropTable( const char *pszSQLCommand )
     {
         poLayer = GetLayer(i);
 
-        if( EQUAL(poLayer->GetName(),papszTokens[2]) )
+        if( poLayer!= NULL && EQUAL(poLayer->GetName(),papszTokens[2]) )
             break;
         poLayer = NULL;
     }

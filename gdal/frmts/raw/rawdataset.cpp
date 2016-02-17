@@ -212,7 +212,12 @@ RawRasterBand::~RawRasterBand()
     if (bOwnsFP)
     {
         if ( bIsVSIL )
-            VSIFCloseL( fpRawL );
+        {
+            if( VSIFCloseL( fpRawL ) != 0 )
+            {
+                CPLError(CE_Failure, CPLE_FileIO, "I/O error");
+            }
+        }
         else
             VSIFClose( fpRaw );
     }
@@ -369,6 +374,8 @@ CPLErr RawRasterBand::IReadBlock( CPL_UNUSED int nBlockXOff,
         return CE_Failure;
 
     CPLErr eErr = AccessLine( nBlockYOff );
+    if( eErr == CE_Failure )
+        return eErr;
 
 /* -------------------------------------------------------------------- */
 /*      Copy data from disk buffer to user block buffer.                */
@@ -611,7 +618,7 @@ int RawRasterBand::CanUseDirectIO(int /* nXOff */,
         return TRUE;
     }
 
-    return CSLTestBoolean(pszGDAL_ONE_BIG_READ);
+    return CPLTestBool(pszGDAL_ONE_BIG_READ);
 }
 
 /************************************************************************/
@@ -684,6 +691,7 @@ CPLErr RawRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                 CPLError( CE_Failure, CPLE_FileIO,
                           "Failed to read " CPL_FRMT_GUIB" bytes at " CPL_FRMT_GUIB ".",
                           static_cast<GUIntBig>(nBytesToRead), nOffset);
+                return CE_Failure;
             }
         }
 
@@ -714,6 +722,8 @@ CPLErr RawRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                     CPLError( CE_Failure, CPLE_FileIO,
                               "Failed to read " CPL_FRMT_GUIB " bytes at " CPL_FRMT_GUIB ".",
                               static_cast<GUIntBig>(nBytesToRW), nOffset );
+                    CPLFree( pabyData );
+                    return CE_Failure;
                 }
 
 /* -------------------------------------------------------------------- */
@@ -1113,7 +1123,7 @@ CPLVirtualMem  *RawRasterBand::GetVirtualMemAuto( GDALRWFlag eRWFlag,
     if( !bIsVSIL || VSIFGetNativeFileDescriptorL(fpRawL) == NULL ||
         !CPLIsVirtualMemFileMapAvailable() || (eDataType != GDT_Byte && !bNativeOrder) ||
         (size_t)nSize != nSize || nPixelOffset < 0 || nLineOffset < 0 ||
-        CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "USE_DEFAULT_IMPLEMENTATION", "NO")) )
+        CPLTestBool(CSLFetchNameValueDef(papszOptions, "USE_DEFAULT_IMPLEMENTATION", "NO")) )
     {
         return GDALRasterBand::GetVirtualMemAuto(eRWFlag, pnPixelSpace,
                                                  pnLineSpace, papszOptions);

@@ -349,6 +349,7 @@ def test_ogr2ogr_py_10():
 # Test -lco
 
 def test_ogr2ogr_py_11():
+    
     script_path = test_py_scripts.get_py_script('ogr2ogr')
     if script_path is None:
         return 'skip'
@@ -374,6 +375,7 @@ def test_ogr2ogr_py_11():
 # Test -nlt
 
 def test_ogr2ogr_py_12():
+
     script_path = test_py_scripts.get_py_script('ogr2ogr')
     if script_path is None:
         return 'skip'

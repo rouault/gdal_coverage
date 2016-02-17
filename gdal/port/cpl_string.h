@@ -16,10 +16,10 @@
  * the rights to use, copy, modify, merge, publish, distribute, sublicense,
  * and/or sell copies of the Software, and to permit persons to whom the
  * Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included
  * in all copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
@@ -99,9 +99,27 @@ int CPL_DLL CSLFindStringCaseSensitive( char **, const char * );
 int CPL_DLL CSLPartialFindString( char **papszHaystack, 
 	const char * pszNeedle );
 int CPL_DLL CSLFindName(char **papszStrList, const char *pszName);
-int CPL_DLL CSLTestBoolean( const char *pszValue );
 int CPL_DLL CSLFetchBoolean( char **papszStrList, const char *pszKey, 
                              int bDefault );
+
+/* TODO: Deprecate CSLTestBoolean.  Remove in GDAL 3.x. */
+int CPL_DLL CSLTestBoolean( const char *pszValue );
+int CPL_DLL CPLTestBoolean( const char *pszValue );
+
+#ifdef __cplusplus
+#ifdef DO_NOT_USE_DEBUG_BOOL
+#define CPLTestBool(x) CPL_TO_BOOL(CPLTestBoolean(x))
+#else
+/* Prefer these for C++ code. */
+#ifdef DEBUG_BOOL
+extern "C++" {
+#endif
+bool CPL_DLL CPLTestBool( const char *pszValue );
+#ifdef DEBUG_BOOL
+}
+#endif
+#endif
+#endif  /* __cplusplus */
 
 const char CPL_DLL *
       CPLParseNameValue(const char *pszNameValue, char **ppszKey );

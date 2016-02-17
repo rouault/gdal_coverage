@@ -46,7 +46,7 @@ OGRCouchDBDataSource::OGRCouchDBDataSource()
 
     bReadWrite = FALSE;
 
-    bMustCleanPersistant = FALSE;
+    bMustCleanPersistent = FALSE;
 }
 
 /************************************************************************/
@@ -60,7 +60,7 @@ OGRCouchDBDataSource::~OGRCouchDBDataSource()
         delete papoLayers[i];
     CPLFree( papoLayers );
 
-    if (bMustCleanPersistant)
+    if (bMustCleanPersistent)
     {
         char** papszOptions = NULL;
         papszOptions = CSLSetNameValue(papszOptions, "CLOSE_PERSISTENT", CPLSPrintf("CouchDB:%p", this));
@@ -437,7 +437,7 @@ OGRLayer   *OGRCouchDBDataSource::ICreateLayer( const char *pszNameIn,
         json_object_put(poAnswerObj);
     }
 
-    int bGeoJSONDocument = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "GEOJSON", "TRUE"));
+    int bGeoJSONDocument = CPLTestBool(CSLFetchNameValueDef(papszOptions, "GEOJSON", "TRUE"));
     int nCoordPrecision = atoi(CSLFetchNameValueDef(papszOptions, "COORDINATE_PRECISION", "-1"));
 
     OGRCouchDBTableLayer* poLayer = new OGRCouchDBTableLayer(this, pszNameIn);
@@ -845,7 +845,7 @@ OGRLayer * OGRCouchDBDataSource::ExecuteSQLStats( const char *pszSQLCommand )
 /*      Finish the parse operation.                                     */
 /* -------------------------------------------------------------------- */
 
-    if( sSelectInfo.parse( &sFieldList, 0 ) != CE_None )
+    if( sSelectInfo.parse( &sFieldList, NULL ) != CE_None )
     {
         return NULL;
     }
@@ -1032,7 +1032,7 @@ char* OGRCouchDBDataSource::GetETag(const char* pszURI)
     char **papszTokens;
     char** papszOptions = NULL;
 
-    bMustCleanPersistant = TRUE;
+    bMustCleanPersistent = TRUE;
 
     papszOptions = CSLAddString(papszOptions, CPLSPrintf("PERSISTENT=CouchDB:%p", this));
     papszOptions = CSLAddString(papszOptions, "HEADERS=Content-Type: application/json");
@@ -1079,7 +1079,7 @@ json_object* OGRCouchDBDataSource::REQUEST(const char* pszVerb,
                                            const char* pszURI,
                                            const char* pszData)
 {
-    bMustCleanPersistant = TRUE;
+    bMustCleanPersistent = TRUE;
 
     char** papszOptions = NULL;
     papszOptions = CSLAddString(papszOptions, CPLSPrintf("PERSISTENT=CouchDB:%p", this));
@@ -1241,7 +1241,7 @@ int OGRCouchDBDataSource::IsOK(json_object* poAnswerObj,
     }
 
     const char* pszOK = json_object_get_string(poOK);
-    if ( !pszOK || !CSLTestBoolean(pszOK) )
+    if ( !pszOK || !CPLTestBool(pszOK) )
     {
         CPLError(CE_Failure, CPLE_AppDefined, "%s", pszErrorMsg);
 

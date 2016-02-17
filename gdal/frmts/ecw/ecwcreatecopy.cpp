@@ -50,7 +50,7 @@ CPLString GetCompressionSoftwareName(){
     char szProcessName[2048];
 
     /* For privacy reason, allow the user to not write the software name in the ECW */
-    if( !CSLTestBoolean(CPLGetConfigOption("GDAL_ECW_WRITE_COMPRESSION_SOFTWARE", "YES")) )
+    if( !CPLTestBool(CPLGetConfigOption("GDAL_ECW_WRITE_COMPRESSION_SOFTWARE", "YES")) )
         return osRet;
 
     if( CPLGetExecPath( szProcessName, sizeof(szProcessName) - 1 ) )
@@ -131,6 +131,12 @@ public:
 
 private:
     NCSFileViewFileInfoEx sFileInfo;
+
+    /* To fix 'warning: ‘virtual NCS::CView& NCS::CView::operator=(const NCS::CView&)’ was hidden ' with SDK 5 */
+#if ECWSDK_VERSION>=50
+    using CNCSFile::operator=;
+#endif
+    CPL_DISALLOW_COPY_ASSIGN(GDALECWCompressor)
 };
 
 /************************************************************************/
@@ -773,7 +779,7 @@ CPLErr GDALECWCompressor::Initialize(
         if( pszOption != NULL ) 
             SetParameter(
                 CNCSJP2FileView::JP2_COMPRESS_CODESTREAM_ONLY, 
-                (bool) CSLTestBoolean( pszOption ) );
+                CPLTestBool( pszOption ) );
 
         pszOption = CSLFetchNameValue(papszOptions, "LEVELS");
         if( pszOption != NULL )
@@ -808,12 +814,12 @@ CPLErr GDALECWCompressor::Initialize(
         pszOption = CSLFetchNameValue(papszOptions, "INCLUDE_SOP");
         if( pszOption != NULL )
             SetParameter( CNCSJP2FileView::JP2_COMPRESS_INCLUDE_SOP, 
-                                      (bool) CSLTestBoolean( pszOption ) );
+                                      CPLTestBool( pszOption ) );
 
         pszOption = CSLFetchNameValue(papszOptions, "INCLUDE_EPH");
         if( pszOption != NULL )
             SetParameter( CNCSJP2FileView::JP2_COMPRESS_INCLUDE_EPH, 
-                                      (bool) CSLTestBoolean( pszOption ) );
+                                      CPLTestBool( pszOption ) );
 
         pszOption = CSLFetchNameValue(papszOptions, "PROGRESSION");
         if( pszOption != NULL && EQUAL(pszOption,"LRCP") )
@@ -995,7 +1001,25 @@ CPLErr GDALECWCompressor::Initialize(
 
         m_OStream.Access( fpVSIL, TRUE, (BOOLEAN) bSeekable, pszFilename, 
 			  0, -1 );
-    }    
+    }
+    else
+    {
+        if( !STARTS_WITH(pszFilename, "/vsi") )
+        {
+            // Try now to create the file to avoid memory leaks if it is
+            // the SDK that fails to do it.
+            fpVSIL = VSIFOpenL( pszFilename, "wb" );
+            if( fpVSIL == NULL )
+            {
+                CPLError( CE_Failure, CPLE_OpenFailed, 
+                        "Failed to open/create %s.", pszFilename );
+                return CE_Failure;
+            }
+            VSIFCloseL(fpVSIL);
+            VSIUnlink(pszFilename);
+            fpVSIL = NULL;
+        }
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Check if we can enable large files.  This option should only    */
@@ -1011,7 +1035,7 @@ CPLErr GDALECWCompressor::Initialize(
 
     pszLargeOK = CPLGetConfigOption( "ECW_LARGE_OK", pszLargeOK );
 
-    if( CSLTestBoolean(pszLargeOK) )
+    if( CPLTestBool(pszLargeOK) )
     {
         CNCSFile::SetKeySize();
         CPLDebug( "ECW", "Large file generation enabled." );
@@ -1041,7 +1065,7 @@ CPLErr GDALECWCompressor::Initialize(
         if (m_poSrcDS && m_poSrcDS->GetMetadataItem("FILE_METADATA_CLASSIFICATION")!=NULL){
             psClient->pFileMetaData->sClassification =  NCSStrDupT(NCS::CString(m_poSrcDS->GetMetadataItem("FILE_METADATA_CLASSIFICATION")).c_str());
         }
-        if ( pszECWCompany != NULL && CSLTestBoolean(CPLGetConfigOption("GDAL_ECW_WRITE_COMPANY", "YES"))  ){
+        if ( pszECWCompany != NULL && CPLTestBool(CPLGetConfigOption("GDAL_ECW_WRITE_COMPANY", "YES"))  ){
             psClient->pFileMetaData->sCompany = NCSStrDupT(NCS::CString(pszECWCompany).c_str());
         }
         CPLString osCompressionSoftware = GetCompressionSoftwareName();
@@ -1069,7 +1093,7 @@ CPLErr GDALECWCompressor::Initialize(
         if( fpVSIL == NULL )
         {
 #if ECWSDK_VERSION>=40 && defined(WIN32)
-            if( CSLTestBoolean( CPLGetConfigOption( "GDAL_FILENAME_IS_UTF8", "YES" ) ) )
+            if( CPLTestBool( CPLGetConfigOption( "GDAL_FILENAME_IS_UTF8", "YES" ) ) )
             {
                 wchar_t *pwszFilename = CPLRecodeToWChar( pszFilename, CPL_ENC_UTF8, CPL_ENC_UCS2 );
                 oError = GetCNCSError(Open( pwszFilename, false, true ));
@@ -1175,9 +1199,8 @@ ECWCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
 /*      For ECW, confirm the datatype is 8bit (or uint16 for ECW v3)    */
 /* -------------------------------------------------------------------- */
-    bool bECWV3 = false;
-
     #if ECWSDK_VERSION >= 50
+    bool bECWV3 = false;
     if (bIsJPEG2000 == FALSE){
         const char* pszOption = CSLFetchNameValue(papszOptions, "ECW_FORMAT_VERSION");
         if( pszOption != NULL )
@@ -1186,7 +1209,11 @@ ECWCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         }
     }
     #endif
-    if( !(eType == GDT_Byte  || (bECWV3 && eType == GDT_UInt16 ) || bIsJPEG2000 ) )
+    if( !(eType == GDT_Byte  ||
+#if ECWSDK_VERSION >= 50
+        (bECWV3 && eType == GDT_UInt16 ) ||
+#endif
+        bIsJPEG2000 ) )
     {
         if( bStrict )
         {
@@ -1352,10 +1379,9 @@ ECWCreateCopyECW( const char * pszFilename, GDALDataset *poSrcDS,
                   "with an extension other than .ecw" );
         return NULL;
     }
-    bool bECWV3 = false;
 
 #if ECWSDK_VERSION >= 50
-
+    bool bECWV3 = false;
     const char* pszOption = CSLFetchNameValue(papszOptions, "ECW_FORMAT_VERSION");
     if( pszOption != NULL )
     {
@@ -1366,7 +1392,9 @@ ECWCreateCopyECW( const char * pszFilename, GDALDataset *poSrcDS,
 
     GDALDataType eDataType = poSrcDS->GetRasterBand(1)->GetRasterDataType();
     if( eDataType != GDT_Byte 
+#if ECWSDK_VERSION >= 50
         && !(bECWV3 && (eDataType == GDT_UInt16))  
+#endif
         && bStrict )
     {
 #if ECWSDK_VERSION >= 50
@@ -1564,7 +1592,7 @@ class ECWWriteDataset : public GDALDataset
     int       nLoadedLine;
     GByte     *pabyBILBuffer;
 
-    int       bOutOfOrderWriteOccured;  // TODO: Spelling.
+    int       bOutOfOrderWriteOccurred;
 #ifdef OPTIMIZED_FOR_GDALWARP
     int       nPrevIRasterIOBand;
 #endif
@@ -1681,7 +1709,7 @@ ECWWriteDataset::ECWWriteDataset( const char *pszFilenameIn,
         SetBand( iBand, new ECWWriteRasterBand( this, iBand ) );
     }
 
-    bOutOfOrderWriteOccured = FALSE;
+    bOutOfOrderWriteOccurred = FALSE;
 #ifdef OPTIMIZED_FOR_GDALWARP
     nPrevIRasterIOBand = -1;
 #endif
@@ -1698,7 +1726,7 @@ ECWWriteDataset::~ECWWriteDataset()
 
     if( bCrystalized )
     {
-        if( bOutOfOrderWriteOccured )
+        if( bOutOfOrderWriteOccurred )
         {
             /* Otherwise there's a hang-up in the destruction of the oCompressor object */
             while( nLoadedLine < nRasterYSize - 1 )
@@ -1877,7 +1905,7 @@ CPLErr ECWWriteDataset::IRasterIO( GDALRWFlag eRWFlag,
     ECWWriteRasterBand* po4thBand = NULL;
     IRasterIORequest* poIORequest = NULL;
 
-    if( bOutOfOrderWriteOccured )
+    if( bOutOfOrderWriteOccurred )
         return CE_Failure;
 
     if( eRWFlag == GF_Write && nBandCount == 3 && nBands == 4 )
@@ -1894,7 +1922,7 @@ CPLErr ECWWriteDataset::IRasterIO( GDALRWFlag eRWFlag,
                 nBufYSize != poIORequest->nBufYSize )
             {
                 CPLError(CE_Failure, CPLE_AppDefined, "Out of order write");
-                bOutOfOrderWriteOccured = TRUE;
+                bOutOfOrderWriteOccurred = TRUE;
                 return CE_Failure;
             }
         }
@@ -2044,7 +2072,7 @@ CPLErr ECWWriteRasterBand::IWriteBlock( CPL_UNUSED int nBlockX,
     int nWordSize = GDALGetDataTypeSize( eDataType ) / 8;
     CPLErr eErr;
 
-    if( poGDS->bOutOfOrderWriteOccured )
+    if( poGDS->bOutOfOrderWriteOccurred )
         return CE_Failure;
 
 /* -------------------------------------------------------------------- */
@@ -2067,7 +2095,7 @@ CPLErr ECWWriteRasterBand::IWriteBlock( CPL_UNUSED int nBlockX,
                   "Apparent attempt to write to ECW non-sequentially.\n"
                   "Loaded line is %d, but %d of band %d was written to.",
                   poGDS->nLoadedLine, nBlockY, nBand );
-        poGDS->bOutOfOrderWriteOccured = TRUE;
+        poGDS->bOutOfOrderWriteOccurred = TRUE;
         return CE_Failure;
     }
 

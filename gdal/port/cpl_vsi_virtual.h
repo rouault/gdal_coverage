@@ -3,7 +3,7 @@
  *
  * Project:  VSI Virtual File System
  * Purpose:  Declarations for classes related to the virtual filesystem.
- *           These would only be normally required by applications implmenting
+ *           These would only be normally required by applications implementing
  *           their own virtual file system classes which should be rare.  
  *           The class interface may be fragile through versions.
  * Author:   Frank Warmerdam, warmerdam@pobox.com
@@ -196,7 +196,7 @@ public:
 VSIVirtualHandle CPL_DLL *VSICreateBufferedReaderHandle(VSIVirtualHandle* poBaseHandle);
 VSIVirtualHandle* VSICreateBufferedReaderHandle(VSIVirtualHandle* poBaseHandle,
                                                 const GByte* pabyBeginningContent,
-                                                vsi_l_offset nSheatFileSize);
+                                                vsi_l_offset nCheatFileSize);
 VSIVirtualHandle* VSICreateCachedFile( VSIVirtualHandle* poBaseHandle, size_t nChunkSize = 32768, size_t nCacheSize = 0 );
 VSIVirtualHandle CPL_DLL *VSICreateGZipWritable( VSIVirtualHandle* poBaseHandle, int bRegularZLibIn, int bAutoCloseBaseHandle );
 

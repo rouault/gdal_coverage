@@ -23,6 +23,7 @@
  */
 
 #include "cpl_time.h"
+#include "cpl_error.h"
 
 static const int SECSPERMIN = 60;
 static const int MINSPERHOUR = 60;
@@ -42,7 +43,7 @@ static bool isleap(int y) {
   return ((y % 4) == 0 && (y % 100) != 0) || (y % 400) == 0;
 }
 
-static int LEAPS_THRU_END_OF(int y) {
+static int LEAPS_THROUGH_END_OF(int y) {
   return y / 4 - y / 100 + y / 400;
 }
 
@@ -73,6 +74,16 @@ struct tm * CPLUnixTimeToYMDHMS(GIntBig unixTime, struct tm* pRet)
 {
     GIntBig days = unixTime / SECSPERDAY;
     GIntBig rem = unixTime % SECSPERDAY;
+    
+    if( unixTime < -(GIntBig)10000 * SECSPERDAY * DAYSPERLYEAR ||
+        unixTime > (GIntBig)10000 * SECSPERDAY * DAYSPERLYEAR )
+    {
+        CPLError(CE_Failure, CPLE_NotSupported,
+                 "Invalid unixTime = " CPL_FRMT_GIB,
+                 unixTime);
+        memset(pRet, 0, sizeof(*pRet));
+        return pRet;
+    }
 
     while (rem < 0) {
         rem += SECSPERDAY;
@@ -100,8 +111,8 @@ struct tm * CPLUnixTimeToYMDHMS(GIntBig unixTime, struct tm* pRet)
         if (days < 0)
             --newy;
         days -= (newy - y) * DAYSPERNYEAR +
-            LEAPS_THRU_END_OF(newy - 1) -
-            LEAPS_THRU_END_OF(y - 1);
+            LEAPS_THROUGH_END_OF(newy - 1) -
+            LEAPS_THROUGH_END_OF(y - 1);
         y = newy;
     }
 
@@ -147,7 +158,7 @@ GIntBig CPLYMDHMSToUnixTime(const struct tm *brokendowntime)
   GIntBig days = brokendowntime->tm_mday - 1;
 
   /* Add the number of days of the current year */
-  const int* ip = mon_lengths[isleap(TM_YEAR_BASE + brokendowntime->tm_year)];
+  const int* ip = mon_lengths[static_cast<int>(isleap(TM_YEAR_BASE + brokendowntime->tm_year))];
   for( int mon = 0; mon < brokendowntime->tm_mon; mon++ )
       days += ip[mon];
 
@@ -156,10 +167,10 @@ GIntBig CPLYMDHMSToUnixTime(const struct tm *brokendowntime)
       ( TM_YEAR_BASE
         + static_cast<GIntBig>( brokendowntime->tm_year )
         - EPOCH_YEAR ) * DAYSPERNYEAR
-      + LEAPS_THRU_END_OF( static_cast<int> (TM_YEAR_BASE )
+      + LEAPS_THROUGH_END_OF( static_cast<int> (TM_YEAR_BASE )
                            + static_cast<int>( brokendowntime->tm_year )
                            - static_cast<int>( 1 ) )
-      - LEAPS_THRU_END_OF( EPOCH_YEAR - 1 );
+      - LEAPS_THROUGH_END_OF( EPOCH_YEAR - 1 );
 
   /* Now add the secondes, minutes and hours to the number of days since EPOCH */
   return brokendowntime->tm_sec +

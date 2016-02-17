@@ -123,7 +123,7 @@ CPLErr VRTSourcedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                                  GDALRasterIOExtraArg* psExtraArg )
 
 {
-    // If resampling with non-nearest neighbour, we need to be carefull
+    // If resampling with non-nearest neighbour, we need to be careful
     // if the VRT band exposes a nodata value, but the sources do not have it
     if (eRWFlag == GF_Read &&
         (nXSize != nBufXSize || nYSize != nBufYSize) &&
@@ -305,7 +305,7 @@ int VRTSourcedRasterBand::CanUseSourcesMinMaxImplementations()
 {
     const char* pszUseSources = CPLGetConfigOption("VRT_MIN_MAX_FROM_SOURCES", NULL);
     if( pszUseSources )
-        return CSLTestBoolean(pszUseSources);
+        return CPLTestBool(pszUseSources);
 
     // Use heuristics to determine if we are going to use the source GetMinimum()
     // or GetMaximum() implementation: all the sources must be "simple" sources

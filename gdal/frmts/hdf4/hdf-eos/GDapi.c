@@ -6079,7 +6079,7 @@ GDgetdefaults(int32 projcode, int32 zonecode, float64 projparm[],
 
 	/*
 	 * Compute upperleft and lowerright values based on whether the
-	 * projection is south polar, north polar or equitorial
+	 * projection is south polar, north polar or equatorial
 	 */
 
 	if (plat == -90.0)
@@ -9764,8 +9764,8 @@ GDinterpolate(int32 gridID, int32 nValues, float64 lonVal[], float64 latVal[],
     float64         upleftpt[2];/* Upper left pt coordinates */
     float64         lowrightpt[2];	/* Lower right pt coordinates */
     float64         projparm[16];	/* Projection parameters */
-    float64         xVal;	/* "Exact" x location of interpolated point */
-    float64         yVal;	/* "Exact" y location of interpolated point */
+    float64         xVal = 0.0;	/* "Exact" x location of interpolated point */
+    float64         yVal = 0.0;	/* "Exact" y location of interpolated point */
     float64         tNum = 0.0;	/* Interpolation numerator value 1 */
     float64         uNum = 0.0;	/* Interpolation numerator value 2 */
 

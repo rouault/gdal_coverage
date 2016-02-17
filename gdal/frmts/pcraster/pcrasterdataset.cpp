@@ -69,7 +69,13 @@ GDALDataset* PCRasterDataset::open(
     MAP* map = mapOpen(info->pszFilename, mode);
 
     if(map) {
+      CPLErrorReset();
       dataset = new PCRasterDataset(map);
+      if( CPLGetLastErrorType() != CE_None )
+      {
+          delete dataset;
+          return NULL;
+      }
     }
   }
 
@@ -250,7 +256,7 @@ GDALDataset* PCRasterDataset::createCopy(
     // Write row in target.
     RputRow(map, row, buffer);
 
-    if(!progress((row + 1) / (static_cast<double>(nrRows)), 0, progressData)) {
+    if(!progress((row + 1) / (static_cast<double>(nrRows)), NULL, progressData)) {
       CPLError(CE_Failure, CPLE_UserInterrupt,
          "PCRaster driver: User terminated CreateCopy()");
       errorCode = CE_Failure;
@@ -259,10 +265,10 @@ GDALDataset* PCRasterDataset::createCopy(
   }
 
   Mclose(map);
-  map = 0;
+  map = NULL;
 
   free(buffer);
-  buffer = 0;
+  buffer = NULL;
 
   if( errorCode != CE_None )
       return NULL;
@@ -304,9 +310,15 @@ PCRasterDataset::PCRasterDataset( MAP* mapIn) :
   d_north = static_cast<double>(RgetYUL(d_map));
   d_cellSize = static_cast<double>(RgetCellSize(d_map));
   d_cellRepresentation = RgetUseCellRepr(d_map);
-  CPLAssert(d_cellRepresentation != CR_UNDEFINED);
+  if( d_cellRepresentation == CR_UNDEFINED )
+  {
+      CPLError(CE_Failure, CPLE_AssertionFailed, "d_cellRepresentation != CR_UNDEFINED");
+  }
   d_valueScale = RgetValueScale(d_map);
-  CPLAssert(d_valueScale != VS_UNDEFINED);
+  if( d_valueScale == VS_UNDEFINED )
+  {
+      CPLError(CE_Failure, CPLE_AssertionFailed, "d_valueScale != VS_UNDEFINED");
+  }
   d_defaultNoDataValue = ::missingValue(d_cellRepresentation);
 
   // Create band information objects.

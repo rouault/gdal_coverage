@@ -29,6 +29,7 @@
 
 import os
 import shutil
+import struct
 import sys
 
 sys.path.append( '../pymod' )
@@ -40,7 +41,7 @@ from osgeo import ogr
 from osgeo import osr
 
 ###############################################################################
-# Open Shapefile 
+# Open Shapefile
 
 def ogr_shape_1():
 
@@ -2856,18 +2857,49 @@ def ogr_shape_59():
     geom = feat.GetGeometryRef()
 
     if geom.GetGeometryName() != 'POINT':
+        print (geom.GetGeometryName())
         gdaltest.post_reason( 'Geometry of wrong type.' )
         return 'fail'
 
-    if geom.GetCoordinateDimension() != 3:
+    if geom.GetCoordinateDimension() != 2:
         gdaltest.post_reason( 'dimension wrong.' )
         return 'fail'
 
-    if geom.GetPoint(0) != (1.0,2.0,3.0):
+    if geom.GetPointZM(0) != (1.0,2.0,0.0,3.0):
         print(geom.GetPoint(0))
         gdaltest.post_reason( 'Did not get right point result.' )
         return 'fail'
 
+    shp_ds = ogr.Open('data/arcm_with_m.shp')
+    shp_lyr = shp_ds.GetLayer(0)
+    feat = shp_lyr.GetNextFeature()
+    geom = feat.GetGeometryRef()
+    if geom.ExportToIsoWkt() != 'LINESTRING M (0 0 10,1 1 20)':
+        print (geom.ExportToIsoWkt())
+        gdaltest.post_reason( 'fail' )
+        return 'fail'
+    feat = shp_lyr.GetNextFeature()
+    geom = feat.GetGeometryRef()
+    if geom.ExportToIsoWkt() != 'MULTILINESTRING M ((0 0 10,1 1 20),(2 2 30,3 3 40))':
+        gdaltest.post_reason( 'fail' )
+        return 'fail'
+    geom = None
+    feat = None
+
+    shp_ds = ogr.Open('data/polygonm_with_m.shp')
+    shp_lyr = shp_ds.GetLayer(0)
+    feat = shp_lyr.GetNextFeature()
+    geom = feat.GetGeometryRef()
+    if geom.ExportToIsoWkt() != 'POLYGON M ((0 0 10,0 1 20,1 1 30,0 0 40))':
+        print (geom.ExportToIsoWkt())
+        gdaltest.post_reason( 'fail' )
+        return 'fail'
+    feat = shp_lyr.GetNextFeature()
+    geom = feat.GetGeometryRef()
+    if geom.ExportToIsoWkt() != 'POLYGON M ((0 0 10,0 1 20,1 1 30,0 0 40),(0.25 0.25 50,0.75 0.75 60,0.25 0.75 70,0.25 0.25 80))':
+        print (geom.ExportToIsoWkt())
+        gdaltest.post_reason( 'fail' )
+        return 'fail'
     geom = None
     feat = None
 
@@ -3602,28 +3634,28 @@ def ogr_shape_75():
        ds.GetFileList() != ['data/poly.shp', 'data/poly.shx', 'data/poly.dbf', 'data/poly.prj']:
         gdaltest.post_reason('fail')
         print(ds.GetFileList())
-        return 'failure'
+        return 'fail'
     ds = None
 
     ds = gdal.OpenEx('data/idlink.dbf')
     if ds.GetFileList() != ['data/idlink.dbf']:
         gdaltest.post_reason('fail')
         print(ds.GetFileList())
-        return 'failure'
+        return 'fail'
     ds = None
 
     ds = gdal.OpenEx('data/testpoly.shp')
     if ds.GetFileList() != ['data/testpoly.shp', 'data/testpoly.shx', 'data/testpoly.dbf', 'data/testpoly.qix']:
         gdaltest.post_reason('fail')
         print(ds.GetFileList())
-        return 'failure'
+        return 'fail'
     ds = None
 
     ds = gdal.OpenEx('data/emptyshapefilewithsbn.shx')
     if ds.GetFileList() != ['data/emptyshapefilewithsbn.shp', 'data/emptyshapefilewithsbn.shx', 'data/emptyshapefilewithsbn.sbn', 'data/emptyshapefilewithsbn.sbx']:
         gdaltest.post_reason('fail')
         print(ds.GetFileList())
-        return 'failure'
+        return 'fail'
     ds = None
 
     return 'success'
@@ -3637,7 +3669,7 @@ def ogr_shape_76():
     lyr = ds.GetLayer(0)
     sr = lyr.GetSpatialRef()
     if sr.ExportToWkt().find('GEOGCS["GCS_North_American_1983"') != 0:
-        return 'failure'
+        return 'fail'
 
     return 'success'
 
@@ -3651,7 +3683,7 @@ def ogr_shape_77():
     feat = lyr.GetNextFeature()
     geom = feat.GetGeometryRef()
     if geom.ExportToWkt() != 'LINESTRING (0 1,2 3)':
-        return 'failure'
+        return 'fail'
 
     return 'success'
 
@@ -4112,6 +4144,223 @@ def ogr_shape_88():
     return 'success'
 
 ###############################################################################
+# Test reading geometry bigger than 10 MB
+
+def ogr_shape_89():
+
+
+    ds = ogr.GetDriverByName('ESRI Shapefile').CreateDataSource('/vsimem/ogr_shape_89.shp')
+    lyr = ds.CreateLayer('ogr_shape_89')
+    f = ogr.Feature(lyr.GetLayerDefn())
+    g = ogr.Geometry(ogr.wkbLineString)
+    g.AddPoint_2D(0, 0)
+    g.AddPoint_2D(1, 1)
+    f.SetGeometryDirectly(g)
+    lyr.CreateFeature(f)
+    f = None
+    ds = None
+
+    gdal.Unlink('/vsimem/ogr_shape_89.dbf')
+
+    # The declare file size doesn't match the real one
+    f = gdal.VSIFOpenL('/vsimem/ogr_shape_89.shx', 'rb+')
+    gdal.VSIFSeekL(f, 100 + 4, 0)
+    gdal.VSIFWriteL(struct.pack('>i', int((10 * 1024 * 1024) / 2)), 1, 4, f)
+    gdal.VSIFCloseL(f)
+
+    ds = ogr.Open('/vsimem/ogr_shape_89.shp')
+    lyr = ds.GetLayer(0)
+    with gdaltest.error_handler():
+        f = lyr.GetNextFeature()
+    if f is not None and f.GetGeometryRef() is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds = None
+    
+    f = gdal.VSIFOpenL('/vsimem/ogr_shape_89.shp', 'rb+')
+    gdal.VSIFSeekL(f, 100 + 8 + 10 * 1024 * 1024 - 1, 0)
+    gdal.VSIFWriteL(struct.pack('B', 0), 1, 1, f)
+    gdal.VSIFCloseL(f)
+
+    ds = ogr.Open('/vsimem/ogr_shape_89.shp')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    g = f.GetGeometryRef()
+    if g.GetPointCount() != 2:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    ds = None
+
+    return 'success'
+
+###############################################################################
+# Test reading a lot of geometries
+
+def ogr_shape_90():
+
+    import struct
+
+    ds = ogr.GetDriverByName('ESRI Shapefile').CreateDataSource('/vsimem/ogr_shape_90.shp')
+    lyr = ds.CreateLayer('ogr_shape_90')
+    g = ogr.CreateGeometryFromWkt('POINT(0 0)')
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f.SetGeometry(g)
+    lyr.CreateFeature(f)
+    ds = None
+    
+    gdal.Unlink('/vsimem/ogr_shape_90.dbf')
+
+    # The declare file size doesn't match the real one
+    f = gdal.VSIFOpenL('/vsimem/ogr_shape_90.shx', 'rb+')
+    filesize = int((100 + 8 * 1024 * 1024)/2)
+    gdal.VSIFSeekL(f, 24, 0)
+    gdal.VSIFWriteL(struct.pack('>i', filesize), 1, 4, f)
+    gdal.VSIFCloseL(f)
+
+    ds = ogr.Open('/vsimem/ogr_shape_90.shp')
+    lyr = ds.GetLayer(0)
+    if lyr.GetFeatureCount() != 1:
+        return 'fail'
+
+    # Now it is consistent
+    f = gdal.VSIFOpenL('/vsimem/ogr_shape_90.shx', 'rb+')
+    gdal.VSIFSeekL(f, 100 + 8 * 1024 * 1024 - 1, 0)
+    gdal.VSIFWriteL(struct.pack('B', 0), 1, 1, f)
+    gdal.VSIFCloseL(f)
+
+    ds = ogr.Open('/vsimem/ogr_shape_90.shp')
+    lyr = ds.GetLayer(0)
+    if lyr.GetFeatureCount() != 1024*1024:
+        return 'fail'
+
+    ds = None
+
+    return 'success'
+
+###############################################################################
+# Test reading XYM geometries but with missing M array (#6317)
+
+def ogr_shape_91():
+
+    ds = ogr.Open('data/arcm_without_m.shp')
+    lyr = ds.GetLayer(0)
+    for f in lyr:
+        pass
+
+    ds = ogr.Open('data/polygonm_without_m.shp')
+    lyr = ds.GetLayer(0)
+    for f in lyr:
+        pass
+
+    return 'success'
+
+###############################################################################
+# Test reading multipoint Z geometries without M
+
+def ogr_shape_92():
+
+    ds = ogr.Open('data/multipointz_without_m.shp')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    wkt = f.GetGeometryRef().ExportToIsoWkt()
+    if wkt != 'MULTIPOINT Z ((0 1 2),(3 4 5))':
+        gdaltest.post_reason('fail')
+        print(wkt)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test reading point Z geometries without M
+
+def ogr_shape_93():
+
+    ds = ogr.Open('data/pointz_without_m.shp')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    wkt = f.GetGeometryRef().ExportToIsoWkt()
+    if wkt != 'POINT Z (1 2 3)':
+        gdaltest.post_reason('fail')
+        print(wkt)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test SHPT creation option / CreateLayer(geom_type = xxx)
+
+def ogr_shape_94():
+
+    tests = [ [ "POINT", ogr.wkbPoint, "POINT (1 2)" ],
+              [ "POINTM", ogr.wkbPointM, "POINT M (1 2 3)" ],
+              [ "POINTZ", ogr.wkbPoint25D, "POINT Z (1 2 3)" ],
+              [ "POINTZM", ogr.wkbPointZM, "POINT ZM (1 2 3 4)" ],
+              [ "MULTIPOINT", ogr.wkbMultiPoint, "MULTIPOINT ((1 2))" ],
+              [ "MULTIPOINTM", ogr.wkbMultiPointM, "MULTIPOINT M ((1 2 3))" ],
+              [ "MULTIPOINTZ", ogr.wkbMultiPoint25D, "MULTIPOINT Z ((1 2 3))" ],
+              [ "MULTIPOINTZM", ogr.wkbMultiPointZM, "MULTIPOINT ZM ((1 2 3 4))" ],
+              [ "ARC", ogr.wkbLineString, "LINESTRING (1 2,3 4)" ],
+              [ "ARCM", ogr.wkbLineStringM, "LINESTRING M (1 2 3,5 6 7)" ],
+              [ "ARCZ", ogr.wkbLineString25D, "LINESTRING Z (1 2 3,5 6 7)" ],
+              [ "ARCZM", ogr.wkbLineStringZM, "LINESTRING ZM (1 2 3 4,5 6 7 8)" ],
+              [ "ARC", ogr.wkbMultiLineString, "MULTILINESTRING ((1 2,3 4),(1 2,3 4))" ],
+              [ "ARCM", ogr.wkbMultiLineStringM, "MULTILINESTRING M ((1 2 3,5 6 7),(1 2 3,5 6 7))" ],
+              [ "ARCZ", ogr.wkbMultiLineString25D, "MULTILINESTRING Z ((1 2 3,5 6 7),(1 2 3,5 6 7))" ],
+              [ "ARCZM", ogr.wkbMultiLineStringZM, "MULTILINESTRING ZM ((1 2 3 4,5 6 7 8),(1 2 3 4,5 6 7 8))" ],
+              [ "POLYGON", ogr.wkbPolygon, "POLYGON ((0 0,0 1,1 1,1 0))" ],
+              [ "POLYGONM", ogr.wkbPolygonM, "POLYGON M ((0 0 2,0 1 2,1 1 2,1 0 2))" ],
+              [ "POLYGONZ", ogr.wkbPolygon25D, "POLYGON Z ((0 0 2,0 1 2,1 1 2,1 0 2))" ],
+              [ "POLYGONZM", ogr.wkbPolygonZM, "POLYGON ZM ((0 0 2 3,0 1 2 3,1 1 2 3,1 0 2 3))" ],
+              [ "POLYGON", ogr.wkbMultiPolygon, "MULTIPOLYGON (((0 0,0 1,1 1,1 0)),((0 0,0 1,1 1,1 0)))" ],
+              [ "POLYGONM", ogr.wkbMultiPolygonM, "MULTIPOLYGON M (((0 0 2,0 1 2,1 1 2,1 0 2)),((0 0 2,0 1 2,1 1 2,1 0 2)))" ],
+              [ "POLYGONZ", ogr.wkbMultiPolygon25D, "MULTIPOLYGON Z (((0 0 2,0 1 2,1 1 2,1 0 2)),((0 0 2,0 1 2,1 1 2,1 0 2)))" ],
+              [ "POLYGONZM", ogr.wkbMultiPolygonZM, "MULTIPOLYGON ZM (((0 0 2 3,0 1 2 3,1 1 2 3,1 0 2 3)),((0 0 2 3,0 1 2 3,1 1 2 3,1 0 2 3)))" ],
+            ]
+
+    for test in tests:
+        try:
+            ( shpt, geom_type, wkt, expected_fail ) = test
+        except:
+            ( shpt, geom_type, wkt ) = test
+            expected_fail = False
+
+        for i in range(2):
+            ds = ogr.GetDriverByName('ESRI Shapefile').CreateDataSource('/vsimem/ogr_shape_94.shp')
+            if i == 0:
+                lyr = ds.CreateLayer( 'ogr_shape_94', options = [ 'SHPT=' + shpt] )
+            else:
+                lyr = ds.CreateLayer( 'ogr_shape_94', geom_type = geom_type )
+            test_lyr_geom_type = ogr.GT_Flatten(geom_type) != ogr.wkbMultiLineString and ogr.GT_Flatten(geom_type) != ogr.wkbMultiPolygon
+            if test_lyr_geom_type and lyr.GetGeomType() != geom_type:
+                gdaltest.post_reason('fail')
+                print(i, shpt, geom_type, wkt, lyr.GetGeomType())
+                return 'fail'
+            f = ogr.Feature(lyr.GetLayerDefn())
+            f.SetGeometry(ogr.CreateGeometryFromWkt(wkt))
+            lyr.CreateFeature(f)
+            f = None
+            ds = None
+            ds = ogr.Open('/vsimem/ogr_shape_94.shp')
+            lyr = ds.GetLayer(0)
+            if test_lyr_geom_type and lyr.GetGeomType() != geom_type:
+                gdaltest.post_reason('fail')
+                print(shpt, geom_type, wkt, lyr.GetGeomType())
+                return 'fail'
+            f = lyr.GetNextFeature()
+            if f.GetGeometryRef().ExportToIsoWkt() != wkt:
+                if expected_fail:
+                    print('FIXME!:', i, shpt, geom_type, wkt, f.GetGeometryRef().ExportToIsoWkt())
+                else:
+                    gdaltest.post_reason('fail')
+                    print(i, shpt, geom_type, wkt, f.GetGeometryRef().ExportToIsoWkt())
+                    return 'fail'
+            ds = None
+            ogr.GetDriverByName('ESRI Shapefile').DeleteDataSource('/vsimem/ogr_shape_94.shp')
+
+    return 'success'
+
+###############################################################################
 #
 
 def ogr_shape_cleanup():
@@ -4147,6 +4396,8 @@ def ogr_shape_cleanup():
     shape_drv.DeleteDataSource( '/vsimem/ogr_shape_84.shp' )
     shape_drv.DeleteDataSource( '/vsimem/ogr_shape_85.shp' )
     shape_drv.DeleteDataSource( '/vsimem/ogr_shape_88.shp' )
+    shape_drv.DeleteDataSource( '/vsimem/ogr_shape_89.shp' )
+    shape_drv.DeleteDataSource( '/vsimem/ogr_shape_90.shp' )
 
     return 'success'
 
@@ -4241,7 +4492,15 @@ gdaltest_list = [
     ogr_shape_86,
     ogr_shape_87,
     ogr_shape_88,
+    ogr_shape_89,
+    ogr_shape_90,
+    ogr_shape_91,
+    ogr_shape_92,
+    ogr_shape_93,
+    ogr_shape_94,
     ogr_shape_cleanup ]
+
+#gdaltest_list = [ ogr_shape_94 ]
 
 if __name__ == '__main__':
 

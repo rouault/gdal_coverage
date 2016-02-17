@@ -957,7 +957,7 @@ static int unzlocal_GetCurrentFileInfoInternal (unzFile file,
                      file_info.size_filename<=fileNameBufferSize &&
                      szFileName != NULL )
             {
-                int version;
+                int version = 0;
                 if (unzlocal_getByte(&s->z_filefunc, s->filestream,&version) != UNZ_OK)
                     err=UNZ_ERRNO;
                 if( version != 1 )
@@ -1441,10 +1441,10 @@ extern int ZEXPORT cpl_unzOpenCurrentFile3 (unzFile file, int* method,
     if ((s->cur_file_info.compression_method==Z_DEFLATED) &&
         (!raw))
     {
-      pfile_in_zip_read_info->stream.zalloc = (alloc_func)0;
-      pfile_in_zip_read_info->stream.zfree = (free_func)0;
-      pfile_in_zip_read_info->stream.opaque = (voidpf)0;
-      pfile_in_zip_read_info->stream.next_in = 0;
+      pfile_in_zip_read_info->stream.zalloc = (alloc_func)NULL;
+      pfile_in_zip_read_info->stream.zfree = (free_func)NULL;
+      pfile_in_zip_read_info->stream.opaque = (voidpf)NULL;
+      pfile_in_zip_read_info->stream.next_in = NULL;
       pfile_in_zip_read_info->stream.avail_in = 0;
 
       err=inflateInit2(&pfile_in_zip_read_info->stream, -MAX_WBITS);
@@ -1541,7 +1541,7 @@ extern uLong64 ZEXPORT cpl_unzGetCurrentFileZStreamPos( unzFile file)
   buf contain buffer where data must be copied
   len the size of buf.
 
-  return the number of byte copied if somes bytes are copied
+  return the number of byte copied if some bytes are copied
   return 0 if the end of file was reached
   return <0 with error code if there is an error
     (UNZ_ERRNO for IO error, or zLib error for uncompress error)

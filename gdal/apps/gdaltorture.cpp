@@ -2,7 +2,7 @@
  * $Id: gdaltorture.cpp  $
  *
  * Project:  GDAL Utilities
- * Purpose:  Commandline utility to torture GDAL API on datasets
+ * Purpose:  Command line utility to torture GDAL API on datasets
  * Author:   Even Rouault, <even dot rouault at mines dash paris dot org>
  *
  ******************************************************************************
@@ -119,7 +119,6 @@ static void TortureBand(GDALRasterBandH hBand, int bReadWriteOperations, int nRe
         TortureBand(hMaskBand, FALSE, nRecurse + 1);
     GDALGetMaskFlags(hBand);
     //GDALCreateMaskBand
-    
 }
 
 /************************************************************************/
@@ -172,7 +171,7 @@ static void TortureDS(const char *pszTarget, int bReadWriteOperations)
     // GDALFlushCache
     // GDALCreateDatasetMaskBand
     // GDALDatasetCopyWholeRaster
-    
+
     for(iBand=0;iBand<nBands;iBand++)
     {
         hBand = GDALGetRasterBand(hDS, iBand + 1);
@@ -253,7 +252,7 @@ int main( int argc, char ** argv )
         Usage();
 
 /* -------------------------------------------------------------------- */
-/*      Scan for commandline switches                                   */
+/*      Scan for command line switches                                   */
 /* -------------------------------------------------------------------- */
     papszArgv = argv + 1;
     argc --;

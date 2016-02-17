@@ -33,7 +33,7 @@ should be the short name reported in the <b>\-\-formats</b> list, such as
 GML.</dd>
 
 <dt> <b>\-\-optfile</b> <i>file</i></dt><dd>
-Read the named file and substitute the contents into the commandline
+Read the named file and substitute the contents into the command line
 options list.  Lines beginning with # will be ignored.  Multi-word arguments
 may be kept together with double quotes. 
 </dd>
@@ -55,7 +55,7 @@ string in the debug prefix code.
 </dd>
 
 <dt> <b>\-\-help-general</b></dt><dd>
-Gives a brief usage message for the generic GDAL OGR commandline options 
+Gives a brief usage message for the generic GDAL OGR command line options 
 and exit.
 </dd>
 
@@ -78,7 +78,7 @@ Usage:
 ogrinfo [--help-general] [-ro] [-q] [-where restricted_where|@filename]
         [-spat xmin ymin xmax ymax] [-geomfield field] [-fid fid]
         [-sql statement|@filename] [-dialect dialect] [-al] [-so] [-fields={YES/NO}]
-        [-geom={YES/NO/SUMMARY}] [-formats] [[-oo NAME=VALUE] ...]
+        [-geom={YES/NO/SUMMARY/WKT/ISO_WKT}] [-formats] [[-oo NAME=VALUE] ...]
         [-nomd] [-listmdd] [-mdd domain|`all`]*
         [-nocount] [-noextent]
         datasource_name [layer [layer ...]]
@@ -119,10 +119,14 @@ also use the fact the 'fid' is a special field recognized by OGR SQL. So, '-wher
 would select features 1, 3 and 5.</dd>
 <dt> <b>-fields</b>={YES/NO}:</dt><dd> (starting with GDAL 1.6.0) If set to NO,
 the feature dump will not display field values. Default value is YES.</dd>
-<dt> <b>-geom</b>={YES/NO/SUMMARY}:</dt><dd> (starting with GDAL 1.6.0) If set to NO,
-the feature dump will not display the geometry. If set to SUMMARY, only a
-summary of the geometry will be displayed. If set to YES, the geometry will be reported in full OGC WKT format.
-Default value is YES.</dd>
+<dt> <b>-geom</b>={YES/NO/SUMMARY/WKT/ISO_WKT}:</dt><dd> (starting
+with GDAL 1.6.0) If set to NO, the feature dump will not display the
+geometry. If set to SUMMARY, only a summary of the geometry will be
+displayed. If set to YES or ISO_WKT, the geometry will be reported in
+full OGC WKT format. If set to WKT the geometry will be reported in
+legacy WKT. Default value is YES. (WKT and ISO_WKT are available
+starting with GDAL 2.1, which also changes the default to
+ISO_WKT)</dd>
 <dt> <b>-oo</b> <em>NAME=VALUE</em>:</dt><dd>(starting with GDAL 2.0) Dataset open option (format specific)</dd>
 <dt> <b>-nomd</b></dt><dd>(starting with GDAL 2.0)  Suppress metadata printing. Some datasets may contain a lot
 of metadata strings.</dd>
@@ -140,7 +144,7 @@ Formats</a> list for supported datasources.</dd>
 </dl>
 
 If no layer names are passed then ogrinfo will report a list of available
-layers (and their layerwide geometry type).  If layer name(s) are given then
+layers (and their layer wide geometry type).  If layer name(s) are given then
 their extents, coordinate system, feature count, geometry type, schema and
 all features matching query parameters will be reported to the terminal. 
 If no query parameters are provided, all features are reported.  
@@ -244,7 +248,7 @@ Usage: ogr2ogr [--help-general] [-skipfailures] [-append] [-update]
                dst_datasource_name src_datasource_name
                [-lco NAME=VALUE] [-nln name]
                [-nlt type|PROMOTE_TO_MULTI|CONVERT_TO_LINEAR]
-               [-dim 2|3|layer_dim] [layer [layer ...]]
+               [-dim 2|2+M|3|3+M|4|layer_dim] [layer [layer ...]]
 
 Advanced options :
                [-gt n]
@@ -326,11 +330,14 @@ multilinestrings to multilinestrings. Can be useful when converting shapefiles t
 (and other target drivers) that implements strict checks for geometry type.
 Starting with GDAL 2.0, CONVERT_TO_LINEAR can be used to to convert non-linear geometries
 types into linear geometries by approximating them.</dd>
-<dt> <b>-dim</b><em> val</em>:</dt><dd>(starting with GDAL 1.10) Force the coordinate dimension to val (valid values are 2 or 3).
-This affects both the layer geometry type, and feature geometries.
-Starting with GDAL 1.11, the value can be set to "layer_dim" to instruct feature geometries to be promoted
-to the coordinate dimension declared by the layer.
-</dd>
+<dt> <b>-dim</b><em> val</em>:</dt><dd>(starting with GDAL 1.10) Force
+the coordinate dimension to val (valid values are XY, XYZ, XYM, and
+XYZM - for backwards compatibility 2 is an alias for XY and 3 is an
+alias for XYZ). This affects both the layer geometry type, and feature
+geometries. Starting with GDAL 1.11, the value can be set to
+"layer_dim" to instruct feature geometries to be promoted to the
+coordinate dimension declared by the layer. Support for M was added in
+GDAL 2.1</dd>
 <dt> <b>-a_srs</b><em> srs_def</em>:</dt><dd> Assign an output SRS</dd>
 <dt> <b>-t_srs</b><em> srs_def</em>:</dt><dd> Reproject/transform to this SRS on output</dd>
 <dt> <b>-s_srs</b><em> srs_def</em>:</dt><dd> Override source SRS</dd>
@@ -610,14 +617,14 @@ format. Also some information is written to the stdout.
 <dt> <b>-l</b><em>src_line_datasource_name</em>:</dt><dd> The path to input linestring 
     datasource (e.g. the road)</dd>
 <dt> <b>-ln</b><em>layer_name</em>:</dt><dd> The layer name in datasource</dd>
-<dt> <b>-lf</b><em>field_name</em>:</dt><dd> The field name of uniq values to 
+<dt> <b>-lf</b><em>field_name</em>:</dt><dd> The field name of unique values to 
     separate the input lines (e.g. the set of roads)</dd>
 <dt> <b>-p</b><em>src_repers_datasource_name</em>:</dt><dd> The path to linear 
     references points (e.g. the road mile-stones)</dd>
 <dt> <b>-pn</b><em>layer_name</em>:</dt><dd> The layer name in datasource</dd>
 <dt> <b>-pm</b><em>pos_field_name</em>:</dt><dd> The field name of distances 
     along path (e.g. mile-stones values)</dd>
-<dt> <b>-pf</b><em>field_name</em>:</dt><dd> The field name of uniq values to 
+<dt> <b>-pf</b><em>field_name</em>:</dt><dd> The field name of unique values to 
     map input reference points to lines</dd>
 <dt> <b>-r</b><em>src_parts_datasource_name</em>:</dt><dd> The path to linear 
     reference file</dd>
@@ -626,7 +633,7 @@ format. Also some information is written to the stdout.
     reference file (linestring datasource)</dd>
 <dt> <b>-on</b><em>layer_name</em>:</dt><dd> The layer name in datasource</dd>
 <dt> <b>-of</b><em>field_name</em>:</dt><dd> The field name for storing the 
-    uniq values of input lines</dd>
+    unique values of input lines</dd>
 <dt> <b>-s</b><em>step</em>:</dt><dd> The part size in linear units</dd>
 <dt> <b>-get_pos</b>:</dt><dd> Return linear referenced position for input X, Y</dd>
 <dt> <b>-x</b><em>long</em>:</dt><dd> Input X coordinate</dd>

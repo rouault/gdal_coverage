@@ -2353,6 +2353,209 @@ def ogr_geojson_49():
     return 'success'
 
 ###############################################################################
+# Test that we serialize floating point values with enough significant figures
+
+def ogr_geojson_50():
+    if gdaltest.geojson_drv is None:
+        return 'skip'
+
+    ds = ogr.GetDriverByName('GeoJSON').CreateDataSource('/vsimem/ogr_geojson_50.json')
+    lyr = ds.CreateLayer('test' )
+    lyr.CreateField(ogr.FieldDefn('val', ogr.OFTReal))
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['val'] = 1.23456789012456
+    lyr.CreateFeature(f)
+    # To test smart rounding
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['val'] = 5268.813
+    lyr.CreateFeature(f)
+    f = None
+    ds = None
+
+    fp = gdal.VSIFOpenL('/vsimem/ogr_geojson_50.json', 'rb')
+    data = gdal.VSIFReadL(1, 10000, fp).decode('ascii')
+    gdal.VSIFCloseL(fp)
+
+    gdal.Unlink('/vsimem/ogr_geojson_50.json')
+
+    if data.find('1.23456789012456') < 0 and data.find('5268.813 ') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    # If SIGNIFICANT_FIGURES is explicitly specified, and COORDINATE_PRECISION not,
+    # then it also applies to coordinates
+    ds = ogr.GetDriverByName('GeoJSON').CreateDataSource('/vsimem/ogr_geojson_50.json')
+    lyr = ds.CreateLayer('test', options = ['SIGNIFICANT_FIGURES=17'] )
+    lyr.CreateField(ogr.FieldDefn('val', ogr.OFTReal))
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f.SetGeometry(ogr.CreateGeometryFromWkt('POINT (0.0000123456789012456 0)'))
+    lyr.CreateFeature(f)
+    f = None
+    ds = None
+
+    fp = gdal.VSIFOpenL('/vsimem/ogr_geojson_50.json', 'rb')
+    data = gdal.VSIFReadL(1, 10000, fp).decode('ascii')
+    gdal.VSIFCloseL(fp)
+
+    gdal.Unlink('/vsimem/ogr_geojson_50.json')
+
+    if data.find('1.23456789012456') < 0 and data.find('-5') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+
+    # If SIGNIFICANT_FIGURES is explicitly specified, and COORDINATE_PRECISION too,
+    # then SIGNIFICANT_FIGURES only applies to non-coordinates floating point values.
+    ds = ogr.GetDriverByName('GeoJSON').CreateDataSource('/vsimem/ogr_geojson_50.json')
+    lyr = ds.CreateLayer('test', options = ['COORDINATE_PRECISION=15', 'SIGNIFICANT_FIGURES=17'] )
+    lyr.CreateField(ogr.FieldDefn('val', ogr.OFTReal))
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['val'] = 1.23456789012456
+    f.SetGeometry(ogr.CreateGeometryFromWkt('POINT (0.0000123456789012456 0)'))
+    lyr.CreateFeature(f)
+    f = None
+    ds = None
+
+    fp = gdal.VSIFOpenL('/vsimem/ogr_geojson_50.json', 'rb')
+    data = gdal.VSIFReadL(1, 10000, fp).decode('ascii')
+    gdal.VSIFCloseL(fp)
+
+    gdal.Unlink('/vsimem/ogr_geojson_50.json')
+
+    if data.find('0.00001234') < 0 or data.find('1.23456789012456') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+
+    return 'success'
+
+###############################################################################
+# Test writing empty geometries
+
+def ogr_geojson_51():
+    if gdaltest.geojson_drv is None:
+        return 'skip'
+
+    ds = ogr.GetDriverByName('GeoJSON').CreateDataSource('/vsimem/ogr_geojson_51.json')
+    lyr = ds.CreateLayer('test' )
+    lyr.CreateField(ogr.FieldDefn('id', ogr.OFTInteger))
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['id'] = 1
+    f.SetGeometry(ogr.CreateGeometryFromWkt('POINT EMPTY'))
+    lyr.CreateFeature(f)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['id'] = 2
+    f.SetGeometry(ogr.CreateGeometryFromWkt('LINESTRING EMPTY'))
+    lyr.CreateFeature(f)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['id'] = 3
+    f.SetGeometry(ogr.CreateGeometryFromWkt('POLYGON EMPTY'))
+    lyr.CreateFeature(f)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['id'] = 4
+    f.SetGeometry(ogr.CreateGeometryFromWkt('MULTIPOINT EMPTY'))
+    lyr.CreateFeature(f)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['id'] = 5
+    f.SetGeometry(ogr.CreateGeometryFromWkt('MULTILINESTRING EMPTY'))
+    lyr.CreateFeature(f)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['id'] = 6
+    f.SetGeometry(ogr.CreateGeometryFromWkt('MULTIPOLYGON EMPTY'))
+    lyr.CreateFeature(f)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f['id'] = 7
+    f.SetGeometry(ogr.CreateGeometryFromWkt('GEOMETRYCOLLECTION EMPTY'))
+    lyr.CreateFeature(f)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    ds = None
+
+    fp = gdal.VSIFOpenL('/vsimem/ogr_geojson_51.json', 'rb')
+    data = gdal.VSIFReadL(1, 10000, fp).decode('ascii')
+    gdal.VSIFCloseL(fp)
+
+    gdal.Unlink('/vsimem/ogr_geojson_51.json')
+
+    if data.find('{ "id": 1 }, "geometry": null') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    if data.find('{ "id": 2 }, "geometry": { "type": "LineString", "coordinates": [ ] } }') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    if data.find('{ "id": 3 }, "geometry": { "type": "Polygon", "coordinates": [ ] } }') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    if data.find('{ "id": 4 }, "geometry": { "type": "MultiPoint", "coordinates": [ ] } }') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    if data.find('{ "id": 5 }, "geometry": { "type": "MultiLineString", "coordinates": [ ] } }') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    if data.find('{ "id": 6 }, "geometry": { "type": "MultiPolygon", "coordinates": [ ] } }') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    if data.find('{ "id": 7 }, "geometry": { "type": "GeometryCollection", "geometries": [ ] } }') < 0:
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test NULL type detection
+
+def ogr_geojson_52():
+    if gdaltest.geojson_drv is None:
+        return 'skip'
+
+    ds = ogr.Open('data/nullvalues.geojson')
+    if ds is None:
+        gdaltest.post_reason('Failed to open datasource')
+        return 'fail'
+
+    if ds.GetLayerCount() is not 1:
+        gdaltest.post_reason('Wrong number of layers')
+        return 'fail'
+
+    lyr = ds.GetLayerByName('OGRGeoJSON')
+    if lyr is None:
+        gdaltest.post_reason('Missing layer called OGRGeoJSON')
+        return 'fail'
+
+    fld = lyr.GetLayerDefn().GetFieldDefn(0)
+    if fld.GetNameRef() != 'int':
+        return 'fail'
+    if fld.GetType() != ogr.OFTInteger:
+        return 'fail'
+    fld = lyr.GetLayerDefn().GetFieldDefn(1)
+    if fld.GetNameRef() != 'string':
+        return 'fail'
+    if fld.GetType() != ogr.OFTString:
+        return 'fail'
+    fld = lyr.GetLayerDefn().GetFieldDefn(2)
+    if fld.GetNameRef() != 'double':
+        return 'fail'
+    if fld.GetType() != ogr.OFTReal:
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
 
 def ogr_geojson_cleanup():
 
@@ -2438,6 +2641,9 @@ gdaltest_list = [
     ogr_geojson_47,
     ogr_geojson_48,
     ogr_geojson_49,
+    ogr_geojson_50,
+    ogr_geojson_51,
+    ogr_geojson_52,
     ogr_geojson_cleanup ]
 
 if __name__ == '__main__':

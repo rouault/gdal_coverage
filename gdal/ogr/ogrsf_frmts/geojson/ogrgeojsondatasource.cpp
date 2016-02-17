@@ -46,9 +46,9 @@ OGRGeoJSONDataSource::OGRGeoJSONDataSource()
     : pszName_(NULL), pszGeoData_(NULL), nGeoDataLen_(0),
         papoLayers_(NULL), papoLayersWriter_(NULL), nLayers_(0), fpOut_(NULL),
         flTransGeom_( OGRGeoJSONDataSource::eGeometryPreserve ),
-        flTransAttrs_( OGRGeoJSONDataSource::eAtributesPreserve ),
-        bOtherPages_(FALSE),
-        bFpOutputIsSeekable_( FALSE ),
+        flTransAttrs_( OGRGeoJSONDataSource::eAttributesPreserve ),
+        bOtherPages_(false),
+        bFpOutputIsSeekable_( false ),
         nBBOXInsertLocation_(0),
         bUpdatable_( false )
 { }
@@ -208,7 +208,7 @@ OGRLayer* OGRGeoJSONDataSource::ICreateLayer( const char* pszNameIn,
     VSIFPrintfL( fpOut_, "{\n\"type\": \"FeatureCollection\",\n" );
 
     bool bWriteFC_BBOX =
-        CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "WRITE_BBOX", "FALSE")));
+        CPLTestBool(CSLFetchNameValueDef(papszOptions, "WRITE_BBOX", "FALSE"));
 
     const char* pszNativeData = CSLFetchNameValue(papszOptions, "NATIVE_DATA");
     const char* pszNativeMediaType = CSLFetchNameValue(papszOptions, "NATIVE_MEDIA_TYPE");
@@ -593,7 +593,8 @@ void OGRGeoJSONDataSource::LoadLayers(char** papszOpenOptionsIn)
                 json_object* poExceededTransferLimit =
                     json_object_object_get(poObj, "exceededTransferLimit");
                 if( poExceededTransferLimit && json_object_get_type(poExceededTransferLimit) == json_type_boolean )
-                    bOtherPages_ = json_object_get_boolean(poExceededTransferLimit);
+                    bOtherPages_ = CPL_TO_BOOL(
+                        json_object_get_boolean(poExceededTransferLimit) );
             }
             reader.ReadLayers( this );
         }
@@ -626,7 +627,7 @@ void OGRGeoJSONDataSource::LoadLayers(char** papszOpenOptionsIn)
         CPLDebug( "GeoJSON", "Geometry as OGRGeometryCollection type." );
     }
 
-    if( eAtributesSkip == flTransAttrs_ )
+    if( eAttributesSkip == flTransAttrs_ )
     {
         reader.SetSkipAttributes( true );
         CPLDebug( "GeoJSON", "Skip all attributes." );
@@ -641,8 +642,8 @@ void OGRGeoJSONDataSource::LoadLayers(char** papszOpenOptionsIn)
         CPL_TO_BOOL(CSLFetchBoolean(papszOpenOptionsIn, "NATIVE_DATA", bDefaultNativeData)));
 
     reader.SetArrayAsString(
-        CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef(papszOpenOptionsIn, "ARRAY_AS_STRING",
-                CPLGetConfigOption("OGR_GEOJSON_ARRAY_AS_STRING", "NO")))));
+        CPLTestBool(CSLFetchNameValueDef(papszOpenOptionsIn, "ARRAY_AS_STRING",
+                CPLGetConfigOption("OGR_GEOJSON_ARRAY_AS_STRING", "NO"))));
 
 /* -------------------------------------------------------------------- */
 /*      Parse GeoJSON and build valid OGRLayer instance.                */
@@ -659,7 +660,8 @@ void OGRGeoJSONDataSource::LoadLayers(char** papszOpenOptionsIn)
                 json_object* poExceededTransferLimit =
                     json_object_object_get(poProperties, "exceededTransferLimit");
                 if( poExceededTransferLimit && json_object_get_type(poExceededTransferLimit) == json_type_boolean )
-                    bOtherPages_ = json_object_get_boolean(poExceededTransferLimit);
+                  bOtherPages_ = CPL_TO_BOOL(
+                      json_object_get_boolean(poExceededTransferLimit) );
             }
         }
 
@@ -735,7 +737,8 @@ void OGRGeoJSONDataSource::FlushCache()
                         bAlreadyDone = true;
                         json_object* poObj = OGRGeoJSONWriteFeature( poFeature,
                                                                      FALSE/* bWriteBBOX */,
-                                                                     -1 /*nCoordPrecision*/ );
+                                                                     -1 /*nCoordPrecision*/,
+                                                                     -1 /* nSignificatnFigures*/);
                         VSILFILE* fp = VSIFOpenL(pszName_, "wb");
                         if( fp != NULL )
                         {

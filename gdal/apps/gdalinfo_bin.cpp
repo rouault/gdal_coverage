@@ -2,7 +2,7 @@
  * $Id$
  *
  * Project:  GDAL Utilities
- * Purpose:  Commandline application to list info about a file.
+ * Purpose:  Command line application to list info about a file.
  * Author:   Frank Warmerdam, warmerdam@pobox.com
  *
  * ****************************************************************************
@@ -107,6 +107,7 @@ int main( int argc, char ** argv )
             Usage();
         }
     }
+    argv = CSLAddString(argv, "-stdout");
 
     GDALInfoOptionsForBinary* psOptionsForBinary = GDALInfoOptionsForBinaryNew();
 
@@ -121,12 +122,20 @@ int main( int argc, char ** argv )
 /* -------------------------------------------------------------------- */
 /*      Open dataset.                                                   */
 /* -------------------------------------------------------------------- */
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+    int iIter = 0;
+    while (__AFL_LOOP(1000)) {
+        iIter ++;
+#endif
     GDALDatasetH hDataset
         = GDALOpenEx( psOptionsForBinary->pszFilename, GDAL_OF_READONLY | GDAL_OF_RASTER, NULL,
                       (const char* const* )psOptionsForBinary->papszOpenOptions, NULL );
 
     if( hDataset == NULL )
     {
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+        continue;
+#else
         fprintf( stderr,
                  "gdalinfo failed - unable to open '%s'.\n",
                  psOptionsForBinary->pszFilename );
@@ -166,6 +175,7 @@ int main( int argc, char ** argv )
         CPLDumpSharedList( NULL );
 
         exit( 1 );
+#endif
     }
 
 /* -------------------------------------------------------------------- */
@@ -200,17 +210,21 @@ int main( int argc, char ** argv )
         }
     }
 
-    GDALInfoOptionsForBinaryFree(psOptionsForBinary);
-
     char* pszGDALInfoOutput = GDALInfo( hDataset, psOptions );
 
-    printf( "%s", pszGDALInfoOutput );
+    if( pszGDALInfoOutput )
+        printf( "%s", pszGDALInfoOutput );
 
     CPLFree( pszGDALInfoOutput );
 
-    GDALInfoOptionsFree( psOptions );
-
     GDALClose( hDataset );
+#ifdef __AFL_HAVE_MANUAL_CONTROL
+    }
+#endif
+
+    GDALInfoOptionsForBinaryFree(psOptionsForBinary);
+
+    GDALInfoOptionsFree( psOptions );
 
     CSLDestroy( argv );
 

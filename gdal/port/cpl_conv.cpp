@@ -413,7 +413,7 @@ char *CPLFGets( char *pszBuffer, int nBufferSize, FILE * fp )
         while( (chCheck != 13 && chCheck != EOF)
                || VSIFTell(fp) < nOriginalOffset + nActuallyRead )
         {
-            static volatile bool bWarned = false;
+            static bool bWarned = false;
 
             if( !bWarned )
             {
@@ -1958,6 +1958,9 @@ const char *CPLDecToDMS( double dfAngle, const char * pszAxis,
 
 {
     VALIDATE_POINTER1( pszAxis, "CPLDecToDMS", "" );
+    
+    if( CPLIsNan(dfAngle) )
+        return "Invalid angle";
 
     const double dfEpsilon = (0.5/3600.0) * pow(0.1,nPrecision);
     const double dfABSAngle = ABS(dfAngle) + dfEpsilon;
@@ -2008,7 +2011,7 @@ const char *CPLDecToDMS( double dfAngle, const char * pszAxis,
  *
  *  degrees * 1000000 + minutes * 1000 + seconds
  *
- * Example:     ang = 120025045.25 yields
+ * Example:     angle = 120025045.25 yields
  *              deg = 120
  *              min = 25
  *              sec = 45.25
@@ -2018,13 +2021,13 @@ const char *CPLDecToDMS( double dfAngle, const char * pszAxis,
  * 1.  The absolute value of the angle is used.
  *
  * 2.  The degrees are separated out:
- *     deg = ang/1000000                    (fractional portion truncated)
+ *     deg = angle/1000000                    (fractional portion truncated)
  *
  * 3.  The minutes are separated out:
- *     min = (ang - deg * 1000000) / 1000   (fractional portion truncated)
+ *     min = (angle - deg * 1000000) / 1000   (fractional portion truncated)
  *
  * 4.  The seconds are then computed:
- *     sec = ang - deg * 1000000 - min * 1000
+ *     sec = angle - deg * 1000000 - min * 1000
  *
  * 5.  The total angle in seconds is computed:
  *     sec = deg * 3600.0 + min * 60.0 + sec
@@ -2257,7 +2260,13 @@ void CPLCloseShared( FILE * fp )
 /*      Close the file, and remove the information.                     */
 /* -------------------------------------------------------------------- */
     if( pasSharedFileList[i].bLarge )
-        VSIFCloseL( reinterpret_cast<VSILFILE *>( pasSharedFileList[i].fp ) );
+    {
+        if( VSIFCloseL( reinterpret_cast<VSILFILE *>( pasSharedFileList[i].fp ) ) != 0 )
+        {
+            CPLError(CE_Failure, CPLE_FileIO, "Error while closing %s",
+                     pasSharedFileList[i].pszFilename );
+        }
+    }
     else
         VSIFClose( pasSharedFileList[i].fp );
 
@@ -2464,7 +2473,7 @@ int CPLCopyFile( const char *pszNewPath, const char *pszOldPath )
     VSILFILE *fpNew = VSIFOpenL( pszNewPath, "wb" );
     if( fpNew == NULL )
     {
-        VSIFCloseL( fpOld );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpOld ));
         return -1;
     }
 
@@ -2476,8 +2485,8 @@ int CPLCopyFile( const char *pszNewPath, const char *pszOldPath )
         = reinterpret_cast<GByte *>( VSI_MALLOC_VERBOSE(nBufferSize) );
     if( pabyBuffer == NULL )
     {
-        VSIFCloseL( fpNew );
-        VSIFCloseL( fpOld );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpNew ));
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpOld ));
         return -1;
     }
 
@@ -2499,8 +2508,9 @@ int CPLCopyFile( const char *pszNewPath, const char *pszOldPath )
 /* -------------------------------------------------------------------- */
 /*      Cleanup                                                         */
 /* -------------------------------------------------------------------- */
-    VSIFCloseL( fpNew );
-    VSIFCloseL( fpOld );
+    if( VSIFCloseL( fpNew ) != 0 )
+        nRet = -1;
+    CPL_IGNORE_RET_VAL(VSIFCloseL( fpOld ));
 
     CPLFree( pabyBuffer );
 
@@ -2671,7 +2681,7 @@ CPLThreadLocaleC::CPLThreadLocaleC()
 
 {
 #ifdef HAVE_USELOCALE
-    nNewLocale = newlocale (LC_NUMERIC_MASK, "C", 0);
+    nNewLocale = newlocale (LC_NUMERIC_MASK, "C", NULL);
     nOldLocale = uselocale(nNewLocale);
 #else
 

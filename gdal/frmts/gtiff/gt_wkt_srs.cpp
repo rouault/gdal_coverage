@@ -738,7 +738,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
         GDALGTIFKeyGetSHORT(hGTIF, GeographicTypeGeoKey, &tmp, 0, 1  ) == 0 &&
         GDALGTIFKeyGetSHORT(hGTIF, GeogGeodeticDatumGeoKey, &tmp, 0, 1  ) == 0 &&
         GDALGTIFKeyGetSHORT(hGTIF, GeogEllipsoidGeoKey, &tmp, 0, 1  ) == 0 &&
-        CSLTestBoolean(CPLGetConfigOption("GTIFF_IMPORT_FROM_EPSG", "YES")) )
+        CPLTestBool(CPLGetConfigOption("GTIFF_IMPORT_FROM_EPSG", "YES")) )
     {
         // Save error state as importFromEPSGA() will call CPLReset()
         CPLErrorNum errNo = CPLGetLastErrorNo();
@@ -756,7 +756,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
 
         if( bGotFromEPSG )
         {
-            // See #6210. In case there's an overriden linear units, take it
+            // See #6210. In case there's an overridden linear units, take it
             // into account
             char* pszUnitsName = NULL;
             double dfUOMLengthInMeters = oSRS.GetLinearUnits( &pszUnitsName );
@@ -1433,7 +1433,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
 /*      Handle the projection transformation.                           */
 /* -------------------------------------------------------------------- */
     const char *pszProjection = poSRS->GetAttrValue( "PROJECTION" );
-    int bWritePEString = FALSE;
+    bool bWritePEString = false;
 
     if( nPCS != KvUserDefined )
     {
@@ -1442,7 +1442,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
         // that requires not setting GTModelTypeGeoKey to ProjectedCSTypeGeoKey
         if( eFlavor == GEOTIFF_KEYS_ESRI_PE && nPCS == 3857 )
         {
-            bWritePEString = TRUE;
+            bWritePEString = true;
         }
         else
         {
@@ -2197,7 +2197,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
 
     else
     {
-        bWritePEString = TRUE;
+        bWritePEString = true;
     }
 
     // Note that VERTCS is an ESRI "spelling" of VERT_CS so we assume if
@@ -2206,8 +2206,8 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
 
     bWritePEString |= (eFlavor == GEOTIFF_KEYS_ESRI_PE);
 
-    bWritePEString &= CSLTestBoolean( CPLGetConfigOption("GTIFF_ESRI_CITATION",
-                                              "YES") );
+    bWritePEString &=
+        CPLTestBool( CPLGetConfigOption("GTIFF_ESRI_CITATION", "YES") );
 
     if( bWritePEString )
     {
@@ -2284,7 +2284,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
            && nUOMLengthCode == KvUserDefined 
            && pszLinearUOMName 
            && strlen(pszLinearUOMName)>0
-           && CSLTestBoolean( CPLGetConfigOption("GTIFF_ESRI_CITATION",
+           && CPLTestBool( CPLGetConfigOption("GTIFF_ESRI_CITATION",
                                                  "YES") ) )
         {
             SetLinearUnitCitation(psGTIF, pszLinearUOMName);
@@ -2427,7 +2427,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
                         dfSemiMajor );
 
         if( nGCS == KvUserDefined 
-            && CSLTestBoolean( CPLGetConfigOption("GTIFF_ESRI_CITATION",
+            && CPLTestBool( CPLGetConfigOption("GTIFF_ESRI_CITATION",
                                                   "YES") ) )
             SetGeogCSCitation(psGTIF, poSRS, angUnitName, nDatum, nSpheroid);
     }
@@ -2543,7 +2543,7 @@ CPLErr GTIFWktFromMemBufEx( int nSize, unsigned char *pabyBuffer,
         CPLError( CE_Failure, CPLE_AppDefined,
                   "TIFF/GeoTIFF structure is corrupt." );
         VSIUnlink( szFilename );
-        VSIFCloseL( fp );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
         return CE_Failure;
     }
 
@@ -2561,7 +2561,7 @@ CPLErr GTIFWktFromMemBufEx( int nSize, unsigned char *pabyBuffer,
     {
         bPixelIsPoint = true;
         bPointGeoIgnore =
-            CSLTestBoolean( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
+            CPLTestBool( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
                                             "FALSE") );
     }
     if( pbPixelIsPoint )
@@ -2674,7 +2674,7 @@ CPLErr GTIFWktFromMemBufEx( int nSize, unsigned char *pabyBuffer,
 /*      Cleanup.                                                        */
 /* -------------------------------------------------------------------- */
     XTIFFClose( hTIFF );
-    VSIFCloseL( fp );
+    CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
 
     VSIUnlink( szFilename );
 
@@ -2729,7 +2729,7 @@ CPLErr GTIFMemBufFromWktEx( const char *pszWKT, const double *padfGeoTransform,
     {
         CPLError( CE_Failure, CPLE_AppDefined,
                   "TIFF/GeoTIFF structure is corrupt." );
-        VSIFCloseL(fpL);
+        CPL_IGNORE_RET_VAL(VSIFCloseL(fpL));
         return CE_Failure;
     }
 
@@ -2748,12 +2748,12 @@ CPLErr GTIFMemBufFromWktEx( const char *pszWKT, const double *padfGeoTransform,
 /*      Get the projection definition.                                  */
 /* -------------------------------------------------------------------- */
 
-    int  bPointGeoIgnore = FALSE;
+    int bPointGeoIgnore = FALSE;
     if( bPixelIsPoint )
     {
-        bPointGeoIgnore = 
-            CSLTestBoolean( CPLGetConfigOption("GTIFF_POINT_GEO_IGNORE",
-                                               "FALSE") );
+        bPointGeoIgnore =
+            CPLTestBool( CPLGetConfigOption( "GTIFF_POINT_GEO_IGNORE",
+                                             "FALSE") );
     }
 
     if( pszWKT != NULL || bPixelIsPoint )
@@ -2872,7 +2872,7 @@ CPLErr GTIFMemBufFromWktEx( const char *pszWKT, const double *padfGeoTransform,
     TIFFWriteDirectory( hTIFF );
 
     XTIFFClose( hTIFF );
-    VSIFCloseL(fpL);
+    CPL_IGNORE_RET_VAL(VSIFCloseL(fpL));
 
 /* -------------------------------------------------------------------- */
 /*      Read back from the memory buffer.  It would be preferable       */

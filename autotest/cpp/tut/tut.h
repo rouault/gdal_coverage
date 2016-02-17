@@ -97,7 +97,7 @@ namespace tut
   };
 
   /**
-   * Return type of runned test/test group.
+   * Return type of ran test/test group.
    *
    * For test: contains result of test and, possible, message
    * for failure or exception.
@@ -794,7 +794,7 @@ namespace tut
       if( tests_.rbegin() == tests_.rend() ) throw beyond_last_test();
       if( tests_.rbegin()->first < n ) throw beyond_last_test();
 
-      // withing scope; check if given test exists
+      // within scope; check if given test exists
       tests_iterator ti = tests_.find(n);
       if( ti == tests_.end() ) throw no_such_test();
 

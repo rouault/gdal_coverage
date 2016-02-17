@@ -273,21 +273,6 @@ BSBInfo *BSBOpen( const char *pszFilename )
                                                     FALSE,FALSE);
             nCount = CSLCount(papszTokens);
         }
-        else if( STARTS_WITH_CI(szLine, "    ") && szLine[4] != ' ' )
-        {
-            /* add extension lines to the last header line. */
-            int iTargetHeader = CSLCount(psInfo->papszHeader);
-
-            if( iTargetHeader != -1 )
-            {
-                psInfo->papszHeader[iTargetHeader] = (char *) 
-                    CPLRealloc(psInfo->papszHeader[iTargetHeader],
-                               strlen(psInfo->papszHeader[iTargetHeader])
-                               + strlen(szLine) + 5 );
-                strcat( psInfo->papszHeader[iTargetHeader], "," );
-                strcat( psInfo->papszHeader[iTargetHeader], szLine+4 );
-            }
-        }
 
         if( STARTS_WITH_CI(szLine, "BSB/") )
         {
@@ -478,7 +463,7 @@ BSBInfo *BSBOpen( const char *pszFilename )
 /* -------------------------------------------------------------------- */
 /*       Read the line offset list                                      */
 /* -------------------------------------------------------------------- */
-    if ( ! CSLTestBoolean(CPLGetConfigOption("BSB_DISABLE_INDEX", "NO")) )
+    if ( !CPLTestBoolean(CPLGetConfigOption("BSB_DISABLE_INDEX", "NO")) )
     {
         /* build the list from file's index table */
         /* To overcome endian compatibility issues individual
@@ -584,7 +569,9 @@ static int BSBReadHeaderLine( BSBInfo *psInfo, char* pszLine, int nLineMaxLen, i
     while( !VSIFEofL(psInfo->fp) && nLineLen < nLineMaxLen-1 )
     {
         chNext = (char) BSBGetc( psInfo, bNO1, NULL );
-        if( chNext == 0x1A )
+        /* '\0' is not really expected at this point in correct products */
+        /* but we must escape if found. */
+        if( chNext == '\0' || chNext == 0x1A )
         {
             BSBUngetc( psInfo, chNext );
             return FALSE;
@@ -702,7 +689,7 @@ static int BSBSeekAndCheckScanlineNumber ( BSBInfo *psInfo, int nScanline,
         && nLineMarker != nScanline + 1 )
     {
         int bIgnoreLineNumbers = 
-            CSLTestBoolean(CPLGetConfigOption("BSB_IGNORE_LINENUMBERS", "NO"));
+            CPLTestBoolean(CPLGetConfigOption("BSB_IGNORE_LINENUMBERS", "NO"));
 
         if (bVerboseIfError && !bIgnoreLineNumbers )
         {

@@ -396,7 +396,7 @@ int SENTINEL2Dataset::Identify( GDALOpenInfo *poOpenInfo )
         return TRUE;
 
     if( strstr(pszHeader,  "<n1:Level-2A_User_Product" ) != NULL &&
-        strstr(pszHeader, "User_Product_Level-2A_Metadata" ) != NULL )
+        strstr(pszHeader, "User_Product_Level-2A" ) != NULL )
         return TRUE;
 
     return FALSE;
@@ -489,7 +489,7 @@ GDALDataset *SENTINEL2Dataset::Open( GDALOpenInfo * poOpenInfo )
         return OpenL1CTile(poOpenInfo->pszFilename);
 
     if( strstr(pszHeader,  "<n1:Level-2A_User_Product" ) != NULL &&
-        strstr(pszHeader, "User_Product_Level-2A_Metadata" ) != NULL )
+        strstr(pszHeader, "User_Product_Level-2A" ) != NULL )
         return OpenL1C_L2A(poOpenInfo->pszFilename, SENTINEL2_L2A);
 
     return NULL;
@@ -1498,7 +1498,7 @@ static void SENTINEL2GetResolutionSetAndMainMDFromGranule(
     papszMD = NULL;
     if( osMainMTD.size() != 0 &&
         /* env var for debug only */
-        CSLTestBoolean(CPLGetConfigOption("SENTINEL2_USE_MAIN_MTD", "YES")) )
+        CPLTestBool(CPLGetConfigOption("SENTINEL2_USE_MAIN_MTD", "YES")) )
     {
         CPLXMLNode *psRootMainMTD = CPLParseXMLFile( osMainMTD );
         if( psRootMainMTD != NULL )
@@ -1835,7 +1835,7 @@ GDALDataset *SENTINEL2Dataset::OpenL1BSubdataset( GDALOpenInfo * poOpenInfo )
     int nNodataVal = atoi(CSLFetchNameValueDef(poDS->GetMetadata(), "SPECIAL_VALUE_NODATA", "-1"));
 
     const bool bAlpha =
-        CSLTestBoolean(SENTINEL2GetOption(poOpenInfo, "ALPHA", "FALSE")) != FALSE;
+        CPLTestBool(SENTINEL2GetOption(poOpenInfo, "ALPHA", "FALSE"));
     const int nBands = ((bAlpha) ? 1 : 0) + static_cast<int>(aosBands.size());
     const int nAlphaBand = (!bAlpha) ? 0 : nBands;
     const GDALDataType eDT = GDT_UInt16;
@@ -2669,7 +2669,7 @@ GDALDataset *SENTINEL2Dataset::OpenL1C_L2ASubdataset( GDALOpenInfo * poOpenInfo,
                                                "SPECIAL_VALUE_NODATA", "-1"));
 
     const bool bAlpha =
-        CSLTestBoolean(SENTINEL2GetOption(poOpenInfo, "ALPHA", "FALSE")) != FALSE;
+        CPLTestBool(SENTINEL2GetOption(poOpenInfo, "ALPHA", "FALSE"));
 
     SENTINEL2Dataset* poDS = CreateL1CL2ADataset(eLevel,
                                                  aosGranuleList,
@@ -3149,7 +3149,7 @@ GDALDataset* SENTINEL2Dataset::OpenL1CTileSubdataset( GDALOpenInfo * poOpenInfo 
                                                "SPECIAL_VALUE_NODATA", "-1"));
 
     const bool bAlpha =
-        CSLTestBoolean(SENTINEL2GetOption(poOpenInfo, "ALPHA", "FALSE")) != FALSE;
+        CPLTestBool(SENTINEL2GetOption(poOpenInfo, "ALPHA", "FALSE"));
 
     std::vector<CPLString> aosNonJP2Files;
     SENTINEL2Dataset* poDS = CreateL1CL2ADataset(SENTINEL2_L1C,

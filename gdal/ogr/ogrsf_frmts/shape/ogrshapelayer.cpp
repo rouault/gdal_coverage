@@ -151,15 +151,38 @@ OGRShapeLayer::OGRShapeLayer( OGRShapeDataSource* poDSIn,
     OGRwkbGeometryType eGeomType = poFeatureDefn->GetGeomType();
     if( eGeomType != wkbNone )
     {
+        OGRwkbGeometryType eType;
+
+        if( eRequestedGeomType == wkbNone )
+        {
+            eType = eGeomType;
+
+            if( (hSHP != NULL) && (hSHP->nRecords > 0) && wkbHasM(eType) )
+            {
+                SHPObject   *psShape = SHPReadObject( hSHP, 0 );
+                if( psShape )
+                {
+                    if( !psShape->bMeasureIsUsed )
+                        eType = OGR_GT_SetModifier(eType, wkbHasZ(eType), FALSE);
+                        
+                    SHPDestroyObject(psShape);
+                }
+            }
+            
+        }
+        else
+            eType = eRequestedGeomType;
+
         OGRShapeGeomFieldDefn* poGeomFieldDefn =
-            new OGRShapeGeomFieldDefn(pszFullName, eGeomType, bSRSSetIn, poSRSIn);
+            //new OGRShapeGeomFieldDefn(pszFullName, eGeomType, bSRSSetIn, poSRSIn);
+            new OGRShapeGeomFieldDefn(pszFullName, eType, bSRSSetIn, poSRSIn);
         poFeatureDefn->SetGeomType(wkbNone);
         poFeatureDefn->AddGeomFieldDefn(poGeomFieldDefn, FALSE);
     }
     else if( bSRSSetIn && poSRSIn != NULL )
         poSRSIn->Release();
     SetDescription( poFeatureDefn->GetName() );
-    bRewindOnWrite = CSLTestBoolean(CPLGetConfigOption( "SHAPE_REWIND_ON_WRITE", "YES" ));
+    bRewindOnWrite = CPLTestBool(CPLGetConfigOption( "SHAPE_REWIND_ON_WRITE", "YES" ));
 }
 
 /************************************************************************/
@@ -869,7 +892,7 @@ OGRErr OGRShapeLayer::ISetFeature( OGRFeature *poFeature )
 
     OGRErr eErr = SHPWriteOGRFeature( hSHP, hDBF, poFeatureDefn, poFeature,
                                       osEncoding, &bTruncationWarningEmitted,
-                                      bRewindOnWrite );
+                                      bRewindOnWrite, eRequestedGeomType );
 
     if( hSHP != NULL )
     {
@@ -983,6 +1006,16 @@ OGRErr OGRShapeLayer::ICreateFeature( OGRFeature *poFeature )
             eRequestedGeomType = wkbPoint25D;
             break;
 
+          case wkbPointM:
+            nShapeType = SHPT_POINTM;
+            eRequestedGeomType = wkbPointM;
+            break;
+
+          case wkbPointZM:
+            nShapeType = SHPT_POINTZ;
+            eRequestedGeomType = wkbPointZM;
+            break;
+
           case wkbMultiPoint:
             nShapeType = SHPT_MULTIPOINT;
             eRequestedGeomType = wkbMultiPoint;
@@ -991,6 +1024,16 @@ OGRErr OGRShapeLayer::ICreateFeature( OGRFeature *poFeature )
           case wkbMultiPoint25D:
             nShapeType = SHPT_MULTIPOINTZ;
             eRequestedGeomType = wkbMultiPoint25D;
+            break;
+
+          case wkbMultiPointM:
+            nShapeType = SHPT_MULTIPOINTM;
+            eRequestedGeomType = wkbMultiPointM;
+            break;
+
+          case wkbMultiPointZM:
+            nShapeType = SHPT_MULTIPOINTZ;
+            eRequestedGeomType = wkbMultiPointM;
             break;
 
           case wkbLineString:
@@ -1005,6 +1048,18 @@ OGRErr OGRShapeLayer::ICreateFeature( OGRFeature *poFeature )
             eRequestedGeomType = wkbLineString25D;
             break;
 
+          case wkbLineStringM:
+          case wkbMultiLineStringM:
+            nShapeType = SHPT_ARCM;
+            eRequestedGeomType = wkbLineStringM;
+            break;
+
+          case wkbLineStringZM:
+          case wkbMultiLineStringZM:
+            nShapeType = SHPT_ARCZ;
+            eRequestedGeomType = wkbLineStringZM;
+            break;
+
           case wkbPolygon:
           case wkbMultiPolygon:
             nShapeType = SHPT_POLYGON;
@@ -1015,6 +1070,18 @@ OGRErr OGRShapeLayer::ICreateFeature( OGRFeature *poFeature )
           case wkbMultiPolygon25D:
             nShapeType = SHPT_POLYGONZ;
             eRequestedGeomType = wkbPolygon25D;
+            break;
+
+          case wkbPolygonM:
+          case wkbMultiPolygonM:
+            nShapeType = SHPT_POLYGONM;
+            eRequestedGeomType = wkbPolygonM;
+            break;
+
+          case wkbPolygonZM:
+          case wkbMultiPolygonZM:
+            nShapeType = SHPT_POLYGONZ;
+            eRequestedGeomType = wkbPolygonZM;
             break;
 
           default:
@@ -1030,7 +1097,7 @@ OGRErr OGRShapeLayer::ICreateFeature( OGRFeature *poFeature )
 
     eErr = SHPWriteOGRFeature( hSHP, hDBF, poFeatureDefn, poFeature, 
                                osEncoding, &bTruncationWarningEmitted,
-                               bRewindOnWrite );
+                               bRewindOnWrite, eRequestedGeomType );
 
     if( hSHP != NULL )
         nTotalShapeCount = hSHP->nRecords;
@@ -1454,6 +1521,10 @@ int OGRShapeLayer::TestCapability( const char * pszCap )
 
         return TRUE;
     }
+
+    else if( EQUAL(pszCap,OLCMeasuredGeometries) )
+        return TRUE;
+
     else 
         return FALSE;
 }

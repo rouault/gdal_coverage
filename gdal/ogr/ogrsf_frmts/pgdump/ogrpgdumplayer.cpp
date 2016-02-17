@@ -170,7 +170,7 @@ OGRErr OGRPGDumpLayer::ICreateFeature( OGRFeature *poFeature )
 
     // We avoid testing the config option too often. 
     if( bUseCopy == USE_COPY_UNSET )
-        bUseCopy = CSLTestBoolean( CPLGetConfigOption( "PG_USE_COPY", "NO") );
+        bUseCopy = CPLTestBool( CPLGetConfigOption( "PG_USE_COPY", "NO") );
 
     OGRErr eErr;
     if( !bUseCopy )
@@ -640,7 +640,7 @@ void OGRPGCommonAppendCopyFieldsExceptGeom(CPLString& osCommand,
             for( iChar = 0; pszStrValue[iChar] != '\0'; iChar++ )
             {
                 //count of utf chars
-                if ((pszStrValue[iChar] & 0xc0) != 0x80) 
+                if (nOGRFieldType != OFTStringList && (pszStrValue[iChar] & 0xc0) != 0x80) 
                 {
                     if( nMaxWidth > 0 && iUTFChar == nMaxWidth )
                     {
@@ -1100,7 +1100,7 @@ void OGRPGCommonAppendFieldValue(CPLString& osCommand,
         pszStrValue = poFeature->GetFieldAsInteger(i) ? "'t'" : "'f'";
 
     if( nOGRFieldType != OFTInteger && nOGRFieldType != OFTInteger64 && 
-        nOGRFieldType != OFTReal
+        nOGRFieldType != OFTReal && nOGRFieldType != OFTStringList 
         && !bIsDateNull )
     {
         osCommand += pfnEscapeString( userdata, pszStrValue,
@@ -1469,7 +1469,7 @@ OGRErr OGRPGDumpLayer::CreateField( OGRFieldDefn *poFieldIn,
     
     // Can be set to NO to test ogr2ogr default behaviour
     int bAllowCreationOfFieldWithFIDName =
-        CSLTestBoolean(CPLGetConfigOption("PGDUMP_DEBUG_ALLOW_CREATION_FIELD_WITH_FID_NAME", "YES"));
+        CPLTestBool(CPLGetConfigOption("PGDUMP_DEBUG_ALLOW_CREATION_FIELD_WITH_FID_NAME", "YES"));
 
     if( bAllowCreationOfFieldWithFIDName && pszFIDColumn != NULL &&
         EQUAL( oField.GetNameRef(), pszFIDColumn ) &&
@@ -1555,9 +1555,19 @@ OGRErr OGRPGDumpLayer::CreateGeomField( OGRGeomFieldDefn *poGeomFieldIn,
         return OGRERR_FAILURE;
     }
 
+    // Check if GEOMETRY_NAME layer creation option was set, but no initial
+    // column was created in ICreateLayer()
+    CPLString osGeomFieldName = 
+        ( m_osFirstGeometryFieldName.size() ) ? m_osFirstGeometryFieldName :
+                                                CPLString(poGeomFieldIn->GetNameRef());
+    m_osFirstGeometryFieldName = ""; // reset for potential next geom columns
+
+    OGRGeomFieldDefn oTmpGeomFieldDefn( poGeomFieldIn );
+    oTmpGeomFieldDefn.SetName(osGeomFieldName);
+
     CPLString               osCommand;
     OGRPGDumpGeomFieldDefn *poGeomField =
-        new OGRPGDumpGeomFieldDefn( poGeomFieldIn );
+        new OGRPGDumpGeomFieldDefn( &oTmpGeomFieldDefn );
 
 /* -------------------------------------------------------------------- */
 /*      Do we want to "launder" the column names into Postgres          */

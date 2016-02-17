@@ -27,6 +27,10 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#ifdef DEBUG_BOOL
+#undef DEBUG_BOOL
+#endif
+
 #include "cpl_vsi_virtual.h"
 
 CPL_C_START
@@ -686,7 +690,7 @@ int VSICryptFileHeader::WriteToFile(VSIVirtualHandle* fp, CryptoPP::BlockCipher*
 /*                          VSICryptFileHandle                          */
 /************************************************************************/
 
-class VSICryptFileHandle : public VSIVirtualHandle
+class VSICryptFileHandle CPL_FINAL : public VSIVirtualHandle
 {
   private:
         CPLString           osBaseFilename;
@@ -1296,7 +1300,7 @@ int VSICryptFileHandle::Close()
 /*                   VSICryptFilesystemHandler                          */
 /************************************************************************/
 
-class VSICryptFilesystemHandler : public VSIFilesystemHandler 
+class VSICryptFilesystemHandler CPL_FINAL : public VSIFilesystemHandler 
 {
 public:
     VSICryptFilesystemHandler();

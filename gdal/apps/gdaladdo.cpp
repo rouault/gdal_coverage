@@ -2,7 +2,7 @@
  * $Id$
  *
  * Project:  GDAL Utilities
- * Purpose:  Commandline application to build overviews. 
+ * Purpose:  Command line application to build overviews. 
  * Author:   Frank Warmerdam, warmerdam@pobox.com
  *
  ******************************************************************************
@@ -112,7 +112,7 @@ int main( int nArgc, char ** papszArgv )
         exit( -nArgc );
 
 /* -------------------------------------------------------------------- */
-/*      Parse commandline.                                              */
+/*      Parse command line.                                              */
 /* -------------------------------------------------------------------- */
     for( int iArg = 1; iArg < nArgc; iArg++ )
     {
@@ -206,7 +206,7 @@ int main( int nArgc, char ** papszArgv )
 /*      Clean overviews.                                                */
 /* -------------------------------------------------------------------- */
     if ( bClean &&
-        GDALBuildOverviews( hDataset,pszResampling, 0, 0, 
+        GDALBuildOverviews( hDataset,pszResampling, 0, NULL, 
                              0, NULL, pfnProgress, NULL ) != CE_None )
     {
         printf( "Cleaning overviews failed.\n" );

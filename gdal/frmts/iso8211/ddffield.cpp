@@ -166,6 +166,14 @@ const char *DDFField::GetSubfieldData( DDFSubfieldDefn *poSFDefn,
             int nBytesConsumed;
             DDFSubfieldDefn * poThisSFDefn = poDefn->GetSubfield( iSF );
 
+            if( nDataSize < iOffset )
+            {
+                CPLError(CE_Failure, CPLE_AppDefined,
+                         "Invalid data size for subfield %s of %s",
+                         poThisSFDefn->GetName(), poDefn->GetName());
+                return NULL;
+            }
+
             if( poThisSFDefn == poSFDefn && iSubfieldIndex == 0 )
             {
                 if( pnMaxBytes != NULL )
@@ -289,7 +297,7 @@ const char *DDFField::GetInstanceData( int nInstance,
     if( poDefn->GetSubfieldCount() == 0 )
     {
         pachWrkData = GetData();
-        if( pnInstanceSize != 0 )
+        if( pnInstanceSize != NULL )
             *pnInstanceSize = GetDataSize();
         return pachWrkData;
     }
@@ -305,6 +313,8 @@ const char *DDFField::GetInstanceData( int nInstance,
 
     pachWrkData = GetSubfieldData(poFirstSubfield, &nBytesRemaining1,
                                nInstance);
+    if( pachWrkData == NULL )
+        return NULL;
 
 /* -------------------------------------------------------------------- */
 /*      Figure out the size of the entire field instance, including     */
@@ -320,6 +330,9 @@ const char *DDFField::GetInstanceData( int nInstance,
 
         pachLastData = GetSubfieldData( poLastSubfield, &nBytesRemaining2, 
                                         nInstance );
+        if( pachLastData == NULL )
+            return NULL;
+
         poLastSubfield->GetDataLength( pachLastData, nBytesRemaining2, 
                                        &nLastSubfieldWidth );
 

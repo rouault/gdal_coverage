@@ -76,14 +76,14 @@ VFKReaderSQLite::VFKReaderSQLite(const char *pszFilename) : VFKReader(pszFilenam
     CPLDebug("OGR-VFK", "Using internal DB: %s",
              m_pszDBname);
 
-    if (CSLTestBoolean(CPLGetConfigOption("OGR_VFK_DB_SPATIAL", "YES")))
+    if (CPLTestBool(CPLGetConfigOption("OGR_VFK_DB_SPATIAL", "YES")))
 	m_bSpatial = TRUE;    /* build geometry from DB */
     else
 	m_bSpatial = FALSE;   /* store also geometry in DB */
 
     m_bNewDb = TRUE;
     if (VSIStatL(osDbName, &sStatBufDb) == 0) {
-	if (CSLTestBoolean(CPLGetConfigOption("OGR_VFK_DB_OVERWRITE", "NO"))) {
+	if (CPLTestBool(CPLGetConfigOption("OGR_VFK_DB_OVERWRITE", "NO"))) {
 	    m_bNewDb = TRUE;     /* overwrite existing DB */
             CPLDebug("OGR-VFK", "Internal DB (%s) already exists and will be overwritten",
                      m_pszDBname);
@@ -153,7 +153,7 @@ VFKReaderSQLite::~VFKReaderSQLite()
              m_pszDBname);
 
     /* delete tmp SQLite DB if requested */
-    if (CSLTestBoolean(CPLGetConfigOption("OGR_VFK_DB_DELETE", "NO"))) {
+    if (CPLTestBool(CPLGetConfigOption("OGR_VFK_DB_DELETE", "NO"))) {
         CPLDebug("OGR-VFK", "Internal DB (%s) deleted",
                  m_pszDBname);
         VSIUnlink(m_pszDBname);
@@ -189,10 +189,10 @@ int VFKReaderSQLite::ReadDataBlocks()
     }
 
     if (m_nDataBlockCount == 0) {
-        CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "BEGIN", 0, 0, 0));
+        CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "BEGIN", NULL, NULL, NULL));
         /* CREATE TABLE ... */
         nDataBlocks = VFKReader::ReadDataBlocks();
-        CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "COMMIT", 0, 0, 0));
+        CPL_IGNORE_RET_VAL(sqlite3_exec(m_poDB, "COMMIT", NULL, NULL, NULL));
 
         StoreInfo2DB();
     }
@@ -411,7 +411,7 @@ void VFKReaderSQLite::AddDataBlock(IVFKDataBlock *poDataBlock, const char *pszDe
 
     sqlite3_stmt *hStmt;
 
-    bUnique = !CSLTestBoolean(CPLGetConfigOption("OGR_VFK_DB_IGNORE_DUPLICATES", "NO"));
+    bUnique = !CPLTestBool(CPLGetConfigOption("OGR_VFK_DB_IGNORE_DUPLICATES", "NO"));
 
     pszBlockName = poDataBlock->GetName();
 
@@ -641,7 +641,11 @@ OGRErr VFKReaderSQLite::AddFeature(IVFKDataBlock *poDataBlock, VFKFeature *poFea
 
     if (EQUAL(pszBlockName, "SBP")) {
         poProperty = poFeature->GetProperty("PORADOVE_CISLO_BODU");
-        CPLAssert(NULL != poProperty);
+        if( poProperty == NULL )
+        {
+            CPLError(CE_Failure, CPLE_AppDefined, "Cannot find property PORADOVE_CISLO_BODU");
+            return OGRERR_FAILURE;
+        }
         if (!EQUAL(poProperty->GetValueS(), "1"))
             return OGRERR_NONE;
     }

@@ -85,7 +85,7 @@ static const char * const ogr_pj_ellps[] = {
 "WGS72",        "a=6378135.0", "rf=298.26", "WGS 72",
 "WGS84",    "a=6378137.0",  "rf=298.257223563", "WGS 84",
 "sphere",   "a=6370997.0",  "b=6370997.0", "Normal Sphere (r=6370997)",
-0, 0, 0, 0,
+NULL, NULL, NULL, NULL,
 };
 
 typedef struct
@@ -179,6 +179,95 @@ static const OGRProj4PM* OGRGetProj4PMFromVal(double dfVal)
         if (fabs(dfVal - CPLDMSToDec(ogr_pj_pms[i].pszFromGreenwich)) < 1e-10)
         {
             return &ogr_pj_pms[i];
+        }
+    }
+    return NULL;
+}
+
+typedef struct
+{
+    const char* pszWKTName;
+    const char* pszValueInMeter;
+    const char* pszProjName;
+} LinearUnitsStruct;
+
+static const LinearUnitsStruct asLinearUnits [] = 
+{
+{ SRS_UL_METER, "1.0", "m" },
+{ SRS_UL_METER, "1.0", "meter" }, // alias of former
+{ SRS_UL_METER, "1.0", "metre" }, // alias of former
+{ "metre", "1.0", "m" }, // alias of former
+{ "kilometre", SRS_UL_KILOMETER_CONV, "km" }, // Leave as 'kilometre' instead of SRS_UL_KILOMETER due to historical usage
+{ SRS_UL_KILOMETER, SRS_UL_KILOMETER_CONV, "km" }, // alias of former
+{ SRS_UL_DECIMETER, SRS_UL_DECIMETER_CONV, "dm" },
+{ SRS_UL_CENTIMETER, SRS_UL_CENTIMETER_CONV, "cm" },
+{ SRS_UL_MILLIMETER, SRS_UL_MILLIMETER_CONV, "mm" },
+
+{ SRS_UL_FOOT, SRS_UL_FOOT_CONV, "ft" }, // Leave as 'Foot (International)' or SRS_UL_FOOT instead of SRS_UL_INTL_FOOT due to historical usage
+{ SRS_UL_INTL_FOOT, SRS_UL_INTL_FOOT_CONV, "ft" }, // alias of former
+{ SRS_UL_US_FOOT, SRS_UL_US_FOOT_CONV, "us-ft" },
+{ SRS_UL_INDIAN_FOOT, SRS_UL_INDIAN_FOOT_CONV, "ind-ft" },
+
+{ SRS_UL_INTL_NAUT_MILE, SRS_UL_INTL_NAUT_MILE_CONV, "kmi" },
+{ SRS_UL_NAUTICAL_MILE, SRS_UL_NAUTICAL_MILE_CONV, "kmi" }, // alias of former
+
+{ SRS_UL_INTL_STAT_MILE, SRS_UL_INTL_STAT_MILE_CONV, "mi" },
+{ "Mile", SRS_UL_INTL_STAT_MILE_CONV, "mi" }, // alias of former
+{ "IMILE", SRS_UL_INTL_STAT_MILE_CONV, "mi" }, // alias of former
+{ SRS_UL_US_STAT_MILE, SRS_UL_US_STAT_MILE_CONV, "us-mi"},
+
+{ SRS_UL_INTL_LINK, SRS_UL_INTL_LINK_CONV, "link" },
+{ SRS_UL_LINK, SRS_UL_LINK_CONV, "link" }, // alias of former
+
+{ SRS_UL_INTL_YARD, SRS_UL_INTL_YARD_CONV, "yd" },
+{ "IYARD", SRS_UL_INTL_YARD_CONV, "yd" }, // alias of former
+{ SRS_UL_US_YARD, SRS_UL_US_YARD_CONV, "us-yd" },
+{ SRS_UL_INDIAN_YARD, SRS_UL_INDIAN_YARD_CONV, "ind-yd" },
+
+{ SRS_UL_INTL_INCH, SRS_UL_INTL_INCH_CONV, "in" },
+{ SRS_UL_US_INCH, SRS_UL_US_INCH_CONV, "us-in" },
+
+{ SRS_UL_INTL_FATHOM, SRS_UL_INTL_FATHOM_CONV, "fath" },
+
+{ SRS_UL_INTL_CHAIN, SRS_UL_INTL_CHAIN_CONV, "ch" },
+{ SRS_UL_US_CHAIN, SRS_UL_US_CHAIN_CONV, "us-ch" },
+{ SRS_UL_INDIAN_CHAIN, SRS_UL_INDIAN_CHAIN_CONV, "ind-ch" },
+
+// { SRS_UL_ROD, SRS_UL_ROD_CONV, "????" }
+};
+
+/************************************************************************/
+/*                        GetLinearFromLinearConvOrName()               */
+/************************************************************************/
+
+static const LinearUnitsStruct *GetLinearFromLinearConvOrName(
+                                                  double dfLinearConv, 
+                                                  const char *pszLinearUnits )
+
+{
+    for( size_t i=0; i < sizeof(asLinearUnits) / sizeof(asLinearUnits[0]); i++ )
+    {
+        if( (pszLinearUnits != NULL && EQUAL(pszLinearUnits, asLinearUnits[i].pszWKTName)) ||
+            fabs(dfLinearConv - CPLAtof(asLinearUnits[i].pszValueInMeter)) < 0.00000001 )
+        {
+            return &(asLinearUnits[i]);
+        }
+    }
+    return NULL;
+}
+
+/************************************************************************/
+/*                        GetLinearFromProjName()                       */
+/************************************************************************/
+
+static const LinearUnitsStruct* GetLinearFromProjName( const char* pszProjName )
+
+{
+    for( size_t i=0; i < sizeof(asLinearUnits) / sizeof(asLinearUnits[0]); i++ )
+    {
+        if( EQUAL(pszProjName, asLinearUnits[i].pszProjName) )
+        {
+            return &(asLinearUnits[i]);
         }
     }
     return NULL;
@@ -925,6 +1014,13 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
         SetQSC( OSR_GDV( papszNV, "lat_0", 0.0 ),
                 OSR_GDV( papszNV, "lon_0", 0.0 ) );
     }
+    else if( EQUAL(pszProj,"sch") )
+    {
+        SetSCH( OSR_GDV( papszNV, "plat_0", 0.0 ),
+                OSR_GDV( papszNV, "plon_0", 0.0 ),
+                OSR_GDV( papszNV, "phdg_0", 0.0 ),
+                OSR_GDV( papszNV, "h_0", 0.0) );
+    }
 
     else if( EQUAL(pszProj,"tpeqd") )
     {
@@ -1128,13 +1224,12 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
         if( pszValue != NULL && CPLAtofM(pszValue) > 0.0 )
         {
             const double dfValue = CPLAtofM(pszValue);
-
-            if( fabs(dfValue - CPLAtof(SRS_UL_US_FOOT_CONV)) < 0.00000001 )
-                SetLinearUnits( SRS_UL_US_FOOT, CPLAtof(SRS_UL_US_FOOT_CONV) );
-            else if( fabs(dfValue - CPLAtof(SRS_UL_FOOT_CONV)) < 0.00000001 )
-                SetLinearUnits( SRS_UL_FOOT, CPLAtof(SRS_UL_FOOT_CONV) );
-            else if( dfValue == 1.0 )
-                SetLinearUnits( SRS_UL_METER, 1.0 );
+            const LinearUnitsStruct* psLinearUnits = GetLinearFromLinearConvOrName( dfValue, pszValue );
+            if( psLinearUnits != NULL )
+            {
+                SetLinearUnits( psLinearUnits->pszWKTName, 
+                                CPLAtof(psLinearUnits->pszValueInMeter) );
+            }
             else
                 SetLinearUnits( "unknown", CPLAtofM(pszValue) );
         }
@@ -1143,76 +1238,12 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
         */
         else if( (pszValue = CSLFetchNameValue(papszNV, "units")) != NULL )
         {
-            if( EQUAL(pszValue,"meter" ) || EQUAL(pszValue,"m") || EQUAL(pszValue,"metre") )
-                SetLinearUnits( SRS_UL_METER, 1.0 );
-            /*
-            ** Leave as 'kilometre' instead of SRS_UL_KILOMETER due to
-            ** historical usage
-            */
-            else if( EQUAL( pszValue,"km") )
-                SetLinearUnits( "kilometre",
-                                CPLAtof( SRS_UL_KILOMETER_CONV ) );
-            else if( EQUAL( pszValue,"us-ft" ) )
-                SetLinearUnits( SRS_UL_US_FOOT,
-                                CPLAtof( SRS_UL_US_FOOT_CONV ) );
-            /*
-            ** Leave as 'Foot (International)' or SRS_UL_FOOT instead of
-            ** SRS_UL_INTL_FOOT due to historical usage
-            */
-            else if( EQUAL( pszValue,"ft" ) )
-                SetLinearUnits( SRS_UL_FOOT,
-                                CPLAtof( SRS_UL_FOOT_CONV) );
-            else if( EQUAL( pszValue,"yd" ) )
-                SetLinearUnits( SRS_UL_INTL_YARD,
-                                CPLAtof( SRS_UL_INTL_YARD_CONV ) );
-            else if( EQUAL( pszValue,"us-yd" ) )
-                SetLinearUnits( SRS_UL_US_YARD,
-                                CPLAtof( SRS_UL_US_YARD_CONV ) );
-            else if( EQUAL( pszValue,"dm" ) )
-                SetLinearUnits( SRS_UL_DECIMETER,
-                                CPLAtof( SRS_UL_DECIMETER_CONV ) );
-            else if( EQUAL( pszValue,"cm" ) )
-                SetLinearUnits( SRS_UL_CENTIMETER,
-                                CPLAtof( SRS_UL_CENTIMETER_CONV ) );
-            else if( EQUAL( pszValue,"mm" ) )
-                SetLinearUnits( SRS_UL_MILLIMETER,
-                                CPLAtof( SRS_UL_MILLIMETER_CONV ) );
-            else if( EQUAL( pszValue,"kmi" ) )
-                SetLinearUnits( SRS_UL_INTL_NAUT_MILE,
-                                CPLAtof( SRS_UL_INTL_NAUT_MILE_CONV ) );
-            else if( EQUAL( pszValue,"in" ) )
-                SetLinearUnits( SRS_UL_INTL_INCH,
-                                CPLAtof( SRS_UL_INTL_INCH_CONV ) );
-            else if( EQUAL( pszValue,"mi" ) )
-                SetLinearUnits( SRS_UL_INTL_STAT_MILE,
-                                CPLAtof( SRS_UL_INTL_STAT_MILE_CONV ) );
-            else if( EQUAL( pszValue,"fath" ) )
-                SetLinearUnits( SRS_UL_INTL_FATHOM,
-                                CPLAtof( SRS_UL_INTL_FATHOM_CONV ) );
-            else if( EQUAL( pszValue,"ch" ) )
-                SetLinearUnits( SRS_UL_INTL_CHAIN,
-                                CPLAtof( SRS_UL_INTL_CHAIN_CONV ) );
-            else if( EQUAL( pszValue,"link" ) )
-                SetLinearUnits( SRS_UL_INTL_LINK,
-                                CPLAtof( SRS_UL_INTL_LINK_CONV ) );
-            else if( EQUAL( pszValue,"us-in" ) )
-                SetLinearUnits( SRS_UL_US_INCH,
-                                CPLAtof( SRS_UL_US_INCH_CONV ) );
-            else if( EQUAL( pszValue, "us-ch" ) )
-                SetLinearUnits( SRS_UL_US_CHAIN,
-                                CPLAtof( SRS_UL_US_CHAIN_CONV ) );
-            else if( EQUAL( pszValue, "us-mi" ) )
-                SetLinearUnits( SRS_UL_US_STAT_MILE,
-                                CPLAtof( SRS_UL_US_STAT_MILE_CONV ) );
-            else if( EQUAL( pszValue, "ind-yd" ) )
-                SetLinearUnits( SRS_UL_INDIAN_YARD,
-                                CPLAtof( SRS_UL_INDIAN_YARD_CONV ) );
-            else if( EQUAL( pszValue, "ind-ft" ) )
-                SetLinearUnits( SRS_UL_INDIAN_FOOT,
-                                CPLAtof( SRS_UL_INDIAN_FOOT_CONV ) );
-            else if( EQUAL( pszValue, "ind-ch" ) )
-                SetLinearUnits( SRS_UL_INDIAN_CHAIN,
-                                CPLAtof( SRS_UL_INDIAN_CHAIN_CONV ) );
+            const LinearUnitsStruct* psLinearUnits = GetLinearFromProjName( pszValue );
+            if( psLinearUnits != NULL )
+            {
+                SetLinearUnits( psLinearUnits->pszWKTName, 
+                                CPLAtof(psLinearUnits->pszValueInMeter) );
+            }
             else // This case is untranslatable.  Should add all proj.4 unts
                 SetLinearUnits( pszValue, 1.0 );
         }
@@ -1284,21 +1315,11 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
         if( pszValue != NULL && CPLAtofM(pszValue) > 0.0 )
         {
             const double dfValue = CPLAtofM(pszValue);
-
-            if( fabs(dfValue - CPLAtof(SRS_UL_US_FOOT_CONV)) < 0.00000001 )
+            const LinearUnitsStruct* psLinearUnits = GetLinearFromLinearConvOrName( dfValue, pszValue );
+            if( psLinearUnits != NULL )
             {
-                pszUnitName = SRS_UL_US_FOOT;
-                pszUnitConv = SRS_UL_US_FOOT_CONV;
-            }
-            else if( fabs(dfValue - CPLAtof(SRS_UL_FOOT_CONV)) < 0.00000001 )
-            {
-                pszUnitName = SRS_UL_FOOT;
-                pszUnitConv = SRS_UL_FOOT_CONV;
-            }
-            else if( dfValue == 1.0 )
-            {
-                pszUnitName = SRS_UL_METER;
-                pszUnitConv = "1.0";
+                pszUnitName = psLinearUnits->pszWKTName, 
+                pszUnitConv = psLinearUnits->pszValueInMeter;
             }
             else
             {
@@ -1308,30 +1329,16 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
         }
         else if( (pszValue = CSLFetchNameValue(papszNV, "vunits")) != NULL )
         {
-            if( EQUAL(pszValue,"meter" ) || EQUAL(pszValue,"m") || EQUAL(pszValue,"metre") )
+            const LinearUnitsStruct* psLinearUnits = GetLinearFromProjName( pszValue );
+            if( psLinearUnits != NULL )
             {
-                pszUnitName = SRS_UL_METER;
-                pszUnitConv = "1.0";
+                pszUnitName = psLinearUnits->pszWKTName, 
+                pszUnitConv = psLinearUnits->pszValueInMeter;
             }
-            else if( EQUAL(pszValue,"us-ft" ) )
+            else
             {
-                pszUnitName = SRS_UL_US_FOOT;
-                pszUnitConv = SRS_UL_US_FOOT_CONV;
-            }
-            else if( EQUAL(pszValue,"ft" ) )
-            {
-                pszUnitName = SRS_UL_FOOT;
-                pszUnitConv = SRS_UL_FOOT_CONV;
-            }
-            else if( EQUAL(pszValue,"yd" ) )
-            {
-                pszUnitName = "Yard";
-                pszUnitConv = "0.9144";
-            }
-            else if( EQUAL(pszValue,"us-yd" ) )
-            {
-                pszUnitName = "US Yard";
-                pszUnitConv = "0.914401828803658";
+                pszUnitName = "unknown";
+                pszUnitConv = pszValue;
             }
         }
 
@@ -1383,54 +1390,6 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
 
     return OGRERR_NONE;
 }
-
-/************************************************************************/
-/*                           LinearToProj4()                            */
-/************************************************************************/
-
-static const char *LinearToProj4( double dfLinearConv, 
-                                  const char *pszLinearUnits )
-
-{
-    if( dfLinearConv == 1.0 )
-        return "m";
-
-    else if( dfLinearConv == 1000.0 )
-        return "km";
-
-    else if( dfLinearConv == 0.0254 )
-        return "in";
-
-    else if( EQUAL(pszLinearUnits,SRS_UL_FOOT) 
-             || fabs(dfLinearConv - CPLAtof(SRS_UL_FOOT_CONV)) < 0.000000001 )
-        return "ft";
-
-    else if( EQUAL(pszLinearUnits,"IYARD") || dfLinearConv == 0.9144 )
-        return "yd";
-
-    else if( dfLinearConv == 0.914401828803658 )
-        return "us-yd";
-
-    else if( dfLinearConv == 0.001 )
-        return "mm";
-
-    else if( dfLinearConv == 0.01 )
-        return "cm";
-
-    else if( EQUAL(pszLinearUnits,SRS_UL_US_FOOT) 
-             || fabs(dfLinearConv - CPLAtof(SRS_UL_US_FOOT_CONV)) < 0.00000001 )
-        return "us-ft";
-
-    else if( EQUAL(pszLinearUnits,SRS_UL_NAUTICAL_MILE) )
-        return "kmi";
-
-    else if( EQUAL(pszLinearUnits,"Mile") 
-             || EQUAL(pszLinearUnits,"IMILE") )
-        return "mi";
-    else
-        return NULL;
-}
-
 
 /************************************************************************/
 /*                          OSRExportToProj4()                          */
@@ -1595,7 +1554,7 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
         int bNorth;
         const int nZone = GetUTMZone( &bNorth );
 
-        if( CSLTestBoolean(CPLGetConfigOption("OSR_USE_ETMERC", "FALSE")) )
+        if( CPLTestBool(CPLGetConfigOption("OSR_USE_ETMERC", "FALSE")) )
         {
             CPLsnprintf( szProj4+strlen(szProj4), sizeof(szProj4)-strlen(szProj4),
                      "+proj=etmerc +lat_0=%.16g +lon_0=%.16g +k=%.16g +x_0=%.16g +y_0=%.16g ",
@@ -2191,6 +2150,16 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
                  GetNormProjParm(SRS_PP_CENTRAL_MERIDIAN,0.0) );
     }
 
+    else if ( EQUAL(pszProjection, SRS_PT_SCH) )
+    {
+        CPLsnprintf( szProj4+strlen(szProj4), sizeof(szProj4)-strlen(szProj4),
+                "+proj=sch +plat_0=%.16g +plon_0=%.16g +phdg_0=%.16g +h_0=%.16g ",
+                GetNormProjParm(SRS_PP_PEG_POINT_LATITUDE, 0.0),
+                GetNormProjParm(SRS_PP_PEG_POINT_LONGITUDE, 0.0),
+                GetNormProjParm(SRS_PP_PEG_POINT_HEADING, 0.0),
+                GetNormProjParm(SRS_PP_PEG_POINT_HEIGHT, 0.0) );
+    }
+
     /* Note: This never really gets used currently.  See bug 423 */
     else if( EQUAL(pszProjection,SRS_PT_SWISS_OBLIQUE_CYLINDRICAL) )
     {
@@ -2458,7 +2427,7 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
     }
 
     if( pszPROJ4Datum == NULL 
-        || CSLTestBoolean(CPLGetConfigOption("OVERRIDE_PROJ_DATUM_WITH_TOWGS84", "YES")) )
+        || CPLTestBool(CPLGetConfigOption("OVERRIDE_PROJ_DATUM_WITH_TOWGS84", "YES")) )
     {
         if( poTOWGS84 != NULL )
         {
@@ -2580,7 +2549,12 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
         pszPROJ4Units = NULL;
     else
     {
-        pszPROJ4Units = LinearToProj4( dfLinearConv, pszLinearUnits );
+        const LinearUnitsStruct* psLinearUnits = GetLinearFromLinearConvOrName(
+                                                dfLinearConv, pszLinearUnits );
+        if( psLinearUnits != NULL )
+            pszPROJ4Units = psLinearUnits->pszProjName;
+        else
+            pszPROJ4Units = NULL;
 
         if( pszPROJ4Units == NULL )
         {
@@ -2626,8 +2600,13 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
 
         dfLinearConv = CPLAtof( poVUNITS->GetChild(1)->GetValue() );
 
-        pszPROJ4Units = LinearToProj4( dfLinearConv,
-                                       poVUNITS->GetChild(0)->GetValue() );
+        const LinearUnitsStruct* psLinearUnits = GetLinearFromLinearConvOrName(
+                                                dfLinearConv,
+                                                poVUNITS->GetChild(0)->GetValue() );
+        if( psLinearUnits != NULL )
+            pszPROJ4Units = psLinearUnits->pszProjName;
+        else
+            pszPROJ4Units = NULL;
 
         if( pszPROJ4Units == NULL )
         {

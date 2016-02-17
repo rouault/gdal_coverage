@@ -111,7 +111,7 @@ EIRDataset::~EIRDataset()
     }
 
     if( fpImage != NULL )
-        VSIFCloseL( fpImage );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpImage ));
 
     CSLDestroy( papszHDR );
     CSLDestroy( papszExtraFiles );
@@ -376,7 +376,7 @@ GDALDataset *EIRDataset::Open( GDALOpenInfo * poOpenInfo )
                   papszTokens[1] );
                 CSLDestroy( papszTokens );
                 CSLDestroy( papszHDR );
-                VSIFCloseL( fp );
+                CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
                 return NULL;
             }
         }
@@ -393,7 +393,7 @@ GDALDataset *EIRDataset::Open( GDALOpenInfo * poOpenInfo )
         CSLDestroy( papszTokens );
     }
 
-    VSIFCloseL( fp );
+    CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
 
 
 /* -------------------------------------------------------------------- */
@@ -510,7 +510,7 @@ GDALDataset *EIRDataset::Open( GDALOpenInfo * poOpenInfo )
 
     if( !poDS->bGotTransform )
         poDS->bGotTransform = 
-            GDALReadWorldFile( poOpenInfo->pszFilename, 0, 
+            GDALReadWorldFile( poOpenInfo->pszFilename, NULL, 
                                poDS->adfGeoTransform );
 
     if( !poDS->bGotTransform )

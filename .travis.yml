@@ -1,11 +1,45 @@
 # This is the config file for building GDAL and running its autotest suite
 # with Travis-ci.org
 
+env:
+  global:
+#    - secure: "qSk1Cw+eGPKj4z4O9Fk+kjKM8nmEraKH659Sd2mIJMCj/YaZ2cX4lcojESc9\nFHE1qsLklwUmrzrIWkAirYY2HRGoxiltUda6lJBGcmApL3EM+Y9dl+CFwGM/\nV9G9xvffrWo1/f16GOP0AwzZFPAKQcM0nWCqzlsBr9DIFaH0Thg="
+     - secure: "pKo155GCdudC6XB1VxnH1GqQtmux3rt1FAtCBAKMpKpw1MhJaazi2V2oc07o\ni3oChZ2YCrTGwSuPHSLb/6MjPmkXcbe7BRcSJlfVZLwQcFw/4DjgvtOzUIDU\nZWlloy/x1sJdAxlnKzdCMICjORDuA3InIAlqJm3PmtBKChFoBv0="
+     - secure: "A99lzR/ATznrYU13SpYHwr4VbXStoR7vkQZITAXtL5j61+HEWwWh+TkK1Qch\nCI5HIV79rTp9r4iMB0H60e0+9qIOg600rPk18cgVAuyiZQ5979VgOBPrzzSl\nkvcWfXL/uJi3WgfrTaFr3bMSWwNZFKaXWt4096WQ1wWJraxpnz8="
+     - secure: "qMv73raW+OwAarMABOsVTSwBJ2RbPAaFAmVZaqSlRSZs/HurCTQY1J3RZnxL\nbeWvM6pjlzyvbrCKIqifyfbrw1yTCvcEqG63Mv2QlF8+u0wFNFHgh8f40zv1\nQDN/TtEoUE1LGd71UiNK/OQBPImlbKLsBpK4uTE23HwzsbdAeB0="
+     - secure: "SavvUxWGWzFj92NT80Dtr+SdRmg4o+0dkhWuM2p+oKXNlCHw0TGvjYsnPhGv\nH8JnX7/TaxhAe5CzvgUD/upCmba5hrD9m5Hsa6laq4V8JSnkop/HBs53nfVf\nSDggnsZ8P/lPL2ue6VkilQA6PgjRNOC07HS+YQRQVbfM+wOMFdk="
+     - secure: "iXrquUpfLEdwfpzRWzlvn+RJKKN3kK38dDCUrP6U9PwXzDesuBVu/Hod5Qc3\ndWC/vl4Y7nuos5/R6jtOUsQ6+7eLLMTvd1UjgYlS6UI4WcgTp8pqPQPZwKWB\nOJw7rSDBE23R0cYzuf7WbMKFM7KyG55eB072ijcLtndP4H+DGrY="
+     - secure: "EktJ8MEgn2fFH0xkBjfZEQSs+ghQWHjdhRpEwa63af0J3Edk8V9x+7Wzq8+1\nyKWtd7sQ3f1xdnE8qgRAs1Vb9F4F+K8pTA/8XKVp45q+0eoWBzl4bX9SiVBY\nF1V972cs3qnnmw7Htflon2msm1uOjUDUW3zHPWI8QbxS9lpqRVo="
+     - secure: "o+KFyDN5zNt4nkWwyjlAcLk5Uh0467joqXc7ZEFzp0EVTfNoAoU+XezzGqA5\n7AYuNmhGrSt8K2034RgwiHiJ0p4bgr3C4b3+RdOxvYFuWlAPDYtjBhcuaYKG\nQw26JvRwdcCnTVMHkioJ754mEE3LLxtpVojcKWrHI/reDTmBW1Q="
+     - secure: "mhl6sV/zZ2cpQnFcaCcDktGV2JcnQolkiwI8Xs+AyZRQVfczuOZLSMjllKY8\nyv/SyBKC+H6im56kTFtw24QXdi7E25MXe6X0eC8pK8SMP3BZkK4juJ3yG3ji\nafIX9NW4QHp1A2Ji9HPufoZGEpB5by2HodjGMsqzKl7rLfytB4c="
+     - secure: "A1gt4D24uFQw7dfmPajc+jtCy1rKvrPpmvApDlDfuxHJNj69q6KSzEhJgJmA\necXPK0KEWpXOjPIhilBP1KEx2kdPiH7eCtKg5fgrAz3m/N7Ddz/R+rH0vMfs\nfQCDF9o6Yw7J2YEF0clz7cQYg//Z4VQ1bCJDhhXwsVORb2k1rEQ="
+     - secure: "ecwrmNPHoemp7QKJvU/KA/MBwQ4upgdmuReHOTpmuPtfGf6Sf8mo9pE52psI\nJLvNzw9W5uS0OAa6nE2RwJWtwyLfJfal0tEVNJCPs30ODgqk/mLl2ssgYLdK\nvzAd/v0eptIIrs+QnNcJf1KI5CvecFiIXADtCfEfyx+ohi04aU0="
+     - secure: "g0FeahxTIzeheh+bIqKbteuiuTF8R3IuJirgOAySnpHFAsR7dHP9yptxqYLa\najd14pZbdePtUZdVyQR+C9Tf93h2zVLLXdnKP02wF5STNII+Elc4y1/uCYHy\nwFzn+n6r07QwXY8dzWNwFuy0iBsp8yQX2TOIecxjYS5uvgTtSi0="
+     - secure: "PRGaN4eGUyNP6ov1DJeUrbZHjwbmMhDb7GMOeG3MDEawjDnokfBnfgj0bFBu\nTRyUDplocsuF4opgI/J8BTZ6KNJ2fbqdT1NtWR4cZ2lJPI516zN4nrHtPAXD\naq9bZ6XfKoA/00u3fWgQxKAotkegcKg0zHRLtEvc9CfYEkIyT64="
+     - secure: "Wt934SJOgCahBdqsC6uS4jF+kFTejxtklADnVxYpHLNsTRdiV0hHQ1eLi/Er\nU0tTy54dC0hDqDM0Onm1rhGXKmri4BEJOY6+YTpR15exfldGrAGA+Dtp+bN4\nk1aN9npWw1n3yjf5jGid24nSSog4ZyfCCUJkyL4wc97RsmRWLg8="
+     - secure: "Na/tdryFC2nNBac11kcSv1/IEErqs2BwStiotfr1MHhW4Uv6OTlEVHXLKgRS\nbcF+hXpj7XXo7V/hWTZDhylog1OW0+HAGaogywehhr7qJiMFxWuQMiCqQ+fk\n0ABkAFUBQr0KQlfMANF41H/6jrnQ9n3DEVhTnhu9Ndj2jlKRCHY="
+     - secure: "V+wB+Pe1TMO6grQ3t2LzJxUk/8SJmyYE8ITVtCQgfWH/cqItlH/D9YQfrGCP\n3e3E5tApdNRO8K6mwj6/2zXd6yOSEQ5n4bUCZtXiLxQXYgW/4keULHDOqnZ1\nX12zFn6B//h98hTLqwePRZG8hJjgFPK3XD1j4rWyNLELESX+Sas="
+     - secure: "o0+4uYGJ0PBSnaJvRli3FdmqZKPi1TMGedVXAbDtw/NdHpfyLrxQa6emHP/J\nw3AkO43pHsXlhT5Yy+2xLBL/WAjYtoetNFhYFGNkUSwI10fY9V2n9rYrLr6L\n9GDR4xOqdU94BImkv3g++mCcIvDzYFT6rGHqW0MZzQeIucuGlGg="
+     - secure: "HA7s6JCFCwv9D3ggSKsbuvPT2DkK+hSLcvWd69QJifObA/71EtmW2jG7G75s\nxzXmfQ6NaJ3xUhZtdZXmi1v9NK9j2X0nqeitLBZgsQkB/hnd+ZJn1SPHtgFw\nzAJcrSYMnPBqjAIyien7Gs7VnSFMxXOTdd8s7p5wRNXD98p5ZYw="
+     - secure: "k4mfU4wN83qLqJf9cUVogHsJjsx3/OWVXbkiy29nx+oBmgt1R+puS8kz7bsJ\nC0/1kWQe2lIeqVPqLH9vFmXfsIf6enDGs/dqhn7S5E0/F0+C8D7Y+7B4CFVz\nP/aRdbuMPmWS8KndoAPPq7nHMpL10G1SpeMYADi5bkWFEacL1EE="
+     - secure: "j3y3/fSgj/izOSuh+THcT+JUFKqzY6C95wPqt96u58qXGgIC51aROZBJAEPA\ngUmgzYsoCrl2rcGbYLfY8fMwLp3gLcyktE73TqIz7Stz+qOBqikrWmGk0bXt\nt0PpEmU6wfLFK0DuV14XgSPL+nBvA0H9tUQxyVsHJ990bKgAQXU="
+     - secure: "pFUGPNQYowejfcSzbLLrdmvBRyJNwTTaxda4RlcxZDxzud90GiEZK52WSZzg\ng+Z/bGEm0RnLA8yISPC08Ly0BGlE91OF6w2lobQx+iTDdvQ+hoZhh8773f9X\nxOQ9og7U5IYeoDOc3HKHbukFRbaxijqpRNirZsILNT1EPwOse9c="
+     - secure: "T0yh9odLC1bjRE3pm0Od/FlKHu1fME21gfUlS4TaX3XxZlIr0nfw9U68g0Pd\nNMFGbFUyDZ1VSxWLHU3QJAGbVeU3YC9lFM8MI3C/Tdf5rTowZrV8F907RUkh\n56k3VbZr20vlh1D/C3tXT4AnkjgytaSGAZJa/DowcT5ymCkw+oI="
+     - secure: "ZsnBq62z/hlduTrhkN3vQadRVSyLfSY6gbGwVw0r+Gg9lcOvzz69jgY9AwKC\nFpC2UFHzfYUPcEzAL1AC9H8DjzD9ehYFfWC7mBEm9ungl3CAEM+5dfs6g7cM\n8/0HoWQs61qv1GsUhzEzQ3Lu3Y+xDCtlqxNcAVnP0UgdLumHpTM="
+     - secure: "eSN2IZKu+V2Naar/xQK8bnge+kfIbB6Qp6rDd6E95wyA3Jkn+Ty1EQsXHDy5\nCZIxTUAJ87g5wSlasBFblpD1eqi1iIvSEkAIqYyFvVF8tQb05ZunMg+CPii9\nD7/sbgsLF6X6R9QsmSVHrSoW+QIV+3mQehU7rjv5f3kjl2G5EFU="
+     - secure: "ZwllGspe+QCl0KXAXL5y3/xyox5h62MT4UaTmMbg4YnajCufSd0e2RPW5kfO\nF2rCTZ/OGwriLgnvjWjXbdTbDkz/y8eJcKk5wHGamfsjl5Ka9BB0hpfsV8b9\nD+ww1io0rlAc/vG83fvXuLKh03BkgcY01RIraa0e1n+Ho2Ye8Eo="
+     - secure: "NWJvIdNLAqAGlrynrMRxD8ySwYtPX97LhktjsT+dpx2OjLrzPQWcG3K9xSiF\n7vvwWUJev5RmZi1T/WOiKHObROVu9wGHL2ZgwBN0V0O/SH1BAO7fLQtXi/hV\nAWIjsEaSuEYXswu5apDruMsp6llmqb4d1gTXdfbfYk/t3zc+FtI="
+     - secure: "SVJnTsVPRZHMsWrT5i+rbJErHB4EzwQcZhLAucsM4JVurrX80J8Pe6JplqZd\n/K3l97/zvCGSRE1187vSskRGlhjzWLzG/8arB/dvIsBtrK3K6DHHMDQoW+p+\nDo3Ankl/cHjoCazYlsqfIpKc8ts/dqZP7IhTgxI6XzILh7ROm6Q="
+     - secure: "GmwheOEK/zUViqHiDTfoxGMsHkahZ2riZLTvhJZgkrHKArug5WWMGdIacMmn\nIcDg3mzCTnGJZwECwUIdfKZzPWx4YBn1UD4rHJNPc8lleRlRLHb5yXT2mheO\nD0zE9OUG42CiIzI18T7uITa7Wakygg8JnIPOVBJjC+Sxq6oRTFE="
+     - secure: "jisEtyI4usR/vM57wiJW/azOH8pCOyn8FZu0doSB0WzQsRH47tKTTBN3Zhq3\noR9dxqzHTceOvn45zd3Zqp6u/qImq1KSdVnn+WTemvsuiLKlO+Pxs5ImrS92\nRjHtXOLoVx4HtcCihUw0vP+oWzhATMzPFQCap6XGhYWGXxJOXyk="
+     - secure: "YoqaPxLhJkf8ewrXPcfFHRxR3OJK63VHhoOTMyEvRA71fRtSJ1iTmUK7J82y\ncjNlWDB1anVDLgh7/HlLnNz4oW2y78Ym70jNHWKEMeUInOZ60DzMj4GIJLKX\n/T3t3mDQIUOosTLDVqDonQ+00ky/nHK7O+uoSnuGyYxyuewlWfw="
+     - secure: "ccNLg5jNh0Y3qfRfZTGzL1LdRGZFkqZz3V8KMeoftu9t7s0l7b7w46+A721+\nE+98/XqN6OVJ5YlZX3IFJqL0pkFklLfP+TE+yajrGwtfThLJ7ZBeAshY/Je8\nlP5uCynzsNx/pLswF2mjGQZddcK04mCbEABXfsquutr3FV4PkOc="
+
 language: cpp
 
-# We use clang, --without-libtool and --with-debug for faster build
+# We use --without-libtool and --with-debug for faster build
 compiler:
-  - clang
+  - gcc
 
 # remove libogdi3.2-dev : it pulls projects.h from PROJ.4 which no longer exists
 before_install:
@@ -23,6 +57,12 @@ before_install:
   - pyflakes autotest
   - pyflakes gdal/swig/python/scripts
   - pyflakes gdal/swig/python/samples
+# For cfchecks
+  - sudo apt-get install libudunits2-dev udunits-bin
+  - pip install --user cdat-lite
+  - mkdir -p autotest/gdrivers/tmp/cache
+  - wget http://cfconventions.org/Data/cf-standard-names/current/src/cf-standard-name-table.xml -O autotest/gdrivers/tmp/cache/cf-standard-name-table-v18.xml
+#
   - psql -c "drop database if exists autotest" -U postgres
   - psql -c "create database autotest" -U postgres
   - psql -c "create extension postgis" -d autotest -U postgres
@@ -55,6 +95,23 @@ before_install:
   - tar xzf mongo-cxx-1.0.2-install-ubuntu12.04-64bit.tar.gz
   - sudo cp -r mongo-cxx-1.0.2-install/include/* /usr/local/include
   - sudo cp -r mongo-cxx-1.0.2-install/lib/* /usr/local/lib
+# oracle stuff
+  - curl -L -o instantclient-sdk-linux.x64-11.2.0.4.0.zip "$INSTANT_SDK"
+  - curl -L -o instantclient-linux.x64-11.2.0.4.0.zip "$INSTANT_CLIENT"
+  - unzip instantclient-sdk-linux.x64-11.2.0.4.0.zip
+  - unzip instantclient-linux.x64-11.2.0.4.0.zip
+  - cd instantclient_11_2
+  - ln -s libclntsh.so.11.1 libclntsh.so
+  - ln -s libocci.so.11.1 libocci.so
+  - ln -s . Lib 
+  - ln -s . lib 
+  - cd .. 
+  - sudo mv instantclient_11_2 /usr/.
+  - sudo apt-get install libaio1
+  - export ORACLE_HOME=/usr/instantclient_11_2/
+  - export PATH=$PATH:/usr/instantclient_11_2/
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/instantclient_11_2/
+# end of oracle stuff
   - wget https://bitbucket.org/chchrsc/kealib/get/c6d36f3db5e4.zip
   - unzip c6d36f3db5e4.zip
   - cd chchrsc-kealib-c6d36f3db5e4/trunk
@@ -63,13 +120,21 @@ before_install:
   - sudo make install
   - cd ../..
   - sudo ldconfig
+# coverage
+  - sudo apt-get install -qq curlftpfs lcov
+#  - sudo pip install cpp-coveralls --use-mirrors
+  - cd gdal
+  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/coverage_r32657.patch -O coverage.patch
+  - wget http://trac.osgeo.org/gdal/raw-attachment/wiki/AutotestStatus/filter_info.c
+  - patch -p0 < coverage.patch
+  - cd ..
 
 # installing PostGIS 2 from Ubuntu PPA draws libgdal1.9 dependency. We must install ourselves
 # in /usr too to avoid gdal version conflict. Might be fragile however
 
 install:
   - cd gdal
-  - ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-python --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-mongocxx=/usr/local
+  - ./configure --prefix=/usr --without-libtool --enable-debug --with-oci=/usr/instantclient_11_2 --with-jpeg12 --with-python --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-libtiff=internal --with-rename-internal-libtiff-symbols --with-hide-internal-symbols --with-mongocxx=/usr/local --with-gnm
   - make USER_DEFS="-Wextra -Werror" -j3
   - cd apps
   - make USER_DEFS="-Wextra -Werror" test_ogrsf
@@ -86,6 +151,8 @@ install:
   - sudo rm -f /usr/lib/libgdal.so*
   - sudo make install
   - sudo ldconfig
+  - g++ -Wall -DDEBUG -fPIC -g ogr/ogrsf_frmts/null/ogrnulldriver.cpp  -shared -o ogr_NULL.so -L. -lgdal -Iport -Igcore -Iogr -Iogr/ogrsf_frmts
+  - GDAL_DRIVER_PATH=$PWD ogr2ogr -f null null ../autotest/ogr/data/poly.shp
   - cd ../autotest/cpp
   - make -j3
   - cd ../../gdal
@@ -101,9 +168,9 @@ script:
   - make test
   - cd ../..
 # Java unit tests
-  - cd swig/java
-  - make test
-  - cd ../..
+#  - cd swig/java
+#  - make test
+#  - cd ../..
 # CPP unit tests
   - cd ../autotest
   - cd cpp
@@ -131,19 +198,26 @@ script:
   - mv ogr_pgeo.* disabled
   - cd ..
 # Run all the Python autotests
-  - GDAL_SKIP="JP2ECW ECW" python run_all.py
+  - python run_all.py
 # A bit messy, but force testing with libspatialite 4.0dev (that has been patched a bit to remove any hard-coded SRS definition so it is very small)
   - cd ogr
   - wget http://s3.amazonaws.com/etc-data.koordinates.com/gdal-travisci/libspatialite4.0dev_ubuntu12.04-64bit_srs_stripped.tar.gz
   - tar xzf libspatialite4.0dev_ubuntu12.04-64bit_srs_stripped.tar.gz
   - ln -s install-libspatialite-4.0dev/lib/libspatialite.so.5.0.1 libspatialite.so.3
-  - LD_LIBRARY_PATH=$PWD python ogr_sqlite.py
+  - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD python ogr_sqlite.py
   - cd ..
 
+after_success: 
+- cd ../gdal
+- sudo cp ../coverage.py /usr/local/lib/python2.7/dist-packages/coveralls
+- echo "$TRAVIS_SECURE_ENV_VARS"
+- sh -c 'if test "$TRAVIS_SECURE_ENV_VARS" = "true"; then echo "run coverage"; ./run_code_coverage_upload.sh; fi'
+#- coveralls --exclude swig
+
 notifications:
-  email:
-    recipients:
-      - gdal-commits@lists.osgeo.org
+#  email:
+#    recipients:
+#      - gdal-commits@lists.osgeo.org
 
   irc:
     channels:

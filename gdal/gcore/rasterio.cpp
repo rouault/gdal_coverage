@@ -71,6 +71,11 @@ CPLErr GDALRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         eFlushBlockErr = CE_None;
         return eErr;
     }
+    if( nBlockXSize <= 0 || nBlockYSize <= 0 )
+    {
+        CPLError( CE_Failure, CPLE_AppDefined, "Invalid block size" );
+        return CE_Failure;
+    }
 
 /* ==================================================================== */
 /*      A common case is the data requested with the destination        */
@@ -223,7 +228,7 @@ CPLErr GDALRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         nBufXSize < nXSize / 100 && nBufYSize < nYSize / 100 &&
         nPixelSpace == nBufDataSize &&
         nLineSpace == nPixelSpace * nBufXSize &&
-        CSLTestBoolean(CPLGetConfigOption("GDAL_NO_COSTLY_OVERVIEW", "NO")) )
+        CPLTestBool(CPLGetConfigOption("GDAL_NO_COSTLY_OVERVIEW", "NO")) )
     {
         memset(pData, 0, (size_t)(nLineSpace * nBufYSize));
         return CE_None;
@@ -2206,11 +2211,11 @@ static inline void GDALFastByteCopy(GByte* CPL_RESTRICT pabyDest,
  * less the 0 to be set to 0, and values larger than 255 to be set to 255. 
  * Assignment from floating point to integer uses default C type casting
  * semantics.   Assignment from non-complex to complex will result in the 
- * imaginary part being set to zero on output.  Assigment from complex to 
+ * imaginary part being set to zero on output.  Assignment from complex to 
  * non-complex will result in the complex portion being lost and the real
  * component being preserved (<i>not magnitidue!</i>). 
  *
- * No assumptions are made about the source or destination words occuring
+ * No assumptions are made about the source or destination words occurring
  * on word boundaries.  It is assumed that all values are in native machine
  * byte order. 
  *
@@ -3458,7 +3463,7 @@ CPLErr CPL_STDCALL GDALDatasetCopyWholeRaster(
     /* disk space (GTiff case for example), and to avoid data loss (JPEG compression for example) */
     int bDstIsCompressed = FALSE;
     const char* pszDstCompressed= CSLFetchNameValue( papszOptions, "COMPRESSED" );
-    if (pszDstCompressed != NULL && CSLTestBoolean(pszDstCompressed))
+    if (pszDstCompressed != NULL && CPLTestBool(pszDstCompressed))
         bDstIsCompressed = TRUE;
 
 /* -------------------------------------------------------------------- */
@@ -3710,7 +3715,7 @@ CPLErr CPL_STDCALL GDALRasterBandCopyWholeRaster(
     /* disk space (GTiff case for example), and to avoid data loss (JPEG compression for example) */
     int bDstIsCompressed = FALSE;
     const char* pszDstCompressed= CSLFetchNameValue( papszOptions, "COMPRESSED" );
-    if (pszDstCompressed != NULL && CSLTestBoolean(pszDstCompressed))
+    if (pszDstCompressed != NULL && CPLTestBool(pszDstCompressed))
         bDstIsCompressed = TRUE;
 
 /* -------------------------------------------------------------------- */

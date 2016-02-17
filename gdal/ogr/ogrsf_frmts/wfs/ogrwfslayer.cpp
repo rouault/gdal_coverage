@@ -297,12 +297,12 @@ OGRFeatureDefn* OGRWFSLayer::ParseSchema(CPLXMLNode* psSchema)
     }
     else if (bHaveSchema)
     {
-        std::vector<GMLFeatureClass*>::const_iterator iter = aosClasses.begin();
-        std::vector<GMLFeatureClass*>::const_iterator eiter = aosClasses.end();
-        while (iter != eiter)
+        std::vector<GMLFeatureClass*>::const_iterator oIter = aosClasses.begin();
+        std::vector<GMLFeatureClass*>::const_iterator oEndIter = aosClasses.end();
+        while (oIter != oEndIter)
         {
-            GMLFeatureClass* poClass = *iter;
-            iter ++;
+            GMLFeatureClass* poClass = *oIter;
+            oIter ++;
             delete poClass;
         }
     }
@@ -730,14 +730,14 @@ GDALDataset* OGRWFSLayer::FetchGetFeature(int nRequestMaxFeatures)
     /* that we are able to understand */
     CPLString osXSDFileName = CPLSPrintf("/vsimem/tempwfs_%p/file.xsd", this);
     VSIStatBufL sBuf;
-    if (CSLTestBoolean(CPLGetConfigOption("OGR_WFS_USE_STREAMING", "YES")) &&
+    if (CPLTestBool(CPLGetConfigOption("OGR_WFS_USE_STREAMING", "YES")) &&
         (osOutputFormat.size() == 0 || osOutputFormat.ifind("GML") != std::string::npos) &&
         VSIStatL(osXSDFileName, &sBuf) == 0 && GDALGetDriverByName("GML") != NULL)
     {
         const char* pszStreamingName = CPLSPrintf("/vsicurl_streaming/%s",
                                                     osURL.c_str());
         if( STARTS_WITH(osURL, "/vsimem/") &&
-            CSLTestBoolean(CPLGetConfigOption("CPL_CURL_ENABLE_VSIMEM", "FALSE")) )
+            CPLTestBool(CPLGetConfigOption("CPL_CURL_ENABLE_VSIMEM", "FALSE")) )
         {
             pszStreamingName = osURL.c_str();
         }
@@ -824,7 +824,7 @@ GDALDataset* OGRWFSLayer::FetchGetFeature(int nRequestMaxFeatures)
     GByte *pabyData = psResult->pabyData;
     int    nDataLen = psResult->nDataLen;
     int bIsMultiPart = FALSE;
-    const char* pszAttachementFilename = NULL;
+    const char* pszAttachmentFilename = NULL;
 
     if(strstr(pszContentType,"multipart")
         && CPLHTTPParseMultipartMime(psResult) )
@@ -836,12 +836,12 @@ GDALDataset* OGRWFSLayer::FetchGetFeature(int nRequestMaxFeatures)
         for(i=0;i<psResult->nMimePartCount;i++)
         {
             CPLString osTmpFileName = osTmpDirName + "/";
-            pszAttachementFilename =
+            pszAttachmentFilename =
                 OGRWFSFetchContentDispositionFilename(
                     psResult->pasMimePart[i].papszHeaders);
 
-            if (pszAttachementFilename)
-                osTmpFileName += pszAttachementFilename;
+            if (pszAttachmentFilename)
+                osTmpFileName += pszAttachmentFilename;
             else
                 osTmpFileName += CPLSPrintf("file_%d", i);
 
@@ -857,7 +857,7 @@ GDALDataset* OGRWFSLayer::FetchGetFeature(int nRequestMaxFeatures)
         }
     }
     else
-        pszAttachementFilename =
+        pszAttachmentFilename =
                 OGRWFSFetchContentDispositionFilename(
                     psResult->papszHeaders);
 
@@ -936,11 +936,11 @@ GDALDataset* OGRWFSLayer::FetchGetFeature(int nRequestMaxFeatures)
             osTmpFileName = osTmpDirName + "/file.kmz";
         /* GML is a special case. It needs the .xsd file that has been saved */
         /* as file.xsd, so we cannot used the attachment filename */
-        else if (pszAttachementFilename &&
-                 !EQUAL(CPLGetExtension(pszAttachementFilename), "GML"))
+        else if (pszAttachmentFilename &&
+                 !EQUAL(CPLGetExtension(pszAttachmentFilename), "GML"))
         {
             osTmpFileName = osTmpDirName + "/";
-            osTmpFileName += pszAttachementFilename;
+            osTmpFileName += pszAttachmentFilename;
         }
         else
         {

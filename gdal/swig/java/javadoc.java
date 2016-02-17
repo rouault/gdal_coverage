@@ -2993,7 +2993,7 @@ public class Band:public int getDataType()
  * Fetch default raster histogram. 
  * <p>
  * The default method in GDALRasterBand will compute a default histogram. This
- * method is overriden by derived classes (such as GDALPamRasterBand, VRTDataset, HFADataset...)
+ * method is overridden by derived classes (such as GDALPamRasterBand, VRTDataset, HFADataset...)
  * that may be able to fetch efficiently an already stored histogram.
  * <p>
  * For example,
@@ -6056,7 +6056,7 @@ public class org.gdal.ogr.Driver:public int DeleteDataSource(String name)
  </ul>
  <p>
  The constant forms of the capability names should be used in preference
- to the strings themselves to avoid mispelling.
+ to the strings themselves to avoid misspelling.
 
  @param cap the capability to test.
 
@@ -6346,7 +6346,7 @@ public class DataSource:public int SyncToDisk()
  </ul>
  <p>
  The constant forms of the capability names should be used in preference
- to the strings themselves to avoid mispelling.
+ to the strings themselves to avoid misspelling.
 
  @param cap the capability to test.
 
@@ -10164,7 +10164,7 @@ public class SpatialReference
  * Constructor.
  * <p>
  * This constructor takes an optional string argument which if passed
- * should be a WKT representation of an SRS.  Passing this is equivelent
+ * should be a WKT representation of an SRS.  Passing this is equivalent
  * to not passing it, and then calling importFromWkt() with the WKT string.
  * <p>
  * Note that newly created objects are given a reference count of one. 

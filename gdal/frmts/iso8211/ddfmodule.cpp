@@ -58,7 +58,7 @@ DDFModule::DDFModule() :
     _inlineCodeExtensionIndicator = '\0';
     _versionNumber = '\0';
     _appIndicator = '\0';
-    _fieldControlLength = '\0';
+    _fieldControlLength = 9;
     strcpy( _extendedCharSet, " ! " );
 
     _recLength = 0;
@@ -102,7 +102,7 @@ void DDFModule::Close()
 /* -------------------------------------------------------------------- */
     if( fpDDF != NULL )
     {
-        VSIFCloseL( fpDDF );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpDDF ));
         fpDDF = NULL;
     }
 
@@ -191,7 +191,7 @@ int DDFModule::Open( const char * pszFilename, int bFailQuietly )
 
     if( (int)VSIFReadL( achLeader, 1, nLeaderSize, fpDDF ) != nLeaderSize )
     {
-        VSIFCloseL( fpDDF );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpDDF ));
         fpDDF = NULL;
 
         if( !bFailQuietly )
@@ -257,7 +257,7 @@ int DDFModule::Open( const char * pszFilename, int bFailQuietly )
 /* -------------------------------------------------------------------- */
     if( !bValid )
     {
-        VSIFCloseL( fpDDF );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fpDDF ));
         fpDDF = NULL;
 
         if( !bFailQuietly )
@@ -408,7 +408,6 @@ int DDFModule::Create( const char *pszFilename )
 /* -------------------------------------------------------------------- */
     int iField;
 
-    _fieldControlLength = 9;
     _recLength = 24 
         + nFieldDefnCount * (_sizeFieldLength+_sizeFieldPos+_sizeFieldTag) 
         + 1;
@@ -419,7 +418,7 @@ int DDFModule::Create( const char *pszFilename )
     {
         int nLength;
 
-        papoFieldDefns[iField]->GenerateDDREntry( NULL, &nLength );
+        papoFieldDefns[iField]->GenerateDDREntry( this, NULL, &nLength );
         _recLength += nLength;
     }
 
@@ -455,14 +454,14 @@ int DDFModule::Create( const char *pszFilename )
 
         CPLAssert(_sizeFieldLength + _sizeFieldPos + _sizeFieldTag < (int)sizeof(achDirEntry));
 
-        papoFieldDefns[iField]->GenerateDDREntry( NULL, &nLength );
+        papoFieldDefns[iField]->GenerateDDREntry( this, NULL, &nLength );
 
         CPLAssert( (int)strlen(papoFieldDefns[iField]->GetName()) == _sizeFieldTag );
         strcpy( achDirEntry, papoFieldDefns[iField]->GetName() );
         snprintf(szFormat, sizeof(szFormat), "%%0%dd", (int)_sizeFieldLength);
         snprintf( achDirEntry + _sizeFieldTag, sizeof(achDirEntry) - _sizeFieldTag,
                   szFormat, nLength );
-        snprintf(szFormat, sizeof(szFormat), "%%0%dd", (int)_sizeFieldTag);
+        snprintf(szFormat, sizeof(szFormat), "%%0%dd", (int)_sizeFieldPos);
         snprintf( achDirEntry + _sizeFieldTag + _sizeFieldLength,
                   sizeof(achDirEntry) - _sizeFieldTag - _sizeFieldLength,
                   szFormat, nOffset );
@@ -482,7 +481,7 @@ int DDFModule::Create( const char *pszFilename )
         char *pachData;
         int nLength;
 
-        papoFieldDefns[iField]->GenerateDDREntry( &pachData, &nLength );
+        papoFieldDefns[iField]->GenerateDDREntry( this, &pachData, &nLength );
         bRet &= VSIFWriteL( pachData, nLength, 1, fpDDF ) > 0;
         CPLFree( pachData );
     }

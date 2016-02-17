@@ -134,6 +134,7 @@ const char* const IRISDataset::aszDataTypes[]={
     "Albedo (2 byte)", "VIL Density (2 byte)", "Turbulence (2 byte)"};
 const char* const IRISDataset::aszProjections[]={
     "Azimutal equidistant","Mercator","Polar Stereographic","UTM",
+    // FIXME: is it a typo here or in IRIS itself: Perspective or Prespective ?
     "Prespective from geosync","Equidistant cylindrical","Gnomonic",
     "Gauss conformal","Lambert conformal conic"};
 
@@ -274,7 +275,7 @@ CPLErr IRISRasterBand::IReadBlock( CPL_UNUSED int nBlockXOff,
             else
                 ((float *) pImage)[i] = (fVal-1)/1000.0f;
         }
-    //HEIGTH (TOPS products)
+    //HEIGHT (TOPS products)
     //See point 3.3.14 at page 3.46 of the manual
     } else if(poGDS->nDataTypeCode == 32){ 
         unsigned char nVal;
@@ -897,10 +898,12 @@ GDALDataset *IRISDataset::Open( GDALOpenInfo * poOpenInfo )
 
     //See point 3.2.73 at page 3.36 of the manual
     } else if (EQUAL(poDS->aszProductNames[poDS->nProductCode],"VIL")){
-        const float fBottomHeigthInterval = (float) CPL_LSBSINT32PTR(poDS->abyHeader+4+164+12) / 100;
-        poDS->SetMetadataItem( "BOTTOM_OF_HEIGTH_INTERVAL",CPLString().Printf("%.1f m",fBottomHeigthInterval));
-        const float fTopHeigthInterval = (float) CPL_LSBSINT32PTR(poDS->abyHeader+8+164+12) / 100;
-        poDS->SetMetadataItem( "TOP_OF_HEIGTH_INTERVAL",CPLString().Printf("%.1f m",fTopHeigthInterval));
+        const float fBottomHeightInterval = (float) CPL_LSBSINT32PTR(poDS->abyHeader+4+164+12) / 100;
+        // TYPO in metadata key: FIXME ?
+        poDS->SetMetadataItem( "BOTTOM_OF_HEIGTH_INTERVAL",CPLString().Printf("%.1f m",fBottomHeightInterval));
+        const float fTopHeightInterval = (float) CPL_LSBSINT32PTR(poDS->abyHeader+8+164+12) / 100;
+        // TYPO in metadata key: FIXME ?
+        poDS->SetMetadataItem( "TOP_OF_HEIGTH_INTERVAL",CPLString().Printf("%.1f m",fTopHeightInterval));
         poDS->SetMetadataItem( "VIL_DENSITY_NOT_AVAILABLE_VALUE","-1");
         poDS->SetMetadataItem( "DATA_TYPE_UNITS","mm");
     //See point 3.2.68 at page 3.36 of the manual

@@ -78,12 +78,12 @@ with control information.
 <dt> <b>-s_srs</b> <em>srs def</em>:</dt><dd> source spatial reference set.
 The coordinate systems that can be passed are anything supported by the
 OGRSpatialReference.SetFromUserInput() call, which includes EPSG PCS and GCSes
-(i.e. EPSG:4296), PROJ.4 declarations (as above), or the name of a .prf file
+(i.e. EPSG:4296), PROJ.4 declarations (as above), or the name of a .prj file
 containing well known text.</dd>
 <dt> <b>-t_srs</b> <em>srs_def</em>:</dt><dd> target spatial reference set.
 The coordinate systems that can be passed are anything supported by the
 OGRSpatialReference.SetFromUserInput() call, which includes EPSG PCS and GCSes
-(i.e. EPSG:4296), PROJ.4 declarations (as above), or the name of a .prf file
+(i.e. EPSG:4296), PROJ.4 declarations (as above), or the name of a .prj file
 containing well known text.</dd>
 <dt> <b>-to</b> <em>NAME=VALUE</em>:</dt><dd> set a transformer option suitable
 to pass to GDALCreateGenImgProjTransformer2(). </dd>
@@ -130,7 +130,9 @@ AUTO, will select the overview level whose resolution is the closest to the
 target resolution. Specify an integer value (0-based, i.e. 0=1st overview level) 
 to select a particular level. Specify AUTO-n where n is an integer greater or
 equal to 1, to select an overview level below the AUTO one. Or specify NONE to
-force the base resolution to be used.</dd>
+force the base resolution to be used (can be useful if overviews have been
+generated with a low quality resampling method, and the warping is done using a
+higher quality resampling method).</dd>
 <dt> <b>-wo</b> <em>"NAME=VALUE"</em>:</dt><dd> Set a warp option.  The 
 GDALWarpOptions::papszWarpOptions docs show all options.  Multiple
  <b>-wo</b> options may be listed.</dd>
@@ -339,24 +341,11 @@ static void GDALWarpAppOptionsForBinaryFree( GDALWarpAppOptionsForBinary* psOpti
 /*                                main()                                */
 /************************************************************************/
 
-#define CHECK_HAS_ENOUGH_ADDITIONAL_ARGS(nExtraArg) \
-    do { if (i + nExtraArg >= argc) \
-        Usage(CPLSPrintf("%s option requires %d argument(s)", argv[i], nExtraArg)); } while(0)
-
 int main( int argc, char ** argv )
 
 {
     GDALDatasetH *pahSrcDS = NULL;
     int nSrcCount = 0;
-
-    /* Check that we are running against at least GDAL 1.6 */
-    /* Note to developers : if we use newer API, please change the requirement */
-    if (atoi(GDALVersionInfo("VERSION_NUM")) < 1600)
-    {
-        fprintf(stderr, "At least, GDAL >= 1.6.0 is required for this version of %s, "
-                "which was compiled against GDAL %s\n", argv[0], GDAL_RELEASE_NAME);
-        GDALExit(1);
-    }
 
     EarlySetConfigOptions(argc, argv);
 
@@ -368,7 +357,7 @@ int main( int argc, char ** argv )
     argc = GDALGeneralCmdLineProcessor( argc, &argv, 0 );
     if( argc < 1 )
         GDALExit( -argc );
-    
+
     for( int i = 0; argv != NULL && argv[i] != NULL; i++ )
     {
         if( EQUAL(argv[i], "--utility_version") )
@@ -383,7 +372,7 @@ int main( int argc, char ** argv )
             Usage(NULL);
         }
     }
-    
+
 /* -------------------------------------------------------------------- */
 /*      Set optimal setting for best performance with huge input VRT.   */
 /*      The rationale for 450 is that typical Linux process allow       */
@@ -419,7 +408,7 @@ int main( int argc, char ** argv )
         CPLError(CE_Failure, CPLE_IllegalArg, "Source and destination datasets must be different.\n");
         GDALExit(1);
     }
-     
+
 /* -------------------------------------------------------------------- */
 /*      Open Source files.                                              */
 /* -------------------------------------------------------------------- */
@@ -429,7 +418,7 @@ int main( int argc, char ** argv )
         pahSrcDS = (GDALDatasetH *) CPLRealloc(pahSrcDS, sizeof(GDALDatasetH) * nSrcCount);
         pahSrcDS[nSrcCount-1] = GDALOpenEx( psOptionsForBinary->papszSrcFiles[i], GDAL_OF_RASTER | GDAL_OF_VERBOSE_ERROR, NULL,
                                             (const char* const* )psOptionsForBinary->papszOpenOptions, NULL );
-    
+
         if( pahSrcDS[nSrcCount-1] == NULL )
             GDALExit(2);
     }
@@ -441,7 +430,7 @@ int main( int argc, char ** argv )
     /* FIXME ? source filename=target filename and -overwrite is definitely */
     /* an error. But I can't imagine of a valid case (without -overwrite), */
     /* where it would make sense. In doubt, let's keep that dubious possibility... */
-    
+
     int bOutStreaming = FALSE;
     if( strcmp(psOptionsForBinary->pszDstFilename, "/vsistdout/") == 0 )
     {
@@ -483,7 +472,7 @@ int main( int argc, char ** argv )
     {
         CPLError( CE_Failure, CPLE_AppDefined, 
                  "Output dataset %s exists,\n"
-                 "but some commandline options were provided indicating a new dataset\n"
+                 "but some command line options were provided indicating a new dataset\n"
                  "should be created.  Please delete existing dataset and run again.\n",
                  psOptionsForBinary->pszDstFilename );
         GDALExit(1);
@@ -496,7 +485,7 @@ int main( int argc, char ** argv )
         CPLPushErrorHandler( CPLQuietErrorHandler );
         hDstDS = GDALOpen( psOptionsForBinary->pszDstFilename, GA_ReadOnly );
         CPLPopErrorHandler();
-        
+
         if (hDstDS)
         {
             CPLError( CE_Failure, CPLE_AppDefined, 
@@ -511,7 +500,7 @@ int main( int argc, char ** argv )
     {
         GDALWarpAppOptionsSetProgress(psOptions, GDALTermProgress, NULL);
     }
-    
+
     if (hDstDS == NULL && !psOptionsForBinary->bQuiet && !psOptionsForBinary->bFormatExplicitlySet)
         CheckExtensionConsistency(psOptionsForBinary->pszDstFilename, psOptionsForBinary->pszFormat);
 

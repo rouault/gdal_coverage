@@ -45,7 +45,7 @@ DDFSubfieldDefn::DDFSubfieldDefn()
 
     bIsVariable = TRUE;
     nFormatWidth = 0;
-    chFormatDelimeter = DDF_UNIT_TERMINATOR;  // TODO: Spelling delimeter.
+    chFormatDelimiter = DDF_UNIT_TERMINATOR;
     eBinaryFormat = NotBinary;
     eType = DDFString;
 
@@ -107,6 +107,13 @@ int DDFSubfieldDefn::SetFormat( const char * pszFormat )
     if( pszFormatString[1] == '(' )
     {
         nFormatWidth = atoi(pszFormatString+2);
+        if( nFormatWidth < 0 )
+        {
+             CPLError( CE_Failure, CPLE_AppDefined,
+                       "Format width %s is invalid.",
+                       pszFormatString+2 );
+            return FALSE;
+        }
         bIsVariable = nFormatWidth == 0;
     }
     else
@@ -137,7 +144,8 @@ int DDFSubfieldDefn::SetFormat( const char * pszFormat )
         bIsVariable = FALSE;
         if( pszFormatString[1] == '(' )
         {
-            if( atoi(pszFormatString+2) % 8 != 0 )
+            nFormatWidth = atoi(pszFormatString+2);
+            if( nFormatWidth < 0 || nFormatWidth % 8 != 0 )
             {
                  CPLError( CE_Failure, CPLE_AppDefined,
                            "Format width %s is invalid.",
@@ -145,7 +153,7 @@ int DDFSubfieldDefn::SetFormat( const char * pszFormat )
                 return FALSE;
             }
 
-            nFormatWidth = atoi(pszFormatString+2) / 8;
+            nFormatWidth = nFormatWidth / 8;
             eBinaryFormat = SInt; // good default, works for SDTS.
 
             if( nFormatWidth < 5 )
@@ -159,6 +167,13 @@ int DDFSubfieldDefn::SetFormat( const char * pszFormat )
         {
             eBinaryFormat = (DDFBinaryFormat) (pszFormatString[1] - '0');
             nFormatWidth = atoi(pszFormatString+2);
+            if( nFormatWidth < 0 )
+            {
+                 CPLError( CE_Failure, CPLE_AppDefined,
+                           "Format width %s is invalid.",
+                           pszFormatString+2 );
+                return FALSE;
+            }
 
             if( eBinaryFormat == SInt || eBinaryFormat == UInt )
                 eType = DDFInt;
@@ -292,7 +307,7 @@ int DDFSubfieldDefn::GetDataLength( const char * pachSourceData,
         // If the whole field ends with 0x1e 0x00 then we assume this
         // field is a double byte character set.
         if( nMaxBytes > 1 
-            && (pachSourceData[nMaxBytes-2] == chFormatDelimeter
+            && (pachSourceData[nMaxBytes-2] == chFormatDelimiter
                 || pachSourceData[nMaxBytes-2] == DDF_FIELD_TERMINATOR) 
             && pachSourceData[nMaxBytes-1] == 0x00 )
             bAsciiField = FALSE;
@@ -304,14 +319,14 @@ int DDFSubfieldDefn::GetDataLength( const char * pachSourceData,
         {
             if (bAsciiField)
             {
-                if (pachSourceData[nLength] == chFormatDelimeter ||
+                if (pachSourceData[nLength] == chFormatDelimiter ||
                     pachSourceData[nLength] == DDF_FIELD_TERMINATOR)
                     break;
             }
             else
             {
                 if (nLength > 0 
-                    && (pachSourceData[nLength-1] == chFormatDelimeter 
+                    && (pachSourceData[nLength-1] == chFormatDelimiter 
                         || pachSourceData[nLength-1] == DDF_FIELD_TERMINATOR) 
                     && pachSourceData[nLength] == 0)
                 {
@@ -695,6 +710,11 @@ void DDFSubfieldDefn::DumpData( const char * pachData, int nMaxBytes,
                                 FILE * fp )
 
 {
+    if( nMaxBytes < 0 )
+    {
+        fprintf( fp, "      Subfield `%s' = {invalid length}\n", pszName );
+        return;
+    }
     if( eType == DDFFloat )
         fprintf( fp, "      Subfield `%s' = %f\n",
                  pszName,
@@ -992,7 +1012,8 @@ int DDFSubfieldDefn::FormatFloatValue( char *pachData, int nBytesAvailable,
     {
         if( GetBinaryFormat() == NotBinary )
         {
-            const char chFillZeroASCII = '0';
+            const char chFillZeroASCII = '0'; /* ASCII zero intended */
+            /* coverity[bad_memset] */
             memset( pachData, chFillZeroASCII, nSize );
             strncpy( pachData + nSize - strlen(szWork), szWork,
                      strlen(szWork) );

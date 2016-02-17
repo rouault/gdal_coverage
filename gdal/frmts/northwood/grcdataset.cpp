@@ -110,7 +110,7 @@ NWT_GRCRasterBand::NWT_GRCRasterBand( NWT_GRCDataset * poDSIn, int nBandIn )
         eDataType = GDT_Byte;
     else if( poGDS->pGrd->nBitsPerPixel == 16 )
         eDataType = GDT_UInt16;
-    else if( poGDS->pGrd->nBitsPerPixel == 32 )
+    else /* if( poGDS->pGrd->nBitsPerPixel == 32 ) */
         eDataType = GDT_UInt32;        // this would be funny
 
     nBlockXSize = poDS->GetRasterXSize();
@@ -221,12 +221,16 @@ CPLErr NWT_GRCRasterBand::IReadBlock( CPL_UNUSED int nBlockXOff,
                                       void *pImage )
 {
     NWT_GRCDataset *poGDS = reinterpret_cast<NWT_GRCDataset *>( poDS );
-    const int nRecordSize = nBlockXSize *( poGDS->pGrd->nBitsPerPixel / 8 );
+    const int nBytesPerPixel = poGDS->pGrd->nBitsPerPixel / 8;
+    if( nBytesPerPixel <= 0 || nBlockXSize > INT_MAX / nBytesPerPixel )
+        return CE_Failure;
+    const int nRecordSize = nBlockXSize * nBytesPerPixel;
 
     if( nBand == 1 )
     {                            //grc's are just one band of indices
         VSIFSeekL( poGDS->fp, 1024 + nRecordSize * (vsi_l_offset)nBlockYOff, SEEK_SET );
-        VSIFReadL( pImage, 1, nRecordSize, poGDS->fp );
+        if( (int)VSIFReadL( pImage, 1, nRecordSize, poGDS->fp ) != nRecordSize )
+            return CE_Failure;
     }
     else
     {
@@ -312,7 +316,7 @@ int NWT_GRCDataset::Identify( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*  Look for the header                                                 */
 /* -------------------------------------------------------------------- */
-    if( poOpenInfo->nHeaderBytes < 50 )
+    if( poOpenInfo->nHeaderBytes < 1024 )
         return FALSE;
 
     if( poOpenInfo->pabyHeader[0] != 'H' ||
@@ -358,6 +362,14 @@ GDALDataset *NWT_GRCDataset::Open( GDALOpenInfo * poOpenInfo )
     if (!nwt_ParseHeader( poDS->pGrd, reinterpret_cast<char *>( poDS->abyHeader ) ) ||
         !GDALCheckDatasetDimensions(poDS->pGrd->nXSide, poDS->pGrd->nYSide) ||
         poDS->pGrd->stClassDict == NULL)
+    {
+        delete poDS;
+        return NULL;
+    }
+
+    if( poDS->pGrd->nBitsPerPixel != 8 &&
+        poDS->pGrd->nBitsPerPixel != 16 &&
+        poDS->pGrd->nBitsPerPixel != 32 )
     {
         delete poDS;
         return NULL;

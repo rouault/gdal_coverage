@@ -493,12 +493,12 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
     const char* pszExposeGMLId = CSLFetchNameValueDef(poOpenInfo->papszOpenOptions,
         "EXPOSE_GML_ID", CPLGetConfigOption("GML_EXPOSE_GML_ID", NULL));
     if (pszExposeGMLId)
-        bExposeGMLId = CPL_TO_BOOL(CSLTestBoolean(pszExposeGMLId));
+        bExposeGMLId = CPLTestBool(pszExposeGMLId);
 
     const char* pszExposeFid = CSLFetchNameValueDef(poOpenInfo->papszOpenOptions,
         "EXPOSE_FID", CPLGetConfigOption("GML_EXPOSE_FID", NULL));
     if (pszExposeFid)
-        bExposeFid = CPL_TO_BOOL(CSLTestBoolean(pszExposeFid));
+        bExposeFid = CPLTestBool(pszExposeFid);
 
     bHintConsiderEPSGAsURN = strstr(szPtr, "xmlns:fme=\"http://www.safe.com/gml/fme\"") != NULL;
 
@@ -547,17 +547,17 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
         CPLDebug("GML", "Unrecognized value for GML_READ_MODE configuration option.");
     }
 
-    m_bInvertAxisOrderIfLatLong = 
-        CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef(poOpenInfo->papszOpenOptions,
+    m_bInvertAxisOrderIfLatLong =
+        CPLTestBool(CSLFetchNameValueDef(poOpenInfo->papszOpenOptions,
             "INVERT_AXIS_ORDER_IF_LAT_LONG",
-            CPLGetConfigOption("GML_INVERT_AXIS_ORDER_IF_LAT_LONG", "YES"))));
+            CPLGetConfigOption("GML_INVERT_AXIS_ORDER_IF_LAT_LONG", "YES")));
 
     const char* pszConsiderEPSGAsURN =
         CSLFetchNameValueDef(poOpenInfo->papszOpenOptions,
             "CONSIDER_EPSG_AS_URN",
             CPLGetConfigOption("GML_CONSIDER_EPSG_AS_URN", "AUTO"));
     if( !EQUAL(pszConsiderEPSGAsURN, "AUTO") )
-        m_bConsiderEPSGAsURN = CPL_TO_BOOL(CSLTestBoolean(pszConsiderEPSGAsURN));
+        m_bConsiderEPSGAsURN = CPLTestBool(pszConsiderEPSGAsURN);
     else if (bHintConsiderEPSGAsURN)
     {
         /* GML produced by FME (at least CanVec GML) seem to honour EPSG axis ordering */
@@ -567,7 +567,7 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
     else
         m_bConsiderEPSGAsURN = false;
 
-    m_bGetSecondaryGeometryOption = CPL_TO_BOOL(CSLTestBoolean(CPLGetConfigOption("GML_GET_SECONDARY_GEOM", "NO")));
+    m_bGetSecondaryGeometryOption = CPLTestBool(CPLGetConfigOption("GML_GET_SECONDARY_GEOM", "NO"));
 
     /* EXPAT is faster than Xerces, so when it is safe to use it, use it ! */
     /* The only interest of Xerces is for rare encodings that Expat doesn't handle */
@@ -605,7 +605,7 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
     ((GMLReader*)poReader)->SetEmptyAsNull(bEmptyAsNull);
     ((GMLReader*)poReader)->SetReportAllAttributes(
         CPL_TO_BOOL(CSLFetchBoolean(poOpenInfo->papszOpenOptions, "GML_ATTRIBUTES_TO_OGR_FIELDS",
-            CSLTestBoolean(CPLGetConfigOption("GML_ATTRIBUTES_TO_OGR_FIELDS", "NO")))));
+            CPLTestBool(CPLGetConfigOption("GML_ATTRIBUTES_TO_OGR_FIELDS", "NO")))));
 
 /* -------------------------------------------------------------------- */
 /*      Find <gml:description>, <gml:name> and <gml:boundedBy>          */
@@ -696,7 +696,7 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
         {
             bSchemaDone = true;
             bool bSqliteIsTempFile =
-                CPL_TO_BOOL(CSLTestBoolean(CPLGetConfigOption( "GML_HUGE_TEMPFILE", "YES")));
+                CPLTestBool(CPLGetConfigOption( "GML_HUGE_TEMPFILE", "YES"));
             int iSqliteCacheMB = atoi(CPLGetConfigOption( "OGR_SQLITE_CACHE", "0"));
             if( poReader->HugeFileResolver( pszXlinkResolvedFilename,
                                             bSqliteIsTempFile, 
@@ -938,7 +938,7 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
                             if (!bHasFoundXSD && CPLHTTPEnabled() &&
                                 CSLFetchBoolean(poOpenInfo->papszOpenOptions,
                                     "DOWNLOAD_SCHEMA",
-                                    CSLTestBoolean(CPLGetConfigOption("GML_DOWNLOAD_WFS_SCHEMA", "YES"))) )
+                                    CPLTestBool(CPLGetConfigOption("GML_DOWNLOAD_WFS_SCHEMA", "YES"))) )
                             {
                                 CPLHTTPResult* psResult = CPLHTTPFetch(pszEscapedURL, NULL);
                                 if (psResult)
@@ -978,14 +978,14 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
             {
                 CPLDebug("GML", "Schema found, but only partially understood. Cannot be used in a WFS join context");
 
-                std::vector<GMLFeatureClass*>::const_iterator iter = aosClasses.begin();
-                std::vector<GMLFeatureClass*>::const_iterator eiter = aosClasses.end();
-                while (iter != eiter)
+                std::vector<GMLFeatureClass*>::const_iterator oIter = aosClasses.begin();
+                std::vector<GMLFeatureClass*>::const_iterator oEndIter = aosClasses.end();
+                while (oIter != oEndIter)
                 {
-                    GMLFeatureClass* poClass = *iter;
+                    GMLFeatureClass* poClass = *oIter;
 
                     delete poClass;
-                    iter ++;
+                    oIter ++;
                 }
                 aosClasses.resize(0);
                 bHaveSchema = false;
@@ -994,25 +994,25 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
             if( bHaveSchema )
             {
                 CPLDebug("GML", "Using %s", osXSDFilename.c_str());
-                std::vector<GMLFeatureClass*>::const_iterator iter = aosClasses.begin();
-                std::vector<GMLFeatureClass*>::const_iterator eiter = aosClasses.end();
-                while (iter != eiter)
+                std::vector<GMLFeatureClass*>::const_iterator oIter = aosClasses.begin();
+                std::vector<GMLFeatureClass*>::const_iterator oEndIter = aosClasses.end();
+                while (oIter != oEndIter)
                 {
-                    GMLFeatureClass* poClass = *iter;
+                    GMLFeatureClass* poClass = *oIter;
 
                     if( poClass->HasFeatureProperties() )
                     {
                         bHasFeatureProperties = true;
                         break;
                     }
-                    iter ++;
+                    oIter ++;
                 }
 
-                iter = aosClasses.begin();
-                while (iter != eiter)
+                oIter = aosClasses.begin();
+                while (oIter != oEndIter)
                 {
-                    GMLFeatureClass* poClass = *iter;
-                    iter ++;
+                    GMLFeatureClass* poClass = *oIter;
+                    oIter ++;
 
                     /* We have no way of knowing if the geometry type is 25D */
                     /* when examining the xsd only, so if there was a hint */
@@ -1339,7 +1339,7 @@ void OGRGMLDataSource::BuildJointClassFromScannedSchema()
             if( osPrefix == aapoGeomProps[iSubClass].first )
                 break;
         }
-        if( iSubClass == (int)aapoProps.size() )
+        if( iSubClass == (int)aapoGeomProps.size() )
             aapoGeomProps.push_back( std::pair< CPLString, std::vector<GMLGeometryPropertyDefn*> >
                     (osPrefix, std::vector<GMLGeometryPropertyDefn*>()) );
         aapoGeomProps[iSubClass].second.push_back(poProp);
@@ -1424,7 +1424,7 @@ OGRGMLLayer *OGRGMLDataSource::TranslateGMLSchema( GMLFeatureClass *poClass )
 
     /* Report a COMPD_CS only if GML_REPORT_COMPD_CS is explicitly set to TRUE */
     if( poSRS != NULL &&
-        !CSLTestBoolean(CPLGetConfigOption("GML_REPORT_COMPD_CS", "FALSE")) )
+        !CPLTestBool(CPLGetConfigOption("GML_REPORT_COMPD_CS", "FALSE")) )
     {
         OGR_SRSNode *poCOMPD_CS = poSRS->GetAttrNode( "COMPD_CS" );
         if( poCOMPD_CS != NULL )
@@ -1574,10 +1574,10 @@ bool OGRGMLDataSource::Create( const char *pszFilename,
         bIsOutputGML3 = true;
 
     bIsLongSRSRequired =
-        CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef(papszCreateOptions, "GML3_LONGSRS", "YES")));
+        CPLTestBool(CSLFetchNameValueDef(papszCreateOptions, "GML3_LONGSRS", "YES"));
 
     bWriteSpaceIndentation =
-        CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef(papszCreateOptions, "SPACE_INDENTATION", "YES")));
+        CPLTestBool(CSLFetchNameValueDef(papszCreateOptions, "SPACE_INDENTATION", "YES"));
 
 /* -------------------------------------------------------------------- */
 /*      Create the output file.                                         */
@@ -1943,7 +1943,7 @@ void OGRGMLDataSource::InsertHeader()
 
     for( iLayer = 0; !bHasListFields && iLayer < GetLayerCount(); iLayer++ )
     {
-        OGRFeatureDefn *poFDefn = GetLayer(iLayer)->GetLayerDefn();
+        OGRFeatureDefn *poFDefn = papoLayers[iLayer]->GetLayerDefn();
         for( int iField = 0; !bHasListFields && iField < poFDefn->GetFieldCount(); iField++ )
         {
             OGRFieldDefn *poFieldDefn = poFDefn->GetFieldDefn(iField);
@@ -2138,7 +2138,7 @@ void OGRGMLDataSource::InsertHeader()
 
     for( iLayer = 0; iLayer < GetLayerCount(); iLayer++ )
     {
-        OGRFeatureDefn *poFDefn = GetLayer(iLayer)->GetLayerDefn();
+        OGRFeatureDefn *poFDefn = papoLayers[iLayer]->GetLayerDefn();
 
 /* -------------------------------------------------------------------- */
 /*      Emit initial stuff for a feature type.                          */
@@ -2784,7 +2784,7 @@ const char* OGRGMLDataSource::GetAppPrefix()
 
 bool OGRGMLDataSource::RemoveAppPrefix()
 {
-    if( CSLTestBoolean(CSLFetchNameValueDef(
+    if( CPLTestBool(CSLFetchNameValueDef(
             papszCreateOptions, "STRIP_PREFIX", "FALSE")) )
         return true;
     const char* pszPrefix = GetAppPrefix();
@@ -2797,8 +2797,8 @@ bool OGRGMLDataSource::RemoveAppPrefix()
 
 bool OGRGMLDataSource::WriteFeatureBoundedBy()
 {
-    return CPL_TO_BOOL(CSLTestBoolean(CSLFetchNameValueDef(
-                    papszCreateOptions, "WRITE_FEATURE_BOUNDED_BY", "TRUE")));
+    return CPLTestBool(CSLFetchNameValueDef(
+        papszCreateOptions, "WRITE_FEATURE_BOUNDED_BY", "TRUE"));
 }
 
 /************************************************************************/

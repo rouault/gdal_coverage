@@ -102,7 +102,7 @@ PostGISRasterDataset::PostGISRasterDataset():VRTDataset(0, 0) {
     bRegularBlocking = false;
     bAllTilesSnapToSameGrid = false;
 
-    bCheckAllTiles = CSLTestBoolean( 
+    bCheckAllTiles = CPLTestBool(
         CPLGetConfigOption("PR_ALLOW_WHOLE_TABLE_SCAN", "YES"));
 
     pszSchema = NULL;
@@ -316,7 +316,7 @@ GBool PostGISRasterDataset::HasSpatialIndex()
     bHasTriedHasSpatialIndex = true;
 
     /* For debugging purposes only */
-    if( CSLTestBoolean(CPLGetConfigOption("PR_DISABLE_GIST", "FALSE") ) )
+    if( CPLTestBool(CPLGetConfigOption("PR_DISABLE_GIST", "FALSE") ) )
         return false;
 
     // Copyright dustymugs !!!
@@ -382,7 +382,7 @@ const char * PostGISRasterDataset::GetPrimaryKeyRef()
     bHasTriedFetchingPrimaryKeyName = true;
 
     /* For debugging purposes only */
-    if( CSLTestBoolean(CPLGetConfigOption("PR_DISABLE_PK", "FALSE") ) )
+    if( CPLTestBool(CPLGetConfigOption("PR_DISABLE_PK", "FALSE") ) )
         return NULL;
 
     /* Determine the primary key/unique column on the table */
@@ -708,7 +708,7 @@ void PostGISRasterDataset::BuildOverviews()
             poOvrDS->pszWhere = pszWhere ? CPLStrdup(pszWhere) : NULL;
             poOvrDS->poParentDS = this;
 
-            if (!CSLTestBoolean(CPLGetConfigOption("PG_DIFFERED_OVERVIEWS", "YES")) &&
+            if (!CPLTestBool(CPLGetConfigOption("PG_DIFFERED_OVERVIEWS", "YES")) &&
                 (!poOvrDS->SetRasterProperties(NULL) ||
                 poOvrDS->GetRasterCount() != GetRasterCount()))
             {
@@ -1059,8 +1059,8 @@ GBool PostGISRasterDataset::LoadSources(int nXOff, int nYOff, int nXSize, int nY
 
         if( bTilesSameDimension && nBand > 0 )
         {
-            GIntBig nMemoryRequiredForTiles = PQntuples(poResult) * nTileWidth * nTileHeight *
-                GDALGetDataTypeSize(GetRasterBand(nBand)->GetRasterDataType()) / 8;
+            GIntBig nMemoryRequiredForTiles = static_cast<GIntBig>(PQntuples(poResult)) * nTileWidth * nTileHeight *
+                (GDALGetDataTypeSize(GetRasterBand(nBand)->GetRasterDataType()) / 8);
             GIntBig nCacheMax = (GIntBig) GDALGetCacheMax64();
             if( nBands * nMemoryRequiredForTiles <= nCacheMax )
             {
@@ -1397,6 +1397,7 @@ PostGISRasterTileDataset* PostGISRasterDataset::BuildRasterTileDataset(const cha
             "GDAL PostGIS Raster driver can not work with "
             "rotated rasters yet.");
 
+        CSLDestroy(papszParams);
         return NULL;
     }
 
@@ -1796,6 +1797,7 @@ GBool PostGISRasterDataset::ConstructOneDatasetFromTiles(
             "Computed PostGIS Raster dimension is invalid. You've "
             "probably specified inappropriate resolution." );
 
+        VSIFree(poBandMetaData); 
         return false;
     }
 
@@ -2202,7 +2204,7 @@ GBool PostGISRasterDataset::SetRasterProperties
 
     double scale_x = CPLAtof(PQgetvalue(poResult, 0, 6));
     double scale_y = CPLAtof(PQgetvalue(poResult, 0, 7));
-    if( nOverviewFactor > 1 )
+    if( nOverviewFactor > 1 && poParentDS != NULL )
     {
         scale_x = poParentDS->adfGeoTransform[GEOTRSFRM_WE_RES] * nOverviewFactor;
         scale_y = poParentDS->adfGeoTransform[GEOTRSFRM_NS_RES] * nOverviewFactor;

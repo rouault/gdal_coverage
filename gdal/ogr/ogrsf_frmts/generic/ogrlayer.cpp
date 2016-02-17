@@ -1257,7 +1257,7 @@ void OGR_L_SetSpatialFilterRectEx( OGRLayerH hLayer,
 int OGRLayer::InstallFilter( OGRGeometry * poFilter )
 
 {
-    if( m_poFilterGeom == NULL && poFilter == NULL )
+    if( m_poFilterGeom == poFilter )
         return FALSE;
 
 /* -------------------------------------------------------------------- */
@@ -1775,7 +1775,10 @@ OGRErr OGRLayer::SetIgnoredFields( const char **papszFields )
     {
         poDefn->GetFieldDefn(iField)->SetIgnored( FALSE );
     }
-    poDefn->SetGeometryIgnored( FALSE );
+    for( int iField = 0; iField < poDefn->GetGeomFieldCount(); iField++ )
+    {
+        poDefn->GetGeomFieldDefn(iField)->SetIgnored( FALSE );
+    }
     poDefn->SetStyleIgnored( FALSE );
 
     if ( papszFields == NULL )
@@ -1871,7 +1874,7 @@ OGRErr set_result_schema(OGRLayer *pLayerResult,
     OGRFeatureDefn *poDefnResult = pLayerResult->GetLayerDefn();
     const char* pszInputPrefix = CSLFetchNameValue(papszOptions, "INPUT_PREFIX");
     const char* pszMethodPrefix = CSLFetchNameValue(papszOptions, "METHOD_PREFIX");
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
     if (poDefnResult->GetFieldCount() > 0) {
         // the user has defined the schema of the output layer
         for( int iField = 0; iField < poDefnInput->GetFieldCount(); iField++ ) {
@@ -1977,16 +1980,23 @@ static OGRGeometry* promote_to_multi(OGRGeometry* poGeom)
  * \note This method relies on GEOS support. Do not use unless the
  * GEOS support is compiled in.
  *
- * The recognized list of options is :
+ * The recognized list of options is:
  * <ul>
- * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
+ * <li>SKIP_FAILURES=YES/NO. Set to YES to go on, even when a
  *     feature could not be inserted.
- * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
+ * <li>PROMOTE_TO_MULTI=YES/NO. Set to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
  *     will be created from the fields of the input layer.
  * <li>METHOD_PREFIX=string. Set a prefix for the field names that
  *     will be created from the fields of the method layer.
+ * <li>USE_PREPARED_GEOMETRIES=YES/NO. Set to NO to not use prepared
+ *     geometries to pretest intersection of features of method layer
+ *     with features of this layer.
+ * <li>PRETEST_CONTAINMENT=YES/NO. Set to YES to pretest the
+ *     containment of features of method layer within the features of
+ *     this layer. This will speed up the method significantly in some
+ *     cases. Requires that the prepared geometries are in effect.
  * </ul>
  *
  * This method is the same as the C function OGR_L_Intersection().
@@ -2006,6 +2016,8 @@ static OGRGeometry* promote_to_multi(OGRGeometry* poGeom)
  *
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
+ *
+ * @note The first geometry field is always used.
  *
  * @since OGR 1.10
  */
@@ -2028,8 +2040,10 @@ OGRErr OGRLayer::Intersection( OGRLayer *pLayerMethod,
     double progress_max = (double) GetFeatureCount(0);
     double progress_counter = 0;
     double progress_ticker = 0;
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
-    int bPromoteToMulti = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bUsePreparedGeometries = CPLTestBool(CSLFetchNameValueDef(papszOptions, "USE_PREPARED_GEOMETRIES", "YES"));
+    int bPretestContainment = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PRETEST_CONTAINMENT", "NO"));
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -2090,42 +2104,60 @@ OGRErr OGRLayer::Intersection( OGRLayer *pLayerMethod,
             continue;
         }
 
+        OGRPreparedGeometry* x_prepared_geom = NULL;
+        if (bUsePreparedGeometries) x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+
         pLayerMethod->ResetReading();
         while (OGRFeature *y = pLayerMethod->GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
-            OGRGeometry* poIntersection = x_geom->Intersection(y_geom);
-            if( poIntersection == NULL || poIntersection->IsEmpty() ||
-                (x_geom->getDimension() == 2 &&
-                y_geom->getDimension() == 2 &&
-                poIntersection->getDimension() < 2) )
-            {
-                delete poIntersection;
-                delete y;
+            OGRGeometry *z_geom = NULL;
+
+            if (x_prepared_geom) {
+                if (bPretestContainment && OGRPreparedGeometryContains(x_prepared_geom, y_geom)) 
+                {
+                    z_geom = y_geom->clone();
+                }
+                else if (!(OGRPreparedGeometryIntersects(x_prepared_geom, y_geom)))
+                {
+                    delete y;
+                    continue;
+                }
             }
-            else
-            {
-                OGRFeature *z = new OGRFeature(poDefnResult);
-                z->SetFieldsFrom(x, mapInput);
-                z->SetFieldsFrom(y, mapMethod);
-                if( bPromoteToMulti )
-                    poIntersection = promote_to_multi(poIntersection);
-                z->SetGeometryDirectly(poIntersection);
-                delete y;
-                ret = pLayerResult->CreateFeature(z);
-                delete z;
-                if (ret != OGRERR_NONE) {
-                    if (!bSkipFailures) {
-                        delete x; 
-                        goto done;
-                    } else {
-                        CPLErrorReset();
-                        ret = OGRERR_NONE;
-                    }
+            if (!z_geom) {
+                z_geom = x_geom->Intersection(y_geom);
+                if (z_geom == NULL || z_geom->IsEmpty() ||
+                    (x_geom->getDimension() == 2 &&
+                     y_geom->getDimension() == 2 &&
+                     z_geom->getDimension() < 2))
+                {
+                    delete z_geom;
+                    delete y;
+                    continue;
+                }
+            }
+            OGRFeature *z = new OGRFeature(poDefnResult);
+            z->SetFieldsFrom(x, mapInput);
+            z->SetFieldsFrom(y, mapMethod);
+            if (bPromoteToMulti)
+                z_geom = promote_to_multi(z_geom);
+            z->SetGeometryDirectly(z_geom);
+            delete y;
+            ret = pLayerResult->CreateFeature(z);
+            delete z;
+            if (ret != OGRERR_NONE) {
+                if (!bSkipFailures) {
+                    OGRDestroyPreparedGeometry(x_prepared_geom);
+                    delete x; 
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
                 }
             }
         }
 
+        OGRDestroyPreparedGeometry(x_prepared_geom);
         delete x;
     }
     if (pfnProgress && !pfnProgress(1.0, "", pProgressArg)) {
@@ -2176,6 +2208,13 @@ done:
  *     will be created from the fields of the input layer.
  * <li>METHOD_PREFIX=string. Set a prefix for the field names that
  *     will be created from the fields of the method layer.
+ * <li>USE_PREPARED_GEOMETRIES=YES/NO. Set to NO to not use prepared
+ *     geometries to pretest intersection of features of method layer
+ *     with features of this layer.
+ * <li>PRETEST_CONTAINMENT=YES/NO. Set to YES to pretest the
+ *     containment of features of method layer within the features of
+ *     this layer. This will speed up the method significantly in some
+ *     cases. Requires that the prepared geometries are in effect.
  * </ul>
  *
  * This function is the same as the C++ method OGRLayer::Intersection().
@@ -2197,6 +2236,8 @@ done:
  *
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
+ *
+ * @note The first geometry field is always used.
  *
  * @since OGR 1.10
  */
@@ -2253,6 +2294,9 @@ OGRErr OGR_L_Intersection( OGRLayerH pLayerInput,
  *     will be created from the fields of the input layer.
  * <li>METHOD_PREFIX=string. Set a prefix for the field names that
  *     will be created from the fields of the method layer.
+ * <li>USE_PREPARED_GEOMETRIES=YES/NO. Set to NO to not use prepared
+ *     geometries to pretest intersection of features of method layer
+ *     with features of this layer.
  * </ul>
  *
  * This method is the same as the C function OGR_L_Union().
@@ -2272,6 +2316,8 @@ OGRErr OGR_L_Intersection( OGRLayerH pLayerInput,
  *
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
+ *
+ * @note The first geometry field is always used.
  *
  * @since OGR 1.10
  */
@@ -2293,8 +2339,9 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
     double progress_max = (double) GetFeatureCount(0) + (double) pLayerMethod->GetFeatureCount(0);
     double progress_counter = 0;
     double progress_ticker = 0;
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
-    int bPromoteToMulti = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bUsePreparedGeometries = CPLTestBool(CSLFetchNameValueDef(papszOptions, "USE_PREPARED_GEOMETRIES", "YES"));
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -2338,11 +2385,20 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
             continue;
         }
 
+        OGRPreparedGeometry* x_prepared_geom = NULL;
+        if (bUsePreparedGeometries) x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+
         OGRGeometry *x_geom_diff = x_geom->clone(); // this will be the geometry of the result feature
         pLayerMethod->ResetReading();
         while (OGRFeature *y = pLayerMethod->GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
+
+            if (x_prepared_geom && !(OGRPreparedGeometryIntersects(x_prepared_geom, y_geom))) {
+                delete y;
+                continue;
+            }
+
             OGRGeometry *poIntersection = x_geom->Intersection(y_geom);
             if( poIntersection == NULL || poIntersection->IsEmpty() ||
                 (x_geom->getDimension() == 2 &&
@@ -2371,6 +2427,7 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
                         delete x;
                         if (x_geom_diff)
                             delete x_geom_diff;
+                        OGRDestroyPreparedGeometry(x_prepared_geom);
                         goto done;
                     } else {
                         CPLErrorReset();
@@ -2379,6 +2436,8 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
                 }
             }
         }
+
+        OGRDestroyPreparedGeometry(x_prepared_geom);
 
         if( x_geom_diff == NULL || x_geom_diff->IsEmpty() )
         {
@@ -2520,6 +2579,9 @@ done:
  *     will be created from the fields of the input layer.
  * <li>METHOD_PREFIX=string. Set a prefix for the field names that
  *     will be created from the fields of the method layer.
+ * <li>USE_PREPARED_GEOMETRIES=YES/NO. Set to NO to not use prepared
+ *     geometries to pretest intersection of features of method layer
+ *     with features of this layer.
  * </ul>
  *
  * This function is the same as the C++ method OGRLayer::Union().
@@ -2541,6 +2603,8 @@ done:
  *
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
+ *
+ * @note The first geometry field is always used.
  *
  * @since OGR 1.10 
  */
@@ -2617,6 +2681,8 @@ OGRErr OGR_L_Union( OGRLayerH pLayerInput,
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -2637,8 +2703,8 @@ OGRErr OGRLayer::SymDifference( OGRLayer *pLayerMethod,
     double progress_max = (double) GetFeatureCount(0) + (double) pLayerMethod->GetFeatureCount(0);
     double progress_counter = 0;
     double progress_ticker = 0;
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
-    int bPromoteToMulti = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -2855,6 +2921,8 @@ done:
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -2908,6 +2976,9 @@ OGRErr OGR_L_SymDifference( OGRLayerH pLayerInput,
  *     will be created from the fields of the input layer.
  * <li>METHOD_PREFIX=string. Set a prefix for the field names that
  *     will be created from the fields of the method layer.
+ * <li>USE_PREPARED_GEOMETRIES=YES/NO. Set to NO to not use prepared
+ *     geometries to pretest intersection of features of method layer
+ *     with features of this layer.
  * </ul>
  *
  * This method is the same as the C function OGR_L_Identity().
@@ -2928,6 +2999,8 @@ OGRErr OGR_L_SymDifference( OGRLayerH pLayerInput,
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -2947,8 +3020,9 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
     double progress_max = (double) GetFeatureCount(0);
     double progress_counter = 0;
     double progress_ticker = 0;
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
-    int bPromoteToMulti = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bUsePreparedGeometries = CPLTestBool(CSLFetchNameValueDef(papszOptions, "USE_PREPARED_GEOMETRIES", "YES"));
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -2990,11 +3064,20 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
             continue;
         }
 
+        OGRPreparedGeometry* x_prepared_geom = NULL;
+        if (bUsePreparedGeometries) x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+
         OGRGeometry *x_geom_diff = x_geom->clone(); // this will be the geometry of the result feature
         pLayerMethod->ResetReading();
         while (OGRFeature *y = pLayerMethod->GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
+
+            if (x_prepared_geom && !(OGRPreparedGeometryIntersects(x_prepared_geom, y_geom))) {
+                delete y;
+                continue;
+            }
+
             OGRGeometry* poIntersection = x_geom->Intersection(y_geom);
             if( poIntersection == NULL || poIntersection->IsEmpty() ||
                 (x_geom->getDimension() == 2 &&
@@ -3022,6 +3105,7 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
                     if (!bSkipFailures) {
                         delete x;
                         delete x_geom_diff;
+                        OGRDestroyPreparedGeometry(x_prepared_geom);
                         goto done;
                     } else {
                         CPLErrorReset();
@@ -3030,6 +3114,8 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
                 }
             }
         }
+
+        OGRDestroyPreparedGeometry(x_prepared_geom);
 
         if( x_geom_diff == NULL || x_geom_diff->IsEmpty() )
         {
@@ -3105,6 +3191,9 @@ done:
  *     will be created from the fields of the input layer.
  * <li>METHOD_PREFIX=string. Set a prefix for the field names that
  *     will be created from the fields of the method layer.
+ * <li>USE_PREPARED_GEOMETRIES=YES/NO. Set to NO to not use prepared
+ *     geometries to pretest intersection of features of method layer
+ *     with features of this layer.
  * </ul>
  *
  * This function is the same as the C++ method OGRLayer::Identity().
@@ -3126,6 +3215,8 @@ done:
  *
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
+ *
+ * @note The first geometry field is always used.
  *
  * @since OGR 1.10
  */
@@ -3202,6 +3293,8 @@ OGRErr OGR_L_Identity( OGRLayerH pLayerInput,
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -3221,8 +3314,8 @@ OGRErr OGRLayer::Update( OGRLayer *pLayerMethod,
     double progress_max = (double) GetFeatureCount(0) + (double) pLayerMethod->GetFeatureCount(0);
     double progress_counter = 0;
     double progress_ticker = 0;
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
-    int bPromoteToMulti = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -3409,6 +3502,8 @@ done:
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -3477,6 +3572,8 @@ OGRErr OGR_L_Update( OGRLayerH pLayerInput,
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -3494,8 +3591,8 @@ OGRErr OGRLayer::Clip( OGRLayer *pLayerMethod,
     double progress_max = (double) GetFeatureCount(0);
     double progress_counter = 0;
     double progress_ticker = 0;
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
-    int bPromoteToMulti = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -3645,6 +3742,8 @@ done:
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -3713,6 +3812,8 @@ OGRErr OGR_L_Clip( OGRLayerH pLayerInput,
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
  *
+ * @note The first geometry field is always used.
+ *
  * @since OGR 1.10
  */
 
@@ -3730,8 +3831,8 @@ OGRErr OGRLayer::Erase( OGRLayer *pLayerMethod,
     double progress_max = (double) GetFeatureCount(0);
     double progress_counter = 0;
     double progress_ticker = 0;
-    int bSkipFailures = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
-    int bPromoteToMulti = CSLTestBoolean(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
+    int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
+    int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -3801,6 +3902,15 @@ OGRErr OGRLayer::Erase( OGRLayer *pLayerMethod,
             else
                 delete x_geom_diff;
             delete geom;
+        }
+        else
+        {
+            z = new OGRFeature(poDefnResult);
+            z->SetFieldsFrom(x, mapInput);
+            OGRGeometry* x_geom_diff = x_geom->clone();
+            if( bPromoteToMulti )
+                x_geom_diff = promote_to_multi(x_geom_diff);
+            z->SetGeometryDirectly(x_geom_diff);
         }
         delete x;
         if (z) {
@@ -3881,6 +3991,8 @@ done:
  *
  * @return an error code if there was an error or the execution was
  * interrupted, OGRERR_NONE otherwise.
+ *
+ * @note The first geometry field is always used.
  *
  * @since OGR 1.10
  */

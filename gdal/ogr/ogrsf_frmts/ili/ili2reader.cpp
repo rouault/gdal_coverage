@@ -28,12 +28,13 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "ili2readerp.h"
 #include "ogr_ili2.h"
 #include "cpl_conv.h"
 #include "cpl_string.h"
 
 #include "ili2reader.h"
-#include "ili2readerp.h"
+
 
 //from trstring.cpp/gmlreaderp.h
 char *tr_strdup( const XMLCh * );
@@ -106,7 +107,7 @@ static int getGeometryTypeOfElem(DOMElement* elem) {
   int type = ILI2_STRING_TYPE;
   char* pszTagName = XMLString::transcode(elem->getTagName());
 
-  if (elem && elem->getNodeType() == DOMNode::ELEMENT_NODE) {
+  if (elem->getNodeType() == DOMNode::ELEMENT_NODE) {
     if (cmpStr(ILI2_COORD, pszTagName) == 0) {
       type = ILI2_COORD_TYPE;
     } else if (cmpStr(ILI2_ARC, pszTagName) == 0) {
@@ -389,7 +390,7 @@ int ILI2Reader::ReadModel(ImdReader *poImdReader, const char *modelFilename) {
   poImdReader->ReadModel(modelFilename);
   for (FeatureDefnInfos::const_iterator it = poImdReader->featureDefnInfos.begin(); it != poImdReader->featureDefnInfos.end(); ++it)
   {
-    OGRLayer* layer = new OGRILI2Layer(it->poTableDefn, it->poGeomFieldInfos, NULL);
+    OGRLayer* layer = new OGRILI2Layer(it->GetTableDefnRef(), it->poGeomFieldInfos, NULL);
     m_listLayer.push_back(layer);
   }
   return 0;
@@ -405,6 +406,11 @@ static char* fieldName(DOMElement* elem) {
     //Field name is on level 4
     node = elem;
     for (int d = 0; d<depth-4; ++d) node = node->getParentNode();
+  }
+  if( node == NULL )
+  {
+      CPLError(CE_Failure, CPLE_AssertionFailed, "node == NULL");
+      return CPLStrdup("***bug***");
   }
   char* pszNodeName = tr_strdup(node->getNodeName());
   return pszNodeName;
@@ -462,12 +468,13 @@ void ILI2Reader::SetFieldValues(OGRFeature *feature, DOMElement* elem) {
       char *fName = fieldName(childElem);
       int fIndex = feature->GetGeomFieldIndex(fName);
       OGRGeometry *geom = getGeometry(childElem, type);
-      if (fIndex == -1) { // Unkown model
+      if (fIndex == -1) { // Unknown model
         feature->SetGeometryDirectly(geom);
       } else {
         OGRwkbGeometryType geomType = feature->GetGeomFieldDefnRef(fIndex)->GetType();
         if (geomType == wkbMultiLineString || geomType == wkbPolygon) {
           feature->SetGeomFieldDirectly(fIndex, geom->getLinearGeometry());
+          delete geom;
         } else {
           feature->SetGeomFieldDirectly(fIndex, geom);
         }
@@ -650,7 +657,7 @@ OGRLayer* ILI2Reader::GetLayer(const char* pszName) {
 
 int ILI2Reader::AddFeature(DOMElement *elem) {
   bool newLayer = true;
-  OGRLayer *curLayer = 0;
+  OGRLayer *curLayer = NULL;
   char *pszName = tr_strdup(elem->getTagName());
   //CPLDebug( "OGR_ILI", "Reading layer: %s", pszName );
 

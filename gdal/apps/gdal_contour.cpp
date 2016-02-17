@@ -216,7 +216,7 @@ int main( int argc, char ** argv )
     {
         Usage("Missing destination filename.");
     }
-    
+
     if (!bQuiet)
         pfnProgress = GDALTermProgress;
 
@@ -252,7 +252,7 @@ int main( int argc, char ** argv )
         hSRS = OSRNewSpatialReference( pszWKT );
 
 /* -------------------------------------------------------------------- */
-/*      Create the outputfile.                                          */
+/*      Create the output file.                                          */
 /* -------------------------------------------------------------------- */
     OGRDataSourceH hDS;
     OGRSFDriverH hDriver = OGRGetDriverByName( pszFormat );

@@ -546,8 +546,14 @@ int EpsilonDataset::ScanBlocks(int* pnBands)
             break;
         }
 
+        BlockDesc* pasNewBlocks = (BlockDesc*)VSI_REALLOC_VERBOSE(pasBlocks, sizeof(BlockDesc) * (nBlocks+1));
+        if( pasNewBlocks == NULL )
+        {
+            bRet = FALSE;
+            break;
+        }
+        pasBlocks = pasNewBlocks;
         nBlocks++;
-        pasBlocks = (BlockDesc*)VSIRealloc(pasBlocks, sizeof(BlockDesc) * nBlocks);
         pasBlocks[nBlocks-1].x = x;
         pasBlocks[nBlocks-1].y = y;
         pasBlocks[nBlocks-1].w = w;
@@ -764,7 +770,7 @@ EpsilonDatasetCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     }
 
     int bRasterliteOutput =
-        CSLTestBoolean(CSLFetchNameValueDef(papszOptions,
+        CPLTestBool(CSLFetchNameValueDef(papszOptions,
                                             "RASTERLITE_OUTPUT", "NO"));
 
     int nYRatio = EPS_Y_RT;
@@ -772,7 +778,7 @@ EpsilonDatasetCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     int nCrRatio = EPS_Cr_RT;
 
     int eResample;
-    if (CSLTestBoolean(CSLFetchNameValueDef(papszOptions,
+    if (CPLTestBool(CSLFetchNameValueDef(papszOptions,
                                             "RGB_RESAMPLE", "YES")))
         eResample = EPS_RESAMPLE_420;
     else

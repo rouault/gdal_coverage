@@ -124,9 +124,13 @@ static CPLMutex* hGlobalParamsMutex = NULL;
 
 class ObjectAutoFree : public Object
 {
+    Object obj;
+
 public:
     ObjectAutoFree() {}
-    ~ObjectAutoFree() { free(); }
+    ~ObjectAutoFree() { obj.free(); }
+
+    Object* getObj() { return &obj; }
 };
 
 
@@ -358,7 +362,7 @@ class GDALPDFDumper
         GDALPDFDumper(const char* pszFilename,
                       const char* pszDumpFile, int nDepthLimitIn = -1) : nDepthLimit(nDepthLimitIn)
         {
-            bDumpParent = CSLTestBoolean(CPLGetConfigOption("PDF_DUMP_PARENT", "FALSE"));
+            bDumpParent = CPLTestBool(CPLGetConfigOption("PDF_DUMP_PARENT", "FALSE"));
             if (strcmp(pszDumpFile, "stderr") == 0)
                 f = stderr;
             else if (EQUAL(pszDumpFile, "YES"))
@@ -702,14 +706,9 @@ CPLErr PDFRasterBand::IReadBlockFromTile( int nBlockXOff, int nBlockYOff,
 
     int nXBlocks = DIV_ROUND_UP(nRasterXSize, nBlockXSize);
     int iTile = poGDS->aiTiles[nBlockYOff * nXBlocks + nBlockXOff];
+
     GDALPDFTileDesc& sTile = poGDS->asTiles[iTile];
     GDALPDFObject* poImage = sTile.poImage;
-
-    if( iTile < 0 )
-    {
-        memset(pImage, 0, nBlockXSize * nBlockYSize);
-        return CE_None;
-    }
 
     if( nBand == 4 )
     {
@@ -930,7 +929,7 @@ CPLErr PDFRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
         const int nReqYOff = (nBlockYSize == 1) ? 0 : nBlockYOff * nBlockYSize;
         const GSpacing nPixelSpace = 1;
         const GSpacing nLineSpace = nBlockXSize;
-        const GSpacing nBandSpace = nBlockXSize * ((nBlockYSize == 1) ? nRasterYSize : nBlockYSize);
+        const GSpacing nBandSpace = static_cast<GSpacing>(nBlockXSize) * ((nBlockYSize == 1) ? nRasterYSize : nBlockYSize);
 
         CPLErr eErr = poGDS->ReadPixels( nReqXOff,
                                          nReqYOff,
@@ -978,7 +977,7 @@ static const char* PDFEnterPasswordFromConsoleIfNeeded(const char* pszUserPwd)
     {
         static char szPassword[81];
         printf( "Enter password (will be echo'ed in the console): " );
-        if (0 == fgets( szPassword, sizeof(szPassword), stdin ))
+        if (NULL == fgets( szPassword, sizeof(szPassword), stdin ))
         {
             fprintf(stderr, "WARNING: Error getting password.\n");
         }
@@ -1839,7 +1838,7 @@ CPLErr PDFDataset::ReadPixels( int nReqXOff, int nReqYOff,
         int nRet;
 
 #ifdef notdef
-        int bUseSpawn = CSLTestBoolean(CPLGetConfigOption("GDAL_PDF_USE_SPAWN", "YES"));
+        int bUseSpawn = CPLTestBool(CPLGetConfigOption("GDAL_PDF_USE_SPAWN", "YES"));
         if( !bUseSpawn )
         {
             CPLString osCmd = CPLSPrintf("pdftoppm -r %f -x %d -y %d -W %d -H %d -f %d -l %d \"%s\"",
@@ -2214,7 +2213,7 @@ PDFDataset::PDFDataset(PDFDataset* poParentDSIn, int nXSize, int nYSize)
 
     dfPageWidth = dfPageHeight = 0;
 
-    bSetStyle = CSLTestBoolean(CPLGetConfigOption("OGR_PDF_SET_STYLE", "YES"));
+    bSetStyle = CPLTestBool(CPLGetConfigOption("OGR_PDF_SET_STYLE", "YES"));
 
     InitMapOperators();
 }
@@ -2284,9 +2283,9 @@ GDALPDFObject* PDFDataset::GetCatalog()
     if (bUseLib.test(PDFLIB_POPPLER))
     {
         poCatalogObjectPoppler = new ObjectAutoFree;
-        poDocPoppler->getXRef()->getCatalog(poCatalogObjectPoppler);
-        if (!poCatalogObjectPoppler->isNull())
-            poCatalogObject = new GDALPDFObjectPoppler(poCatalogObjectPoppler, FALSE);
+        poDocPoppler->getXRef()->getCatalog(poCatalogObjectPoppler->getObj());
+        if (!poCatalogObjectPoppler->getObj()->isNull())
+            poCatalogObject = new GDALPDFObjectPoppler(poCatalogObjectPoppler->getObj(), FALSE);
     }
 #endif
 
@@ -2583,7 +2582,7 @@ static void PDFDatasetErrorFunctionCommon(const CPLString& osError)
 }
 
 #ifdef POPPLER_0_20_OR_LATER
-static void PDFDatasetErrorFunction(CPL_UNUSED void* userData, CPL_UNUSED ErrorCategory eErrCatagory,
+static void PDFDatasetErrorFunction(CPL_UNUSED void* userData, CPL_UNUSED ErrorCategory eErrCategory,
 #ifdef POPPLER_0_23_OR_LATER
                                     Goffset nPos,
 #else
@@ -3385,6 +3384,7 @@ void PDFDataset::ExploreLayersPoppler(GDALPDFArray* poArray,
             if (poName != NULL && poName->GetType() == PDFObjectType_String)
             {
                 CPLString osName = PDFSanitizeLayerName(poName->GetString().c_str());
+                /* coverity[copy_paste_error] */
                 if (osTopLayer.size())
                     osCurLayer = osTopLayer + "." + osName;
                 else
@@ -4059,8 +4059,8 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
         if (globalParams == NULL)
             globalParams = new GlobalParams();
 
-        globalParams->setPrintCommands(CPL_TO_BOOL(CSLTestBoolean(
-            CPLGetConfigOption("GDAL_PDF_PRINT_COMMANDS", "FALSE"))));
+        globalParams->setPrintCommands(CPLTestBool(
+            CPLGetConfigOption("GDAL_PDF_PRINT_COMMANDS", "FALSE")));
     }
 
     while( true )
@@ -4074,8 +4074,8 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
         if (pszUserPwd)
             poUserPwd = new GooString(pszUserPwd);
 
-        oObj.initNull();
-        poDocPoppler = new PDFDoc(new VSIPDFFileStream(fp, pszFilename, &oObj), NULL, poUserPwd);
+        oObj.getObj()->initNull();
+        poDocPoppler = new PDFDoc(new VSIPDFFileStream(fp, pszFilename, oObj.getObj()), NULL, poUserPwd);
         delete poUserPwd;
 
         if ( !poDocPoppler->isOk() || poDocPoppler->getNumPages() == 0 )
@@ -4086,6 +4086,11 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
                 {
                     pszUserPwd = PDFEnterPasswordFromConsoleIfNeeded(pszUserPwd);
                     PDFFreeDoc(poDocPoppler);
+
+                    /* Reset errors that could have been issued during opening and that */
+                    /* did not result in an invalid document */
+                    CPLErrorReset();
+
                     continue;
                 }
                 else if (pszUserPwd == NULL)
@@ -4110,10 +4115,6 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
         }
         else
             break;
-
-        /* Reset errors that could have been issued during opening and that */
-        /* did not result in an invalid document */
-        CPLErrorReset();
     }
 
     poCatalogPoppler = poDocPoppler->getCatalog();
@@ -4127,7 +4128,7 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
     nPages = poDocPoppler->getNumPages();
 
     if( iPage == 1 && nPages > 10000 &&
-        CSLTestBoolean(CPLGetConfigOption("GDAL_PDF_LIMIT_PAGE_COUNT", "YES")) )
+        CPLTestBool(CPLGetConfigOption("GDAL_PDF_LIMIT_PAGE_COUNT", "YES")) )
     {
         CPLError(CE_Warning, CPLE_AppDefined,
                  "This PDF document reports %d pages. "
@@ -4185,7 +4186,7 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
 #endif  // ~ HAVE_POPPLER
 
 #ifdef HAVE_PODOFO
-  if (bUseLib.test(PDFLIB_PODOFO))
+  if (bUseLib.test(PDFLIB_PODOFO) && poPageObj == NULL)
   {
     PoDoFo::PdfError::EnableDebug( false );
     PoDoFo::PdfError::EnableLogging( false );
@@ -4293,7 +4294,7 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
 #endif  // ~ HAVE_PODOFO
 
 #ifdef HAVE_PDFIUM
-  if (bUseLib.test(PDFLIB_PDFIUM))
+  if (bUseLib.test(PDFLIB_PDFIUM) && poPageObj == NULL)
   {
     if(!LoadPdfiumDocumentPage(pszFilename, pszUserPwd, iPage,
       &poDocPdfium, &poPagePdfium, &nPages)) {
@@ -4316,6 +4317,8 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
     GDALPDFDictionary* poPageDict = poPageObj->GetDictionary();
     if ( poPageDict == NULL )
     {
+        delete poPageObj;
+
         CPLError(CE_Failure, CPLE_AppDefined, "Invalid PDF : poPageDict == NULL");
 #ifdef HAVE_POPPLER
         if (bUseLib.test(PDFLIB_POPPLER))
@@ -4415,6 +4418,7 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
 #ifdef HAVE_PODOFO
     if (bUseLib.test(PDFLIB_PODOFO))
     {
+        CPLAssert(poPagePodofo);
         PoDoFo::PdfRect oMediaBox = poPagePodofo->GetMediaBox();
         dfX1 = oMediaBox.GetLeft();
         dfY1 = oMediaBox.GetBottom();
@@ -4454,7 +4458,10 @@ GDALDataset *PDFDataset::Open( GDALOpenInfo * poOpenInfo )
 
 #ifdef HAVE_PODOFO
     if (bUseLib.test(PDFLIB_PODOFO))
+    {
+        CPLAssert(poPagePodofo);
         dfRotation = poPagePodofo->GetRotation();
+    }
 #endif
 
 #ifdef HAVE_PDFIUM
@@ -5217,7 +5224,7 @@ int PDFDataset::ParseLGIDictDictSecondPass(GDALPDFDictionary* poLGIDict)
     bHasCTM = FALSE;
     if ((poCTM = poLGIDict->Get("CTM")) != NULL &&
         poCTM->GetType() == PDFObjectType_Array &&
-        CSLTestBoolean(CPLGetConfigOption("PDF_USE_CTM", "YES")) )
+        CPLTestBool(CPLGetConfigOption("PDF_USE_CTM", "YES")) )
     {
         int nLength = poCTM->GetArray()->GetLength();
         if ( nLength != 6 )
@@ -5249,7 +5256,7 @@ int PDFDataset::ParseLGIDictDictSecondPass(GDALPDFDictionary* poLGIDict)
         GDALPDFArray* poRegistrationArray = poRegistration->GetArray();
         int nLength = poRegistrationArray->GetLength();
         if( nLength > 4 || (!bHasCTM && nLength >= 2) ||
-            CSLTestBoolean(CPLGetConfigOption("PDF_REPORT_GCPS", "NO")) )
+            CPLTestBool(CPLGetConfigOption("PDF_REPORT_GCPS", "NO")) )
         {
             nGCPCount = 0;
             pasGCPList = (GDAL_GCP *) CPLCalloc(sizeof(GDAL_GCP),nLength);
@@ -5320,7 +5327,7 @@ int PDFDataset::ParseProjDict(GDALPDFDictionary* poProjDict)
     GDALPDFObject* poWKT;
     if ( (poWKT = poProjDict->Get("WKT")) != NULL &&
          poWKT->GetType() == PDFObjectType_String &&
-         CSLTestBoolean( CPLGetConfigOption("GDAL_PDF_OGC_BP_READ_WKT", "TRUE") ) )
+         CPLTestBool( CPLGetConfigOption("GDAL_PDF_OGC_BP_READ_WKT", "TRUE") ) )
     {
         CPLDebug("PDF", "Found WKT attribute (GDAL extension). Using it");
         const char* pszWKTRead = poWKT->GetString().c_str();
@@ -5896,16 +5903,31 @@ int PDFDataset::ParseProjDict(GDALPDFDictionary* poProjDict)
 /* -------------------------------------------------------------------- */
     CPLString osUnits;
     GDALPDFObject* poUnits;
-    if ((poUnits = poProjDict->Get("Units")) != NULL &&
-        poUnits->GetType() == PDFObjectType_String)
+    if( (poUnits = poProjDict->Get("Units")) != NULL &&
+        poUnits->GetType() == PDFObjectType_String &&
+        !EQUAL(osProjectionType, "GEOGRAPHIC") )
     {
         osUnits = poUnits->GetString();
         CPLDebug("PDF", "Projection.Units = %s", osUnits.c_str());
 
+        // This is super weird. The false easting/northing of the SRS
+        // are expressed in the unit, but the geotransform is expressed in
+        // meters. Hence this hack to have an equivalent SRS definition, but
+        // with linear units converted in meters.
         if (EQUAL(osUnits, "M"))
             oSRS.SetLinearUnits( "Meter", 1.0 );
         else if (EQUAL(osUnits, "FT"))
+        {
             oSRS.SetLinearUnits( "foot", 0.3048 );
+            oSRS.SetLinearUnitsAndUpdateParameters( "Meter", 1.0 );
+        }
+        else if (EQUAL(osUnits, "USSF"))
+        {
+            oSRS.SetLinearUnits( SRS_UL_US_FOOT, CPLAtof(SRS_UL_US_FOOT_CONV) );
+            oSRS.SetLinearUnitsAndUpdateParameters( "Meter", 1.0 );
+        }
+        else
+            CPLError(CE_Warning, CPLE_AppDefined, "Unhandled unit: %s", osUnits.c_str());
     }
 
 /* -------------------------------------------------------------------- */

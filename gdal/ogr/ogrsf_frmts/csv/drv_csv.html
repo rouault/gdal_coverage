@@ -14,7 +14,7 @@ manually with a text editor or with end-user written scripts or programs.</p>
 
 <p>While in theory .csv files could have any extension, in order to
 auto-recognise the format OGR only supports CSV files ending with the
-extention ".csv".  The datasource name may be either a single CSV file
+extension ".csv".  The datasource name may be either a single CSV file
 or point to a directory.  For a directory to be recognised as a .csv datasource
 at least half the files in the directory need to have the extension .csv.
 One layer (table) is produced from each .csv file accessed.</p>
@@ -265,8 +265,10 @@ Whether to consider empty strings as null fields on reading'.</li>
 
 <p>The driver supports creating new databases (as a directory
 of .csv files), adding new .csv files to an existing directory or .csv
-files or appending features to an existing .csv table. Deleting or
-replacing existing features is not supported.</p>
+files or appending features to an existing .csv table. Starting with GDAL 2.1,
+deleting or replacing existing features, or adding/modifying/deleting fields is
+supported, provided the modifications done are small enough to be stored in RAM
+temporarily before flushing to disk.</p>
 
 <p>Layer Creation options:
 

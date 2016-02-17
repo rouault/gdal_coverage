@@ -471,7 +471,7 @@ OGRErr OGRSXFDataSource::ReadSXFInformationFlags(VSILFILE* fpSXFIn, SXFPassport&
 
 void OGRSXFDataSource::SetVertCS(const long iVCS, SXFPassport& passport)
 {
-    if (!CSLTestBoolean(CPLGetConfigOption("SXF_SET_VERTCS", "NO")))
+    if (!CPLTestBool(CPLGetConfigOption("SXF_SET_VERTCS", "NO")))
         return;
 
     const int nEPSG = static_cast<int>(aoVCS[iVCS]);
@@ -1218,7 +1218,7 @@ void OGRSXFDataSource::CreateLayers(VSILFILE* fpRSC)
         char szShortName[16];
         GByte nNo;
         GByte nPos;
-        GUInt16 nSematicCount;
+        GUInt16 nSemanticCount;
     };
 
     GUInt32 i;
@@ -1234,7 +1234,7 @@ void OGRSXFDataSource::CreateLayers(VSILFILE* fpRSC)
         VSIFReadL(&LAYER, nLayerStructSize, 1, fpRSC);
 
         papoLayers = (OGRLayer**)CPLRealloc(papoLayers, sizeof(OGRLayer*)* (nLayers + 1));
-        bool bLayerFullName = CPL_TO_BOOL(CSLTestBoolean(CPLGetConfigOption("SXF_LAYER_FULLNAME", "NO")));
+        bool bLayerFullName = CPLTestBool(CPLGetConfigOption("SXF_LAYER_FULLNAME", "NO"));
 
         char* pszRecoded;
         if (bLayerFullName)

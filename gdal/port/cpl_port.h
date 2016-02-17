@@ -208,7 +208,7 @@ typedef unsigned long long GUIntBig;
 
 #define GINTBIG_MIN     ((GIntBig)(0x80000000) << 32)
 #define GINTBIG_MAX     (((GIntBig)(0x7FFFFFFF) << 32) | 0xFFFFFFFFU)
-#define GUINTBIG_MAX     (((GUIntBig)(0xFFFFFFFF) << 32) | 0xFFFFFFFFU)
+#define GUINTBIG_MAX     (((GUIntBig)(0xFFFFFFFFU) << 32) | 0xFFFFFFFFU)
 
 #else
 
@@ -291,7 +291,7 @@ typedef int              GPtrDiff_t;
 #ifdef _MSC_VER
 #  define FORCE_CDECL  __cdecl
 #else
-#  define FORCE_CDECL 
+#  define FORCE_CDECL
 #endif
 
 /* TODO : support for other compilers needed */
@@ -305,17 +305,50 @@ typedef int              GPtrDiff_t;
 #define CPL_INLINE
 #endif
 
+// Define NULL_AS_NULLPTR together with -std=c++11 -Wzero-as-null-pointer-constant with GCC
+// to detect misuses of NULL
+#if defined(NULL_AS_NULLPTR) && defined(__cplusplus) && __cplusplus >= 201103L
+
+#ifdef __GNUC__
+// We need to include all that bunch of system headers, otherwise
+// as they include <stddef.h> with __need_NULL, this overrides our #define NULL nullptr
+// with #define NULL __null
+#include <locale.h>
+#include <unistd.h>
+#include <sys/types.h>
+#ifdef HAVE_ICONV
+#include <iconv.h>
+#endif
+#ifdef HAVE_MMAP
+#include <sys/mman.h>
+#endif
+#include <signal.h>
+#ifndef _WIN32
+#include <dlfcn.h>
+#include <netdb.h>
+#include <fcntl.h>
+#endif
+
+extern "C++" {
+#include <string>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <cstddef>
+#include <ostream>
+#include <iostream>
+#include <sstream>
+}
+#endif /* __GNUC__ */
+
+#undef NULL
+#define NULL nullptr
+#else /* defined(NULL_AS_NULLPTR) && defined(__cplusplus) && __cplusplus >= 201103L */
 #ifndef NULL
 #  define NULL  0
 #endif
+#endif /* defined(NULL_AS_NULLPTR) && defined(__cplusplus) && __cplusplus >= 201103L */
 
-#ifndef FALSE
-#  define FALSE 0
-#endif
-
-#ifndef TRUE
-#  define TRUE  1
-#endif
 
 #ifndef MAX
 #  define MIN(a,b)      ((a<b) ? a : b)
@@ -429,6 +462,31 @@ static inline int CPL_afl_friendly_strncasecmp(const char* ptr1, const char* ptr
     return 0;
 }
 
+static inline char* CPL_afl_friendly_strstr(const char* haystack, const char* needle)
+        __attribute__((always_inline));
+
+static inline char* CPL_afl_friendly_strstr(const char* haystack, const char* needle)
+{
+    const char* ptr_haystack = haystack;
+    while( 1 )
+    {
+        const char* ptr_haystack2 = ptr_haystack;
+        const char* ptr_needle = needle;
+        while( 1 )
+        {
+            char ch1 = *(ptr_haystack2++);
+            char ch2 = *(ptr_needle++);
+            if( ch2 == 0 )
+                return (char*)ptr_haystack;
+            if( ch1 != ch2 )
+                break;
+        }
+        if( *ptr_haystack == 0 )
+            return NULL;
+        ptr_haystack ++;
+    }
+}
+
 #undef strcmp
 #undef strncmp
 #define memcmp CPL_afl_friendly_memcmp
@@ -436,6 +494,7 @@ static inline int CPL_afl_friendly_strncasecmp(const char* ptr1, const char* ptr
 #define strncmp CPL_afl_friendly_strncmp
 #define strcasecmp CPL_afl_friendly_strcasecmp
 #define strncasecmp CPL_afl_friendly_strncasecmp
+#define strstr CPL_afl_friendly_strstr
 
 #endif /* defined(AFL_FRIENDLY) && defined(__GNUC__) */
 
@@ -450,6 +509,10 @@ static inline int CPL_afl_friendly_strncasecmp(const char* ptr1, const char* ptr
 #  define EQUAL(a,b)              (STRCASECMP(a,b)==0)
 #endif
 
+/*---------------------------------------------------------------------
+ * Does a string "a" start with string "b".  Search is case-sensitive or,
+ * with CI, it is a case-insensitive comparison.
+ *--------------------------------------------------------------------- */
 #ifndef STARTS_WITH_CI
 #define STARTS_WITH(a,b)               (strncmp(a,b,strlen(b)) == 0)
 #define STARTS_WITH_CI(a,b)            EQUALN(a,b,strlen(b))
@@ -462,7 +525,7 @@ static inline int CPL_afl_friendly_strncasecmp(const char* ptr1, const char* ptr
 /* -------------------------------------------------------------------- */
 /*      Handle isnan() and isinf().  Note that isinf() and isnan()      */
 /*      are supposed to be macros according to C99, defined in math.h   */
-/*      Some systems (i.e. Tru64) don't have isinf() at all, so if       */
+/*      Some systems (i.e. Tru64) don't have isinf() at all, so if      */
 /*      the macro is not defined we just assume nothing is infinite.    */
 /*      This may mean we have no real CPLIsInf() on systems with isinf()*/
 /*      function but no corresponding macro, but I can live with        */
@@ -475,7 +538,7 @@ static inline int CPL_afl_friendly_strncasecmp(const char* ptr1, const char* ptr
 #  define CPLIsFinite(x) _finite(x)
 #else
 #  define CPLIsNan(x) isnan(x)
-#  ifdef isinf 
+#  ifdef isinf
 #    define CPLIsInf(x) isinf(x)
 #    define CPLIsFinite(x) (!isnan(x) && !isinf(x))
 #  elif defined(__sun__)
@@ -483,15 +546,15 @@ static inline int CPL_afl_friendly_strncasecmp(const char* ptr1, const char* ptr
 #    define CPLIsInf(x)    (!finite(x) && !isnan(x))
 #    define CPLIsFinite(x) finite(x)
 #  else
-#    define CPLIsInf(x)    FALSE
+#    define CPLIsInf(x)    (0)
 #    define CPLIsFinite(x) (!isnan(x))
 #  endif
 #endif
 
 /*---------------------------------------------------------------------
  *                         CPL_LSB and CPL_MSB
- * Only one of these 2 macros should be defined and specifies the byte 
- * ordering for the current platform.  
+ * Only one of these 2 macros should be defined and specifies the byte
+ * ordering for the current platform.
  * This should be defined in the Makefile, but if it is not then
  * the default is CPL_LSB (Intel ordering, LSB first).
  *--------------------------------------------------------------------*/
@@ -526,7 +589,7 @@ template<> struct CPLStaticAssert<true>
 
 #else  /* __cplusplus */
 
-#define CPL_STATIC_ASSERT_IF_AVAILABLE(x) 
+#define CPL_STATIC_ASSERT_IF_AVAILABLE(x)
 
 #endif  /* __cplusplus */
 
@@ -547,7 +610,7 @@ template<> struct CPLStaticAssert<true>
     byTemp = _pabyDataT[0];                                       \
     _pabyDataT[0] = _pabyDataT[1];                                \
     _pabyDataT[1] = byTemp;                                       \
-}                                                                    
+}
 
 #define CPL_SWAP32(x) \
         ((GUInt32)( \
@@ -567,7 +630,7 @@ template<> struct CPLStaticAssert<true>
     byTemp = _pabyDataT[1];                                       \
     _pabyDataT[1] = _pabyDataT[2];                                \
     _pabyDataT[2] = byTemp;                                       \
-}                                                                    
+}
 
 #define CPL_SWAP64PTR(x) \
 {                                                                 \
@@ -586,7 +649,7 @@ template<> struct CPLStaticAssert<true>
     byTemp = _pabyDataT[3];                                       \
     _pabyDataT[3] = _pabyDataT[4];                                \
     _pabyDataT[4] = byTemp;                                       \
-}                                                                    
+}
 
 
 /* Until we have a safe 64 bits integer data type defined, we'll replace
@@ -652,7 +715,7 @@ template<> struct CPLStaticAssert<true>
 
 
 /* Utility macro to explicitly mark intentionally unreferenced parameters. */
-#ifndef UNREFERENCED_PARAM 
+#ifndef UNREFERENCED_PARAM
 #  ifdef UNREFERENCED_PARAMETER /* May be defined by Windows API */
 #    define UNREFERENCED_PARAM(param) UNREFERENCED_PARAMETER(param)
 #  else
@@ -738,21 +801,19 @@ static const char *cvsid_aw() { return( cvsid_aw() ? NULL : cpl_cvsid ); }
    Must be placed in the private section of a class and should be at the end.
 */
 #ifdef __cplusplus
-#if 1
 
 #if __cplusplus >= 201103L
+#define CPL_FINAL final
 #define CPL_DISALLOW_COPY_ASSIGN(ClassName) \
     ClassName( const ClassName & ) = delete; \
     ClassName &operator=( const ClassName & ) = delete;
 #else
+#define CPL_FINAL
 #define CPL_DISALLOW_COPY_ASSIGN(ClassName) \
     ClassName( const ClassName & ); \
     ClassName &operator=( const ClassName & );
 #endif
 
-#else
-#define CPL_DISALLOW_COPY_ASSIGN(ClassName)
-#endif
 #endif /* __cplusplus */
 
 #if !defined(DOXYGEN_SKIP)
@@ -804,7 +865,7 @@ CPL_C_END
 
 extern "C++" {
 template<class T> static void CPL_IGNORE_RET_VAL(T) {}
-inline static bool CPL_TO_BOOL(int x) { return x != FALSE; }
+inline static bool CPL_TO_BOOL(int x) { return x != 0; }
 } /* extern "C++" */
 
 #endif  /* __cplusplus */
@@ -813,8 +874,96 @@ inline static bool CPL_TO_BOOL(int x) { return x != FALSE; }
 #define HAVE_GCC_DIAGNOSTIC_PUSH
 #endif
 
-#if ((__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2)) && !defined(_MSC_VER)) 
+#if ((__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 2)) && !defined(_MSC_VER))
 #define HAVE_GCC_SYSTEM_HEADER
 #endif
+
+#if defined(__clang__)
+#  define CPL_FALLTHROUGH [[clang::fallthrough]];
+#else
+#  define CPL_FALLTHROUGH
+#endif
+
+// Define DEBUG_BOOL to compile in "MSVC mode", ie error out when
+// a integer is assigned to a bool
+// WARNING: use only at compilation time, since it is know to not work
+//  at runtime for unknown reasons (crash in MongoDB driver for example)
+#if defined(__cplusplus) && defined(DEBUG_BOOL) && !defined(DO_NOT_USE_DEBUG_BOOL)
+extern "C++" {
+class MSVCPedanticBool
+{
+
+        friend bool operator== (const bool& one, const MSVCPedanticBool& other);
+        friend bool operator!= (const bool& one, const MSVCPedanticBool& other);
+
+        bool b;
+        MSVCPedanticBool(int bIn);
+
+    public:
+        /* b not initialized on purpose in default ctor to flag use. */
+        /* cppcheck-suppress uninitMemberVar */
+        MSVCPedanticBool() {}
+        MSVCPedanticBool(bool bIn) : b(bIn) {}
+        MSVCPedanticBool(const MSVCPedanticBool& other) : b(other.b) {}
+
+        MSVCPedanticBool& operator= (const MSVCPedanticBool& other) { b = other.b; return *this; }
+        MSVCPedanticBool& operator&= (const MSVCPedanticBool& other) { b &= other.b; return *this; }
+        MSVCPedanticBool& operator|= (const MSVCPedanticBool& other) { b |= other.b; return *this; }
+
+        bool operator== (const bool& other) const { return b == other; }
+        bool operator!= (const bool& other) const { return b != other; }
+        bool operator== (const MSVCPedanticBool& other) const { return b == other.b; }
+        bool operator!= (const MSVCPedanticBool& other) const { return b != other.b; }
+
+        bool operator! () const { return !b; }
+        operator bool() const { return b; }
+        operator int() const { return b; }
+};
+
+inline bool operator== (const bool& one, const MSVCPedanticBool& other) { return one == other.b; }
+inline bool operator!= (const bool& one, const MSVCPedanticBool& other) { return one != other.b; }
+
+/* We must include all C++ stuff before to avoid issues with templates that use bool */
+#include <vector>
+#include <map>
+#include <set>
+#include <string>
+#include <cstddef>
+#include <limits>
+#include <sstream>
+#include <fstream>
+#include <algorithm>
+
+} /* extern C++ */
+
+#undef FALSE
+#define FALSE false
+#undef TRUE
+#define TRUE true
+
+/* In the very few cases we really need a "simple" type, fallback to bool */
+#define EMULATED_BOOL int
+
+/* Use our class instead of bool */
+#define bool MSVCPedanticBool
+
+/* "volatile bool" with the below substitution doesn't really work. */
+/* Just for the sake of the debug, we don't really need volatile */
+#define VOLATILE_BOOL bool
+
+#else /* defined(__cplusplus) && defined(DEBUG_BOOL) */
+
+#ifndef FALSE
+#  define FALSE 0
+#endif
+
+#ifndef TRUE
+#  define TRUE  1
+#endif
+
+#define EMULATED_BOOL bool
+#define VOLATILE_BOOL volatile bool
+
+#endif /* defined(__cplusplus) && defined(DEBUG_BOOL) */
 
 #endif /* ndef CPL_BASE_H_INCLUDED */

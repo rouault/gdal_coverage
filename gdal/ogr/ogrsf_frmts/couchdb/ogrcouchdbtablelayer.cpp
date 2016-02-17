@@ -1108,7 +1108,7 @@ static json_object* OGRCouchDBWriteFeature( OGRFeature* poFeature,
 /* -------------------------------------------------------------------- */
     json_object* poObjProps = NULL;
 
-    poObjProps = OGRGeoJSONWriteAttributes( poFeature );
+    poObjProps = OGRGeoJSONWriteAttributes( poFeature, -1 );
     if (poObjProps)
     {
         json_object_object_del(poObjProps, "_id");
@@ -1143,7 +1143,7 @@ static json_object* OGRCouchDBWriteFeature( OGRFeature* poFeature,
         OGRGeometry* poGeometry = poFeature->GetGeometryRef();
         if ( NULL != poGeometry )
         {
-            poObjGeom = OGRGeoJSONWriteGeometry( poGeometry, nCoordPrecision );
+            poObjGeom = OGRGeoJSONWriteGeometry( poGeometry, nCoordPrecision, -1 );
             if ( poObjGeom != NULL &&
                  wkbFlatten(poGeometry->getGeometryType()) != wkbPoint &&
                  !poGeometry->IsEmpty() )
@@ -1296,7 +1296,7 @@ OGRErr OGRCouchDBTableLayer::ICreateFeature( OGRFeature *poFeature )
     int nFID = nNextFIDForCreate ++;
     CPLString osFID;
     if (!poFeature->IsFieldSet(COUCHDB_ID_FIELD) ||
-        !CSLTestBoolean(CPLGetConfigOption("COUCHDB_PRESERVE_ID_ON_INSERT", "FALSE")))
+        !CPLTestBool(CPLGetConfigOption("COUCHDB_PRESERVE_ID_ON_INSERT", "FALSE")))
     {
         if (poFeature->GetFID() != OGRNullFID)
         {

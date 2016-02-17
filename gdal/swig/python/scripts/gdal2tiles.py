@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #******************************************************************************
 #  $Id$
-# 
+#
 # Project:  Google Summer of Code 2007, 2008 (http://code.google.com/soc/)
 # Support:  BRGM (http://www.brgm.fr)
 # Purpose:  Convert a raster into TMS (Tile Map Service) tiles in a directory.
@@ -17,17 +17,17 @@
 ###############################################################################
 # Copyright (c) 2008, Klokan Petr Pridal
 # Copyright (c) 2010-2013, Even Rouault <even dot rouault at mines-paris dot org>
-# 
+#
 #  Permission is hereby granted, free of charge, to any person obtaining a
 #  copy of this software and associated documentation files (the "Software"),
 #  to deal in the Software without restriction, including without limitation
 #  the rights to use, copy, modify, merge, publish, distribute, sublicense,
 #  and/or sell copies of the Software, and to permit persons to whom the
 #  Software is furnished to do so, subject to the following conditions:
-# 
+#
 #  The above copyright notice and this permission notice shall be included
 #  in all copies or substantial portions of the Software.
-# 
+#
 #  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
 #  OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 #  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
@@ -115,7 +115,7 @@ class GlobalMercator(object):
          LatLon      <->       Meters      <->     Pixels    <->       Tile     
 
      WGS84 coordinates   Spherical Mercator  Pixels in pyramid  Tiles in pyramid
-         lat/lon            XY in metres     XY pixels Z zoom      XYZ from TMS 
+         lat/lon            XY in meters     XY pixels Z zoom      XYZ from TMS 
         EPSG:4326           EPSG:387                                         
          .----.              ---------               --                TMS      
         /      \     <->     |       |     <->     /----/    <->      Google    
@@ -950,7 +950,7 @@ gdal2tiles temp.vrt""" % self.input )
         # Report error in case rotation/skew is in geotransform (possible only in 'raster' profile)
         if (self.out_gt[2], self.out_gt[4]) != (0,0):
             self.error("Georeference of the raster contains rotation or skew. Such raster is not supported. Please use gdalwarp first.")
-            # TODO: Do the warping in this case automaticaly
+            # TODO: Do the warping in this case automatically
 
         #
         # Here we expect: pixel is square, no rotation on the raster

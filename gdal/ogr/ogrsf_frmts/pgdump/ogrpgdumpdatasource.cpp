@@ -207,14 +207,14 @@ OGRPGDumpDataSource::ICreateLayer( const char * pszLayerName,
 
     /* Should we turn layers with None geometry type as Unknown/GEOMETRY */
     /* so they are still recorded in geometry_columns table ? (#4012) */
-    int bNoneAsUnknown = CSLTestBoolean(CSLFetchNameValueDef(
+    int bNoneAsUnknown = CPLTestBool(CSLFetchNameValueDef(
                                     papszOptions, "NONE_AS_UNKNOWN", "NO"));
     if (bNoneAsUnknown && eType == wkbNone)
         eType = wkbUnknown;
     else if (eType == wkbNone)
         bHavePostGIS = FALSE;
 
-    int bExtractSchemaFromLayerName = CSLTestBoolean(CSLFetchNameValueDef(
+    int bExtractSchemaFromLayerName = CPLTestBool(CSLFetchNameValueDef(
                                     papszOptions, "EXTRACT_SCHEMA_FROM_LAYER_NAME", "YES"));
 
     /* Postgres Schema handling:
@@ -365,12 +365,10 @@ OGRPGDumpDataSource::ICreateLayer( const char * pszLayerName,
 
     const char *pszGeometryType = OGRToOGCGeomType(eType);
 
-    const char *pszGFldName = NULL;
+    const char *pszGFldName = CSLFetchNameValue( papszOptions, "GEOMETRY_NAME");
     if( bHavePostGIS && !EQUAL(pszGeomType, "geography"))
     {
-        if( CSLFetchNameValue( papszOptions, "GEOMETRY_NAME") != NULL )
-            pszGFldName = CSLFetchNameValue( papszOptions, "GEOMETRY_NAME");
-        else
+        if( pszGFldName == NULL )
             pszGFldName = "wkb_geometry";
 
         if( nPostGISMajor < 2 )
@@ -468,7 +466,7 @@ OGRPGDumpDataSource::ICreateLayer( const char * pszLayerName,
     }
 
     const char *pszSI = CSLFetchNameValue( papszOptions, "SPATIAL_INDEX" );
-    int bCreateSpatialIndex = ( pszSI == NULL || CSLTestBoolean(pszSI) );
+    int bCreateSpatialIndex = ( pszSI == NULL || CPLTestBool(pszSI) );
     if( bCreateTable && bHavePostGIS && bCreateSpatialIndex )
     {
 /* -------------------------------------------------------------------- */
@@ -513,6 +511,8 @@ OGRPGDumpDataSource::ICreateLayer( const char * pszLayerName,
         poGeomField->nCoordDimension = nDimension;
         poLayer->GetLayerDefn()->AddGeomFieldDefn(poGeomField, FALSE);
     }
+    else if( pszGFldName )
+        poLayer->SetGeometryFieldName(pszGFldName);
 
 /* -------------------------------------------------------------------- */
 /*      Add layer to data source layer list.                            */

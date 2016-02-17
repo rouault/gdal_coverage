@@ -38,12 +38,11 @@ CPL_CVSID("$Id$");
 /************************************************************************/
 
 OGRMemDataSource::OGRMemDataSource( const char *pszFilename,
-                                    CPL_UNUSED char **papszOptions) :
+                                    char ** /* papszOptions */) :
     papoLayers(NULL),
-    nLayers(0)
-{
-    pszName = CPLStrdup(pszFilename);
-}
+    nLayers(0),
+    pszName(CPLStrdup(pszFilename))
+{}
 
 /************************************************************************/
 /*                         ~OGRMemDataSource()                          */
@@ -120,11 +119,13 @@ int OGRMemDataSource::TestCapability( const char * pszCap )
 {
     if( EQUAL(pszCap,ODsCCreateLayer) )
         return TRUE;
-    if( EQUAL(pszCap,ODsCDeleteLayer) )
+    else if( EQUAL(pszCap,ODsCDeleteLayer) )
         return TRUE;
-    if( EQUAL(pszCap,ODsCCreateGeomFieldAfterCreateLayer) )
+    else if( EQUAL(pszCap,ODsCCreateGeomFieldAfterCreateLayer) )
         return TRUE;
-    if( EQUAL(pszCap,ODsCCurveGeometries) )
+    else if( EQUAL(pszCap,ODsCCurveGeometries) )
+        return TRUE;
+    else if( EQUAL(pszCap,ODsCMeasuredGeometries) )
         return TRUE;
 
     return FALSE;
@@ -139,6 +140,6 @@ OGRLayer *OGRMemDataSource::GetLayer( int iLayer )
 {
     if( iLayer < 0 || iLayer >= nLayers )
         return NULL;
-    else
-        return papoLayers[iLayer];
+
+    return papoLayers[iLayer];
 }

@@ -44,7 +44,7 @@ class OGRILI1DataSource;
 class OGRILI1Layer : public OGRLayer
 {
 private:
-#ifdef notused
+#if 0
     OGRSpatialReference *poSRS;
 #endif
     OGRFeatureDefn      *poFeatureDefn;
@@ -54,7 +54,7 @@ private:
     OGRFeature          **papoFeatures;
     int                 nFeatureIdx;
 
-    int                 bGeomsJoined;
+    bool                bGeomsJoined;
 
     OGRILI1DataSource   *poDS;
 
@@ -70,7 +70,8 @@ private:
     void                ResetReading();
     OGRFeature *        GetNextFeature();
     OGRFeature *        GetNextFeatureRef();
-    OGRFeature *        GetFeatureRef( long nFID );
+    OGRFeature *        GetFeatureRef( long nFid );
+    OGRFeature *        GetFeatureRef( const char* );
 
     GIntBig             GetFeatureCount( int bForce = TRUE );
 

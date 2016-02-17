@@ -371,7 +371,7 @@ int GetStateCode ( const char *pszState );
 const char *GetStateName( int nCode );
 
 //----- Conversion Table definition
-struct ConvertionTab {
+struct ConversionTab {
     const char *pszName;
     int nDefaultI;
     int nDefaultG;
@@ -379,7 +379,7 @@ struct ConvertionTab {
 };
 
 //----- Linear Unit Conversion Table
-static const ConvertionTab aoLinearUnitsConv[] = {
+static const ConversionTab aoLinearUnitsConv[] = {
     {"m",            /*  0 */  0,   1,  1.0},
     {SRS_UL_METER,   /*  1 */  0,   1,  1.0},
     {"meters",       /*  2 */  0,   1,  1.0},
@@ -408,7 +408,7 @@ static const ConvertionTab aoLinearUnitsConv[] = {
     {SRS_UA_RADIAN,  /* 20 */ 19,  20,  0.0},
     {"radians",      /* 21 */ 19,  20,  0.0}
 };
-#define LINEAR_UNITS_COUNT (sizeof(aoLinearUnitsConv) / sizeof(ConvertionTab))
+#define LINEAR_UNITS_COUNT (sizeof(aoLinearUnitsConv) / sizeof(ConversionTab))
 
 //----- Get the index of a given linear unit
 int GetUnitIndex( const char *pszUnitName );
@@ -842,7 +842,7 @@ GDALDataset *IdrisiDataset::Open( GDALOpenInfo *poOpenInfo )
         {
             int nCode = 0;
             int nCount = 0;
-            sscanf( poDS->papszRDC[++nLine], rdcCODE_N, &nCode );//asign legend cats to nCode
+            sscanf( poDS->papszRDC[++nLine], rdcCODE_N, &nCode );//assign legend cats to nCode
             for( int i = 0;( i < 255 ) &&( nCount < nCatCount ); i++ )
             {
                 if( i == nCode )
@@ -1058,15 +1058,15 @@ GDALDataset *IdrisiDataset::CreateCopy( const char *pszFilename,
     // ------------------------------------------------------------------------
     //      Check number of bands
     // ------------------------------------------------------------------------
-	if ( !( poSrcDS->GetRasterCount() == 1 ) && !( poSrcDS->GetRasterCount() == 3 ))
-	{
-		CPLError( CE_Failure, CPLE_AppDefined,
-                "Attempt to create IDRISI dataset with an illegal number of bands(%d)."
-                " Try again by selecting a specific band if possible.\n",
-				poSrcDS->GetRasterCount() );
-		return NULL; 
+    if ( !( poSrcDS->GetRasterCount() == 1 ) && !( poSrcDS->GetRasterCount() == 3 ))
+    {
+            CPLError( CE_Failure, CPLE_AppDefined,
+            "Attempt to create IDRISI dataset with an illegal number of bands(%d)."
+            " Try again by selecting a specific band if possible.\n",
+                            poSrcDS->GetRasterCount() );
+            return NULL; 
 
-	}
+    }
     if ( ( poSrcDS->GetRasterCount() == 3 ) &&
          ( ( poSrcDS->GetRasterBand( 1 )->GetRasterDataType() != GDT_Byte ) ||
          ( poSrcDS->GetRasterBand( 2 )->GetRasterDataType() != GDT_Byte ) ||
@@ -2055,7 +2055,7 @@ CPLErr IdrisiRasterBand::SetDefaultRAT( const GDALRasterAttributeTable *poRAT )
     // Seek for "Value" field index (AGIS standards field name)
     // ----------------------------------------------------------
 
-    if( GetColorTable() == 0 || GetColorTable()->GetColorEntryCount() == 0 )
+    if( GetColorTable() == NULL || GetColorTable()->GetColorEntryCount() == 0 )
     {
         for( int i = 0; i < poRAT->GetColumnCount(); i++ )
         {
@@ -2078,7 +2078,7 @@ CPLErr IdrisiRasterBand::SetDefaultRAT( const GDALRasterAttributeTable *poRAT )
     // ----------------------------------------------------------
 
     int iName  = -1;
-    if( GetCategoryNames() == 0 || CSLCount( GetCategoryNames() ) == 0 )
+    if( CSLCount( GetCategoryNames() ) == 0 )
     {
         iName  = poRAT->GetColOfUsage( GFU_Name );
         if( iName == -1 )

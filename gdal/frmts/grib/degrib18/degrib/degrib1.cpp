@@ -655,7 +655,17 @@ int GRIB1_Inventory (DataSource &fp, uInt4 gribLen, inventoryType *inv)
       errSprintf ("Ran out of data in PDS (GRIB1_Inventory)\n");
       return -1;
    }
+   if( sectLen < 3 )
+   {
+       errSprintf ("Invalid sectLen.\n");
+       return -1;
+   }
    pds = (uChar *) malloc (sectLen * sizeof (uChar));
+   if( pds == NULL )
+   {
+       errSprintf ("Ran out of memory.\n");
+       return -1;
+   }
    *pds = *temp;
    pds[1] = temp[1];
    pds[2] = temp[2];
@@ -1712,7 +1722,7 @@ int ReadGrib1Record (DataSource &fp, sChar f_unit, double **Grib_Data,
       return -1;
    }
 
-   /* Preceeding was in degrib2, next part is specific to GRIB1. */
+   /* Preceding was in degrib2, next part is specific to GRIB1. */
    curLoc = 8;
    if (ReadGrib1Sect1 (c_ipack + curLoc, gribLen, &curLoc, &(meta->pds1),
                        &f_gds, &gridID, &f_bms, &DSF, &(meta->center),
@@ -1849,11 +1859,10 @@ int ReadGrib1Record (DataSource &fp, sChar f_unit, double **Grib_Data,
               "section 5 is missing\n");
       return 0;
    }
-   if (curLoc + 4 > gribLen) {
-      errSprintf ("Ran out of bytes looking for the end of the message.\n");
+   if (curLoc + 4 != gribLen) {
+      errSprintf ("Invalid number of bytes for the end of the message.\n");
       return -5;
    }
-   myAssert (curLoc + 4 == gribLen);
    memcpy (&li_temp, c_ipack + curLoc, 4);
    if (li_temp != 926365495L) {
       errSprintf ("Did not find the end of the message.\n");

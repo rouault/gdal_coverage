@@ -28,6 +28,7 @@
  ****************************************************************************/
 
 #include "filegdbtable_priv.h"
+#include "cpl_port.h"
 #include "cpl_string.h"
 #include "cpl_time.h"
 #include "ogrpgeogeometry.h" /* SHPT_ constants and OGRCreateFromMultiPatchPart() */
@@ -229,20 +230,20 @@ static int ReadVarUInt(GByte*& pabyIter, GByte* pabyEnd, OutType& nOutVal)
 
 struct ControleTypeVerboseErrorTrue
 {
-    static const bool check_bounds = true;
-    static const bool verbose_error = true;
+    static const EMULATED_BOOL check_bounds = true;
+    static const EMULATED_BOOL verbose_error = true;
 };
 
 struct ControleTypeVerboseErrorFalse
 {
-    static const bool check_bounds = true;
-    static const bool verbose_error = false;
+    static const EMULATED_BOOL check_bounds = true;
+    static const EMULATED_BOOL verbose_error = false;
 };
 
 struct ControleTypeNone
 {
-    static const bool check_bounds = false;
-    static const bool verbose_error = false;
+    static const EMULATED_BOOL check_bounds = false;
+    static const EMULATED_BOOL verbose_error = false;
 };
 
 static int ReadVarUInt32(GByte*& pabyIter, GByte* pabyEnd, GUInt32& nOutVal)
@@ -459,7 +460,7 @@ int FileGDBTable::GuessFeatureLocations()
     nFileSize = VSIFTellL(fpTable);
 
     int bReportDeletedFeatures =
-        CSLTestBoolean(CPLGetConfigOption("OPENFILEGDB_REPORT_DELETED_FEATURES", "NO"));
+        CPLTestBool(CPLGetConfigOption("OPENFILEGDB_REPORT_DELETED_FEATURES", "NO"));
 
     vsi_l_offset nOffset = 40 + nFieldDescLength;
 
@@ -633,7 +634,7 @@ int FileGDBTable::Open(const char* pszFilename,
 
     CPLString osTableXName;
     if( nValidRecordCount > 0 &&
-        !CSLTestBoolean(CPLGetConfigOption("OPENFILEGDB_IGNORE_GDBTABLX", "FALSE")) )
+        !CPLTestBool(CPLGetConfigOption("OPENFILEGDB_IGNORE_GDBTABLX", "FALSE")) )
     {
         osTableXName = CPLFormFilename(CPLGetPath(pszFilename),
                                         CPLGetBasename(pszFilename), "gdbtablx");
@@ -648,7 +649,7 @@ int FileGDBTable::Open(const char* pszFilename,
                         "Trying to guess feature locations, but this might fail or "
                         "return incorrect results", osTableXName.c_str());
             }
-            else if( !CSLTestBoolean(pszIgnoreGDBTablXAbsence) )
+            else if( !CPLTestBool(pszIgnoreGDBTablXAbsence) )
             {
                 returnErrorIf(fpTableX == NULL );
             }
@@ -661,7 +662,7 @@ int FileGDBTable::Open(const char* pszFilename,
     {
         if(nValidRecordCount > nTotalRecordCount )
         {
-            if( CSLTestBoolean(CPLGetConfigOption("OPENFILEGDB_USE_GDBTABLE_RECORD_COUNT", "FALSE")) )
+            if( CPLTestBool(CPLGetConfigOption("OPENFILEGDB_USE_GDBTABLE_RECORD_COUNT", "FALSE")) )
             {
                 /* Potentially unsafe. See #5842 */
                 CPLDebug("OpenFileGDB", "%s: nTotalRecordCount (was %d) forced to nValidRecordCount=%d",
@@ -2034,7 +2035,7 @@ FileGDBGeomField::FileGDBGeomField(FileGDBTable* poParentIn) :
 /*                      FileGDBOGRGeometryConverterImpl                 */
 /************************************************************************/
 
-class FileGDBOGRGeometryConverterImpl : public FileGDBOGRGeometryConverter
+class FileGDBOGRGeometryConverterImpl CPL_FINAL : public FileGDBOGRGeometryConverter
 {
         const FileGDBGeomField      *poGeomField;
         GUInt32                     *panPointCount;
@@ -2339,6 +2340,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_POINTZ:
         case SHPT_POINTZM:
             bHasZ = TRUE; /* go on */
+            // CPL_FALLTHROUGH
         case SHPT_POINT:
         case SHPT_POINTM:
         {
@@ -2364,6 +2366,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_MULTIPOINTZM:
         case SHPT_MULTIPOINTZ:
             bHasZ = TRUE; /* go on */
+            // CPL_FALLTHROUGH
         case SHPT_MULTIPOINT:
         case SHPT_MULTIPOINTM:
         {
@@ -2408,6 +2411,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_ARCZ:
         case SHPT_ARCZM:
             bHasZ = TRUE; /* go on */
+            // CPL_FALLTHROUGH
         case SHPT_ARC:
         case SHPT_ARCM:
         case SHPT_GENERALPOLYLINE:
@@ -2427,7 +2431,11 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
             OGRMultiLineString* poMLS = NULL;
             FileGDBOGRLineString* poLS = NULL;
             if( nParts > 1 )
+            {
                 poMLS = new OGRMultiLineString();
+                if( bHasZ )
+                    poMLS->setCoordinateDimension(3);
+            }
 
             dx = dy = dz = 0;
             for(i=0;i<nParts;i++)
@@ -2483,6 +2491,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_POLYGONZ:
         case SHPT_POLYGONZM:
             bHasZ = TRUE; /* go on */
+            // CPL_FALLTHROUGH
         case SHPT_POLYGON:
         case SHPT_POLYGONM:
         case SHPT_GENERALPOLYGON:
@@ -2619,6 +2628,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_MULTIPATCHM:
         case SHPT_MULTIPATCH:
             bHasZ = TRUE; /* go on */
+            // CPL_FALLTHROUGH
         case SHPT_GENERALMULTIPATCH:
         {
             returnErrorIf(!ReadPartDefs(pabyCur, pabyEnd, nPoints, nParts, FALSE, TRUE ) );
@@ -2680,6 +2690,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
             }
 
             OGRMultiPolygon* poMP = new OGRMultiPolygon();
+            poMP->setCoordinateDimension(3);
             OGRPolygon* poLastPoly = NULL;
             int iAccPoints = 0;
             for(i=0;i<nParts;i++)

@@ -253,7 +253,7 @@ static const int anUsgsEsriZones[] =
 
 class HFARasterBand;
 
-class CPL_DLL HFADataset : public GDALPamDataset
+class HFADataset CPL_FINAL : public GDALPamDataset
 {
     friend class HFARasterBand;
 
@@ -333,7 +333,7 @@ class CPL_DLL HFADataset : public GDALPamDataset
 /* ==================================================================== */
 /************************************************************************/
 
-class HFARasterBand : public GDALPamRasterBand
+class HFARasterBand CPL_FINAL : public GDALPamRasterBand
 {
     friend class HFADataset;
     friend class HFARasterAttributeTable;
@@ -409,7 +409,7 @@ public:
     int               bConvertColors; // map 0-1 floats to 0-255 ints
 };
 
-class HFARasterAttributeTable : public GDALRasterAttributeTable
+class HFARasterAttributeTable CPL_FINAL : public GDALRasterAttributeTable
 {
 private:
 
@@ -543,11 +543,14 @@ HFARasterAttributeTable::HFARasterAttributeTable(HFARasterBand *poBand, const ch
                 }
             }
 
-            if( EQUAL(poDTChild->GetType(),"Edsc_BinFunction840") 
-                && EQUAL(poDTChild->GetStringField( "binFunction.type.string" ),
-                         "BFUnique") )
+            if( EQUAL(poDTChild->GetType(),"Edsc_BinFunction840") )
             {
-                AddColumn( "BinValues", GFT_Real, GFU_MinMax, 0, 0, poDTChild, TRUE);
+                const char* pszValue =
+                    poDTChild->GetStringField( "binFunction.type.string" );
+                if( pszValue && EQUAL(pszValue, "BFUnique") )
+                {
+                    AddColumn( "BinValues", GFT_Real, GFU_MinMax, 0, 0, poDTChild, TRUE);
+                }
             }
 
             if( !EQUAL(poDTChild->GetType(),"Edsc_Column") )
@@ -609,6 +612,13 @@ HFARasterAttributeTable::HFARasterAttributeTable(HFARasterBand *poBand, const ch
             else if( eType == GFT_String )
             {
                 int nMaxNumChars = poDTChild->GetIntField( "maxNumChars" );
+                if( nMaxNumChars <= 0 )
+                {
+                    CPLError(CE_Failure, CPLE_AppDefined,
+                             "Invalid nMaxNumChars = %d for column %s",
+                             nMaxNumChars, poDTChild->GetName());
+                    nMaxNumChars = 1;
+                }
                 AddColumn(poDTChild->GetName(), GFT_String, eUsage, nOffset, nMaxNumChars, poDTChild);
             }
             else if( eType == GFT_Integer )
@@ -799,7 +809,7 @@ int HFARasterAttributeTable::GetRowCount() const
 const char *HFARasterAttributeTable::GetValueAsString( int iRow, int iField ) const
 {
     // Get ValuesIO do do the work
-    char *apszStrList[1];
+    char *apszStrList[1] = { NULL };
     if( ((HFARasterAttributeTable*)this)->
                 ValuesIO(GF_Read, iField, iRow, 1, apszStrList ) != CE_None )
     {
@@ -819,7 +829,7 @@ const char *HFARasterAttributeTable::GetValueAsString( int iRow, int iField ) co
 int HFARasterAttributeTable::GetValueAsInt( int iRow, int iField ) const
 {
     // Get ValuesIO do do the work
-    int nValue;
+    int nValue = 0;
     if( ((HFARasterAttributeTable*)this)->
                 ValuesIO(GF_Read, iField, iRow, 1, &nValue ) != CE_None )
     {
@@ -836,7 +846,7 @@ int HFARasterAttributeTable::GetValueAsInt( int iRow, int iField ) const
 double HFARasterAttributeTable::GetValueAsDouble( int iRow, int iField ) const
 {
     // Get ValuesIO do do the work
-    double dfValue;
+    double dfValue = 0.0;
     if( ((HFARasterAttributeTable*)this)->
                 ValuesIO(GF_Read, iField, iRow, 1, &dfValue ) != CE_None )
     {
@@ -897,7 +907,9 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
         return CE_Failure;
     }
 
-    if( iStartRow < 0 || (iStartRow+iLength) > this->nRows )
+    if( iStartRow < 0 ||
+        iLength >= INT_MAX - iStartRow ||
+        (iStartRow+iLength) > this->nRows )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
                   "iStartRow (%d) + iLength(%d) out of range.", iStartRow, iLength );
@@ -977,12 +989,14 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
             {
                 // probably could change HFAReadBFUniqueBins to only read needed rows
                 double *padfBinValues = HFAReadBFUniqueBins( aoFields[iField].poColumn, iStartRow+iLength );
+                if( padfBinValues == NULL )
+                    return CE_Failure;
                 memcpy(pdfData, &padfBinValues[iStartRow], sizeof(double) * iLength);
                 CPLFree(padfBinValues);
             }
             else
             {
-                if(VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (iStartRow*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
+                if(VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (static_cast<vsi_l_offset>(iStartRow)*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
                     return CE_Failure;
 
                 if( eRWFlag == GF_Read )
@@ -1090,7 +1104,9 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
         return CE_Failure;
     }
 
-    if( iStartRow < 0 || (iStartRow+iLength) > this->nRows )
+    if( iStartRow < 0 ||
+        iLength >= INT_MAX - iStartRow ||
+        (iStartRow+iLength) > this->nRows )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
                   "iStartRow (%d) + iLength(%d) out of range.", iStartRow, iLength );
@@ -1108,7 +1124,7 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
     {
         case GFT_Integer:
         {
-            if( VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (iStartRow*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
+            if( VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (static_cast<vsi_l_offset>(iStartRow)*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
                 return CE_Failure;
             GInt32 *panColData = (GInt32*)VSI_MALLOC2_VERBOSE(iLength, sizeof(GInt32));
             if( panColData == NULL )
@@ -1261,7 +1277,9 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
         return CE_Failure;
     }
 
-    if( iStartRow < 0 || (iStartRow+iLength) > this->nRows )
+    if( iStartRow < 0 ||
+        iLength >= INT_MAX - iStartRow ||
+        (iStartRow+iLength) > this->nRows )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
                   "iStartRow (%d) + iLength(%d) out of range.", iStartRow, iLength );
@@ -1378,7 +1396,7 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
         break;
         case GFT_String:
         {
-            if( VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (iStartRow*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
+            if( VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (static_cast<vsi_l_offset>(iStartRow)*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
                 return CE_Failure;
             char *pachColData = (char*)VSI_MALLOC2_VERBOSE(iLength, aoFields[iField].nElementSize);
             if( pachColData == NULL )
@@ -1426,11 +1444,11 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
                     for( int i = 0; i < this->nRows; i++ )
                     {
                         // seek to the old place
-                        CPL_IGNORE_RET_VAL(VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (i*aoFields[iField].nElementSize), SEEK_SET ));
+                        CPL_IGNORE_RET_VAL(VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (static_cast<vsi_l_offset>(i)*aoFields[iField].nElementSize), SEEK_SET ));
                         // read in old data
                         CPL_IGNORE_RET_VAL(VSIFReadL(pszBuffer, aoFields[iField].nElementSize, 1, hHFA->fp ));
                         // seek to new place
-                        bool bOK = VSIFSeekL( hHFA->fp, nNewOffset + (i*nNewMaxChars), SEEK_SET ) == 0;
+                        bool bOK = VSIFSeekL( hHFA->fp, nNewOffset + (static_cast<vsi_l_offset>(i)*nNewMaxChars), SEEK_SET ) == 0;
                         // write data to new place
                         bOK &= VSIFWriteL(pszBuffer, aoFields[iField].nElementSize, 1, hHFA->fp) == 1;
                         // make sure there is a terminating null byte just to be safe
@@ -1463,7 +1481,7 @@ CPLErr HFARasterAttributeTable::ValuesIO(GDALRWFlag eRWFlag, int iField, int iSt
                     }
 
                     // lastly seek to the right place in the new space ready to write
-                    if( VSIFSeekL( hHFA->fp, nNewOffset + (iStartRow*nNewMaxChars), SEEK_SET ) != 0 )
+                    if( VSIFSeekL( hHFA->fp, nNewOffset + (static_cast<vsi_l_offset>(iStartRow)*nNewMaxChars), SEEK_SET ) != 0 )
                     {
                         VSIFree(pachColData);
                         return CE_Failure;
@@ -1515,7 +1533,7 @@ CPLErr HFARasterAttributeTable::ColorsIO(GDALRWFlag eRWFlag, int iField, int iSt
             padfData[i] = pnData[i] / 255.0;
     }
 
-    if( VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (iStartRow*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
+    if( VSIFSeekL( hHFA->fp, aoFields[iField].nDataOffset + (static_cast<vsi_l_offset>(iStartRow)*aoFields[iField].nElementSize), SEEK_SET ) != 0 )
     {
         CPLFree(padfData);
         return CE_Failure;
@@ -1893,7 +1911,8 @@ int HFARasterAttributeTable::GetLinearBinning( double *pdfRow0Min, double *pdfBi
 
 CPLXMLNode *HFARasterAttributeTable::Serialize() const
 {
-    if( ( GetRowCount() * GetColumnCount() ) > RAT_MAX_ELEM_FOR_CLONE )
+    if( GetRowCount() != 0 &&
+        GetColumnCount() > RAT_MAX_ELEM_FOR_CLONE / GetRowCount() )
         return NULL;
 
     return GDALRasterAttributeTable::Serialize();
@@ -1950,8 +1969,8 @@ HFARasterBand::HFARasterBand( HFADataset *poDSIn, int nBandIn, int iOverview )
             GDALMajorObject::SetMetadataItem( "RESAMPLING", 
                                               "AVERAGE_BIT2GRAYSCALE" );
             GDALMajorObject::SetMetadataItem( "NBITS", "8" );
-            eHFADataType = eHFADataTypeO;
         }
+        eHFADataType = eHFADataTypeO;
     }
 
 /* -------------------------------------------------------------------- */
@@ -2256,10 +2275,12 @@ void HFARasterBand::ReadHistogramMetadata()
     HFAEntry *poBinEntry = poBand->poNode->GetNamedChild( "Descriptor_Table.#Bin_Function840#" );
 
     if( poBinEntry != NULL
-        && EQUAL(poBinEntry->GetType(),"Edsc_BinFunction840") 
-        && EQUAL(poBinEntry->GetStringField( "binFunction.type.string" ),
-                 "BFUnique") )
-        padfBinValues = HFAReadBFUniqueBins( poBinEntry, nNumBins );
+        && EQUAL(poBinEntry->GetType(),"Edsc_BinFunction840")  )
+    {
+        const char* pszValue = poBinEntry->GetStringField( "binFunction.type.string" );
+        if( pszValue && EQUAL(pszValue,"BFUnique") )
+            padfBinValues = HFAReadBFUniqueBins( poBinEntry, nNumBins );
+    }
 
     if( padfBinValues )
     {
@@ -2801,7 +2822,7 @@ CPLErr HFARasterBand::CleanOverviews()
             CPLFormFilename( hHFA->psDependent->pszPath, 
                              hHFA->psDependent->pszFilename, NULL );
 
-        HFAClose( hHFA->psDependent );
+        CPL_IGNORE_RET_VAL(HFAClose( hHFA->psDependent ));
         hHFA->psDependent = NULL;
 
         CPLDebug( "HFA", "Unlink(%s)", osFilename.c_str() );
@@ -3250,7 +3271,10 @@ HFADataset::~HFADataset()
 /* -------------------------------------------------------------------- */
     if( hHFA != NULL )
     {
-        HFAClose( hHFA );
+        if( HFAClose( hHFA ) != 0 )
+        {
+            CPLError(CE_Failure, CPLE_FileIO, "I/O error");
+        }
         hHFA = NULL;
     }
 
@@ -4210,7 +4234,8 @@ void ClearSR(HFAHandle hHFA)
 static int ESRIToUSGSZone( int nESRIZone )
 
 {
-
+    if( nESRIZone == INT_MIN )
+        return 0;
     if( nESRIZone < 0 )
         return ABS(nESRIZone);
 
@@ -5653,7 +5678,11 @@ GDALDataset *HFADataset::Create( const char * pszFilenameIn,
     if( hHFA == NULL )
         return NULL;
 
-    HFAClose( hHFA );
+    if( HFAClose( hHFA ) != 0 )
+    {
+        CPLError(CE_Failure, CPLE_FileIO, "I/O error");
+        return NULL;
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Open the dataset normally.                                      */
@@ -5726,7 +5755,8 @@ CPLErr HFADataset::Rename( const char *pszNewName, const char *pszOldName )
                 HFARenameReferences( hHFA->psDependent, 
                                      osNewBasename, osOldBasename );
 
-            HFAClose( hHFA );
+            if( HFAClose( hHFA ) != 0 )
+                eErr = CE_Failure;
         }
     }
 
@@ -5774,7 +5804,8 @@ CPLErr HFADataset::CopyFiles( const char *pszNewName, const char *pszOldName )
                 HFARenameReferences( hHFA->psDependent, 
                                      osNewBasename, osOldBasename );
 
-            HFAClose( hHFA );
+            if( HFAClose( hHFA ) != 0 )
+                eErr = CE_Failure;
         }
     }
 

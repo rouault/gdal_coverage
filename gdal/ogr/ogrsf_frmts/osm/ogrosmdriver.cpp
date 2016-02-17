@@ -43,17 +43,26 @@ CPL_CVSID("$Id$");
 static int OGROSMDriverIdentify( GDALOpenInfo* poOpenInfo )
 
 {
-    if (poOpenInfo->fpL == NULL )
-        return FALSE;
-    const char* pszExt = CPLGetExtension(poOpenInfo->pszFilename);
-    if( EQUAL(pszExt, "pbf") ||
-        EQUAL(pszExt, "osm") )
-        return TRUE;
-    if( STARTS_WITH_CI(poOpenInfo->pszFilename, "/vsicurl_streaming/") ||
-        strcmp(poOpenInfo->pszFilename, "/vsistdin/") == 0 ||
-        strcmp(poOpenInfo->pszFilename, "/dev/stdin/") == 0 )
-        return -1;
-    return FALSE;
+    if (poOpenInfo->fpL == NULL || poOpenInfo->nHeaderBytes == 0)
+        return GDAL_IDENTIFY_FALSE;
+
+    if( strstr((const char*)poOpenInfo->pabyHeader, "<osm") != NULL )
+    {
+        return GDAL_IDENTIFY_TRUE;
+    }
+
+    const int nLimitI =
+        poOpenInfo->nHeaderBytes - static_cast<int>(strlen("OSMHeader"));
+    for(int i = 0; i < nLimitI; i++)
+    {
+        if( memcmp( poOpenInfo->pabyHeader + i, "OSMHeader",
+                    strlen("OSMHeader") ) == 0 )
+        {
+            return GDAL_IDENTIFY_TRUE;
+        }
+    }
+
+    return GDAL_IDENTIFY_FALSE;
 }
 
 /************************************************************************/
@@ -68,7 +77,7 @@ static GDALDataset *OGROSMDriverOpen( GDALOpenInfo* poOpenInfo )
     if( OGROSMDriverIdentify(poOpenInfo) == FALSE )
         return NULL;
 
-    OGROSMDataSource   *poDS = new OGROSMDataSource();
+    OGROSMDataSource *poDS = new OGROSMDataSource();
 
     if( !poDS->Open( poOpenInfo->pszFilename, poOpenInfo->papszOpenOptions ) )
     {

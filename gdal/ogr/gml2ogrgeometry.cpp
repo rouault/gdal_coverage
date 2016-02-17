@@ -829,7 +829,7 @@ OGRGeometry *GML2OGRGeometry_XMLNode_Internal( const CPLXMLNode *psNode,
 
     const char *pszBaseGeometry = BareGMLElement( psNode->pszValue );
     if (nPseudoBoolGetSecondaryGeometryOption < 0)
-        nPseudoBoolGetSecondaryGeometryOption = CSLTestBoolean(CPLGetConfigOption("GML_GET_SECONDARY_GEOM", "NO"));
+        nPseudoBoolGetSecondaryGeometryOption = CPLTestBool(CPLGetConfigOption("GML_GET_SECONDARY_GEOM", "NO"));
     bool bGetSecondaryGeometry = bIgnoreGSG ? false : CPL_TO_BOOL(nPseudoBoolGetSecondaryGeometryOption);
 
     /* Arbitrary value, but certainly large enough for reasonable usages ! */
@@ -1897,11 +1897,12 @@ OGRGeometry *GML2OGRGeometry_XMLNode_Internal( const CPLXMLNode *psNode,
                 {
                     /* Cf #5421 where there are PolygonPatch with only inner rings */
                     const CPLXMLNode* psPolygonPatch = GetChildElement(GetChildElement(psSurfaceChild));
+                    const CPLXMLNode* psPolygonPatchChild;
                     if( psPolygonPatch != NULL &&
                         psPolygonPatch->eType == CXT_Element &&
                         EQUAL(BareGMLElement(psPolygonPatch->pszValue),"PolygonPatch") &&
-                        GetChildElement(psPolygonPatch) != NULL &&
-                        EQUAL(BareGMLElement(GetChildElement(psPolygonPatch)->pszValue),"interior") )
+                        (psPolygonPatchChild = GetChildElement(psPolygonPatch)) != NULL &&
+                        EQUAL(BareGMLElement(psPolygonPatchChild->pszValue),"interior") )
                     {
                         // Find all inner rings 
                         for( const CPLXMLNode* psChild2 = psPolygonPatch->psChild; 
@@ -2758,7 +2759,7 @@ OGRGeometry *GML2OGRGeometry_XMLNode_Internal( const CPLXMLNode *psNode,
         /*   orientation="+/-" plays no role at all to identify "holes" */
         /* - each <Edge> within a <Face> may indifferently represent    */
         /*   an element of the Exterior or Interior Boundary; relative  */
-        /*   order of <Egdes> is absolutely irrelevant.                 */
+        /*   order of <Edges> is absolutely irrelevant.                 */
         /****************************************************************/
         /* Contributor: Alessandro Furieri, a.furieri@lqt.it            */
         /* Developed for Faunalia (http://www.faunalia.it)              */
@@ -2923,7 +2924,7 @@ OGRGeometry *GML2OGRGeometry_XMLNode_Internal( const CPLXMLNode *psNode,
         /* - any <Face> declaring orientation="-" is expected to        */
         /*   represent an Interior Ring (hole) belonging to the latest  */
         /*   Exterior Ring.                                             */
-        /* - <Egdes> within the same <Face> are expected to be          */
+        /* - <Edges> within the same <Face> are expected to be          */
         /*   arranged in geometrically adjacent and consecutive         */
         /*   sequence.                                                  */
         /****************************************************************/
@@ -3382,7 +3383,7 @@ OGRGeometryH OGR_G_CreateFromGML( const char *pszGML )
     OGRGeometry *poGeometry;
 
     /* Must be in synced in OGR_G_CreateFromGML(), OGRGMLLayer::OGRGMLLayer() and GMLReader::GMLReader() */
-    bool bFaceHoleNegative = CPL_TO_BOOL(CSLTestBoolean(CPLGetConfigOption("GML_FACE_HOLE_NEGATIVE", "NO")));
+    bool bFaceHoleNegative = CPLTestBool(CPLGetConfigOption("GML_FACE_HOLE_NEGATIVE", "NO"));
     poGeometry = GML2OGRGeometry_XMLNode( psGML, -1, 0, 0, false, true, bFaceHoleNegative );
 
     CPLDestroyXMLNode( psGML );

@@ -280,7 +280,7 @@ def png_13():
     src_ds = gdal.GetDriverByName('MEM').Create('',1,1)
     src_ds.SetMetadataItem('foo', 'bar')
     src_ds.SetMetadataItem('COPYRIGHT', 'copyright value')
-    src_ds.SetMetadataItem('DESCRIPTION', 'will be overriden by creation option')
+    src_ds.SetMetadataItem('DESCRIPTION', 'will be overridden by creation option')
     out_ds = gdal.GetDriverByName('PNG').CreateCopy('/vsimem/tmp.png', src_ds, options = ['WRITE_METADATA_AS_TEXT=YES', 'DESCRIPTION=my desc'])
     md = out_ds.GetMetadata()
     if len(md) != 3 or md['foo'] != 'bar' or md['Copyright'] != 'copyright value' or md['Description'] != 'my desc':
@@ -322,6 +322,27 @@ def png_14():
     # check that no PAM file is created
     if gdal.VSIStatL('/vsimem/tmp.png.aux.xml') == 0:
         gdaltest.post_reason('failure')
+        return 'fail'
+
+    # Test explicit NBITS
+    gdal.GetDriverByName('PNG').CreateCopy('/vsimem/tmp.png', src_ds, options = ['NBITS=2'])
+    out_ds = gdal.Open('/vsimem/tmp.png')
+    nbits = out_ds.GetRasterBand(1).GetMetadataItem('NBITS', 'IMAGE_STRUCTURE')
+    gdal.Unlink('/vsimem/tmp.png')
+    if nbits != '2':
+        gdaltest.post_reason('failure')
+        print(nbits)
+        return 'fail'
+
+    # Test (wrong) explicit NBITS
+    with gdaltest.error_handler():
+        gdal.GetDriverByName('PNG').CreateCopy('/vsimem/tmp.png', src_ds, options = ['NBITS=7'])
+    out_ds = gdal.Open('/vsimem/tmp.png')
+    nbits = out_ds.GetRasterBand(1).GetMetadataItem('NBITS', 'IMAGE_STRUCTURE')
+    gdal.Unlink('/vsimem/tmp.png')
+    if nbits is not None:
+        gdaltest.post_reason('failure')
+        print(nbits)
         return 'fail'
 
     return 'success'

@@ -92,7 +92,7 @@ class FITRasterBand : public GDALPamRasterBand
 
 public:
 
-    FITRasterBand( FITDataset *, int );
+    FITRasterBand( FITDataset *, int nBandIn, int nBandsIn );
     ~FITRasterBand();
 
     // should override RasterIO eventually.
@@ -109,7 +109,13 @@ public:
 /*                           FITRasterBand()                            */
 /************************************************************************/
 
-FITRasterBand::FITRasterBand( FITDataset *poDSIn, int nBandIn ) : tmpImage( NULL )
+FITRasterBand::FITRasterBand( FITDataset *poDSIn, int nBandIn, int nBandsIn ) :
+        recordSize(0),
+        numXBlocks(0),
+        numYBlocks(0),
+        bytesPerComponent(0),
+        bytesPerPixel(0),
+        tmpImage( NULL )
 
 {
     this->poDS = poDSIn;
@@ -130,18 +136,20 @@ FITRasterBand::FITRasterBand( FITDataset *poDSIn, int nBandIn ) : tmpImage( NULL
 /*      Caculate the values for record offset calculations.             */
 /* -------------------------------------------------------------------- */
     bytesPerComponent = (GDALGetDataTypeSize(eDataType) / 8);
-    bytesPerPixel = poDSIn->nBands * bytesPerComponent;
+    if( bytesPerComponent == 0 )
+        return;
+    bytesPerPixel = nBandsIn * bytesPerComponent;
+    if( nBlockXSize <= 0 || nBlockYSize <= 0 ||
+        nBlockXSize > INT_MAX / (int)bytesPerPixel ||
+        nBlockYSize > INT_MAX / (nBlockXSize * (int)bytesPerPixel) )
+        return;
     recordSize = bytesPerPixel * nBlockXSize * nBlockYSize;
     numXBlocks =
         (unsigned long) ceil((double) poDSIn->info->xSize / nBlockXSize);
     numYBlocks =
         (unsigned long) ceil((double) poDSIn->info->ySize / nBlockYSize);
 
-    tmpImage = (char *) malloc(recordSize);
-    if (! tmpImage)
-        CPLError(CE_Fatal, CPLE_NotSupported, 
-                 "FITRasterBand couldn't allocate %lu bytes", recordSize);
-
+    tmpImage = (char *) VSI_MALLOC_VERBOSE(recordSize);
 /* -------------------------------------------------------------------- */
 /*      Set the access flag.  For now we set it the same as the         */
 /*      whole dataset, but eventually this should take account of       */
@@ -153,8 +161,7 @@ FITRasterBand::FITRasterBand( FITDataset *poDSIn, int nBandIn ) : tmpImage( NULL
 
 FITRasterBand::~FITRasterBand()
 {
-    if ( tmpImage )
-        free ( tmpImage );
+    VSIFree ( tmpImage );
 }
 
 
@@ -242,7 +249,7 @@ CPLErr FITRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
         CPLError(CE_Failure, CPLE_NotSupported,
                  "FIT - unrecognized image space %i",
                  poFIT_DS->info->space);
-        tilenum = 0;
+        return CE_Failure;
     } // switch
 
     uint64 offset = poFIT_DS->info->dataOffset + recordSize * tilenum;
@@ -264,14 +271,20 @@ CPLErr FITRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
     if ((poFIT_DS->nBands == 1) && (poFIT_DS->info->space == 1)) // upper left
         fastpath = TRUE;
 
+    size_t nRead;
     if (! fastpath) {
-        CPL_IGNORE_RET_VAL(VSIFReadL( tmpImage, recordSize, 1, poFIT_DS->fp ));
+        nRead = VSIFReadL( tmpImage, recordSize, 1, poFIT_DS->fp );
         // offset to correct component to swap
         p = (char *) tmpImage + nBand-1;
     }
     else {
-        CPL_IGNORE_RET_VAL(VSIFReadL( pImage, recordSize, 1, poFIT_DS->fp ));
+        nRead = VSIFReadL( pImage, recordSize, 1, poFIT_DS->fp );
         p = (char *) pImage;
+    }
+    if( nRead != 1 )
+    {
+        CPLError(CE_Failure, CPLE_FileIO, "Cannot read record");
+        return CE_Failure;
     }
 
 
@@ -785,7 +798,12 @@ FITDataset::~FITDataset()
     if (info)
         delete(info);
     if(fp)
-        VSIFCloseL(fp);
+    {
+        if( VSIFCloseL(fp) != 0 )
+        {
+            CPLError(CE_Failure, CPLE_FileIO, "I/O error");
+        }
+    }
 }
 
 // simple guard object to delete memory 
@@ -803,7 +821,7 @@ public:
     T *take()
     {
         T *tmp = _ptr;
-	    _ptr = 0;
+	    _ptr = NULL;
 	    return tmp;
     }
 
@@ -830,7 +848,7 @@ public:
     T *take()
     {
         T *tmp = _ptr;
-	    _ptr = 0;
+	    _ptr = NULL;
 	    return tmp;
     }
 
@@ -979,8 +997,13 @@ GDALDataset *FITDataset::Open( GDALOpenInfo * poOpenInfo )
 
     poDS->nRasterXSize = head->xSize;
     poDS->nRasterYSize = head->ySize;
-    poDS->nBands = head->cSize;
 
+    if (!GDALCheckDatasetDimensions(poDS->nRasterXSize, poDS->nRasterYSize) ||
+        !GDALCheckBandCount(head->cSize, FALSE))
+    {
+        return NULL;
+    }
+    
 /* -------------------------------------------------------------------- */
 /*      Check if 64 bit seek is needed.                                 */
 /* -------------------------------------------------------------------- */
@@ -1042,9 +1065,12 @@ GDALDataset *FITDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Create band information objects.                                */
 /* -------------------------------------------------------------------- */
-    for( int i = 0; i < poDS->nBands; i++ )
+    for( int i = 0; i < (int)head->cSize; i++ )
     {
-        poDS->SetBand( i+1,  new FITRasterBand( poDS, i+1 ) ) ;
+        FITRasterBand* poBand = new FITRasterBand( poDS, i+1, (int)head->cSize );
+        poDS->SetBand( i+1,  poBand);
+        if( poBand->tmpImage == NULL )
+            return NULL;
     }
 
 /* -------------------------------------------------------------------- */
@@ -1126,13 +1152,13 @@ static GDALDataset *FITCreateCopy(const char * pszFilename,
 
     GDALRasterBand *firstBand = poSrcDS->GetRasterBand(1);
     if (! firstBand) {
-        VSIFCloseL(fpImage);
+        CPL_IGNORE_RET_VAL(VSIFCloseL(fpImage));
         return NULL;
     }
 
     head->dtype = fitGetDataType(firstBand->GetRasterDataType());
     if (! head->dtype) {
-        VSIFCloseL(fpImage);
+        CPL_IGNORE_RET_VAL(VSIFCloseL(fpImage));
         return NULL;
     }
     gst_swapb(head->dtype);
@@ -1291,7 +1317,7 @@ static GDALDataset *FITCreateCopy(const char * pszFilename,
             {
                 CPLError( CE_Failure, CPLE_UserInterrupt, "User terminated" );
                 //free(output);
-                VSIFCloseL( fpImage );
+                CPL_IGNORE_RET_VAL(VSIFCloseL( fpImage ));
                 VSIUnlink( pszFilename );
                 return NULL;
             }
@@ -1299,7 +1325,7 @@ static GDALDataset *FITCreateCopy(const char * pszFilename,
 
     //free(output);
 
-    VSIFCloseL( fpImage );
+    CPL_IGNORE_RET_VAL(VSIFCloseL( fpImage ));
 
     pfnProgress( 1.0, NULL, pProgressData );
 

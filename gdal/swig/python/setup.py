@@ -25,7 +25,7 @@ GNM_ENABLED = False
 
 # ---------------------------------------------------------------------------
 # Default build options
-# (may be overriden with setup.cfg or command line switches).
+# (may be overridden with setup.cfg or command line switches).
 # ---------------------------------------------------------------------------
 
 include_dirs = ['../../port', '../../gcore', '../../alg', '../../ogr/', '../../ogr/ogrsf_frmts', '../../gnm', '../../apps']
@@ -249,7 +249,7 @@ py_modules = ['gdal',
 if os.path.exists('setup_vars.ini'):
     with open('setup_vars.ini') as f:
         lines = f.readlines()
-        if 'GNM_ENABLED=yes' in lines:
+        if 'GNM_ENABLED=yes' or 'GNM_ENABLED=yes\n' in lines:
             GNM_ENABLED = True
 
 if GNM_ENABLED:

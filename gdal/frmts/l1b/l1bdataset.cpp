@@ -557,7 +557,7 @@ L1BDataset::L1BDataset( L1BFileFormat eL1BFormatIn )
     eProcCenter = UNKNOWN_CENTER;
     // sStartTime
     // sStopTime
-    bHighGCPDensityStrategy = CSLTestBoolean(CPLGetConfigOption("L1B_HIGH_GCP_DENSITY", "TRUE"));
+    bHighGCPDensityStrategy = CPLTestBool(CPLGetConfigOption("L1B_HIGH_GCP_DENSITY", "TRUE"));
     pasGCPList = NULL;
     nGCPCount = 0;
     iGCPOffset = 0;
@@ -605,7 +605,7 @@ L1BDataset::~L1BDataset()
     if ( pszGCPProjection )
         CPLFree( pszGCPProjection );
     if( fp != NULL )
-        VSIFCloseL( fp );
+        CPL_IGNORE_RET_VAL(VSIFCloseL( fp ));
     delete poMaskBand;
 }
 
@@ -1092,7 +1092,7 @@ void L1BDataset::FetchMetadata()
     }
 
     CPLFree(pabyRecordHeader);
-    VSIFCloseL(fpCSV);
+    CPL_IGNORE_RET_VAL(VSIFCloseL(fpCSV));
 }
 
 /************************************************************************/
@@ -1312,7 +1312,7 @@ void L1BDataset::FetchMetadataNOAA15()
     }
 
     CPLFree(pabyRecordHeader);
-    VSIFCloseL(fpCSV);
+    CPL_IGNORE_RET_VAL(VSIFCloseL(fpCSV));
 }
 
 /************************************************************************/
@@ -3170,7 +3170,7 @@ GDALDataset *L1BDataset::Open( GDALOpenInfo * poOpenInfo )
     if ( eL1BFormat == L1B_NONE )
     {
         if( fp != NULL )
-            VSIFCloseL(fp);
+            CPL_IGNORE_RET_VAL(VSIFCloseL(fp));
         return NULL;
     }
 
@@ -3183,7 +3183,7 @@ GDALDataset *L1BDataset::Open( GDALOpenInfo * poOpenInfo )
                   "The L1B driver does not support update access to existing"
                   " datasets.\n" );
         if( fp != NULL )
-            VSIFCloseL(fp);
+            CPL_IGNORE_RET_VAL(VSIFCloseL(fp));
         return NULL;
     }
 
@@ -3348,7 +3348,7 @@ GDALDataset *L1BDataset::Open( GDALOpenInfo * poOpenInfo )
 
     {
         CPLString  osTMP;
-        int bInterpol = CSLTestBoolean(CPLGetConfigOption("L1B_INTERPOL_GCPS", "TRUE"));
+        int bInterpol = CPLTestBool(CPLGetConfigOption("L1B_INTERPOL_GCPS", "TRUE"));
 
         poOutDS->SetMetadataItem( "SRS", poDS->pszGCPProjection, "GEOLOCATION" ); /* unused by gdalgeoloc.cpp */
 
@@ -3487,7 +3487,7 @@ GDALDataset *L1BDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Fetch metadata in CSV file                                      */
 /* -------------------------------------------------------------------- */
-    if( CSLTestBoolean(CPLGetConfigOption("L1B_FETCH_METADATA", "NO")) )
+    if( CPLTestBool(CPLGetConfigOption("L1B_FETCH_METADATA", "NO")) )
     {
         poDS->FetchMetadata();
     }

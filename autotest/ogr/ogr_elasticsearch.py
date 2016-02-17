@@ -84,7 +84,7 @@ def ogr_elasticsearch_1():
     if ogrtest.elasticsearch_drv is None:
         return 'skip'
 
-    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_status", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
+    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_stats", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
 
     ds = ogrtest.elasticsearch_drv.CreateDataSource("/vsimem/fakeelasticsearch")
     if ds is None:
@@ -246,7 +246,7 @@ def ogr_elasticsearch_1():
         return 'fail'
 
     # Success
-    gdal.FileFromMemBuffer('/vsimem/fakeelasticsearch/foo2/FeatureCollection/&POSTFIELDS={ "geometry": { "type": "POINT", "coordinates": [ 0.0, 1.0 ] }, "type": "Feature", "properties": { "str_field": "a", "int_field": 1, "int64_field": 123456789012, "real_field": 2.340000, "boolean_field": true, "strlist_field": [ "a", "b" ], "intlist_field": [ 1, 2 ], "int64list_field": [ 123456789012, 2 ], "reallist_field": [ 1.230000, 4.560000 ], "date_field": "2015\/08\/12", "datetime_field": "2015\/08\/12 12:34:56.789", "time_field": "12:34:56.789", "binary_field": "ASNGV4mrze8=" } }', '{ "_id": "my_id" }')
+    gdal.FileFromMemBuffer('/vsimem/fakeelasticsearch/foo2/FeatureCollection/&POSTFIELDS={ "geometry": { "type": "POINT", "coordinates": [ 0.0, 1.0 ] }, "type": "Feature", "properties": { "str_field": "a", "int_field": 1, "int64_field": 123456789012, "real_field": 2.34, "boolean_field": true, "strlist_field": [ "a", "b" ], "intlist_field": [ 1, 2 ], "int64list_field": [ 123456789012, 2 ], "reallist_field": [ 1.23, 4.56 ], "date_field": "2015\/08\/12", "datetime_field": "2015\/08\/12 12:34:56.789", "time_field": "12:34:56.789", "binary_field": "ASNGV4mrze8=" } }', '{ "_id": "my_id" }')
     ret = lyr.CreateFeature(feat)
     if ret != 0:
         gdaltest.post_reason('fail')
@@ -440,9 +440,9 @@ def ogr_elasticsearch_4():
         gdaltest.post_reason('fail')
         return 'fail'
 
-    # Test case where there's no index and _status is not responding
+    # Test case where there's no index and _stats is not responding
     gdal.FileFromMemBuffer("""/vsimem/fakeelasticsearch/_cat/indices?h=i""", '')
-    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_status", "")
+    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_stats", "")
     with gdaltest.error_handler():
         ds = ogr.Open('ES:/vsimem/fakeelasticsearch')
     if ds is not None:
@@ -451,7 +451,7 @@ def ogr_elasticsearch_4():
 
     # Test case where there's no index
     gdal.FileFromMemBuffer("""/vsimem/fakeelasticsearch/_cat/indices?h=i""", '')
-    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_status", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
+    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_stats", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
     ds = ogr.Open('ES:/vsimem/fakeelasticsearch')
     if ds is None:
         gdaltest.post_reason('fail')
@@ -461,7 +461,7 @@ def ogr_elasticsearch_4():
         print(ds.GetLayerCount())
         return 'fail'
     ds = None
-    gdal.Unlink("""/vsimem/fakeelasticsearch/_status""")
+    gdal.Unlink("""/vsimem/fakeelasticsearch/_stats""")
 
     gdal.FileFromMemBuffer("""/vsimem/fakeelasticsearch/_cat/indices?h=i""", '\n')
     ds = ogr.Open('ES:/vsimem/fakeelasticsearch')
@@ -974,7 +974,7 @@ def ogr_elasticsearch_5():
     if ogrtest.elasticsearch_drv is None:
         return 'skip'
 
-    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_status", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
+    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_stats", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
     ds = ogrtest.elasticsearch_drv.CreateDataSource("/vsimem/fakeelasticsearch")
 
     gdal.FileFromMemBuffer('/vsimem/fakeelasticsearch/non_geojson&POSTFIELDS=', '')
@@ -1308,7 +1308,7 @@ def ogr_elasticsearch_7():
     if ogrtest.elasticsearch_drv is None:
         return 'skip'
 
-    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_status", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
+    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_stats", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
 
     ds = ogrtest.elasticsearch_drv.CreateDataSource("/vsimem/fakeelasticsearch")
 
@@ -1341,7 +1341,7 @@ def ogr_elasticsearch_8():
     if ogrtest.elasticsearch_drv is None:
         return 'skip'
 
-    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_status", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
+    gdal.FileFromMemBuffer("/vsimem/fakeelasticsearch/_stats", """{"_shards":{"total":0,"successful":0,"failed":0},"indices":{}}""")
 
     ds = ogrtest.elasticsearch_drv.CreateDataSource("/vsimem/fakeelasticsearch")
 

@@ -35,6 +35,10 @@
 * POSSIBILITY OF SUCH DAMAGE.
 ****************************************************************************/
 
+#ifdef DEBUG_BOOL
+#define DO_NOT_USE_DEBUG_BOOL
+#endif
+
 #include "mg4lidar_headers.h"
 
 #include <float.h>
@@ -659,7 +663,7 @@ CPLErr MG4LidarDataset::OpenZoomLevel( int iZoom )
    const ChannelInfo *ci = NULL;
    for (int i=0; i<nBands; i++)
    {
-      ci = reader->getChannel(dynamic_cast<MG4LidarRasterBand*>(papoBands[i])->ChannelName);
+      ci = reader->getChannel(static_cast<MG4LidarRasterBand*>(papoBands[i])->ChannelName);
       requiredChannels.getChannel(i).init(*ci);
    }
    int iSDKChannels = nBands;
@@ -778,7 +782,8 @@ GDALDataset *MG4LidarDataset::Open( GDALOpenInfo * poOpenInfo )
    FileIO* io = FileIO::create();
 
 #if (defined(WIN32) && _MSC_VER >= 1310) || __MSVCRT_VERSION__ >= 0x0601
-   bool bIsUTF8 = CPL_TO_BOOL(CSLTestBoolean( CPLGetConfigOption( "GDAL_FILENAME_IS_UTF8", "YES" ) ));
+   bool bIsUTF8 =
+       CPLTestBool( CPLGetConfigOption( "GDAL_FILENAME_IS_UTF8", "YES" ) );
    wchar_t *pwszFilename = NULL;
    if (bIsUTF8)
    {

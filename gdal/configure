@@ -1799,6 +1799,7 @@ Optional Packages:
   --with-rasdaman=DIR        Include rasdaman support (DIR is rasdaman's install dir).
   --with-armadillo=ARG       Include Armadillo support for faster TPS transform computation (ARG=yes/no/path to armadillo install root) [default=no]
   --with-cryptopp=ARG       Include cryptopp support (ARG=yes, no or path)
+  --without-mrf           Disable MRF driver
 
 Some influential environment variables:
   CC          C compiler command
@@ -4691,6 +4692,77 @@ fi
 
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Werror -Wnull-dereference" >&5
+$as_echo_n "checking whether C compiler accepts -Werror -Wnull-dereference... " >&6; }
+if ${ax_cv_check_cflags___Werror__Wnull_dereference+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS  -Werror -Wnull-dereference"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ax_cv_check_cflags___Werror__Wnull_dereference=yes
+else
+  ax_cv_check_cflags___Werror__Wnull_dereference=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Werror__Wnull_dereference" >&5
+$as_echo "$ax_cv_check_cflags___Werror__Wnull_dereference" >&6; }
+if test "x$ax_cv_check_cflags___Werror__Wnull_dereference" = xyes; then :
+  C_WFLAGS="$C_WFLAGS -Wnull-dereference" CXX_WFLAGS="$CXX_WFLAGS -Wnull-dereference"
+else
+  :
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Werror -Wduplicated-cond" >&5
+$as_echo_n "checking whether C compiler accepts -Werror -Wduplicated-cond... " >&6; }
+if ${ax_cv_check_cflags___Werror__Wduplicated_cond+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS  -Werror -Wduplicated-cond"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ax_cv_check_cflags___Werror__Wduplicated_cond=yes
+else
+  ax_cv_check_cflags___Werror__Wduplicated_cond=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Werror__Wduplicated_cond" >&5
+$as_echo "$ax_cv_check_cflags___Werror__Wduplicated_cond" >&6; }
+if test "x$ax_cv_check_cflags___Werror__Wduplicated_cond" = xyes; then :
+  C_WFLAGS="$C_WFLAGS -Wduplicated-cond" CXX_WFLAGS="$CXX_WFLAGS -Wduplicated-cond"
+else
+  :
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Werror -Wno-sign-compare" >&5
 $as_echo_n "checking whether C compiler accepts -Werror -Wno-sign-compare... " >&6; }
 if ${ax_cv_check_cflags___Werror__Wno_sign_compare+:} false; then :
@@ -4725,6 +4797,8 @@ if test "x$ax_cv_check_cflags___Werror__Wno_sign_compare" = xyes; then :
 else
   :
 fi
+
+
 
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
@@ -4871,6 +4945,79 @@ if test "x$ax_cv_check_cxxflags___Werror__Wnon_virtual_dtor" = xyes; then :
 else
   :
 fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts -Werror -Woverloaded-virtual" >&5
+$as_echo_n "checking whether C++ compiler accepts -Werror -Woverloaded-virtual... " >&6; }
+if ${ax_cv_check_cxxflags___Werror__Woverloaded_virtual+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CXXFLAGS
+  CXXFLAGS="$CXXFLAGS  -Werror -Woverloaded-virtual"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ax_cv_check_cxxflags___Werror__Woverloaded_virtual=yes
+else
+  ax_cv_check_cxxflags___Werror__Woverloaded_virtual=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CXXFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cxxflags___Werror__Woverloaded_virtual" >&5
+$as_echo "$ax_cv_check_cxxflags___Werror__Woverloaded_virtual" >&6; }
+if test "x$ax_cv_check_cxxflags___Werror__Woverloaded_virtual" = xyes; then :
+  CXX_WFLAGS="$CXX_WFLAGS -Woverloaded-virtual"
+else
+  :
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C++ compiler accepts -Werror -fno-operator-names" >&5
+$as_echo_n "checking whether C++ compiler accepts -Werror -fno-operator-names... " >&6; }
+if ${ax_cv_check_cxxflags___Werror__fno_operator_names+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CXXFLAGS
+  CXXFLAGS="$CXXFLAGS  -Werror -fno-operator-names"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  ax_cv_check_cxxflags___Werror__fno_operator_names=yes
+else
+  ax_cv_check_cxxflags___Werror__fno_operator_names=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CXXFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cxxflags___Werror__fno_operator_names" >&5
+$as_echo "$ax_cv_check_cxxflags___Werror__fno_operator_names" >&6; }
+if test "x$ax_cv_check_cxxflags___Werror__fno_operator_names" = xyes; then :
+  CXX_WFLAGS="$CXX_WFLAGS -fno-operator-names"
+else
+  :
+fi
+
 
 ac_ext=c
 ac_cpp='$CPP $CPPFLAGS'
@@ -28939,7 +29086,7 @@ fi
     rm -f testrlist.*
     echo '#include <freexl.h>' > testfreexl.c
     echo 'int main(int argc, char** argv) { FreeXL_CellValue s; freexl_get_cell_value (0,0,0,&s); return 0; } ' >> testfreexl.c
-    if test -z "`${CC} testfreexl.c -c 2>&1`" ; then
+    if test -z "`${CC} ${CFLAGS} testfreexl.c -c 2>&1`" ; then
         HAVE_FREEXL=yes
         LIBS="$FREEXL_LIBS $LIBS"
     else
@@ -29183,13 +29330,13 @@ fi
 
   fi
 
-  if test "FREEXL_LIBS" != "missing" -a -f "$with_freexl/include/freexl.h" ; then
+  if test "$FREEXL_LIBS" != "missing" -a -f "$with_freexl/include/freexl.h" ; then
 
     # Check that freexl is recent enough
     rm -f testrlist.*
     echo '#include <freexl.h>' > testfreexl.c
     echo 'int main(int argc, char** argv) { FreeXL_CellValue s; freexl_get_cell_value (0,0,0,&s); return 0; } ' >> testfreexl.c
-    if test -z "`${CC} -I$with_freexl/include testfreexl.c -c 2>&1`" ; then
+    if test -z "`${CC} ${CFLAGS} -I$with_freexl/include testfreexl.c -c 2>&1`" ; then
         HAVE_FREEXL=yes
         LIBS="$FREEXL_LIBS $LIBS"
         FREEXL_INCLUDE="-I$with_freexl/include"
@@ -31123,6 +31270,29 @@ fi
 HAVE_CRYPTOPP=$HAVE_CRYPTOPP
 
 USE_ONLY_CRYPTODLL_ALG=$USE_ONLY_CRYPTODLL_ALG
+
+
+
+
+
+# Check whether --with-grib was given.
+if test "${with_grib+set}" = set; then :
+  withval=$with_grib;
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for MRF" >&5
+$as_echo_n "checking for MRF... " >&6; }
+if test "$with_mrf" = yes -o x"$with_mrf" = x ; then
+    OPT_GDAL_FORMATS="mrf $OPT_GDAL_FORMATS"
+    HAVE_MRF=yes
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: enabled" >&5
+$as_echo "enabled" >&6; }
+else
+    HAVE_MRF=no
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: disabled by user" >&5
+$as_echo "disabled by user" >&6; }
+fi
 
 
 ac_config_files="$ac_config_files GDALmake.opt"
@@ -33647,6 +33817,9 @@ echo "  cURL support (wms/wcs/...):${CURL_SETTING}"
 
 
 echo "  PostgreSQL support:        ${HAVE_PG}"
+
+
+echo "  MRF support:               ${HAVE_MRF}"
 
 
 echo "  MySQL support:             ${HAVE_MYSQL}"
