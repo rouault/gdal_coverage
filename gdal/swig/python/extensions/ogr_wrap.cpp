@@ -24703,6 +24703,42 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_GT_SetM(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
+  OGRwkbGeometryType arg1 ;
+  int val1 ;
+  int ecode1 = 0 ;
+  PyObject * obj0 = 0 ;
+  OGRwkbGeometryType result;
+  
+  if (!PyArg_ParseTuple(args,(char *)"O:GT_SetM",&obj0)) SWIG_fail;
+  ecode1 = SWIG_AsVal_int(obj0, &val1);
+  if (!SWIG_IsOK(ecode1)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "GT_SetM" "', argument " "1"" of type '" "OGRwkbGeometryType""'");
+  } 
+  arg1 = static_cast< OGRwkbGeometryType >(val1);
+  {
+    if ( bUseExceptions ) {
+      CPLErrorReset();
+    }
+    result = (OGRwkbGeometryType)OGR_GT_SetM(arg1);
+#ifndef SED_HACKS
+    if ( bUseExceptions ) {
+      CPLErr eclass = CPLGetLastErrorType();
+      if ( eclass == CE_Failure || eclass == CE_Fatal ) {
+        SWIG_exception( SWIG_RuntimeError, CPLGetLastErrorMsg() );
+      }
+    }
+#endif
+  }
+  resultobj = SWIG_From_int(static_cast< int >(result));
+  if ( ReturnSame(bLocalUseExceptionsCode) ) { CPLErr eclass = CPLGetLastErrorType(); if ( eclass == CE_Failure || eclass == CE_Fatal ) { Py_XDECREF(resultobj); SWIG_Error( SWIG_RuntimeError, CPLGetLastErrorMsg() ); return NULL; } }
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
 SWIGINTERN PyObject *_wrap_GT_SetModifier(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0; int bLocalUseExceptionsCode = bUseExceptions;
   OGRwkbGeometryType arg1 ;
@@ -29548,6 +29584,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"GetFieldSubTypeName", _wrap_GetFieldSubTypeName, METH_VARARGS, (char *)"GetFieldSubTypeName(OGRFieldSubType type) -> char const *"},
 	 { (char *)"GT_Flatten", _wrap_GT_Flatten, METH_VARARGS, (char *)"GT_Flatten(OGRwkbGeometryType eType) -> OGRwkbGeometryType"},
 	 { (char *)"GT_SetZ", _wrap_GT_SetZ, METH_VARARGS, (char *)"GT_SetZ(OGRwkbGeometryType eType) -> OGRwkbGeometryType"},
+	 { (char *)"GT_SetM", _wrap_GT_SetM, METH_VARARGS, (char *)"GT_SetM(OGRwkbGeometryType eType) -> OGRwkbGeometryType"},
 	 { (char *)"GT_SetModifier", _wrap_GT_SetModifier, METH_VARARGS, (char *)"GT_SetModifier(OGRwkbGeometryType eType, int bSetZ, int bSetM=False) -> OGRwkbGeometryType"},
 	 { (char *)"GT_HasZ", _wrap_GT_HasZ, METH_VARARGS, (char *)"GT_HasZ(OGRwkbGeometryType eType) -> int"},
 	 { (char *)"GT_HasM", _wrap_GT_HasM, METH_VARARGS, (char *)"GT_HasM(OGRwkbGeometryType eType) -> int"},
@@ -30478,12 +30515,14 @@ SWIG_init(void) {
   SWIG_Python_SetConstant(d, "OLCIgnoreFields",SWIG_FromCharPtr("IgnoreFields"));
   SWIG_Python_SetConstant(d, "OLCCreateGeomField",SWIG_FromCharPtr("CreateGeomField"));
   SWIG_Python_SetConstant(d, "OLCCurveGeometries",SWIG_FromCharPtr("CurveGeometries"));
+  SWIG_Python_SetConstant(d, "OLCMeasuredGeometries",SWIG_FromCharPtr("MeasuredGeometries"));
   SWIG_Python_SetConstant(d, "ODsCCreateLayer",SWIG_FromCharPtr("CreateLayer"));
   SWIG_Python_SetConstant(d, "ODsCDeleteLayer",SWIG_FromCharPtr("DeleteLayer"));
   SWIG_Python_SetConstant(d, "ODsCCreateGeomFieldAfterCreateLayer",SWIG_FromCharPtr("CreateGeomFieldAfterCreateLayer"));
   SWIG_Python_SetConstant(d, "ODsCCurveGeometries",SWIG_FromCharPtr("CurveGeometries"));
   SWIG_Python_SetConstant(d, "ODsCTransactions",SWIG_FromCharPtr("Transactions"));
   SWIG_Python_SetConstant(d, "ODsCEmulatedTransactions",SWIG_FromCharPtr("EmulatedTransactions"));
+  SWIG_Python_SetConstant(d, "ODsCMeasuredGeometries",SWIG_FromCharPtr("MeasuredGeometries"));
   SWIG_Python_SetConstant(d, "ODrCCreateDataSource",SWIG_FromCharPtr("CreateDataSource"));
   SWIG_Python_SetConstant(d, "ODrCDeleteDataSource",SWIG_FromCharPtr("DeleteDataSource"));
   SWIG_Python_SetConstant(d, "OLMD_FID64",SWIG_FromCharPtr("OLMD_FID64"));
