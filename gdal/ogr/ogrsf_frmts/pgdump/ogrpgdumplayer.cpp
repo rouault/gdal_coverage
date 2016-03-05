@@ -1201,6 +1201,8 @@ CPLString OGRPGCommonLayerGetType(OGRFieldDefn& oField,
     {
         if( oField.GetSubType() == OFSTBoolean )
             strcpy( szFieldType, "BOOLEAN[]" );
+        else if( oField.GetSubType() == OFSTInt16 )
+            strcpy( szFieldType, "INT2[]" );
         else
             strcpy( szFieldType, "INTEGER[]" );
     }
@@ -1210,7 +1212,10 @@ CPLString OGRPGCommonLayerGetType(OGRFieldDefn& oField,
     }
     else if( oField.GetType() == OFTRealList )
     {
-        strcpy( szFieldType, "FLOAT8[]" );
+        if( oField.GetSubType() == OFSTFloat32 )
+            strcpy( szFieldType, "REAL[]" );
+        else
+            strcpy( szFieldType, "FLOAT8[]" );
     }
     else if( oField.GetType() == OFTStringList )
     {
@@ -1291,6 +1296,33 @@ int OGRPGCommonLayerSetType(OGRFieldDefn& oField,
         oField.SetSubType( OFSTBoolean );
         oField.SetWidth( 1 );
     }
+    else if( EQUAL(pszType,"_numeric") )
+    {
+        if( EQUAL(pszFormatType, "numeric[]") )
+            oField.SetType( OFTRealList );
+        else
+        {
+            const char *pszPrecision = strstr(pszFormatType,",");
+            int    nPrecision = 0;
+
+            nWidth = atoi(pszFormatType + 8);
+            if( pszPrecision != NULL )
+                nPrecision = atoi(pszPrecision+1);
+
+            if( nPrecision == 0 )
+            {
+                if( nWidth >= 10 )
+                    oField.SetType( OFTInteger64List );
+                else
+                    oField.SetType( OFTIntegerList );
+            }
+            else
+                oField.SetType( OFTRealList );
+
+            oField.SetWidth( nWidth );
+            oField.SetPrecision( nPrecision );
+        }
+    }
     else if( EQUAL(pszType,"numeric") )
     {
         if( EQUAL(pszFormatType, "numeric") )
@@ -1321,6 +1353,11 @@ int OGRPGCommonLayerSetType(OGRFieldDefn& oField,
     else if( EQUAL(pszFormatType,"integer[]") )
     {
         oField.SetType( OFTIntegerList );
+    }
+    else if( EQUAL(pszFormatType,"smallint[]") )
+    {
+        oField.SetType( OFTIntegerList );
+        oField.SetSubType( OFSTInt16 );
     }
     else if( EQUAL(pszFormatType,"boolean[]") )
     {

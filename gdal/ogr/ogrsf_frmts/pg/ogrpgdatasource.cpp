@@ -148,7 +148,7 @@ void OGRPGDataSource::FlushCache(void)
     EndCopy();
     for( int iLayer = 0; iLayer < nLayers; iLayer++ )
     {
-        papoLayers[iLayer]->RunDifferedCreationIfNecessary();
+        papoLayers[iLayer]->RunDeferredCreationIfNecessary();
     }
 }
 
@@ -362,8 +362,10 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
 /* -------------------------------------------------------------------- */
     if( STARTS_WITH_CI(pszNewName, "PGB:") )
     {
+#if defined(BINARY_CURSOR_ENABLED)
         bUseBinaryCursor = TRUE;
         CPLDebug("PG","BINARY cursor is used for geometry fetching");
+#endif
     }
     else
     if( !STARTS_WITH_CI(pszNewName, "PG:") )
@@ -499,7 +501,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
 /* -------------------------------------------------------------------- */
 /*      Try to establish connection.                                    */
 /* -------------------------------------------------------------------- */
-    hPGConn = PQconnectdb( pszConnectionName + (bUseBinaryCursor ? 4 : 3) );
+    hPGConn = PQconnectdb( pszConnectionName + (STARTS_WITH_CI(pszNewName, "PGB:") ? 4 : 3) );
     CPLFree(pszConnectionName);
     pszConnectionName = NULL;
 
@@ -627,6 +629,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
         if( pszSpace != NULL && isdigit(pszSpace[1]) )
         {
             OGRPGDecodeVersionString(&sPostgreSQLVersion, pszSpace + 1);
+#if defined(BINARY_CURSOR_ENABLED)
             if (sPostgreSQLVersion.nMajor == 7 && sPostgreSQLVersion.nMinor < 4)
             {
                 /* We don't support BINARY CURSOR for PostgreSQL < 7.4. */
@@ -634,6 +637,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
                 CPLDebug("PG","BINARY cursor will finally NOT be used because version < 7.4");
                 bUseBinaryCursor = FALSE;
             }
+#endif
         }
     }
     OGRPGClearResult(hResult);
@@ -656,7 +660,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
 /* -------------------------------------------------------------------- */
 /*      Test if time binary format is int8 or float8                    */
 /* -------------------------------------------------------------------- */
-#if !defined(PG_PRE74)
+#if !defined(PG_PRE74) && defined(BINARY_CURSOR_ENABLED)
     if (bUseBinaryCursor)
     {
         SoftStartTransaction();
@@ -1709,9 +1713,9 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
 
     const char *pszGeometryType = OGRToOGCGeomType(eType);
 
-    int bDifferedCreation = CPLTestBool(CPLGetConfigOption( "OGR_PG_DIFFERED_CREATION", "YES" ));
+    int bDeferredCreation = CPLTestBool(CPLGetConfigOption( "OGR_PG_DEFERRED_CREATION", "YES" ));
     if( !bHavePostGIS )
-        bDifferedCreation = FALSE;  /* to avoid unnecessary implementation and testing burden */
+        bDeferredCreation = FALSE;  /* to avoid unnecessary implementation and testing burden */
 
 /* -------------------------------------------------------------------- */
 /*      Create a basic table with the FID.  Also include the            */
@@ -1761,7 +1765,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
                  pszGeomType,
                  osFIDColumnNameEscaped.c_str());
     }
-    else if ( !bDifferedCreation && eType != wkbNone && EQUAL(pszGeomType, "geography") )
+    else if ( !bDeferredCreation && eType != wkbNone && EQUAL(pszGeomType, "geography") )
     {
         osCommand.Printf(
                     "%s ( %s %s, %s geography(%s%s%s), PRIMARY KEY (%s)",
@@ -1773,7 +1777,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
                     nSRSId ? CPLSPrintf(",%d", nSRSId) : "", 
                     osFIDColumnNameEscaped.c_str());
     }
-    else if ( !bDifferedCreation && eType != wkbNone && !EQUAL(pszGeomType, "geography") &&
+    else if ( !bDeferredCreation && eType != wkbNone && !EQUAL(pszGeomType, "geography") &&
               sPostGISVersion.nMajor >= 2 )
     {
         osCommand.Printf(
@@ -1830,7 +1834,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
         OGRPGClearResult( hResult );
     }
 
-    if( !bDifferedCreation )
+    if( !bDeferredCreation )
     {
         SoftStartTransaction();
 
@@ -1951,7 +1955,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
     //poLayer->SetForcedSRSId(nForcedSRSId);
     poLayer->SetForcedGeometryTypeFlags(ForcedGeometryTypeFlags);
     poLayer->SetCreateSpatialIndexFlag(bCreateSpatialIndex);
-    poLayer->SetDifferedCreation(bDifferedCreation, osCreateTable);
+    poLayer->SetDeferredCreation(bDeferredCreation, osCreateTable);
 
     const char* pszDescription = CSLFetchNameValue(papszOptions, "DESCRIPTION");
     if( pszDescription != NULL )
