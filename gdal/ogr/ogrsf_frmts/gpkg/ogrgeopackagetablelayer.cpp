@@ -1993,14 +1993,15 @@ void OGRGeoPackageTableLayer::CheckUnknownExtensions()
     {
         pszSQL = sqlite3_mprintf(
                     "SELECT extension_name, definition, scope FROM gpkg_extensions WHERE (table_name='%q' "
-                    "AND column_name='%q' AND extension_name NOT LIKE 'gpkg_geom_%s' AND extension_name NOT IN "
-                    "('gpkg_rtree_index', 'gpkg_geometry_type_trigger', 'gpkg_srs_id_trigger'))"
+                    "AND column_name='%q' AND extension_name NOT IN ('gpkg_geom_CIRCULARSTRING', "
+                    "'gpkg_geom_COMPOUNDCURVE', 'gpkg_geom_CURVEPOLYGON', 'gpkg_geom_MULTICURVE', "
+                    "'gpkg_geom_MULTISURFACE', 'gpkg_geom_CURVE', 'gpkg_geom_SURFACE', "
+                    "'gpkg_rtree_index', 'gpkg_geometry_type_trigger', 'gpkg_srs_id_trigger'))"
 #ifdef WORKAROUND_SQLITE3_BUGS
                     " OR 0"
 #endif
                     ,pszT,
-                    m_poFeatureDefn->GetGeomFieldDefn(0)->GetNameRef(),
-                    m_poDS->GetGeometryTypeString(m_poFeatureDefn->GetGeomFieldDefn(0)->GetType()) );
+                    m_poFeatureDefn->GetGeomFieldDefn(0)->GetNameRef() );
     }
     SQLResult oResultTable;
     OGRErr err = SQLQuery(m_poDS->GetDB(), pszSQL, &oResultTable);
@@ -2051,7 +2052,7 @@ void OGRGeoPackageTableLayer::CheckUnknownExtensions()
 bool OGRGeoPackageTableLayer::CreateGeometryExtensionIfNecessary(OGRwkbGeometryType eGType)
 {
     eGType = wkbFlatten(eGType);
-    CPLAssert(eGType <= wkbMultiSurface);
+    CPLAssert(eGType <= wkbTIN);
     if( m_abHasGeometryExtension[eGType] )
         return true;
 
@@ -2066,7 +2067,7 @@ bool OGRGeoPackageTableLayer::CreateGeometryExtensionIfNecessary(OGRwkbGeometryT
     char* pszSQL = sqlite3_mprintf(
                 "INSERT INTO gpkg_extensions "
                 "(table_name,column_name,extension_name,definition,scope) "
-                "VALUES ('%q', '%q', 'gpkg_geom_%s', 'GeoPackage 1.0 Specification Annex J', 'write-only')",
+                "VALUES ('%q', '%q', 'gpkg_geom_%s', 'GeoPackage 1.0 Specification Annex J', 'read-write')",
                 pszT, pszC, pszGeometryType);
     OGRErr err = SQLCommand(m_poDS->GetDB(), pszSQL);
     sqlite3_free(pszSQL);
@@ -2393,7 +2394,9 @@ OGRErr OGRGeoPackageTableLayer::RegisterGeometryColumn()
         return OGRERR_FAILURE;
 
     if( OGR_GT_IsNonLinear( eGType ) )
+    {
         CreateGeometryExtensionIfNecessary(eGType);
+    }
 
     return OGRERR_NONE;
 }
