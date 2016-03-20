@@ -1943,8 +1943,11 @@ OGRGeometry *set_filter_from(OGRLayer *pLayer, OGRGeometry *pGeometryExistingFil
     if (pGeometryExistingFilter) {
         if (!geom->Intersects(pGeometryExistingFilter)) return NULL;
         OGRGeometry *intersection = geom->Intersection(pGeometryExistingFilter);
-        pLayer->SetSpatialFilter(intersection);
-        if (intersection) delete intersection;
+        if (intersection) {
+            pLayer->SetSpatialFilter(intersection);
+            delete intersection;
+        } else
+            return NULL;
     } else {
         pLayer->SetSpatialFilter(geom);
     }
@@ -1989,7 +1992,7 @@ static OGRGeometry* promote_to_multi(OGRGeometry* poGeom)
  * The recognized list of options is:
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -2049,6 +2052,7 @@ OGRErr OGRLayer::Intersection( OGRLayer *pLayerMethod,
     int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
     int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
     int bUsePreparedGeometries = CPLTestBool(CSLFetchNameValueDef(papszOptions, "USE_PREPARED_GEOMETRIES", "YES"));
+    if (bUsePreparedGeometries) bUsePreparedGeometries = OGRHasPreparedGeometrySupport();
     int bPretestContainment = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PRETEST_CONTAINMENT", "NO"));
 
     // check for GEOS
@@ -2104,14 +2108,30 @@ OGRErr OGRLayer::Intersection( OGRLayer *pLayerMethod,
         }
 
         // set up the filter for method layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(pLayerMethod, pGeometryMethodFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                }
+            }
             continue;
         }
 
         OGRPreparedGeometry* x_prepared_geom = NULL;
-        if (bUsePreparedGeometries) x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+        if (bUsePreparedGeometries) {
+            x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+            if (!x_prepared_geom) {
+                delete x;
+                goto done;
+            }
+        }
 
         pLayerMethod->ResetReading();
         while (OGRFeature *y = pLayerMethod->GetNextFeature()) {
@@ -2120,19 +2140,50 @@ OGRErr OGRLayer::Intersection( OGRLayer *pLayerMethod,
             OGRGeometry *z_geom = NULL;
 
             if (x_prepared_geom) {
+                CPLErrorReset();
                 if (bPretestContainment && OGRPreparedGeometryContains(x_prepared_geom, y_geom))
                 {
                     z_geom = y_geom->clone();
                 }
                 else if (!(OGRPreparedGeometryIntersects(x_prepared_geom, y_geom)))
                 {
+                    ret = CPLGetLastErrorNo();
+                    if (ret == CPLE_None) {
+                        delete y;
+                        continue;
+                    }
+                } else
+                    ret = CPLGetLastErrorNo();
+                if (ret != CPLE_None) {
                     delete y;
-                    continue;
+                    if (!bSkipFailures) {
+                        OGRDestroyPreparedGeometry(x_prepared_geom);
+                        delete x;
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                        continue;
+                    }
                 }
             }
             if (!z_geom) {
+                CPLErrorReset();
                 z_geom = x_geom->Intersection(y_geom);
-                if (z_geom == NULL || z_geom->IsEmpty() ||
+                if (z_geom == NULL) {
+                    delete y;
+                    if (!bSkipFailures) {
+                        ret = CPLGetLastErrorNo();
+                        OGRDestroyPreparedGeometry(x_prepared_geom);
+                        delete x;
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                        continue;
+                    }
+                }
+                if (z_geom->IsEmpty() ||
                     (x_geom->getDimension() == 2 &&
                      y_geom->getDimension() == 2 &&
                      z_geom->getDimension() < 2))
@@ -2207,7 +2258,7 @@ done:
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -2293,7 +2344,7 @@ OGRErr OGR_L_Intersection( OGRLayerH pLayerInput,
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -2348,6 +2399,7 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
     int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
     int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
     int bUsePreparedGeometries = CPLTestBool(CSLFetchNameValueDef(papszOptions, "USE_PREPARED_GEOMETRIES", "YES"));
+    if (bUsePreparedGeometries) bUsePreparedGeometries = OGRHasPreparedGeometrySupport();
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -2388,11 +2440,26 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
         OGRGeometry *x_geom = set_filter_from(pLayerMethod, pGeometryMethodFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                }
+            }
             continue;
         }
 
         OGRPreparedGeometry* x_prepared_geom = NULL;
-        if (bUsePreparedGeometries) x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+        if (bUsePreparedGeometries) {
+            x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+            if (!x_prepared_geom) {
+                delete x;
+                goto done;
+            }
+        }
 
         OGRGeometry *x_geom_diff = x_geom->clone(); // this will be the geometry of the result feature
         pLayerMethod->ResetReading();
@@ -2400,13 +2467,39 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
 
+            CPLErrorReset();
             if (x_prepared_geom && !(OGRPreparedGeometryIntersects(x_prepared_geom, y_geom))) {
                 delete y;
+                ret = CPLGetLastErrorNo();
+                if (ret != CPLE_None) {
+                    if (!bSkipFailures) {
+                        delete x;
+                        OGRDestroyPreparedGeometry(x_prepared_geom);
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                }
                 continue;
             }
 
+            CPLErrorReset();
             OGRGeometry *poIntersection = x_geom->Intersection(y_geom);
-            if( poIntersection == NULL || poIntersection->IsEmpty() ||
+            if (poIntersection == NULL) {
+                delete y;
+                if (!bSkipFailures) {
+                    ret = CPLGetLastErrorNo();
+                    delete x;
+                    OGRDestroyPreparedGeometry(x_prepared_geom);
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                    continue;
+                }
+            }
+            if( poIntersection->IsEmpty() ||
                 (x_geom->getDimension() == 2 &&
                 y_geom->getDimension() == 2 &&
                 poIntersection->getDimension() < 2) )
@@ -2422,9 +2515,28 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
                 if( bPromoteToMulti )
                     poIntersection = promote_to_multi(poIntersection);
                 z->SetGeometryDirectly(poIntersection);
-                OGRGeometry *x_geom_diff_new = x_geom_diff ? x_geom_diff->Difference(y_geom) : NULL;
-                if (x_geom_diff) delete x_geom_diff;
-                x_geom_diff = x_geom_diff_new;
+
+                if (x_geom_diff) {
+                    CPLErrorReset();
+                    OGRGeometry *x_geom_diff_new = x_geom_diff->Difference(y_geom);
+                    if (x_geom_diff_new == NULL) {
+                        if (!bSkipFailures) {
+                            ret = CPLGetLastErrorNo();
+                            delete y;
+                            delete z;
+                            delete x;
+                            delete x_geom_diff;
+                            OGRDestroyPreparedGeometry(x_prepared_geom);
+                            goto done;
+                        } else {
+                            CPLErrorReset();
+                        }
+                    } else {
+                        delete x_geom_diff;
+                        x_geom_diff = x_geom_diff_new;
+                    }
+                }
+
                 delete y;
                 ret = pLayerResult->CreateFeature(z);
                 delete z;
@@ -2490,9 +2602,20 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
         }
 
         // set up the filter on input layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(this, pGeometryInputFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                    continue;
+                }
+            }
             continue;
         }
 
@@ -2501,9 +2624,26 @@ OGRErr OGRLayer::Union( OGRLayer *pLayerMethod,
         while (OGRFeature *y = GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
-            OGRGeometry *x_geom_diff_new = x_geom_diff ? x_geom_diff->Difference(y_geom) : NULL;
-            if (x_geom_diff) delete x_geom_diff;
-            x_geom_diff = x_geom_diff_new;
+            
+            if (x_geom_diff) {
+                CPLErrorReset();
+                OGRGeometry *x_geom_diff_new = x_geom_diff->Difference(y_geom);
+                if (x_geom_diff_new == NULL) {
+                    if (!bSkipFailures) {
+                        ret = CPLGetLastErrorNo();
+                        delete x;
+                        delete y;
+                        delete x_geom_diff;
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                } else {
+                    delete x_geom_diff;
+                    x_geom_diff = x_geom_diff_new;
+                }
+            }
             delete y;
         }
 
@@ -2578,7 +2718,7 @@ done:
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -2660,7 +2800,7 @@ OGRErr OGR_L_Union( OGRLayerH pLayerInput,
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -2748,9 +2888,20 @@ OGRErr OGRLayer::SymDifference( OGRLayer *pLayerMethod,
         }
 
         // set up the filter on method layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(pLayerMethod, pGeometryMethodFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                    continue;
+                }
+            }
             continue;
         }
 
@@ -2759,9 +2910,25 @@ OGRErr OGRLayer::SymDifference( OGRLayer *pLayerMethod,
         while (OGRFeature *y = pLayerMethod->GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
-            OGRGeometry *geom_new = geom ? geom->Difference(y_geom) : NULL;
-            if (geom) delete geom;
-            geom = geom_new;
+            if (geom) {
+                CPLErrorReset();
+                OGRGeometry *geom_new = geom->Difference(y_geom);
+                if (geom_new == NULL) {
+                    if (!bSkipFailures) {
+                        ret = CPLGetLastErrorNo();
+                        delete geom;
+                        delete y;
+                        delete x;
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                } else {
+                    delete geom;
+                    geom = geom_new;
+                }
+            }
             delete y;
             if (geom && geom->IsEmpty()) break;
         }
@@ -2810,9 +2977,20 @@ OGRErr OGRLayer::SymDifference( OGRLayer *pLayerMethod,
         }
 
         // set up the filter on input layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(this, pGeometryInputFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                    continue;
+                }
+            }
             continue;
         }
 
@@ -2821,9 +2999,25 @@ OGRErr OGRLayer::SymDifference( OGRLayer *pLayerMethod,
         while (OGRFeature *y = GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
-            OGRGeometry *geom_new = geom ? geom->Difference(y_geom) : NULL;
-            if (geom) delete geom;
-            geom = geom_new;
+            if (geom) {
+                CPLErrorReset();
+                OGRGeometry *geom_new = geom->Difference(y_geom);
+                if (geom_new == NULL) {
+                    if (!bSkipFailures) {
+                        ret = CPLGetLastErrorNo();
+                        delete geom;
+                        delete y;
+                        delete x;
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                } else {
+                    delete geom;
+                    geom = geom_new;
+                }
+            }
             delete y;
             if (geom == NULL || geom->IsEmpty()) break;
         }
@@ -2898,7 +3092,7 @@ done:
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -2975,7 +3169,7 @@ OGRErr OGR_L_SymDifference( OGRLayerH pLayerInput,
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -3029,6 +3223,7 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
     int bSkipFailures = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SKIP_FAILURES", "NO"));
     int bPromoteToMulti = CPLTestBool(CSLFetchNameValueDef(papszOptions, "PROMOTE_TO_MULTI", "NO"));
     int bUsePreparedGeometries = CPLTestBool(CSLFetchNameValueDef(papszOptions, "USE_PREPARED_GEOMETRIES", "YES"));
+    if (bUsePreparedGeometries) bUsePreparedGeometries = OGRHasPreparedGeometrySupport();
 
     // check for GEOS
     if (!OGRGeometryFactory::haveGEOS()) {
@@ -3064,14 +3259,31 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
         }
 
         // set up the filter on method layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(pLayerMethod, pGeometryMethodFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                    continue;
+                }
+            }
             continue;
         }
 
         OGRPreparedGeometry* x_prepared_geom = NULL;
-        if (bUsePreparedGeometries) x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+        if (bUsePreparedGeometries) {
+            x_prepared_geom = OGRCreatePreparedGeometry(x_geom);
+            if (!x_prepared_geom) {
+                delete x;
+                goto done;
+            }
+        }
 
         OGRGeometry *x_geom_diff = x_geom->clone(); // this will be the geometry of the result feature
         pLayerMethod->ResetReading();
@@ -3079,13 +3291,40 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
 
+            CPLErrorReset();
             if (x_prepared_geom && !(OGRPreparedGeometryIntersects(x_prepared_geom, y_geom))) {
                 delete y;
+                ret = CPLGetLastErrorNo();
+                if (ret != CPLE_None) {
+                    if (!bSkipFailures) {
+                        delete x;
+                        delete x_geom_diff;
+                        OGRDestroyPreparedGeometry(x_prepared_geom);
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                }
                 continue;
             }
 
+            CPLErrorReset();
             OGRGeometry* poIntersection = x_geom->Intersection(y_geom);
-            if( poIntersection == NULL || poIntersection->IsEmpty() ||
+            if (poIntersection == NULL) {
+                delete y;
+                if (!bSkipFailures) {
+                    ret = CPLGetLastErrorNo();
+                    delete x;
+                    delete x_geom_diff;
+                    OGRDestroyPreparedGeometry(x_prepared_geom);
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                }
+            }
+            else if( poIntersection->IsEmpty() ||
                 (x_geom->getDimension() == 2 &&
                 y_geom->getDimension() == 2 &&
                 poIntersection->getDimension() < 2) )
@@ -3101,9 +3340,26 @@ OGRErr OGRLayer::Identity( OGRLayer *pLayerMethod,
                 if( bPromoteToMulti )
                     poIntersection = promote_to_multi(poIntersection);
                 z->SetGeometryDirectly(poIntersection);
-                OGRGeometry *x_geom_diff_new = x_geom_diff ? x_geom_diff->Difference(y_geom) : NULL;
-                if (x_geom_diff) delete x_geom_diff;
-                x_geom_diff = x_geom_diff_new;
+                if (x_geom_diff) {
+                    CPLErrorReset();
+                    OGRGeometry *x_geom_diff_new = x_geom_diff->Difference(y_geom);
+                    if (x_geom_diff_new == NULL) {
+                        if (!bSkipFailures) {
+                            ret = CPLGetLastErrorNo();
+                            delete z;
+                            delete y;
+                            delete x;
+                            delete x_geom_diff;
+                            OGRDestroyPreparedGeometry(x_prepared_geom);
+                            goto done;
+                        } else {
+                            CPLErrorReset();
+                        }
+                    } else {
+                        delete x_geom_diff;
+                        x_geom_diff = x_geom_diff_new;
+                    }
+                }
                 delete y;
                 ret = pLayerResult->CreateFeature(z);
                 delete z;
@@ -3190,7 +3446,7 @@ done:
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -3272,7 +3528,7 @@ OGRErr OGR_L_Identity( OGRLayerH pLayerInput,
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -3357,9 +3613,20 @@ OGRErr OGRLayer::Update( OGRLayer *pLayerMethod,
         }
 
         // set up the filter on method layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(pLayerMethod, pGeometryMethodFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                    continue;
+                }
+            }
             continue;
         }
 
@@ -3368,9 +3635,25 @@ OGRErr OGRLayer::Update( OGRLayer *pLayerMethod,
         while (OGRFeature *y = pLayerMethod->GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
-            OGRGeometry *x_geom_diff_new = x_geom_diff ? x_geom_diff->Difference(y_geom) : NULL;
-            if (x_geom_diff) delete x_geom_diff;
-            x_geom_diff = x_geom_diff_new;
+            if (x_geom_diff) {
+                CPLErrorReset();
+                OGRGeometry *x_geom_diff_new = x_geom_diff->Difference(y_geom);
+                if (x_geom_diff_new == NULL) {
+                    if (!bSkipFailures) {
+                        ret = CPLGetLastErrorNo();
+                        delete y;
+                        delete x;
+                        delete x_geom_diff;
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                } else {
+                    delete x_geom_diff;
+                    x_geom_diff = x_geom_diff_new;
+                }
+            }
             delete y;
         }
 
@@ -3479,7 +3762,7 @@ done:
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -3551,7 +3834,7 @@ OGRErr OGR_L_Update( OGRLayerH pLayerInput,
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -3630,9 +3913,20 @@ OGRErr OGRLayer::Clip( OGRLayer *pLayerMethod,
         }
 
         // set up the filter on method layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(pLayerMethod, pGeometryMethodFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                    continue;
+                }
+            }
             continue;
         }
 
@@ -3645,43 +3939,65 @@ OGRErr OGRLayer::Clip( OGRLayer *pLayerMethod,
             if (!geom) {
                 geom = y_geom->clone();
             } else {
+                CPLErrorReset();
                 OGRGeometry *geom_new = geom->Union(y_geom);
-                delete geom;
-                geom = geom_new;
+                if (geom_new == NULL) {
+                    if (!bSkipFailures) {
+                        ret = CPLGetLastErrorNo();
+                        delete y;
+                        delete x;
+                        delete geom;
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                } else {
+                    delete geom;
+                    geom = geom_new;
+                }
             }
             delete y;
         }
 
         // possibly add a new feature with area x intersection sum of y
-        OGRFeature *z = NULL;
         if (geom) {
+            CPLErrorReset();
             OGRGeometry* poIntersection = x_geom->Intersection(geom);
-            if( poIntersection != NULL && !poIntersection->IsEmpty() )
-            {
-                z = new OGRFeature(poDefnResult);
-                z->SetFieldsFrom(x, mapInput);
-                if( bPromoteToMulti )
-                    poIntersection = promote_to_multi(poIntersection);
-                z->SetGeometryDirectly(poIntersection);
-            }
-            else
-                delete poIntersection;
-            delete geom;
-        }
-        delete x;
-        if (z) {
-            if (z->GetGeometryRef() != NULL && !z->GetGeometryRef()->IsEmpty())
-                ret = pLayerResult->CreateFeature(z);
-            delete z;
-            if (ret != OGRERR_NONE) {
+            if (poIntersection == NULL) {
                 if (!bSkipFailures) {
+                    ret = CPLGetLastErrorNo();
+                    delete geom;
+                    delete x;
                     goto done;
                 } else {
                     CPLErrorReset();
                     ret = OGRERR_NONE;
                 }
             }
+            else if( !poIntersection->IsEmpty() )
+            {
+                OGRFeature *z = new OGRFeature(poDefnResult);
+                z->SetFieldsFrom(x, mapInput);
+                if( bPromoteToMulti )
+                    poIntersection = promote_to_multi(poIntersection);
+                z->SetGeometryDirectly(poIntersection);
+                ret = pLayerResult->CreateFeature(z);
+                delete z;
+                if (ret != OGRERR_NONE) {
+                    if (!bSkipFailures) {
+                        goto done;
+                    } else {
+                        CPLErrorReset();
+                        ret = OGRERR_NONE;
+                    }
+                }
+            }
+            else
+                delete poIntersection;
+            delete geom;
         }
+        delete x;
     }
     if (pfnProgress && !pfnProgress(1.0, "", pProgressArg)) {
       CPLError(CE_Failure, CPLE_UserInterrupt, "User terminated");
@@ -3719,7 +4035,7 @@ done:
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -3791,7 +4107,7 @@ OGRErr OGR_L_Clip( OGRLayerH pLayerInput,
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
@@ -3871,9 +4187,19 @@ OGRErr OGRLayer::Erase( OGRLayer *pLayerMethod,
         }
 
         // set up the filter on the method layer
+        CPLErrorReset();
         OGRGeometry *x_geom = set_filter_from(pLayerMethod, pGeometryMethodFilter, x);
         if (!x_geom) {
             delete x;
+            ret = CPLGetLastErrorNo();
+            if (ret != CPLE_None) {
+                if (!bSkipFailures) {
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                }
+            }
             continue;
         }
 
@@ -3883,10 +4209,23 @@ OGRErr OGRLayer::Erase( OGRLayer *pLayerMethod,
         while (OGRFeature *y = pLayerMethod->GetNextFeature()) {
             OGRGeometry *y_geom = y->GetGeometryRef();
             if (!y_geom) {delete y; continue;}
+            CPLErrorReset();
             OGRGeometry *geom_new = geom->Difference(y_geom);
-            if (geom_new) {
+            if (geom_new == NULL) {
+                if (!bSkipFailures) {
+                    ret = CPLGetLastErrorNo();
+                    delete x;
+                    delete y;
+                    goto done;
+                } else {
+                    CPLErrorReset();
+                    ret = OGRERR_NONE;
+                }
+            } else {
                 delete geom;
                 geom = geom_new;
+                if (geom->IsEmpty())
+                    break;
             }
             delete y;
         }
@@ -3902,6 +4241,7 @@ OGRErr OGRLayer::Erase( OGRLayer *pLayerMethod,
             delete z;
             if (ret != OGRERR_NONE) {
                 if (!bSkipFailures) {
+                    delete x;
                     goto done;
                 } else {
                     CPLErrorReset();
@@ -3947,7 +4287,7 @@ done:
  * The recognized list of options is :
  * <ul>
  * <li>SKIP_FAILURES=YES/NO. Set it to YES to go on, even when a
- *     feature could not be inserted.
+ *     feature could not be inserted or a GEOS call failed.
  * <li>PROMOTE_TO_MULTI=YES/NO. Set it to YES to convert Polygons
  *     into MultiPolygons, or LineStrings to MultiLineStrings.
  * <li>INPUT_PREFIX=string. Set a prefix for the field names that
