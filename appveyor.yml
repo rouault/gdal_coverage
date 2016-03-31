@@ -107,8 +107,9 @@ test_script:
   - echo test_script
   - set SDK_PREFIX=%CD%\sdk\%SDK%
   - set SDK_BIN=%CD%\sdk\%SDK%\bin
-  - SET PATH=%CD%\gdal;%CD%\gdal\apps;c:\proj\bin;%SDK_BIN%;%PATH%
+  - SET PATH=%CD%\gdal;%CD%\gdal\apps;%SDK_BIN%;%PATH%
   - SET GDAL_DATA=%CD%\gdal\data
+  - SET PROJ_LIB=%CD%\sdk\%SDK%\proj\SHARE
   - cd autotest
   - cd cpp
   - SET DO_NOT_FAIL_ON_RECODE_ERRORS=YES
