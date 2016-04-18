@@ -352,7 +352,7 @@ def mbtiles_7():
         gdaltest.post_reason('fail')
         print(ds.GetRasterBand(1).GetOverviewCount())
         return 'fail'
-    expected_ovr_cs = [ 22294, 25695, 6779, 63629 ]
+    expected_ovr_cs = [ 21179, 22577, 11996 ]
     got_ovr_cs = [ ds.GetRasterBand(i+1).GetOverview(0).Checksum() for i in range(ds.RasterCount) ]
     if expected_ovr_cs != got_ovr_cs:
         gdaltest.post_reason('fail')
@@ -399,7 +399,7 @@ def mbtiles_8():
     out_ds = None
     src_ds = None
 
-    expected_cs = [ 65245, 56985, 54768 ] # , 60492 
+    expected_cs = [ 993, 50461, 64354 ]
     out_ds = gdal.Open('/vsimem/mbtiles_8.mbtiles')
     got_cs = [out_ds.GetRasterBand(i+1).Checksum() for i in range(3)]
     if got_cs != expected_cs:
@@ -448,6 +448,34 @@ def mbtiles_9():
     return 'success'
 
 ###############################################################################
+# Test compaction of temporary database
+
+def mbtiles_10():
+
+    if gdaltest.mbtiles_drv is None:
+        return 'skip'
+
+    if gdal.GetDriverByName( 'PNG' ) is None:
+        return 'skip'
+
+    old_val_GPKG_FORCE_TEMPDB_COMPACTION = gdal.GetConfigOption('GPKG_FORCE_TEMPDB_COMPACTION')
+    gdal.SetConfigOption('GPKG_FORCE_TEMPDB_COMPACTION', 'YES')
+    with gdaltest.SetCacheMax(0):
+        gdal.Translate('/vsimem/mbtiles_10.mbtiles', '../gcore/data/byte.tif', options = '-of MBTILES -outsize 512 512')
+    gdal.SetConfigOption('GPKG_FORCE_TEMPDB_COMPACTION', old_val_GPKG_FORCE_TEMPDB_COMPACTION)
+
+    ds = gdal.Open('/vsimem/mbtiles_10.mbtiles')
+    cs = ds.GetRasterBand(1).Checksum()
+    if cs != 29925:
+        gdaltest.post_reason('fail')
+        print(cs)
+        return 'fail'
+    ds = None
+
+    gdal.Unlink('/vsimem/mbtiles_10.mbtiles')
+    return 'success'
+
+###############################################################################
 # Cleanup
 
 def mbtiles_cleanup():
@@ -467,6 +495,7 @@ gdaltest_list = [
     mbtiles_7,
     mbtiles_8,
     mbtiles_9,
+    mbtiles_10,
     mbtiles_cleanup ]
 
 #gdaltest_list = [ mbtiles_1, mbtiles_9 ]
