@@ -41,22 +41,20 @@ CPL_C_END
 /*                             GDALDriver()                             */
 /************************************************************************/
 
-GDALDriver::GDALDriver()
-
-{
-    pfnOpen = NULL;
-    pfnCreate = NULL;
-    pfnDelete = NULL;
-    pfnCreateCopy = NULL;
-    pfnUnloadDriver = NULL;
-    pDriverData = NULL;
-    pfnIdentify = NULL;
-    pfnRename = NULL;
-    pfnCopyFiles = NULL;
-    pfnOpenWithDriverArg = NULL;
-    pfnCreateVectorOnly = NULL;
-    pfnDeleteDataSource = NULL;
-}
+GDALDriver::GDALDriver() :
+    pfnOpen(NULL),
+    pfnCreate(NULL),
+    pfnDelete(NULL),
+    pfnCreateCopy(NULL),
+    pDriverData(NULL),
+    pfnUnloadDriver(NULL),
+    pfnIdentify(NULL),
+    pfnRename(NULL),
+    pfnCopyFiles(NULL),
+    pfnOpenWithDriverArg(NULL),
+    pfnCreateVectorOnly(NULL),
+    pfnDeleteDataSource(NULL)
+{}
 
 /************************************************************************/
 /*                            ~GDALDriver()                             */
@@ -1419,10 +1417,11 @@ int CPL_STDCALL GDALValidateCreationOptions( GDALDriverH hDriver,
         papszOptionsToValidate = papszOptionsToFree =
             CSLSetNameValue(CSLDuplicate(papszCreationOptions), "APPEND_SUBDATASET", NULL);
     }
-    int bRet = GDALValidateOptions( pszOptionList,
-                                (const char* const* )papszOptionsToValidate,
-                                "creation option",
-                                osDriver);
+    const bool bRet = CPL_TO_BOOL(
+        GDALValidateOptions( pszOptionList,
+                             (const char* const* )papszOptionsToValidate,
+                             "creation option",
+                             osDriver ) );
     CSLDestroy(papszOptionsToFree);
     return bRet;
 }
