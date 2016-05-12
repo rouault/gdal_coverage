@@ -206,9 +206,9 @@ CPLErr GDALHashSetBandBlockCache::FlushCache()
     // like tiff_write_133
     std::sort(apoBlocks.begin(), apoBlocks.end(), GDALHashSetBandBlockCacheSortBlocks);
 
-    for(size_t i=0;i<apoBlocks.size();i++)
+    for( size_t i = 0; i < apoBlocks.size(); ++i )
     {
-        GDALRasterBlock* poBlock = apoBlocks[i];
+        GDALRasterBlock* const poBlock = apoBlocks[i];
 
         if( poBlock->DropLockForRemovalFromStorage() )
         {
