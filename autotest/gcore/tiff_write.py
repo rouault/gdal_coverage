@@ -6651,6 +6651,55 @@ def tiff_write_149():
     return 'success'
 
 ###############################################################################
+# Test failure when loading block from disk in IWriteBlock()
+
+def tiff_write_150():
+
+    shutil.copy('data/tiled_bad_offset.tif', 'tmp/tiled_bad_offset.tif')
+    ds = gdal.Open('tmp/tiled_bad_offset.tif', gdal.GA_Update)
+    ds.GetRasterBand(1).Fill(0)
+    gdal.ErrorReset()
+    with gdaltest.error_handler():
+        ds.FlushCache()
+    if gdal.GetLastErrorMsg() == '':
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds = None
+    gdaltest.tiff_drv.Delete('tmp/tiled_bad_offset.tif')
+
+    return 'success'
+
+###############################################################################
+# Test IWriteBlock() with more than 10 bands
+
+def tiff_write_151():
+
+    ds = gdaltest.tiff_drv.Create('/vsimem/tiff_write_151.tif', 1, 1, 11)
+    ds = None
+    ds = gdal.Open('/vsimem/tiff_write_151.tif', gdal.GA_Update)
+    ds.GetRasterBand(1).Fill(1)
+    ds = None
+    ds = gdal.Open('/vsimem/tiff_write_151.tif', gdal.GA_Update)
+    ds.GetRasterBand(1).Checksum()
+    ds.GetRasterBand(2).Fill(1)
+    ds.GetRasterBand(3).Fill(1)
+    ds = None
+    ds = gdal.Open('/vsimem/tiff_write_151.tif')
+    if ds.GetRasterBand(1).Checksum() != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if ds.GetRasterBand(2).Checksum() != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if ds.GetRasterBand(3).Checksum() != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds = None
+    gdaltest.tiff_drv.Delete('/vsimem/tiff_write_151.tif')
+
+    return 'success'
+
+###############################################################################
 # Ask to run again tests with GDAL_API_PROXY=YES
 
 def tiff_write_api_proxy():
@@ -6829,10 +6878,12 @@ gdaltest_list = [
     tiff_write_147,
     tiff_write_148,
     tiff_write_149,
+    tiff_write_150,
+    tiff_write_151,
     #tiff_write_api_proxy,
     tiff_write_cleanup ]
 
-# gdaltest_list = [ tiff_write_1, tiff_write_149 ]
+# gdaltest_list = [ tiff_write_1, tiff_write_151 ]
 
 if __name__ == '__main__':
 
