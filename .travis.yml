@@ -9,7 +9,6 @@ language: cpp
 compiler:
   - clang
 
-# remove libogdi3.2-dev : it pulls projects.h from PROJ.4 which no longer exists
 before_install:
 #  - sudo mv /etc/apt/sources.list.d/pgdg-source.list* /tmp
 #  - sudo apt-get remove postgis libpq5 libpq-dev postgresql-9.1-postgis postgresql-9.2-postgis postgresql-9.3-postgis postgresql-9.1 postgresql-9.2 postgresql-9.3 libgdal1
@@ -22,6 +21,7 @@ before_install:
   - sudo apt-get install -y python-lxml
   - sudo apt-get install -y python-pip
   - sudo apt-get install -y libqhull-dev
+  - sudo apt-get install -y libogdi3.2-dev
 # Boost for Mongo
 #  - sudo apt-get install -y libboost-regex-dev libboost-system-dev libboost-thread-dev
   - sudo pip install pyflakes
