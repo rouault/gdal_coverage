@@ -131,7 +131,6 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
 /*      Open the client interface.                                      */
 /* -------------------------------------------------------------------- */
         psResult = cln_CreateClient(&m_nClientID, pszWorkingName);
-        CPLFree( pszWorkingName );
 
         if( ECSERROR( psResult ) )
         {
@@ -139,8 +138,9 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
             {
                 CPLError( CE_Failure, CPLE_AppDefined,
                           "OGDI DataSource Open Failed: %s\n",
-                          psResult->message );
+                          psResult->message ? psResult->message : "(no message string)");
             }
+            CPLFree( pszWorkingName );
             return FALSE;
         }
 
@@ -153,7 +153,9 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
         if( ECSERROR(psResult) )
         {
             CPLError( CE_Failure, CPLE_AppDefined,
-                      "%s", psResult->message );
+                      "GetGlobalBound failed: %s",
+                      psResult->message ? psResult->message : "(no message string)");
+            CPLFree( pszWorkingName );
             return FALSE;
         }
 
@@ -163,7 +165,9 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
         if( ECSERROR(psResult) )
         {
             CPLError( CE_Failure, CPLE_AppDefined,
-                      "%s", psResult->message );
+                      "GetServerProjection failed: %s",
+                      psResult->message ? psResult->message : "(no message string)");
+            CPLFree( pszWorkingName );
             return FALSE;
         }
 
@@ -173,7 +177,7 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
         {
             CPLError( CE_Warning, CPLE_NotSupported,
                       "untranslatable PROJ.4 projection: %s\n",
-                      ECSTEXT(psResult) );
+                      ECSTEXT(psResult) ? ECSTEXT(psResult): "(no mesage string)" );
             delete m_poSpatialRef;
             m_poSpatialRef = NULL;
         }
@@ -185,7 +189,9 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
         if( ECSERROR(psResult) )
         {
             CPLError( CE_Failure, CPLE_AppDefined,
-                      "%s", psResult->message );
+                      "SelectRegion failed: %s",
+                      psResult->message ? psResult->message : "(no message string)");
+            CPLFree( pszWorkingName );
             return FALSE;
         }
 
@@ -214,6 +220,7 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
                               "Invalid or unsupported family name (%s) in URL %s\n",
                               pszFamily, m_pszFullName);
                 }
+                CPLFree( pszWorkingName );
                 return FALSE;
             }
 
@@ -237,7 +244,9 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
             if( ECSERROR(psResult) )
             {
                 CPLError( CE_Failure, CPLE_AppDefined,
-                          "%s", psResult->message );
+                          "UpdateDictionay failed: %s",
+                          psResult->message ? psResult->message : "(no message string)");
+                CPLFree( pszWorkingName );
                 return FALSE;
             }
 
@@ -255,6 +264,8 @@ int OGROGDIDataSource::Open( const char * pszNewName, int bTestOpen )
                     IAddLayer( psLayerCap->name, Text );
             }
         }
+
+        CPLFree( pszWorkingName );
 
         return TRUE;
 }
