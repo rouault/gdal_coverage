@@ -1,5 +1,4 @@
 /******************************************************************************
- * $Id$
  *
  * Project:  High Performance Image Reprojector
  * Purpose:  Implementation of the GDALWarpOperation class.
@@ -1705,7 +1704,7 @@ CPLErr GDALWarpOperation::WarpRegionToBuffer(
 
             if( eErr == CE_None )
             {
-                for( int j = oWK.nSrcXSize * oWK.nSrcYSize - 1; j >= 0; j-- )
+                for( int j = 0; j < oWK.nSrcXSize * oWK.nSrcYSize; j++ )
                     oWK.pafUnifiedSrcDensity[j] = 1.0;
             }
         }
@@ -1750,7 +1749,7 @@ CPLErr GDALWarpOperation::WarpRegionToBuffer(
     {
         CPLAssert( oWK.papanBandSrcValid == NULL );
 
-        int bAllBandsAllValid = TRUE;
+        bool bAllBandsAllValid = false;
         for( i = 0; i < psOptions->nBandCount && eErr == CE_None; i++ )
         {
             eErr = CreateKernelMask( &oWK, i, "BandSrcValid" );
@@ -1771,7 +1770,7 @@ CPLErr GDALWarpOperation::WarpRegionToBuffer(
                                           FALSE, oWK.papanBandSrcValid[i],
                                           &bAllValid );
                 if( !bAllValid )
-                    bAllBandsAllValid = FALSE;
+                    bAllBandsAllValid = false;
             }
         }
 
@@ -1833,6 +1832,7 @@ CPLErr GDALWarpOperation::WarpRegionToBuffer(
 
     if( eErr == CE_None
         && oWK.pafUnifiedSrcDensity == NULL
+        && psOptions->nSrcAlphaBand <= 0
         && (GDALGetMaskFlags(hSrcBand) & GMF_PER_DATASET) &&
         nSrcXSize > 0 && nSrcYSize > 0 )
 
@@ -2037,6 +2037,7 @@ CPLErr GDALWarpOperation::CreateKernelMask( GDALWarpKernel *poKernel,
     void **ppMask;
     int  nXSize, nYSize, nBitsPerPixel, nDefault;
     int  nExtraElts = 0;
+    bool bDoMemset = true;
 
 /* -------------------------------------------------------------------- */
 /*      Get particulars of mask to be updated.                          */
@@ -2071,6 +2072,7 @@ CPLErr GDALWarpOperation::CreateKernelMask( GDALWarpKernel *poKernel,
         nYSize = poKernel->nSrcYSize;
         nBitsPerPixel = 32;
         nDefault = 0;
+        bDoMemset = false;
     }
     else if( EQUAL(pszType,"DstValid") )
     {
@@ -2087,6 +2089,7 @@ CPLErr GDALWarpOperation::CreateKernelMask( GDALWarpKernel *poKernel,
         nYSize = poKernel->nDstYSize;
         nBitsPerPixel = 32;
         nDefault = 0;
+        bDoMemset = false;
     }
     else
     {
@@ -2128,7 +2131,8 @@ CPLErr GDALWarpOperation::CreateKernelMask( GDALWarpKernel *poKernel,
             return CE_Failure;
         }
 
-        memset( *ppMask, nDefault, nByteSize_t );
+        if( bDoMemset )
+            memset( *ppMask, nDefault, nByteSize_t );
     }
 
     return CE_None;
