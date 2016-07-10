@@ -51,7 +51,7 @@ install:
 - echo MYSQL_LIB=$(SDK_LIB)\libmysql.lib advapi32.lib >> nmake.local
 - echo XERCES_DIR=bla >> nmake.local
 - echo XERCES_INCLUDE=-I$(SDK_INC) -I$(SDK_INC)\xercesc >> nmake.local
-- echo XERCES_LIB=$(SDK_LIB)\xerces-c_2.lib >> nmake.local
+- echo XERCES_LIB=$(SDK_LIB)\xerces-c_3.lib >> nmake.local
 - echo ILI_ENABLED = YES >> nmake.local
 - echo EXPAT_DIR=bla >> nmake.local
 - echo EXPAT_INCLUDE=-I$(SDK_INC) >> nmake.local
