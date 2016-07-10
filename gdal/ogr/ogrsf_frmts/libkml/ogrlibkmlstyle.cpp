@@ -1208,10 +1208,10 @@ void styletable2kml (
             poKmlPairNormal->set_styleurl(CPLSPrintf("#%s_normal", osStyleName.c_str()));
             poKmlStyleMap->add_pair(poKmlPairNormal);
 
-            PairPtr poKmlPairHightlight = poKmlFactory->CreatePair (  );
-            poKmlPairHightlight->set_key(STYLESTATE_HIGHLIGHT);
-            poKmlPairHightlight->set_styleurl(CPLSPrintf("#%s_highlight", osStyleName.c_str()));
-            poKmlStyleMap->add_pair(poKmlPairHightlight);
+            PairPtr poKmlPairHighlight = poKmlFactory->CreatePair (  );
+            poKmlPairHighlight->set_key(STYLESTATE_HIGHLIGHT);
+            poKmlPairHighlight->set_styleurl(CPLSPrintf("#%s_highlight", osStyleName.c_str()));
+            poKmlStyleMap->add_pair(poKmlPairHighlight);
 
             /***** add the style to the container *****/
             DocumentPtr poKmlDocument = AsDocument ( poKmlContainer );
