@@ -11,7 +11,7 @@ compiler:
 
 before_install:
   - sudo dpkg -l | grep geos
-  - sudo apt-get purge libgeos* libspatialite*
+  - sudo apt-get purge -y libgeos* libspatialite*
   - find  /etc/apt/sources.list.d
   - sudo mv /etc/apt/sources.list.d/pgdg* /tmp
 #  - sudo apt-get remove postgis libpq5 libpq-dev postgresql-9.1-postgis postgresql-9.2-postgis postgresql-9.3-postgis postgresql-9.1 postgresql-9.2 postgresql-9.3 libgdal1
