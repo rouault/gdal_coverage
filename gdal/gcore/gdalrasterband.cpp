@@ -3826,36 +3826,23 @@ static void ComputeStatisticsInternal( int nXCheck,
 // Some convenience macros
 #define ZERO128                      _mm_setzero_si128()
 #ifdef __SSE4_1__
-#define EXTEND_UINT8_TO_UINT16(reg)  _mm_cvtepu8_epi16(reg)
 #define EXTEND_UINT16_TO_UINT32(reg) _mm_cvtepu16_epi32(reg)
 #else
-#define EXTEND_UINT8_TO_UINT16(reg)  _mm_unpacklo_epi8(reg, ZERO128)
 #define EXTEND_UINT16_TO_UINT32(reg) _mm_unpacklo_epi16(reg, ZERO128)
 #endif
 #define GET_HIGH_64BIT(reg)          _mm_shuffle_epi32(reg, 2 | (3 << 2))
 
-#if defined(DEBUG) && !defined(__AVX2__)
-#define GDAL_AVX2_EMULATION
-#endif
-
-#if defined(__AVX2__) || defined(GDAL_AVX2_EMULATION)
-
-#if defined(GDAL_AVX2_EMULATION)
 #include "gdal_avx2_emulation.hpp"
-#else
-#include <immintrin.h>
-#endif
 
-#define ZERO256                      _mm256_setzero_si256()
+#define ZERO256                      GDALmm256_setzero_si256()
 
-// AVX2 optimization for GByte case
-#if defined(GDAL_AVX2_EMULATION)
-static void ComputeStatisticsInternalByteAVX2Emulation
-#else
+// SSE2/AVX2 optimization for GByte case
+// In pure SSE2, this relies on gdal_avx2_emulation.hpp. There is no
+// penaly in using the emulation, because, given the mm256 intrinsics used here,
+// there are strictly equivalent to 2 parallel SSE2 streams.
+// Note: this is not true for the GUInt16 case
 template<>
-void ComputeStatisticsInternal<GByte>
-#endif
-                                     ( int nXCheck,
+void ComputeStatisticsInternal<GByte>( int nXCheck,
                                        int nBlockXSize,
                                        int nYCheck,
                                        // assumed to be aligned on 256 bits
@@ -3889,13 +3876,13 @@ void ComputeStatisticsInternal<GByte>
         if( ((nXCheck * nYCheck) % nMaxIterationsPerInnerLoop) != 0 )
             nOuterLoops ++;
 
-        const __m256i ymm_nodata = _mm256_set1_epi8(
+        const GDALm256i ymm_nodata = GDALmm256_set1_epi8(
                                         static_cast<GByte>(nNoDataValue) );
         // any non noData value in [min,max] would do.
-        const __m256i ymm_neutral = _mm256_set1_epi8(
+        const GDALm256i ymm_neutral = GDALmm256_set1_epi8(
                                         static_cast<GByte>(nMin) );
-        __m256i ymm_min = ymm_neutral;
-        __m256i ymm_max = ymm_neutral;
+        GDALm256i ymm_min = ymm_neutral;
+        GDALm256i ymm_max = ymm_neutral;
 
         for( int k=0; k< nOuterLoops; k++ )
         {
@@ -3904,70 +3891,70 @@ void ComputeStatisticsInternal<GByte>
                 iMax = nXCheck * nYCheck;
 
             // holds 4 uint32 sums in [0], [2], [4] and [6]
-            __m256i ymm_sum = ZERO256;
+            GDALm256i ymm_sum = ZERO256;
             // holds 8 uint32 sums
-            __m256i ymm_sumsquare = ZERO256;
+            GDALm256i ymm_sumsquare = ZERO256;
             // holds 4 uint32 sums in [0], [2], [4] and [6]
-            __m256i ymm_count_nodata_mul_255 = ZERO256;
+            GDALm256i ymm_count_nodata_mul_255 = ZERO256;
             const int iInit = i;
             for( ;i+31<iMax; i+=32 )
             {
-                const __m256i ymm = _mm256_load_si256((__m256i*)(pData + i));
+                const GDALm256i ymm = GDALmm256_load_si256((GDALm256i*)(pData + i));
 
                 // Check which values are nodata
-                const __m256i ymm_eq_nodata =
-                                        _mm256_cmpeq_epi8( ymm, ymm_nodata );
+                const GDALm256i ymm_eq_nodata =
+                                        GDALmm256_cmpeq_epi8( ymm, ymm_nodata );
                 // Count how many values are nodata (due to cmpeq putting 255
                 // when condition is met, this will actually be 255 times
                 // the number of nodata value, spread in 4 64 bits words).
                 // We can use add_epi32 as the counter will not overflow uint32
-                ymm_count_nodata_mul_255 = _mm256_add_epi32 (
+                ymm_count_nodata_mul_255 = GDALmm256_add_epi32 (
                                     ymm_count_nodata_mul_255,
-                                    _mm256_sad_epu8(ymm_eq_nodata, ZERO256) );
+                                    GDALmm256_sad_epu8(ymm_eq_nodata, ZERO256) );
                 // Replace all nodata values by zero for the purpose of sum
                 // and sumquare.
-                const __m256i ymm_nodata_by_zero =
-                                _mm256_andnot_si256(ymm_eq_nodata, ymm);
+                const GDALm256i ymm_nodata_by_zero =
+                                GDALmm256_andnot_si256(ymm_eq_nodata, ymm);
                 // Replace all nodata values by a neutral value for the purpose
                 // of min and max.
-                const __m256i ymm_nodata_by_neutral = _mm256_or_si256(
-                                _mm256_and_si256(ymm_eq_nodata, ymm_neutral),
+                const GDALm256i ymm_nodata_by_neutral = GDALmm256_or_si256(
+                                GDALmm256_and_si256(ymm_eq_nodata, ymm_neutral),
                                 ymm_nodata_by_zero);
 
-                ymm_min = _mm256_min_epu8 (ymm_min, ymm_nodata_by_neutral);
-                ymm_max = _mm256_max_epu8 (ymm_max, ymm_nodata_by_neutral);
+                ymm_min = GDALmm256_min_epu8 (ymm_min, ymm_nodata_by_neutral);
+                ymm_max = GDALmm256_max_epu8 (ymm_max, ymm_nodata_by_neutral);
 
                 // Extend lower 128 bits of ymm from uint8 to uint16
-                const __m256i ymm_low = _mm256_cvtepu8_epi16(
-                            _mm256_extracti128_si256(ymm_nodata_by_zero, 0));
+                const GDALm256i ymm_low = GDALmm256_cvtepu8_epi16(
+                            GDALmm256_extracti128_si256(ymm_nodata_by_zero, 0));
                 // Compute square of those 16 values as 32 bit result
                 // and add adjacent pairs
-                const __m256i ymm_low_square =
-                                            _mm256_madd_epi16(ymm_low, ymm_low);
+                const GDALm256i ymm_low_square =
+                                            GDALmm256_madd_epi16(ymm_low, ymm_low);
                 // Add to the sumsquare accumulator
-                ymm_sumsquare = _mm256_add_epi32(ymm_sumsquare, ymm_low_square);
+                ymm_sumsquare = GDALmm256_add_epi32(ymm_sumsquare, ymm_low_square);
 
                 // Same as before with high 128bits of ymm
-                const __m256i ymm_high = _mm256_cvtepu8_epi16(
-                            _mm256_extracti128_si256(ymm_nodata_by_zero, 1));
-                const __m256i ymm_high_square =
-                                        _mm256_madd_epi16(ymm_high, ymm_high);
-                ymm_sumsquare = _mm256_add_epi32(ymm_sumsquare, ymm_high_square);
+                const GDALm256i ymm_high = GDALmm256_cvtepu8_epi16(
+                            GDALmm256_extracti128_si256(ymm_nodata_by_zero, 1));
+                const GDALm256i ymm_high_square =
+                                        GDALmm256_madd_epi16(ymm_high, ymm_high);
+                ymm_sumsquare = GDALmm256_add_epi32(ymm_sumsquare, ymm_high_square);
 
                 // Now compute the sums
-                ymm_sum = _mm256_add_epi32(ymm_sum,
-                                _mm256_sad_epu8(ymm_nodata_by_zero, ZERO256));
+                ymm_sum = GDALmm256_add_epi32(ymm_sum,
+                                GDALmm256_sad_epu8(ymm_nodata_by_zero, ZERO256));
             }
 
             GUInt32* panCoutNoDataMul255 = panSum;
-            _mm256_store_si256((__m256i*)panCoutNoDataMul255,
+            GDALmm256_store_si256((GDALm256i*)panCoutNoDataMul255,
                                ymm_count_nodata_mul_255);
             nSampleCount += (i - iInit) -
                         (panCoutNoDataMul255[0] + panCoutNoDataMul255[2] +
                          panCoutNoDataMul255[4] + panCoutNoDataMul255[6]) / 255;
 
-            _mm256_store_si256((__m256i*)panSum, ymm_sum);
-            _mm256_store_si256((__m256i*)panSumSquare, ymm_sumsquare);
+            GDALmm256_store_si256((GDALm256i*)panSum, ymm_sum);
+            GDALmm256_store_si256((GDALm256i*)panSumSquare, ymm_sumsquare);
             nSum += panSum[0] + panSum[2] + panSum[4] + panSum[6];
             nSumSquare += static_cast<GUIntBig>(panSumSquare[0]) +
                           panSumSquare[1] + panSumSquare[2] + panSumSquare[3] +
@@ -3975,8 +3962,8 @@ void ComputeStatisticsInternal<GByte>
                           panSumSquare[7];
         }
 
-        _mm256_store_si256((__m256i*)pabyMin, ymm_min);
-        _mm256_store_si256((__m256i*)pabyMax, ymm_max);
+        GDALmm256_store_si256((GDALm256i*)pabyMin, ymm_min);
+        GDALmm256_store_si256((GDALm256i*)pabyMax, ymm_max);
         for(int j=0;j<32;j++)
         {
             if( pabyMin[j] < nMin ) nMin = pabyMin[j];
@@ -4017,8 +4004,8 @@ void ComputeStatisticsInternal<GByte>
         if( ((nXCheck * nYCheck) % nMaxIterationsPerInnerLoop) != 0 )
             nOuterLoops ++;
 
-        __m256i ymm_min = _mm256_load_si256((__m256i*)(pData + i));
-        __m256i ymm_max = ymm_min;
+        GDALm256i ymm_min = GDALmm256_load_si256((GDALm256i*)(pData + i));
+        GDALm256i ymm_max = ymm_min;
 
         for( int k=0; k< nOuterLoops; k++ )
         {
@@ -4027,38 +4014,38 @@ void ComputeStatisticsInternal<GByte>
                 iMax = nXCheck * nYCheck;
 
             // holds 4 uint32 sums in [0], [2], [4] and [6]
-            __m256i ymm_sum = ZERO256;
-            __m256i ymm_sumsquare = ZERO256; // holds 8 uint32 sums
+            GDALm256i ymm_sum = ZERO256;
+            GDALm256i ymm_sumsquare = ZERO256; // holds 8 uint32 sums
             for( ;i+31<iMax; i+=32 )
             {
-                const __m256i ymm = _mm256_load_si256((__m256i*)(pData + i));
-                ymm_min = _mm256_min_epu8 (ymm_min, ymm);
-                ymm_max = _mm256_max_epu8 (ymm_max, ymm);
+                const GDALm256i ymm = GDALmm256_load_si256((GDALm256i*)(pData + i));
+                ymm_min = GDALmm256_min_epu8 (ymm_min, ymm);
+                ymm_max = GDALmm256_max_epu8 (ymm_max, ymm);
 
                 // Extend lower 128 bits of ymm from uint8 to uint16
-                const __m256i ymm_low = _mm256_cvtepu8_epi16(
-                                            _mm256_extracti128_si256(ymm, 0));
+                const GDALm256i ymm_low = GDALmm256_cvtepu8_epi16(
+                                            GDALmm256_extracti128_si256(ymm, 0));
                 // Compute square of those 16 values as 32 bit result
                 // and add adjacent pairs
-                const __m256i ymm_low_square =
-                                            _mm256_madd_epi16(ymm_low, ymm_low);
+                const GDALm256i ymm_low_square =
+                                            GDALmm256_madd_epi16(ymm_low, ymm_low);
                 // Add to the sumsquare accumulator
-                ymm_sumsquare = _mm256_add_epi32(ymm_sumsquare, ymm_low_square);
+                ymm_sumsquare = GDALmm256_add_epi32(ymm_sumsquare, ymm_low_square);
 
                 // Same as before with high 128bits of ymm
-                const __m256i ymm_high = _mm256_cvtepu8_epi16(
-                                            _mm256_extracti128_si256(ymm, 1));
-                const __m256i ymm_high_square =
-                                        _mm256_madd_epi16(ymm_high, ymm_high);
-                ymm_sumsquare = _mm256_add_epi32(ymm_sumsquare, ymm_high_square);
+                const GDALm256i ymm_high = GDALmm256_cvtepu8_epi16(
+                                            GDALmm256_extracti128_si256(ymm, 1));
+                const GDALm256i ymm_high_square =
+                                        GDALmm256_madd_epi16(ymm_high, ymm_high);
+                ymm_sumsquare = GDALmm256_add_epi32(ymm_sumsquare, ymm_high_square);
 
                 // Now compute the sums
-                ymm_sum = _mm256_add_epi32(ymm_sum,
-                                           _mm256_sad_epu8(ymm, ZERO256));
+                ymm_sum = GDALmm256_add_epi32(ymm_sum,
+                                           GDALmm256_sad_epu8(ymm, ZERO256));
             }
 
-            _mm256_store_si256((__m256i*)panSum, ymm_sum);
-            _mm256_store_si256((__m256i*)panSumSquare, ymm_sumsquare);
+            GDALmm256_store_si256((GDALm256i*)panSum, ymm_sum);
+            GDALmm256_store_si256((GDALm256i*)panSumSquare, ymm_sumsquare);
 
             nSum += panSum[0] + panSum[2] + panSum[4] + panSum[6];
             nSumSquare += static_cast<GUIntBig>(panSumSquare[0]) +
@@ -4067,8 +4054,8 @@ void ComputeStatisticsInternal<GByte>
                           panSumSquare[7];
         }
 
-        _mm256_store_si256((__m256i*)pabyMin, ymm_min);
-        _mm256_store_si256((__m256i*)pabyMax, ymm_max);
+        GDALmm256_store_si256((GDALm256i*)pabyMin, ymm_min);
+        GDALmm256_store_si256((GDALm256i*)pabyMax, ymm_max);
         for(int j=0;j<32;j++)
         {
             if( pabyMin[j] < nMin ) nMin = pabyMin[j];
@@ -4098,256 +4085,12 @@ void ComputeStatisticsInternal<GByte>
     }
 }
 
-#endif
 
-#if !defined(__AVX2__)
-
-// SSE2 optimization for GByte case
-template<>
-void ComputeStatisticsInternal<GByte>( int nXCheck,
-                                       int nBlockXSize,
-                                       int nYCheck,
-                                       // assumed to be aligned on 128 bits
-                                       const GByte* pData,
-                                       bool bHasNoData,
-                                       GUInt32 nNoDataValue,
-                                       GUInt32& nMin,
-                                       GUInt32& nMax,
-                                       GUIntBig& nSum,
-                                       GUIntBig& nSumSquare,
-                                       GUIntBig& nSampleCount )
-{
-#ifdef GDAL_AVX2_EMULATION
-    if( CPLTestBool( CPLGetConfigOption( "GDAL_USE_AVX2_EMULATION", "NO") ) )
-    {
-        return ComputeStatisticsInternalByteAVX2Emulation(
-                                          nXCheck, nBlockXSize, nYCheck,
-                                          pData,
-                                          bHasNoData, nNoDataValue,
-                                          nMin, nMax, nSum, nSumSquare,
-                                          nSampleCount );
-    }
-#endif
-
-    if( bHasNoData && nXCheck == nBlockXSize && nXCheck * nYCheck >= 16 &&
-        nMin <= nMax )
-    {
-        int i = 0;
-        // Make sure that sumSquare can fit on uint32
-        // * 4 since we can hold 4 sums per vector register
-        const int nMaxIterationsPerInnerLoop = 4 *
-                ((std::numeric_limits<GUInt32>::max() / (255 * 255)) & ~15);
-        int nOuterLoops = (nXCheck * nYCheck) / nMaxIterationsPerInnerLoop;
-        if( ((nXCheck * nYCheck) % nMaxIterationsPerInnerLoop) != 0 )
-            nOuterLoops ++;
-
-        const __m128i xmm_nodata = _mm_set1_epi8(
-                                static_cast<GByte>(nNoDataValue) );
-        // any non noData value in [min,max] would do.
-        const __m128i xmm_neutral = _mm_set1_epi8(
-                                static_cast<GByte>(nMin) );
-        __m128i xmm_min = xmm_neutral;
-        __m128i xmm_max = xmm_neutral;
-
-        for( int k=0; k< nOuterLoops; k++ )
-        {
-            int iMax = i + nMaxIterationsPerInnerLoop;
-            if( iMax > nXCheck * nYCheck )
-                iMax = nXCheck * nYCheck;
-            __m128i xmm_sum = ZERO128; // holds 2 uint32 sums in [0] and [2]
-            __m128i xmm_sumsquare = ZERO128; // holds 4 uint32 sums
-            __m128i xmm_count_nodata_mul_255 = ZERO128;
-            const int iInit = i;
-            for( ;i+15<iMax; i+=16 )
-            {
-                const __m128i xmm = _mm_load_si128((__m128i*)(pData + i));
-                // Check which values are nodata
-                const __m128i xmm_eq_nodata = _mm_cmpeq_epi8( xmm, xmm_nodata );
-                // Count how many values are nodata (due to cmpeq putting 255
-                // when condition is met, this will actually be 255 times
-                // the number of nodata value, spread in the lower and upper 64
-                // bits). We can use add_epi32 as the counter will not overflow
-                // uint32
-                xmm_count_nodata_mul_255 = _mm_add_epi32 (
-                                        xmm_count_nodata_mul_255,
-                                        _mm_sad_epu8(xmm_eq_nodata, ZERO128));
-                // Replace all nodata values by zero for the purpose of sum
-                // and sumquare.
-                const __m128i xmm_nodata_by_zero =
-                                _mm_andnot_si128(xmm_eq_nodata, xmm);
-                // Replace all nodata values by a neutral value for the purpose
-                // of min and max.
-                const __m128i xmm_nodata_by_neutral = _mm_or_si128(
-                                _mm_and_si128(xmm_eq_nodata, xmm_neutral),
-                                xmm_nodata_by_zero);
-                xmm_min = _mm_min_epu8 (xmm_min, xmm_nodata_by_neutral);
-                xmm_max = _mm_max_epu8 (xmm_max, xmm_nodata_by_neutral);
-
-                // Extend lower 64 bits of xmm from uint8 to uint16
-                const __m128i xmm_low =
-                                EXTEND_UINT8_TO_UINT16(xmm_nodata_by_zero);
-                // Compute square of those 8 values as 32 bit result
-                // and add adjacent pairs
-                xmm_sumsquare = _mm_add_epi32(xmm_sumsquare,
-                                            _mm_madd_epi16 (xmm_low, xmm_low));
-                // Same with upper 64 bits
-                const __m128i xmm_high = EXTEND_UINT8_TO_UINT16(
-                                            GET_HIGH_64BIT(xmm_nodata_by_zero));
-                xmm_sumsquare = _mm_add_epi32(xmm_sumsquare,
-                                            _mm_madd_epi16 (xmm_high,xmm_high));
-
-                // Now compute the sums
-                xmm_sum = _mm_add_epi32(xmm_sum,
-                                _mm_sad_epu8(xmm_nodata_by_zero, ZERO128));
-            }
-
-            ALIGNED_16(GUIntBig anCoutNoDataMul255[2]);
-            _mm_store_si128((__m128i*)anCoutNoDataMul255,
-                            xmm_count_nodata_mul_255);
-            nSampleCount += (i - iInit) -
-                        (anCoutNoDataMul255[0] + anCoutNoDataMul255[1]) / 255;
-
-            ALIGNED_16(GUInt32 anSum[4]);
-            ALIGNED_16(GUInt32 anSumSquare[4]);
-            _mm_store_si128((__m128i*)anSum, xmm_sum);
-            _mm_store_si128((__m128i*)anSumSquare, xmm_sumsquare);
-
-            nSum += anSum[0] + anSum[2];
-            nSumSquare += static_cast<GUIntBig>(anSumSquare[0]) +
-                          anSumSquare[1] + anSumSquare[2] + anSumSquare[3];
-        }
-
-        ALIGNED_16(GByte abyMin[16]);
-        ALIGNED_16(GByte abyMax[16]);
-        _mm_store_si128((__m128i*)abyMin, xmm_min);
-        _mm_store_si128((__m128i*)abyMax, xmm_max);
-        for(int j=0;j<16;j++)
-        {
-            if( abyMin[j] < nMin ) nMin = abyMin[j];
-            if( abyMax[j] > nMax ) nMax = abyMax[j];
-        }
-
-        for( ; i<nXCheck * nYCheck; i++)
-        {
-            const GUInt32 nValue = pData[i];
-            if( nValue == nNoDataValue )
-                continue;
-            nSampleCount ++;
-            if( nValue < nMin )
-                nMin = nValue;
-            if( nValue > nMax )
-                nMax = nValue;
-            nSum += nValue;
-            nSumSquare += nValue * nValue;
-        }
-    }
-    else if( !bHasNoData && nXCheck == nBlockXSize && nXCheck * nYCheck >= 32 )
-    {
-        int i = 0;
-        // Make sure that sumSquare can fit on uint32
-        // * 4 since we can hold 4 sums per vector register
-        const int nMaxIterationsPerInnerLoop = 4 *
-                ((std::numeric_limits<GUInt32>::max() / (255 * 255)) & ~31);
-        int nOuterLoops = (nXCheck * nYCheck) / nMaxIterationsPerInnerLoop;
-        if( ((nXCheck * nYCheck) % nMaxIterationsPerInnerLoop) != 0 )
-            nOuterLoops ++;
-
-        __m128i xmm_min = _mm_load_si128((__m128i*)(pData + i));
-        __m128i xmm_max = xmm_min;
-
-        for( int k=0; k< nOuterLoops; k++ )
-        {
-            int iMax = i + nMaxIterationsPerInnerLoop;
-            if( iMax > nXCheck * nYCheck )
-                iMax = nXCheck * nYCheck;
-            __m128i xmm_sum = ZERO128; // holds 2 uint32 sums in [0] and [2]
-            __m128i xmm_sumsquare = ZERO128; // holds 4 uint32 sums
-            for( ;i+31<iMax; i+=32 )
-            {
-                const __m128i xmm = _mm_load_si128((__m128i*)(pData + i));
-                const __m128i xmm2 = _mm_load_si128((__m128i*)(pData + i + 16));
-
-                xmm_min = _mm_min_epu8 (xmm_min, xmm);
-                xmm_max = _mm_max_epu8 (xmm_max, xmm);
-
-                // Extend lower 64 bits of xmm from uint8 to uint16
-                const __m128i xmm_low = EXTEND_UINT8_TO_UINT16(xmm);
-                // Compute square of those 8 values as 32 bit result
-                // and add adjacent pairs
-                xmm_sumsquare = _mm_add_epi32(xmm_sumsquare,
-                                            _mm_madd_epi16 (xmm_low, xmm_low));
-                // Same with upper 64 bits
-                const __m128i xmm_high = EXTEND_UINT8_TO_UINT16(
-                                            GET_HIGH_64BIT(xmm));
-                xmm_sumsquare = _mm_add_epi32(xmm_sumsquare,
-                                            _mm_madd_epi16 (xmm_high,xmm_high));
-
-                // Now compute the sums
-                xmm_sum = _mm_add_epi32(xmm_sum, _mm_sad_epu8(xmm, ZERO128));
-
-                // Same with xmm2
-                xmm_min = _mm_min_epu8 (xmm_min, xmm2);
-                xmm_max = _mm_max_epu8 (xmm_max, xmm2);
-                const __m128i xmm2_low = EXTEND_UINT8_TO_UINT16(xmm2);
-                xmm_sumsquare = _mm_add_epi32(xmm_sumsquare,
-                                            _mm_madd_epi16 (xmm2_low, xmm2_low));
-                const __m128i xmm2_high = EXTEND_UINT8_TO_UINT16(
-                                            GET_HIGH_64BIT(xmm2));
-                xmm_sumsquare = _mm_add_epi32(xmm_sumsquare,
-                                            _mm_madd_epi16 (xmm2_high,xmm2_high));
-                xmm_sum = _mm_add_epi32(xmm_sum, _mm_sad_epu8(xmm2, ZERO128));
-            }
-            ALIGNED_16(GUInt32 anSum[4]);
-            ALIGNED_16(GUInt32 anSumSquare[4]);
-            _mm_store_si128((__m128i*)anSum, xmm_sum);
-            _mm_store_si128((__m128i*)anSumSquare, xmm_sumsquare);
-
-            nSum += anSum[0] + anSum[2];
-            nSumSquare += static_cast<GUIntBig>(anSumSquare[0]) +
-                          anSumSquare[1] + anSumSquare[2] + anSumSquare[3];
-        }
-
-        ALIGNED_16(GByte abyMin[16]);
-        ALIGNED_16(GByte abyMax[16]);
-        _mm_store_si128((__m128i*)abyMin, xmm_min);
-        _mm_store_si128((__m128i*)abyMax, xmm_max);
-        for(int j=0;j<16;j++)
-        {
-            if( abyMin[j] < nMin ) nMin = abyMin[j];
-            if( abyMax[j] > nMax ) nMax = abyMax[j];
-        }
-
-        for( ; i<nXCheck * nYCheck; i++)
-        {
-            const GUInt32 nValue = pData[i];
-            if( nValue < nMin )
-                nMin = nValue;
-            if( nValue > nMax )
-                nMax = nValue;
-            nSum += nValue;
-            nSumSquare += nValue * nValue;
-        }
-
-        nSampleCount += nXCheck * nYCheck;
-    }
-    else
-    {
-        ComputeStatisticsInternalGeneric( nXCheck, nBlockXSize, nYCheck,
-                                          pData,
-                                          bHasNoData, nNoDataValue,
-                                          nMin, nMax, nSum, nSumSquare,
-                                          nSampleCount );
-    }
-}
+#if defined(DEBUG) && !defined(__AVX2__)
+#define GDAL_AVX2_EMULATION
 #endif
 
 #if (defined(__AVX2__) && defined(__SSE4_1__)) || defined(GDAL_AVX2_EMULATION)
-
-#if defined(GDAL_AVX2_EMULATION)
-#include "gdal_avx2_emulation.hpp"
-#else
-#include <immintrin.h>
-#endif
 
 // AVX2 optimization for GUInt16 case
 #if defined(GDAL_AVX2_EMULATION)
@@ -4374,31 +4117,31 @@ void ComputeStatisticsInternal<GUInt16>
         int i = 0;
         __m128i xmm_min = _mm_load_si128((__m128i*)(pData + i));
         __m128i xmm_max = xmm_min;
-        __m256i ymm_sum = ZERO256; // holds 4 uint64 sums
-        __m256i ymm_sumsquare = ZERO256; // holds 4 uint64 sums
+        GDALm256i ymm_sum = ZERO256; // holds 4 uint64 sums
+        GDALm256i ymm_sumsquare = ZERO256; // holds 4 uint64 sums
         for( ;i+7<nXCheck * nYCheck ; i+=8 )
         {
             const __m128i xmm = _mm_load_si128((__m128i*)(pData + i));
-            xmm_min = _mm_min_epu16 (xmm_min, xmm); // SSE4.1
-            xmm_max = _mm_max_epu16 (xmm_max, xmm);
+            xmm_min = GDALmm_min_epu16 (xmm_min, xmm); // SSE4.1
+            xmm_max = GDALmm_max_epu16 (xmm_max, xmm);
 
             // Extend the 8 uint16 to uint32
-            const __m256i ymm = _mm256_cvtepu16_epi32(xmm);
+            const GDALm256i ymm = GDALmm256_cvtepu16_epi32(xmm);
             // Compute square of those 8 values
-            const __m256i ymm2 = _mm256_mullo_epi32(ymm, ymm);
+            const GDALm256i ymm2 = GDALmm256_mullo_epi32(ymm, ymm);
             // Extract 4 low uint32 and extend them to uint64
-            const __m256i ymm2_low = _mm256_cvtepu32_epi64(
-                                        _mm256_extracti128_si256(ymm2, 0));
+            const GDALm256i ymm2_low = GDALmm256_cvtepu32_epi64(
+                                        GDALmm256_extracti128_si256(ymm2, 0));
             // Extract 4 high uint32 and extend them to uint64
-            const __m256i ymm2_high = _mm256_cvtepu32_epi64(
-                                         _mm256_extracti128_si256(ymm2, 1));
+            const GDALm256i ymm2_high = GDALmm256_cvtepu32_epi64(
+                                         GDALmm256_extracti128_si256(ymm2, 1));
             // Add to the sumsquare accumulator
-            ymm_sumsquare = _mm256_add_epi64(ymm_sumsquare, ymm2_low);
-            ymm_sumsquare = _mm256_add_epi64(ymm_sumsquare, ymm2_high);
+            ymm_sumsquare = GDALmm256_add_epi64(ymm_sumsquare, ymm2_low);
+            ymm_sumsquare = GDALmm256_add_epi64(ymm_sumsquare, ymm2_high);
 
             // Now compute the sums
-            ymm_sum = _mm256_add_epi64(ymm_sum, _mm256_cvtepu16_epi64(xmm));
-            ymm_sum = _mm256_add_epi64(ymm_sum, _mm256_cvtepu16_epi64(
+            ymm_sum = GDALmm256_add_epi64(ymm_sum, GDALmm256_cvtepu16_epi64(xmm));
+            ymm_sum = GDALmm256_add_epi64(ymm_sum, GDALmm256_cvtepu16_epi64(
                                                         GET_HIGH_64BIT(xmm)));
         }
 
@@ -4414,8 +4157,8 @@ void ComputeStatisticsInternal<GUInt16>
 
         GUIntBig anSum[4];
         GUIntBig anSumSquare[4];
-        _mm256_storeu_si256((__m256i*)anSum, ymm_sum);
-        _mm256_storeu_si256((__m256i*)anSumSquare, ymm_sumsquare);
+        GDALmm256_storeu_si256((GDALm256i*)anSum, ymm_sum);
+        GDALmm256_storeu_si256((GDALm256i*)anSumSquare, ymm_sumsquare);
 
         nSum += anSum[0] + anSum[1] +
                 anSum[2] + anSum[3];
@@ -4448,39 +4191,6 @@ void ComputeStatisticsInternal<GUInt16>
 #endif
 
 #if !(defined(__AVX2__) && defined(__SSE4_1__))
-
-#ifndef __SSE4_1__
-
-// Emulation of SSE4.1 _mm_min_epu16 and _mm_max_epu16 with SSE2 only
-
-static inline __m128i GDAL_mm_cmple_epu16 (__m128i x, __m128i y)
-{
-    return _mm_cmpeq_epi16(_mm_subs_epu16(x, y), ZERO128);
-}
-
-static inline __m128i GDAL_mm_ternary(__m128i mask,
-                                      __m128i then_reg,
-                                      __m128i else_reg)
-{
-    return _mm_or_si128(_mm_and_si128(mask, then_reg),
-                        _mm_andnot_si128(mask, else_reg));
-}
-
-static inline __m128i GDAL_mm_min_epu16 (__m128i x, __m128i y)
-{
-    const __m128i mask = GDAL_mm_cmple_epu16(x, y);
-    return GDAL_mm_ternary(mask, x, y);
-}
-
-static inline __m128i GDAL_mm_max_epu16 (__m128i x, __m128i y)
-{
-    const __m128i mask = GDAL_mm_cmple_epu16(x, y);
-    return GDAL_mm_ternary(mask, y, x);
-}
-#else
-#define GDAL_mm_min_epu16 _mm_min_epu16
-#define GDAL_mm_max_epu16 _mm_max_epu16
-#endif
 
 #ifdef __SSE4_1__
 #define EXTEND_UINT32_TO_UINT64(reg)  _mm_cvtepu32_epi64(reg)
@@ -4547,11 +4257,11 @@ void ComputeStatisticsInternal<GUInt16>( int nXCheck,
                     // Those computation are somehow extensive in pure SSE2
                     // so do them only conditionaly. Branch prediction is
                     // pretty good, so the test of the cost is neglectable.
-                    xmm_min = GDAL_mm_min_epu16 (xmm_min, xmm);
+                    xmm_min = GDALmm_min_epu16 (xmm_min, xmm);
                 }
                 if( bComputeMax )
                 {
-                    xmm_max = GDAL_mm_max_epu16 (xmm_max, xmm);
+                    xmm_max = GDALmm_max_epu16 (xmm_max, xmm);
                 }
 
                 // For each of the 8 products, get the higher 16bits
