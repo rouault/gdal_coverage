@@ -6333,17 +6333,8 @@ GTiffBitmapBand::GTiffBitmapBand( GTiffDataset *poDSIn, int nBandIn )
 #ifdef ESRI_BUILD
         poColorTable = NULL;
 #else
-        GDALColorEntry oWhite, oBlack;
-
-        oWhite.c1 = 255;
-        oWhite.c2 = 255;
-        oWhite.c3 = 255;
-        oWhite.c4 = 255;
-
-        oBlack.c1 = 0;
-        oBlack.c2 = 0;
-        oBlack.c3 = 0;
-        oBlack.c4 = 255;
+        const GDALColorEntry oWhite = { 255, 255, 255, 255 };
+        const GDALColorEntry oBlack = { 0, 0, 0, 255 };
 
         poColorTable = new GDALColorTable();
 
@@ -7190,10 +7181,19 @@ bool GTiffDataset::HasOnlyNoDataT( const T* pBuffer, int nWidth, int nHeight,
     for( int iBand = 0; iBand < nComponents; iBand++ )
     {
         if( !(IsEqualToNoData(pBuffer[iBand], noDataValue) &&
-              IsEqualToNoData(pBuffer[(size_t)(nWidth-1) * nComponents + iBand], noDataValue) &&
-              IsEqualToNoData(pBuffer[((size_t)(nHeight-1)/2 * nLineStride + (nWidth - 1)/2) * nComponents + iBand], noDataValue) &&
-              IsEqualToNoData(pBuffer[(size_t)(nHeight-1) * nLineStride * nComponents + iBand], noDataValue) &&
-              IsEqualToNoData(pBuffer[((size_t)(nHeight-1) * nLineStride + nWidth - 1) * nComponents + iBand], noDataValue) ) )
+              IsEqualToNoData(
+                  pBuffer[static_cast<size_t>(nWidth-1) * nComponents + iBand],
+                  noDataValue) &&
+              IsEqualToNoData(
+                  pBuffer[(static_cast<size_t>(nHeight-1)/2 * nLineStride +
+                           (nWidth - 1)/2) * nComponents + iBand],
+                  noDataValue) &&
+              IsEqualToNoData(
+                  pBuffer[static_cast<size_t>(nHeight-1) * nLineStride *
+                          nComponents + iBand], noDataValue) &&
+              IsEqualToNoData(
+                  pBuffer[(static_cast<size_t>(nHeight-1) * nLineStride +
+                           nWidth - 1) * nComponents + iBand], noDataValue) ) )
         {
             return false;
         }
@@ -7204,7 +7204,9 @@ bool GTiffDataset::HasOnlyNoDataT( const T* pBuffer, int nWidth, int nHeight,
     {
         for( int iX = 0; iX < nWidth * nComponents; iX++ )
         {
-            if( !IsEqualToNoData(pBuffer[iY * (size_t)nLineStride * nComponents + iX], noDataValue) )
+            if( !IsEqualToNoData(
+                   pBuffer[iY * static_cast<size_t>(nLineStride) * nComponents +
+                           iX], noDataValue) )
             {
                 return false;
             }
@@ -7309,7 +7311,8 @@ inline bool GTiffDataset::IsFirstPixelEqualToNoData( const void* pBuffer )
     if( nBitsPerSample == 64 && eDT == GDT_Float64 )
     {
         if( CPLIsNan(dfEffectiveNoData) )
-            return CPL_TO_BOOL(CPLIsNan(*(reinterpret_cast<const double*>(pBuffer))));
+            return CPL_TO_BOOL(
+                CPLIsNan(*(reinterpret_cast<const double*>(pBuffer))));
         return *(reinterpret_cast<const double*>(pBuffer)) == dfEffectiveNoData;
     }
     return false;
@@ -7322,8 +7325,6 @@ inline bool GTiffDataset::IsFirstPixelEqualToNoData( const void* pBuffer )
 bool GTiffDataset::WriteEncodedTile( uint32 tile, GByte *pabyData,
                                      int bPreserveDataBuffer )
 {
-    int cc = static_cast<int>(TIFFTileSize( hTIFF ));
-    bool bNeedTileFill = false;
     int iRow = 0;
     int iColumn = 0;
     int nBlocksPerRow = 1;
@@ -7362,6 +7363,7 @@ bool GTiffDataset::WriteEncodedTile( uint32 tile, GByte *pabyData,
 
     // Do we need to spread edge values right or down for a partial
     // JPEG encoded tile?  We do this to avoid edge artifacts.
+    bool bNeedTileFill = false;
     if( nCompression == COMPRESSION_JPEG )
     {
         nBlocksPerRow = DIV_ROUND_UP(nRasterXSize, nBlockXSize);
@@ -7385,6 +7387,8 @@ bool GTiffDataset::WriteEncodedTile( uint32 tile, GByte *pabyData,
     // TIFFWriteEncodedTile from altering the buffer as part of
     // byte swapping the data on write then we will need a temporary
     // working buffer.  If not, we can just do a direct write.
+    const int cc = static_cast<int>(TIFFTileSize( hTIFF ));
+
     if( bPreserveDataBuffer
         && (TIFFIsByteSwapped(hTIFF) || bNeedTileFill || bHasDiscardedLsb) )
     {
@@ -7605,11 +7609,8 @@ void GTiffDataset::InitCompressionThreads( char** papszOptions )
         pszValue = CPLGetConfigOption("GDAL_NUM_THREADS", NULL);
     if( pszValue )
     {
-        int nThreads = 0;
-        if( EQUAL(pszValue, "ALL_CPUS") )
-            nThreads = CPLGetNumCPUs();
-        else
-            nThreads = atoi(pszValue);
+        const int nThreads =
+            EQUAL(pszValue, "ALL_CPUS") ? CPLGetNumCPUs() : atoi(pszValue);
         if( nThreads > 1 )
         {
             if( nCompression == COMPRESSION_NONE ||
@@ -8097,12 +8098,9 @@ CPLErr GTiffDataset::LoadBlockBuf( int nBlockId, bool bReadFromDisk )
 /* -------------------------------------------------------------------- */
 /*      Get block size.                                                 */
 /* -------------------------------------------------------------------- */
-    int nBlockBufSize;
-    if( TIFFIsTiled(hTIFF) )
-        nBlockBufSize = static_cast<int>(TIFFTileSize( hTIFF ));
-    else
-        nBlockBufSize = static_cast<int>(TIFFStripSize( hTIFF ));
-
+    const int nBlockBufSize =
+        static_cast<int>(
+            TIFFIsTiled(hTIFF) ? TIFFTileSize(hTIFF) : TIFFStripSize(hTIFF));
     if( !nBlockBufSize )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
@@ -8229,15 +8227,18 @@ CPLErr GTiffDataset::LoadBlockBuf( int nBlockId, bool bReadFromDisk )
 
 static void GTiffFillStreamableOffsetAndCount( TIFF* hTIFF, int nSize )
 {
-    uint32  nXSize, nYSize;
+    uint32 nXSize = 0;
+    uint32 nYSize = 0;
     TIFFGetField( hTIFF, TIFFTAG_IMAGEWIDTH, &nXSize );
     TIFFGetField( hTIFF, TIFFTAG_IMAGELENGTH, &nYSize );
-    toff_t* panOffset = NULL, *panSize = NULL;
     const bool bIsTiled = CPL_TO_BOOL( TIFFIsTiled(hTIFF) );
-    int nBlockCount =
-        ( bIsTiled ) ? TIFFNumberOfTiles(hTIFF) : TIFFNumberOfStrips(hTIFF);
+    const int nBlockCount =
+        bIsTiled ? TIFFNumberOfTiles(hTIFF) : TIFFNumberOfStrips(hTIFF);
+
+    toff_t *panOffset = NULL;
     TIFFGetField( hTIFF, bIsTiled ? TIFFTAG_TILEOFFSETS : TIFFTAG_STRIPOFFSETS,
                   &panOffset );
+    toff_t *panSize = NULL;
     TIFFGetField( hTIFF,
                   bIsTiled ? TIFFTAG_TILEBYTECOUNTS : TIFFTAG_STRIPBYTECOUNTS,
                   &panSize );
@@ -8288,159 +8289,158 @@ static void GTiffFillStreamableOffsetAndCount( TIFF* hTIFF, int nSize )
 void GTiffDataset::Crystalize()
 
 {
-    if( !bCrystalized )
+    if( bCrystalized )
+        return;
+
+    if( bCheckIfColorInterpMustGoToPamAtCrystalization )
     {
-        if( bCheckIfColorInterpMustGoToPamAtCrystalization )
+        bool bColorInterpToPam = false;
+        if( nPhotometric == PHOTOMETRIC_MINISBLACK )
         {
-            bool bColorInterpToPam = false;
-            if( nPhotometric == PHOTOMETRIC_MINISBLACK )
+            for( int i = 0; i < nBands; ++i )
             {
-                for( int i = 0; i < nBands; ++i )
+                GDALColorInterp eInterp =
+                    GetRasterBand(i+1)->GetColorInterpretation();
+                if( !(eInterp == GCI_GrayIndex || eInterp == GCI_Undefined ||
+                      (i > 0 && eInterp == GCI_AlphaBand)) )
                 {
-                    GDALColorInterp eInterp =
-                        GetRasterBand(i+1)->GetColorInterpretation();
-                    if( !(eInterp == GCI_GrayIndex || eInterp == GCI_Undefined ||
-                          (i > 0 && eInterp == GCI_AlphaBand)) )
-                    {
-                        bColorInterpToPam = true;
-                        break;
-                    }
+                    bColorInterpToPam = true;
+                    break;
                 }
             }
-            else if( nPhotometric == PHOTOMETRIC_RGB )
-            {
-                for( int i = 0; i < nBands; ++i )
-                {
-                    GDALColorInterp eInterp =
-                        GetRasterBand(i+1)->GetColorInterpretation();
-                    if( !((i == 0 && eInterp == GCI_RedBand) ||
-                          (i == 1 && eInterp == GCI_GreenBand) ||
-                          (i == 2 && eInterp == GCI_BlueBand) ||
-                          (i >= 3 && (eInterp == GCI_Undefined ||
-                                      eInterp == GCI_AlphaBand))) )
-                    {
-                        bColorInterpToPam = true;
-                        break;
-                    }
-                }
-            }
-            else
-            {
-                bColorInterpToPam = true;
-            }
-            if( bColorInterpToPam )
-            {
-                CPLDebug("GTiff", "Color interpretations have to go to PAM");
-                for( int i = 0; i < nBands; ++i )
-                {
-                    static_cast<GDALPamRasterBand*>(GetRasterBand(i+1))->
-                        GDALPamRasterBand::SetColorInterpretation(
-                            GetRasterBand(i+1)->GetColorInterpretation() );
-                }
-            }
-            bCheckIfColorInterpMustGoToPamAtCrystalization = false;
         }
-
-        // FIXME? libtiff writes extended tags in the order they are specified
-        // and not in increasing order
-        WriteMetadata( this, hTIFF, true, osProfile, osFilename,
-                       papszCreationOptions );
-        WriteGeoTIFFInfo();
-        if( bNoDataSet )
-            WriteNoDataValue( hTIFF, dfNoDataValue );
-
-        bMetadataChanged = false;
-        bGeoTIFFInfoChanged = false;
-        bNoDataChanged = false;
-        bNeedsRewrite = false;
-
-        bCrystalized = true;
-
-        TIFFWriteCheck( hTIFF, TIFFIsTiled(hTIFF), "GTiffDataset::Crystalize");
-
-        // Keep zip and tiff quality, and jpegcolormode which get reset when
-        // we call TIFFWriteDirectory.
-        int jquality = -1, zquality = -1, nColorMode = -1, nJpegTablesModeIn = -1;
-        TIFFGetField(hTIFF, TIFFTAG_JPEGQUALITY, &jquality);
-        TIFFGetField(hTIFF, TIFFTAG_ZIPQUALITY, &zquality);
-        TIFFGetField( hTIFF, TIFFTAG_JPEGCOLORMODE, &nColorMode );
-        TIFFGetField( hTIFF, TIFFTAG_JPEGTABLESMODE, &nJpegTablesModeIn );
-
-        TIFFWriteDirectory( hTIFF );
-        if( bStreamingOut )
+        else if( nPhotometric == PHOTOMETRIC_RGB )
         {
-            // We need to write twice the directory to be sure that custom
-            // TIFF tags are correctly sorted and that padding bytes have been
-            // added.
-            TIFFSetDirectory( hTIFF, 0 );
-            TIFFWriteDirectory( hTIFF );
-
-            if( VSIFSeekL( fpL, 0, SEEK_END ) != 0 )
+            for( int i = 0; i < nBands; ++i )
             {
-                CPLError(CE_Failure, CPLE_FileIO, "Could not seek");
+                GDALColorInterp eInterp =
+                    GetRasterBand(i+1)->GetColorInterpretation();
+                if( !((i == 0 && eInterp == GCI_RedBand) ||
+                      (i == 1 && eInterp == GCI_GreenBand) ||
+                      (i == 2 && eInterp == GCI_BlueBand) ||
+                      (i >= 3 && (eInterp == GCI_Undefined ||
+                                  eInterp == GCI_AlphaBand))) )
+                {
+                    bColorInterpToPam = true;
+                    break;
+                }
             }
-            const int nSize = static_cast<int>( VSIFTellL(fpL) );
-
-            TIFFSetDirectory( hTIFF, 0 );
-            GTiffFillStreamableOffsetAndCount( hTIFF, nSize );
-            TIFFWriteDirectory( hTIFF );
-
-            vsi_l_offset nDataLength;
-            void* pabyBuffer =
-                VSIGetMemFileBuffer( osTmpFilename, &nDataLength, FALSE);
-            if( static_cast<int>(
-                    VSIFWriteL( pabyBuffer, 1,
-                                static_cast<int>(nDataLength), fpToWrite ) ) !=
-                static_cast<int>(nDataLength) )
-            {
-                CPLError( CE_Failure, CPLE_FileIO, "Could not write %d bytes",
-                          static_cast<int>(nDataLength) );
-            }
-            // In case of single strip file, there's a libtiff check that would
-            // issue a warning since the file hasn't the required size.
-            CPLPushErrorHandler(CPLQuietErrorHandler);
-            TIFFSetDirectory( hTIFF, 0 );
-            CPLPopErrorHandler();
         }
         else
         {
-            TIFFSetDirectory( hTIFF, 0 );
+            bColorInterpToPam = true;
         }
-
-
-        // Now, reset zip and tiff quality and jpegcolormode.
-        if( jquality > 0 )
-            TIFFSetField(hTIFF, TIFFTAG_JPEGQUALITY, jquality);
-        if( zquality > 0 )
-            TIFFSetField(hTIFF, TIFFTAG_ZIPQUALITY, zquality);
-        if( nColorMode >= 0 )
-            TIFFSetField(hTIFF, TIFFTAG_JPEGCOLORMODE, nColorMode);
-        if( nJpegTablesModeIn >= 0 )
-            TIFFSetField(hTIFF, TIFFTAG_JPEGTABLESMODE, nJpegTablesModeIn);
-
-        nDirOffset = TIFFCurrentDirOffset( hTIFF );
+        if( bColorInterpToPam )
+        {
+            CPLDebug("GTiff", "Color interpretations have to go to PAM");
+            for( int i = 0; i < nBands; ++i )
+            {
+                static_cast<GDALPamRasterBand*>(GetRasterBand(i+1))->
+                    GDALPamRasterBand::SetColorInterpretation(
+                        GetRasterBand(i+1)->GetColorInterpretation() );
+            }
+        }
+        bCheckIfColorInterpMustGoToPamAtCrystalization = false;
     }
+
+    // TODO: libtiff writes extended tags in the order they are specified
+    // and not in increasing order.
+    WriteMetadata( this, hTIFF, true, osProfile, osFilename,
+                   papszCreationOptions );
+    WriteGeoTIFFInfo();
+    if( bNoDataSet )
+        WriteNoDataValue( hTIFF, dfNoDataValue );
+
+    bMetadataChanged = false;
+    bGeoTIFFInfoChanged = false;
+    bNoDataChanged = false;
+    bNeedsRewrite = false;
+
+    bCrystalized = true;
+
+    TIFFWriteCheck( hTIFF, TIFFIsTiled(hTIFF), "GTiffDataset::Crystalize");
+
+    // Keep zip and tiff quality, and jpegcolormode which get reset when
+    // we call TIFFWriteDirectory.
+    int jquality = -1;
+    TIFFGetField(hTIFF, TIFFTAG_JPEGQUALITY, &jquality);
+    int zquality = -1;
+    TIFFGetField(hTIFF, TIFFTAG_ZIPQUALITY, &zquality);
+    int nColorMode = -1;
+    TIFFGetField( hTIFF, TIFFTAG_JPEGCOLORMODE, &nColorMode );
+    int nJpegTablesModeIn = -1;
+    TIFFGetField( hTIFF, TIFFTAG_JPEGTABLESMODE, &nJpegTablesModeIn );
+
+    TIFFWriteDirectory( hTIFF );
+    if( bStreamingOut )
+    {
+        // We need to write twice the directory to be sure that custom
+        // TIFF tags are correctly sorted and that padding bytes have been
+        // added.
+        TIFFSetDirectory( hTIFF, 0 );
+        TIFFWriteDirectory( hTIFF );
+
+        if( VSIFSeekL( fpL, 0, SEEK_END ) != 0 )
+        {
+            CPLError(CE_Failure, CPLE_FileIO, "Could not seek");
+        }
+        const int nSize = static_cast<int>( VSIFTellL(fpL) );
+
+        TIFFSetDirectory( hTIFF, 0 );
+        GTiffFillStreamableOffsetAndCount( hTIFF, nSize );
+        TIFFWriteDirectory( hTIFF );
+
+        vsi_l_offset nDataLength = 0;
+        void* pabyBuffer =
+            VSIGetMemFileBuffer( osTmpFilename, &nDataLength, FALSE);
+        if( static_cast<int>(
+                VSIFWriteL( pabyBuffer, 1,
+                            static_cast<int>(nDataLength), fpToWrite ) ) !=
+            static_cast<int>(nDataLength) )
+        {
+            CPLError( CE_Failure, CPLE_FileIO, "Could not write %d bytes",
+                      static_cast<int>(nDataLength) );
+        }
+        // In case of single strip file, there's a libtiff check that would
+        // issue a warning since the file hasn't the required size.
+        CPLPushErrorHandler(CPLQuietErrorHandler);
+        TIFFSetDirectory( hTIFF, 0 );
+        CPLPopErrorHandler();
+    }
+    else
+    {
+        TIFFSetDirectory( hTIFF, 0 );
+    }
+
+    // Now, reset zip and tiff quality and jpegcolormode.
+    if( jquality > 0 )
+        TIFFSetField(hTIFF, TIFFTAG_JPEGQUALITY, jquality);
+    if( zquality > 0 )
+        TIFFSetField(hTIFF, TIFFTAG_ZIPQUALITY, zquality);
+    if( nColorMode >= 0 )
+        TIFFSetField(hTIFF, TIFFTAG_JPEGCOLORMODE, nColorMode);
+    if( nJpegTablesModeIn >= 0 )
+        TIFFSetField(hTIFF, TIFFTAG_JPEGTABLESMODE, nJpegTablesModeIn);
+
+    nDirOffset = TIFFCurrentDirOffset( hTIFF );
 }
 
 #ifdef INTERNAL_LIBTIFF
 
-#define IO_CACHE_PAGE_SIZE      4096
-
 static
-void GTiffCacheOffsetOrCount(VSILFILE* fp,
-                             vsi_l_offset nBaseOffset,
-                             int nBlockId,
-                             uint32 nstrips,
-                             uint64* panVals,
-                             size_t sizeofval)
+void GTiffCacheOffsetOrCount( VSILFILE* fp,
+                              vsi_l_offset nBaseOffset,
+                              int nBlockId,
+                              uint32 nstrips,
+                              uint64* panVals,
+                              size_t sizeofval )
 {
-    int i, iStartBefore;
-    vsi_l_offset nOffset, nOffsetStartPage, nOffsetEndPage;
-    GByte buffer[2 * IO_CACHE_PAGE_SIZE];
+    static const vsi_l_offset IO_CACHE_PAGE_SIZE = 4096;
 
-    nOffset = nBaseOffset + sizeofval * nBlockId;
-    nOffsetStartPage = (nOffset / IO_CACHE_PAGE_SIZE) * IO_CACHE_PAGE_SIZE;
-    nOffsetEndPage = nOffsetStartPage + IO_CACHE_PAGE_SIZE;
+    const vsi_l_offset nOffset = nBaseOffset + sizeofval * nBlockId;
+    const vsi_l_offset nOffsetStartPage =
+        (nOffset / IO_CACHE_PAGE_SIZE) * IO_CACHE_PAGE_SIZE;
+    vsi_l_offset nOffsetEndPage = nOffsetStartPage + IO_CACHE_PAGE_SIZE;
 
     if( nOffset + sizeofval > nOffsetEndPage )
         nOffsetEndPage += IO_CACHE_PAGE_SIZE;
@@ -8459,18 +8459,22 @@ void GTiffCacheOffsetOrCount(VSILFILE* fp,
         panVals[nBlockId] = 0;
         return;
     }
-    size_t nToRead = (size_t)(nOffsetEndPage - nOffsetStartPage);
-    size_t nRead = VSIFReadL(buffer, 1, nToRead, fp);
+
+    const size_t nToRead =
+        static_cast<size_t>(nOffsetEndPage - nOffsetStartPage);
+    GByte buffer[2 * IO_CACHE_PAGE_SIZE] = {};  // TODO(schwehr): Off the stack.
+    const size_t nRead = VSIFReadL(buffer, 1, nToRead, fp);
     if( nRead < nToRead )
     {
         CPLError(CE_Failure, CPLE_AppDefined,
                  "Cannot read offset/size for strile around ~%d", nBlockId);
         memset(buffer + nRead, 0, nToRead - nRead);
     }
-    iStartBefore = - static_cast<int>((nOffset - nOffsetStartPage) / sizeofval);
+    int iStartBefore =
+        - static_cast<int>((nOffset - nOffsetStartPage) / sizeofval);
     if( nBlockId + iStartBefore < 0 )
         iStartBefore = -nBlockId;
-    for( i=iStartBefore;
+    for( int i = iStartBefore;
          static_cast<uint32>(nBlockId + i) < nstrips &&
          static_cast<GIntBig>(nOffset) + (i+1) * static_cast<int>(sizeofval) <=
          static_cast<GIntBig>(nOffsetEndPage);
@@ -8641,10 +8645,12 @@ bool GTiffDataset::IsBlockAvailable( int nBlockId,
 
     if( ( TIFFIsTiled( hTIFF )
           && TIFFGetField( hTIFF, TIFFTAG_TILEBYTECOUNTS, &panByteCounts )
-          && (pnOffset == NULL || TIFFGetField( hTIFF, TIFFTAG_TILEOFFSETS, &panOffsets )) )
+          && (pnOffset == NULL ||
+              TIFFGetField( hTIFF, TIFFTAG_TILEOFFSETS, &panOffsets )) )
         || ( !TIFFIsTiled( hTIFF )
           && TIFFGetField( hTIFF, TIFFTAG_STRIPBYTECOUNTS, &panByteCounts )
-          && (pnOffset == NULL || TIFFGetField( hTIFF, TIFFTAG_STRIPOFFSETS, &panOffsets )) ) )
+          && (pnOffset == NULL ||
+              TIFFGetField( hTIFF, TIFFTAG_STRIPOFFSETS, &panOffsets )) ) )
     {
         if( panByteCounts == NULL || (pnOffset != NULL && panOffsets == NULL) )
             return false;
@@ -10002,7 +10008,8 @@ static void WriteMDMetadata( GDALMultiDomainMetadata *poMDMD, TIFF *hTIFF,
             if( strlen(papszDomainList[iDomain]) == 0
                 && nBand == 0 && STARTS_WITH_CI(pszItemName, "TIFFTAG_") )
             {
-                if( EQUAL(pszItemName, "TIFFTAG_RESOLUTIONUNIT") ) {
+                if( EQUAL(pszItemName, "TIFFTAG_RESOLUTIONUNIT") )
+                {
                     // ResolutionUnit can't be 0, which is the default if
                     // atoi() fails.  Set to 1=Unknown.
                     int v = atoi(pszItemValue);
