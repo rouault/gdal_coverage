@@ -56,7 +56,7 @@ GDALDataset * DerivedDataset::Open(GDALOpenInfo * poOpenInfo)
 {
     /* Try to open original dataset */
     CPLString filename(poOpenInfo->pszFilename);
-    
+
     /* DERIVED_SUBDATASET should be first domain */
     const size_t dsds_pos = filename.find("DERIVED_SUBDATASET:");
     const size_t nPrefixLen = strlen("DERIVED_SUBDATASET:");
@@ -145,20 +145,20 @@ GDALDataset * DerivedDataset::Open(GDALOpenInfo * poOpenInfo)
     // Map bands
     for(int nBand = 1; nBand <= nbBands; ++nBand)
     {
-        VRTDerivedRasterBand * poBand;
-
-        poBand = new VRTDerivedRasterBand(poDS,nBand,type,nCols,nRows);
+        VRTDerivedRasterBand *poBand =
+            new VRTDerivedRasterBand(poDS,nBand,type,nCols,nRows);
         poDS->SetBand(nBand,poBand);
 
         poBand->SetPixelFunctionName(pixelFunctionName);
         poBand->SetSourceTransferType(poTmpDS->GetRasterBand(nBand)->GetRasterDataType());
 
-        GDALProxyPoolDataset* proxyDS;
-        proxyDS = new GDALProxyPoolDataset(         odFilename,
-                                                    poDS->nRasterXSize,
-                                                    poDS->nRasterYSize,
-                                                    GA_ReadOnly,
-                                                    TRUE);
+        GDALProxyPoolDataset* proxyDS =
+            new GDALProxyPoolDataset(
+                odFilename,
+                poDS->nRasterXSize,
+                poDS->nRasterYSize,
+                GA_ReadOnly,
+                TRUE);
         for(int j=0;j<nbBands;++j)
         {
             int blockXSize, blockYSize;
