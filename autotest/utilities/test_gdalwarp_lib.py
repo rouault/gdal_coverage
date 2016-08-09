@@ -1178,6 +1178,53 @@ def test_gdalwarp_lib_131():
     return 'success'
 
 ###############################################################################
+# Test that alpha blending works by warping onto an existing dataset
+# with alpha > 0 and < 255
+
+def test_gdalwarp_lib_132():
+
+    for dt in [ gdal.GDT_Byte, gdal.GDT_Float32 ]:
+        src_ds = gdal.GetDriverByName('GTiff').Create(
+            '/vsimem/test_gdalwarp_lib_132.tif', 33, 1, 2, dt)
+        src_ds.SetGeoTransform([100,1,0,200,0,-1])
+        src_ds.GetRasterBand(2).SetColorInterpretation(gdal.GCI_AlphaBand)
+
+        ds = gdal.Translate('/vsimem/test_gdalwarp_lib_132_dst.tif', src_ds)
+        dst_grey = 60
+        dst_alpha = 100
+        ds.GetRasterBand(1).Fill(dst_grey)
+        ds.GetRasterBand(2).Fill(dst_alpha)
+
+        src_grey = 170
+        src_alpha = 200
+        src_ds.GetRasterBand(1).Fill(src_grey)
+        src_ds.GetRasterBand(2).Fill(src_alpha)
+        gdal.Warp(ds, src_ds)
+        expected_alpha = int(src_alpha + dst_alpha * (255 - src_alpha) / 255. + 0.5)
+        expected_grey = int((src_grey * src_alpha + dst_grey * dst_alpha * (255 - src_alpha) / 255.) / expected_alpha + 0.5)
+        expected_val = [expected_grey,expected_alpha]
+        for i in range(2):
+            for x in range(33):
+                data = struct.unpack('B' * 1, ds.GetRasterBand(i+1).ReadRaster(i, 0, 1, 1, buf_type = gdal.GDT_Byte))[0]
+                if abs(data - expected_val[i]) > 1:
+                    gdaltest.post_reason('bad checksum')
+                    print(dt)
+                    print(i)
+                    print(x)
+                    print(data)
+                    print(expected_val[i])
+                    return 'fail'
+        ds = None
+
+        src_ds = None
+
+        gdal.Unlink('/vsimem/test_gdalwarp_lib_132.tif')
+        gdal.Unlink('/vsimem/test_gdalwarp_lib_132_dst.tif')
+        gdal.Unlink('/vsimem/test_gdalwarp_lib_132_dst.tif.aux.xml')
+
+    return 'success'
+
+###############################################################################
 # Cleanup
 
 def test_gdalwarp_lib_cleanup():
@@ -1257,6 +1304,7 @@ gdaltest_list = [
     test_gdalwarp_lib_129,
     test_gdalwarp_lib_130,
     test_gdalwarp_lib_131,
+    test_gdalwarp_lib_132,
     test_gdalwarp_lib_cleanup,
     ]
 
