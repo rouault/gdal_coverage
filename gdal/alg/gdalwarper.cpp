@@ -33,6 +33,8 @@
 #include "ogr_api.h"
 #include "gdal_priv.h"
 
+#include <limits>
+
 #if (defined(__x86_64) || defined(_M_X64))
 #include <emmintrin.h>
 #endif
@@ -358,6 +360,40 @@ CPLErr CPL_STDCALL GDALCreateAndReprojectImage(
 }
 
 /************************************************************************/
+/*                       GDALWarpNoDataMaskerT()                        */
+/************************************************************************/
+
+template<class T> static CPLErr GDALWarpNoDataMaskerT( const double *padfNoData,
+                                                       size_t nPixels,
+                                                       const T *pData ,
+                                                       GUInt32 *panValidityMask,
+                                                       int* pbOutAllValid )
+{
+    // nothing to do if value is out of range.
+    if( padfNoData[0] < std::numeric_limits<T>::min() ||
+        padfNoData[0] > std::numeric_limits<T>::max() + 0.000001
+        || padfNoData[1] != 0.0 )
+    {
+        *pbOutAllValid = TRUE;
+        return CE_None;
+    }
+
+    const int nNoData = (int) floor(padfNoData[0] + 0.000001);
+    int bAllValid = TRUE;
+    for( size_t iOffset = 0; iOffset < nPixels; ++iOffset )
+    {
+        if( pData[iOffset] == nNoData )
+        {
+            bAllValid = FALSE;
+            panValidityMask[iOffset>>5] &= ~(0x01 << (iOffset & 0x1f));
+        }
+    }
+    *pbOutAllValid = bAllValid;
+
+    return CE_None;
+}
+
+/************************************************************************/
 /*                        GDALWarpNoDataMasker()                        */
 /*                                                                      */
 /*      GDALMaskFunc for establishing a validity mask for a source      */
@@ -371,8 +407,9 @@ GDALWarpNoDataMasker( void *pMaskFuncArg, int nBandCount, GDALDataType eType,
                       int bMaskIsFloat, void *pValidityMask, int* pbOutAllValid )
 
 {
-    double *padfNoData = (double *) pMaskFuncArg;
-    GUInt32 *panValidityMask = (GUInt32 *) pValidityMask;
+    const double *padfNoData = reinterpret_cast<const double*>(pMaskFuncArg);
+    GUInt32 *panValidityMask = reinterpret_cast<GUInt32 *>(pValidityMask);
+    const size_t nPixels = static_cast<size_t>(nXSize) * nYSize;
 
     *pbOutAllValid = FALSE;
 
@@ -386,92 +423,25 @@ GDALWarpNoDataMasker( void *pMaskFuncArg, int nBandCount, GDALDataType eType,
     switch( eType )
     {
       case GDT_Byte:
-      {
-          int nNoData = (int) padfNoData[0];
-          GByte *pabyData = (GByte *) *ppImageData;
-          int iOffset;
-
-          // nothing to do if value is out of range.
-          if( padfNoData[0] < 0.0 || padfNoData[0] > 255.000001
-              || padfNoData[1] != 0.0 )
-          {
-              *pbOutAllValid = TRUE;
-              return CE_None;
-          }
-
-          int bAllValid = TRUE;
-          for( iOffset = nXSize*nYSize-1; iOffset >= 0; iOffset-- )
-          {
-              if( pabyData[iOffset] == nNoData )
-              {
-                  bAllValid = FALSE;
-                  panValidityMask[iOffset>>5] &= ~(0x01 << (iOffset & 0x1f));
-              }
-          }
-          *pbOutAllValid = bAllValid;
-      }
-      break;
+          return GDALWarpNoDataMaskerT( padfNoData, nPixels,
+                                        reinterpret_cast<const GByte*>(*ppImageData),
+                                        panValidityMask, pbOutAllValid );
 
       case GDT_Int16:
-      {
-          int nNoData = (int) padfNoData[0];
-          GInt16 *panData = (GInt16 *) *ppImageData;
-          int iOffset;
-
-          // nothing to do if value is out of range.
-          if( padfNoData[0] < -32768 || padfNoData[0] > 32767
-              || padfNoData[1] != 0.0 )
-          {
-              *pbOutAllValid = TRUE;
-              return CE_None;
-          }
-
-          int bAllValid = TRUE;
-          for( iOffset = nXSize*nYSize-1; iOffset >= 0; iOffset-- )
-          {
-              if( panData[iOffset] == nNoData )
-              {
-                  bAllValid = FALSE;
-                  panValidityMask[iOffset>>5] &= ~(0x01 << (iOffset & 0x1f));
-              }
-          }
-          *pbOutAllValid = bAllValid;
-      }
-      break;
+          return GDALWarpNoDataMaskerT( padfNoData, nPixels,
+                                        reinterpret_cast<const GInt16*>(*ppImageData),
+                                        panValidityMask, pbOutAllValid );
 
       case GDT_UInt16:
-      {
-          int nNoData = (int) padfNoData[0];
-          GUInt16 *panData = (GUInt16 *) *ppImageData;
-          int iOffset;
-
-          // nothing to do if value is out of range.
-          if( padfNoData[0] < 0 || padfNoData[0] > 65535
-              || padfNoData[1] != 0.0 )
-          {
-              *pbOutAllValid = TRUE;
-              return CE_None;
-          }
-
-          int bAllValid = TRUE;
-          for( iOffset = nXSize*nYSize-1; iOffset >= 0; iOffset-- )
-          {
-              if( panData[iOffset] == nNoData )
-              {
-                  bAllValid = FALSE;
-                  panValidityMask[iOffset>>5] &= ~(0x01 << (iOffset & 0x1f));
-              }
-          }
-          *pbOutAllValid = bAllValid;
-      }
-      break;
+          return GDALWarpNoDataMaskerT( padfNoData, nPixels,
+                                        reinterpret_cast<const GUInt16*>(*ppImageData),
+                                        panValidityMask, pbOutAllValid );
 
       case GDT_Float32:
       {
-          float fNoData = (float) padfNoData[0];
-          float *pafData = (float *) *ppImageData;
-          int iOffset;
-          int bIsNoDataNan = CPLIsNan(fNoData);
+          const float fNoData = static_cast<float>(padfNoData[0]);
+          const float *pafData = reinterpret_cast<const float*>(*ppImageData);
+          const bool bIsNoDataNan = CPL_TO_BOOL(CPLIsNan(fNoData));
 
           // nothing to do if value is out of range.
           if( padfNoData[1] != 0.0 )
@@ -481,10 +451,11 @@ GDALWarpNoDataMasker( void *pMaskFuncArg, int nBandCount, GDALDataType eType,
           }
 
           int bAllValid = TRUE;
-          for( iOffset = nXSize*nYSize-1; iOffset >= 0; iOffset-- )
+          for( size_t iOffset = 0; iOffset < nPixels; ++iOffset )
           {
               float fVal = pafData[iOffset];
-              if( (bIsNoDataNan && CPLIsNan(fVal)) || (!bIsNoDataNan && ARE_REAL_EQUAL(fVal, fNoData)) )
+              if( (bIsNoDataNan && CPLIsNan(fVal)) ||
+                  (!bIsNoDataNan && ARE_REAL_EQUAL(fVal, fNoData)) )
               {
                   bAllValid = FALSE;
                   panValidityMask[iOffset>>5] &= ~(0x01 << (iOffset & 0x1f));
@@ -496,10 +467,9 @@ GDALWarpNoDataMasker( void *pMaskFuncArg, int nBandCount, GDALDataType eType,
 
       case GDT_Float64:
       {
-          double dfNoData = padfNoData[0];
-          double *padfData = (double *) *ppImageData;
-          int iOffset;
-          int bIsNoDataNan = CPLIsNan(dfNoData);
+          const double dfNoData = padfNoData[0];
+          const double *padfData = reinterpret_cast<const double*>(*ppImageData);
+          const bool bIsNoDataNan = CPL_TO_BOOL(CPLIsNan(dfNoData));
 
           // nothing to do if value is out of range.
           if( padfNoData[1] != 0.0 )
@@ -509,10 +479,11 @@ GDALWarpNoDataMasker( void *pMaskFuncArg, int nBandCount, GDALDataType eType,
           }
 
           int bAllValid = TRUE;
-          for( iOffset = nXSize*nYSize-1; iOffset >= 0; iOffset-- )
+          for( size_t iOffset = 0; iOffset < nPixels; ++iOffset )
           {
               double dfVal = padfData[iOffset];
-              if( (bIsNoDataNan && CPLIsNan(dfVal)) || (!bIsNoDataNan && ARE_REAL_EQUAL(dfVal, dfNoData)) )
+              if( (bIsNoDataNan && CPLIsNan(dfVal)) ||
+                  (!bIsNoDataNan && ARE_REAL_EQUAL(dfVal, dfNoData)) )
               {
                   bAllValid = FALSE;
                   panValidityMask[iOffset>>5] &= ~(0x01 << (iOffset & 0x1f));
@@ -525,28 +496,29 @@ GDALWarpNoDataMasker( void *pMaskFuncArg, int nBandCount, GDALDataType eType,
       default:
       {
           double  *padfWrk;
-          int     iLine, iPixel;
           const int nWordSize = GDALGetDataTypeSizeBytes(eType);
 
-          int bIsNoDataRealNan = CPLIsNan(padfNoData[0]);
-          int bIsNoDataImagNan = CPLIsNan(padfNoData[1]);
+          const bool bIsNoDataRealNan = CPL_TO_BOOL(CPLIsNan(padfNoData[0]));
+          const bool bIsNoDataImagNan = CPL_TO_BOOL(CPLIsNan(padfNoData[1]));
 
           padfWrk = (double *) CPLMalloc(nXSize * sizeof(double) * 2);
           int bAllValid = TRUE;
-          for( iLine = 0; iLine < nYSize; iLine++ )
+          for( int iLine = 0; iLine < nYSize; iLine++ )
           {
-              GDALCopyWords( ((GByte *) *ppImageData)+nWordSize*iLine*nXSize,
+              GDALCopyWords( (*ppImageData)+nWordSize*iLine*nXSize,
                              eType, nWordSize,
                              padfWrk, GDT_CFloat64, 16, nXSize );
 
-              for( iPixel = 0; iPixel < nXSize; iPixel++ )
+              for( int iPixel = 0; iPixel < nXSize; ++iPixel )
               {
                   if( ((bIsNoDataRealNan && CPLIsNan(padfWrk[iPixel*2])) ||
-                       (!bIsNoDataRealNan && ARE_REAL_EQUAL(padfWrk[iPixel*2], padfNoData[0])))
+                       (!bIsNoDataRealNan &&
+                         ARE_REAL_EQUAL(padfWrk[iPixel*2], padfNoData[0])))
                       && ((bIsNoDataImagNan && CPLIsNan(padfWrk[iPixel*2+1])) ||
-                          (!bIsNoDataImagNan && ARE_REAL_EQUAL(padfWrk[iPixel*2+1], padfNoData[1]))) )
+                          (!bIsNoDataImagNan &&
+                           ARE_REAL_EQUAL(padfWrk[iPixel*2+1], padfNoData[1]))) )
                   {
-                      int iOffset = iPixel + iLine * nXSize;
+                      size_t iOffset = iPixel + static_cast<size_t>(iLine) * nXSize;
 
                       bAllValid = FALSE;
                       panValidityMask[iOffset>>5] &=
@@ -585,8 +557,9 @@ GDALWarpSrcAlphaMasker( void *pMaskFuncArg,
 {
     GDALWarpOptions *psWO = (GDALWarpOptions *) pMaskFuncArg;
     float *pafMask = (float *) pValidityMask;
-    int iPixel = 0;
+    size_t iPixel = 0;
     *pbOutAllOpaque = FALSE;
+    const size_t nPixels = static_cast<size_t>(nXSize) * nYSize;
 
 /* -------------------------------------------------------------------- */
 /*      Do some minimal checking.                                       */
@@ -624,9 +597,11 @@ GDALWarpSrcAlphaMasker( void *pMaskFuncArg,
     if( (eDT == GDT_Byte || eDT == GDT_UInt16) && ((size_t)pafMask & 0x7) == 0 )
     {
         // Read data.
-        eErr = GDALRasterIO( hAlphaBand, GF_Read, nXOff, nYOff, nXSize, nYSize,
-                              pafMask, nXSize, nYSize, eDT,
-                              (int)sizeof(int), (int)sizeof(int) * nXSize );
+        eErr = GDALRasterIOEx( hAlphaBand, GF_Read, nXOff, nYOff, nXSize, nYSize,
+                               pafMask, nXSize, nYSize, eDT,
+                               static_cast<GSpacing>(sizeof(int)),
+                               static_cast<GSpacing>(sizeof(int)) * nXSize,
+                               NULL );
 
         if( eErr != CE_None )
             return eErr;
@@ -653,7 +628,7 @@ GDALWarpSrcAlphaMasker( void *pMaskFuncArg,
         __m128 xmmMaskNonOpaque0 = _mm_setzero_ps();
         __m128 xmmMaskNonOpaque1 = _mm_setzero_ps();
         __m128 xmmMaskNonOpaque2 = _mm_setzero_ps();
-        for( ; iPixel < nXSize * nYSize-(6*4-1); iPixel+=6*4 )
+        for( ; iPixel + 6*4-1 < nPixels; iPixel+=6*4 )
         {
             __m128 xmm_mask0 = _mm_cvtepi32_ps( _mm_and_si128(xmm_i_mask,
                     _mm_load_si128( (__m128i *)(pafMask + iPixel + 4 * 0) )) );
@@ -697,7 +672,7 @@ GDALWarpSrcAlphaMasker( void *pMaskFuncArg,
         {
             bOutAllOpaque = false;
         }
-        for(; iPixel < nXSize * nYSize; iPixel++ )
+        for(; iPixel < nPixels; iPixel++ )
         {
             pafMask[iPixel] = (((GUInt32*)pafMask)[iPixel] & mask) *
                                                       inv_alpha_max;
@@ -717,7 +692,7 @@ GDALWarpSrcAlphaMasker( void *pMaskFuncArg,
         if( eErr != CE_None )
             return eErr;
 
-        for( ; iPixel < nXSize * nYSize-3; iPixel+=4 )
+        for( ; iPixel + 3 < nPixels; iPixel+=4 )
         {
             pafMask[iPixel] = pafMask[iPixel] * inv_alpha_max;
             if( pafMask[iPixel] >= 1.0F )
@@ -740,7 +715,7 @@ GDALWarpSrcAlphaMasker( void *pMaskFuncArg,
             else
                 bOutAllOpaque = false;
         }
-        for( ; iPixel < nXSize * nYSize; iPixel++ )
+        for( ; iPixel < nPixels; iPixel++ )
         {
             pafMask[iPixel] = pafMask[iPixel] * inv_alpha_max;
             if( pafMask[iPixel] >= 1.0F )
@@ -832,7 +807,8 @@ GDALWarpSrcMaskMasker( void *pMaskFuncArg,
 /* -------------------------------------------------------------------- */
 /*      Pack into 1 bit per pixel for validity.                         */
 /* -------------------------------------------------------------------- */
-    for( int iPixel = 0; iPixel < nXSize * nYSize; iPixel++ )
+    const size_t nPixels = static_cast<size_t>(nXSize) * nYSize;
+    for( size_t iPixel = 0; iPixel < nPixels; iPixel++ )
     {
         if( pabySrcMask[iPixel] == 0 )
             panMask[iPixel>>5] &= ~(0x01 << (iPixel & 0x1f));
@@ -861,8 +837,9 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
 {
     GDALWarpOptions *psWO = (GDALWarpOptions *) pMaskFuncArg;
     float *pafMask = (float *) pValidityMask;
-    int iPixel = 0;
+    size_t iPixel = 0;
     CPLErr eErr;
+    const size_t nPixels = static_cast<size_t>(nXSize) * nYSize;
 
 /* -------------------------------------------------------------------- */
 /*      Do some minimal checking.                                       */
@@ -895,7 +872,7 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
         // Special logic for destinations being initialized on the fly.
         if( pszInitDest != NULL )
         {
-            memset( pafMask, 0, nXSize * nYSize * sizeof(float) );
+            memset( pafMask, 0, nPixels * sizeof(float) );
             return CE_None;
         }
 
@@ -911,9 +888,11 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
             ((size_t)pafMask & 0x7) == 0 )
         {
             // Read data.
-            eErr = GDALRasterIO( hAlphaBand, GF_Read, nXOff, nYOff, nXSize, nYSize,
+            eErr = GDALRasterIOEx( hAlphaBand, GF_Read, nXOff, nYOff, nXSize, nYSize,
                                  pafMask, nXSize, nYSize, eDT,
-                                 (int)sizeof(int), (int)sizeof(int) * nXSize );
+                                 static_cast<GSpacing>(sizeof(int)),
+                                 static_cast<GSpacing>(sizeof(int)) * nXSize,
+                                 NULL );
 
             if( eErr != CE_None )
                 return eErr;
@@ -935,7 +914,7 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
             const float one_single = 1.0f;
             const __m128 xmm_one = _mm_load1_ps(&one_single);
             const __m128i xmm_i_mask = _mm_set1_epi32 (mask);
-            for( ; iPixel < nXSize * nYSize-31; iPixel+=32 )
+            for( ; iPixel + 31 < nPixels; iPixel+=32 )
             {
                 __m128 xmm_mask0 = _mm_cvtepi32_ps( _mm_and_si128(xmm_i_mask,
                     _mm_load_si128( (__m128i *)(pafMask + iPixel + 4 * 0) )) );
@@ -978,7 +957,7 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
                 _mm_store_ps(pafMask + iPixel + 4 * 6, xmm_mask6);
                 _mm_store_ps(pafMask + iPixel + 4 * 7, xmm_mask7);
             }
-            for(; iPixel < nXSize * nYSize; iPixel++ )
+            for(; iPixel < nPixels; iPixel++ )
             {
                 pafMask[iPixel] = (((GUInt32*)pafMask)[iPixel] & mask) *
                                                         inv_alpha_max;
@@ -995,7 +974,7 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
             if( eErr != CE_None )
                 return eErr;
 
-            for(; iPixel < nXSize * nYSize; iPixel++ )
+            for(; iPixel < nPixels; iPixel++ )
             {
                 pafMask[iPixel] = pafMask[iPixel] * inv_alpha_max;
                 pafMask[iPixel] = MIN( 1.0F, pafMask[iPixel] );
@@ -1034,7 +1013,7 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
             }
             CPLAssert( ((size_t)(pafMask + iPixel) & 0xf) == 0 ); 
             const __m128 xmm_alpha_max = _mm_load1_ps(&cst_alpha_max);
-            for( ; iPixel < nXSize * nYSize-31; iPixel+=32 )
+            for( ; iPixel + 31 < nPixels; iPixel+=32 )
             {
                 __m128 xmm_mask0 = _mm_load_ps(pafMask + iPixel + 4 * 0);
                 __m128 xmm_mask1 = _mm_load_ps(pafMask + iPixel + 4 * 1);
@@ -1070,27 +1049,29 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
                 _mm_store_si128((__m128i*)(pafMask + iPixel + 4 * 7),
                                 _mm_cvttps_epi32(xmm_mask7));
             }
-            for( ; iPixel < nXSize * nYSize; iPixel++ )
+            for( ; iPixel < nPixels; iPixel++ )
                 ((int*)pafMask)[iPixel] = (int) ( pafMask[iPixel] * cst_alpha_max );
 
             // Write data.
             // Assumes little endianness here
-            eErr = GDALRasterIO( hAlphaBand, GF_Write,
-                                nXOff, nYOff, nXSize, nYSize,
-                                pafMask, nXSize, nYSize, eDT,
-                                (int)sizeof(int), (int)sizeof(int) * nXSize );
+            eErr = GDALRasterIOEx( hAlphaBand, GF_Write,
+                                   nXOff, nYOff, nXSize, nYSize,
+                                   pafMask, nXSize, nYSize, eDT,
+                                   static_cast<GSpacing>(sizeof(int)),
+                                   static_cast<GSpacing>(sizeof(int)) * nXSize,
+                                   NULL );
         }
         else
 #endif
         {
-            for( ; iPixel < nXSize * nYSize-3; iPixel+=4 )
+            for( ; iPixel + 3 < nPixels; iPixel+=4 )
             {
                 pafMask[iPixel+0] = (float)(int) ( pafMask[iPixel+0] * cst_alpha_max );
                 pafMask[iPixel+1] = (float)(int) ( pafMask[iPixel+1] * cst_alpha_max );
                 pafMask[iPixel+2] = (float)(int) ( pafMask[iPixel+2] * cst_alpha_max );
                 pafMask[iPixel+3] = (float)(int) ( pafMask[iPixel+3] * cst_alpha_max );
             }
-            for( ; iPixel < nXSize * nYSize; iPixel++ )
+            for( ; iPixel < nPixels; iPixel++ )
                 pafMask[iPixel] = (float)(int) ( pafMask[iPixel] * cst_alpha_max );
 
             // Write data.
@@ -1098,7 +1079,7 @@ GDALWarpDstAlphaMasker( void *pMaskFuncArg, int nBandCount,
             eErr = GDALRasterIO( hAlphaBand, GF_Write,
                                 nXOff, nYOff, nXSize, nYSize,
                                 pafMask, nXSize, nYSize, GDT_Float32,
-                                0, (int)sizeof(float) * nXSize );
+                                0, 0 );
         }
         return eErr;
     }
