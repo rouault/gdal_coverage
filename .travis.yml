@@ -80,7 +80,7 @@ install:
 # For libstdc++.so.6
   - export LD_LIBRARY_PATH=$PWD
   - export PATH=$PWD/install-llvm-3.7.0-light/bin:$PATH
-  - scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap CXX="clang -std=c++11" ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-mongocxx=/usr/local --without-grib
+  - CXX="clang -std=c++11" scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-mongocxx=/usr/local --without-grib
   - scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap make -j4
   - if grep -r "\.c" scanbuildoutput | grep "<string>" | grep -v "<key>" | grep -v degrib | grep -v libjpeg | grep -v libpng | grep -v EHapi | grep -v GDapi | grep -v SWapi | grep -v osr_cs_wkt_parser | grep -v ods_formula_parser | grep -v swq_parser; then echo "error" && /bin/false; else echo "ok"; fi 
 
