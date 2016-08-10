@@ -505,8 +505,8 @@ int JPEG2000Dataset::DecodeImage()
     if ( jas_clrspc_fam( jas_image_clrspc( psImage ) ) ==
               JAS_CLRSPC_FAM_YCBCR )
     {
-        jas_image_t *psRGBImage;
-        jas_cmprof_t *psRGBProf;
+        jas_image_t *psRGBImage = NULL;
+        jas_cmprof_t *psRGBProf = NULL;
         CPLDebug( "JPEG2000", "forcing conversion to sRGB");
         if (!(psRGBProf = jas_cmprof_createfromclrspc(JAS_CLRSPC_SRGB))) {
             CPLDebug( "JPEG2000", "cannot create sRGB profile");
@@ -570,13 +570,13 @@ GDALDataset *JPEG2000Dataset::Open( GDALOpenInfo * poOpenInfo )
 {
     int         iFormat;
     char        *pszFormatName = NULL;
-    jas_stream_t *sS;
 
     if (!Identify(poOpenInfo))
         return NULL;
 
     JPEG2000Init();
-    if( !(sS = JPEG2000_VSIL_fopen( poOpenInfo->pszFilename, "rb" )) )
+    jas_stream_t *sS= JPEG2000_VSIL_fopen( poOpenInfo->pszFilename, "rb" );
+    if( !sS )
     {
         return NULL;
     }
@@ -827,8 +827,6 @@ JPEG2000CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     int  nBands = poSrcDS->GetRasterCount();
     int  nXSize = poSrcDS->GetRasterXSize();
     int  nYSize = poSrcDS->GetRasterYSize();
-    int                 iBand;
-    GDALRasterBand      *poBand;
 
     if( nBands == 0 )
     {
@@ -847,6 +845,9 @@ JPEG2000CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
             return NULL;
     }
 
+    // TODO(schwehr): Localize these vars.
+    int iBand;
+    GDALRasterBand  *poBand = NULL;
     for ( iBand = 0; iBand < nBands; iBand++ )
     {
         poBand = poSrcDS->GetRasterBand( iBand + 1);
@@ -877,19 +878,18 @@ JPEG2000CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
 /*      Create the dataset.                                             */
 /* -------------------------------------------------------------------- */
-    jas_stream_t        *psStream;
-    jas_image_t         *psImage;
-
     JPEG2000Init();
     const char* pszAccess = STARTS_WITH_CI(pszFilename, "/vsisubfile/") ? "r+b" : "w+b";
-    if( !(psStream = JPEG2000_VSIL_fopen( pszFilename, pszAccess) ) )
+    jas_stream_t *psStream = JPEG2000_VSIL_fopen( pszFilename, pszAccess);
+    if( !psStream )
     {
         CPLError( CE_Failure, CPLE_FileIO, "Unable to create file %s.\n",
                   pszFilename );
         return NULL;
     }
 
-    if ( !(psImage = jas_image_create0()) )
+    jas_image_t *psImage = jas_image_create0();
+    if ( !psImage )
     {
         CPLError( CE_Failure, CPLE_OutOfMemory, "Unable to create image %s.\n",
                   pszFilename );
@@ -903,13 +903,13 @@ JPEG2000CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     GUInt32             *paiScanline;
     int                 iLine, iPixel;
     CPLErr              eErr = CE_None;
-    jas_matrix_t        *psMatrix;
     jas_image_cmptparm_t *sComps; // Array of pointers to image components
 
     sComps = (jas_image_cmptparm_t*)
         CPLMalloc( nBands * sizeof(jas_image_cmptparm_t) );
 
-    if ( !(psMatrix = jas_matrix_create( 1, nXSize )) )
+    jas_matrix_t *psMatrix  = jas_matrix_create( 1, nXSize );
+    if ( !psMatrix )
     {
         CPLError( CE_Failure, CPLE_OutOfMemory,
                   "Unable to create matrix with size %dx%d.\n", 1, nYSize );
@@ -984,11 +984,6 @@ JPEG2000CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
 /*       Read compression parameters and encode the image.              */
 /* -------------------------------------------------------------------- */
-    int             i, j;
-    const int       OPTSMAX = 4096;
-    const char      *pszFormatName;
-    char            pszOptionBuf[OPTSMAX + 1];
-
     const char  *apszComprOptions[]=
     {
         "imgareatlx",
@@ -1018,27 +1013,29 @@ JPEG2000CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         NULL
     };
 
-    pszFormatName = CSLFetchNameValue( papszOptions, "FORMAT" );
+    const char *pszFormatName = CSLFetchNameValue( papszOptions, "FORMAT" );
     if ( !pszFormatName ||
          (!STARTS_WITH_CI(pszFormatName, "jp2") &&
           !STARTS_WITH_CI(pszFormatName, "jpc") ) )
         pszFormatName = "jp2";
 
-    pszOptionBuf[0] = '\0';
+    // TODO(schwehr): Move pszOptionBuf off the stack.
+    const int OPTSMAX = 4096;
+    char pszOptionBuf[OPTSMAX + 1] = {};
+
     if ( papszOptions )
     {
         CPLDebug( "JPEG2000", "User supplied parameters:" );
-        for ( i = 0; papszOptions[i] != NULL; i++ )
+        for ( int i = 0; papszOptions[i] != NULL; i++ )
         {
             CPLDebug( "JPEG2000", "%s\n", papszOptions[i] );
-            for ( j = 0; apszComprOptions[j] != NULL; j++ )
+            for ( int j = 0; apszComprOptions[j] != NULL; j++ )
                 if( EQUALN( apszComprOptions[j], papszOptions[i],
                             strlen(apszComprOptions[j]) ) )
                 {
-                    int m, n;
-
-                    n = static_cast<int>(strlen( pszOptionBuf ));
-                    m = n + static_cast<int>(strlen( papszOptions[i] )) + 1;
+                    const int n = static_cast<int>(strlen( pszOptionBuf ));
+                    const int m =
+                        n + static_cast<int>(strlen( papszOptions[i] )) + 1;
                     if ( m > OPTSMAX )
                         break;
                     if ( n > 0 )

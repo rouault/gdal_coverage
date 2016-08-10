@@ -255,7 +255,7 @@ CPLErr RS2RasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
                                   GDT_Byte,
                                   1, NULL, 1, nBlockXSize, 0, NULL );
 
-    CPLAssert( FALSE );
+    CPLAssert( false );
     return CE_Failure;
 }
 
@@ -488,7 +488,7 @@ CPLErr RS2CalibRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
         CPLFree(pnImageTmp);
     }
     else {
-        CPLAssert( FALSE );
+        CPLAssert( false );
         return CE_Failure;
     }
     return eErr;
@@ -818,7 +818,6 @@ GDALDataset *RS2Dataset::Open( GDALOpenInfo * poOpenInfo )
          psNode != NULL;
          psNode = psNode->psNext )
     {
-        const char *pszBasename;
         if( psNode->eType != CXT_Element
             || !(EQUAL(psNode->pszValue,"fullResolutionImageData")
                  || EQUAL(psNode->pszValue,"lookupTable")) )
@@ -899,7 +898,7 @@ GDALDataset *RS2Dataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Fetch filename.                                                 */
 /* -------------------------------------------------------------------- */
-        pszBasename = CPLGetXMLValue( psNode, "", "" );
+        const char *pszBasename = CPLGetXMLValue( psNode, "", "" );
         if( *pszBasename == '\0' )
             continue;
 
@@ -941,7 +940,7 @@ GDALDataset *RS2Dataset::Open( GDALOpenInfo * poOpenInfo )
             poDS->SetBand( poDS->GetRasterCount() + 1, poBand );
         }
         else {
-            const char *pszLUT;
+            const char *pszLUT = NULL;
             switch (eCalib) {
               case Sigma0:
                 pszLUT = pszSigma0LUT;

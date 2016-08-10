@@ -63,7 +63,7 @@ NAMESPACE_MRF_START
 // Count is the number of items that need to be copied
 // These are separate to allow for optimization
 
-template <typename T> void cpy_stride_in(
+template <typename T> static void cpy_stride_in(
     void *dst, const void *src, int c, int stride )
 {
     T *s=(T *)src;
@@ -75,7 +75,7 @@ template <typename T> void cpy_stride_in(
     }
 }
 
-template <typename T> void cpy_stride_out(
+template <typename T> static void cpy_stride_out(
     void *dst, const void *src, int c, int stride )
 {
     T *s=(T *)src;
@@ -315,7 +315,7 @@ double GDALMRFRasterBand::GetMaximum(int *pbSuccess)
 }
 
 // Fill, with ndv
-template<typename T> CPLErr buff_fill(void *b, size_t count, const T ndv)
+template<typename T> static CPLErr buff_fill(void *b, size_t count, const T ndv)
 {
     T *buffer = static_cast<T*>(b);
     count /= sizeof(T);
@@ -424,13 +424,14 @@ CPLErr GDALMRFRasterBand::FetchBlock(int xblk, int yblk, void *buffer)
     if (poDS->clonedSource)  // This is a clone
         return FetchClonedBlock(xblk, yblk, buffer);
 
-    GDALDataset *poSrcDS;
     const GInt32 cstride = img.pagesize.c; // 1 if band separate
     ILSize req(xblk, yblk, 0, m_band / cstride, m_l);
     GUIntBig infooffset = IdxOffset(req, img);
 
+    GDALDataset *poSrcDS = NULL;
     if ( NULL == (poSrcDS = poDS->GetSrcDS())) {
-        CPLError( CE_Failure, CPLE_AppDefined, "MRF: Can't open source file %s", poDS->source.c_str());
+        CPLError( CE_Failure, CPLE_AppDefined,
+                  "MRF: Can't open source file %s", poDS->source.c_str());
         return CE_Failure;
     }
 
@@ -555,12 +556,12 @@ CPLErr GDALMRFRasterBand::FetchClonedBlock(int xblk, int yblk, void *buffer)
 {
     CPLDebug("MRF_IB","FetchClonedBlock %d,%d,0,%d, level  %d\n", xblk, yblk, m_band, m_l);
 
-    VSILFILE *srcfd;
     // Paranoid check
     assert(poDS->clonedSource);
 
-    GDALMRFDataset *poSrc;
-    if ( NULL == (poSrc = static_cast<GDALMRFDataset *>(poDS->GetSrcDS()))) {
+    GDALMRFDataset *poSrc = static_cast<GDALMRFDataset *>(poDS->GetSrcDS());
+    if( NULL == poSrc )
+    {
         CPLError( CE_Failure, CPLE_AppDefined, "MRF: Can't open source file %s", poDS->source.c_str());
         return CE_Failure;
     }
@@ -596,7 +597,7 @@ CPLErr GDALMRFRasterBand::FetchClonedBlock(int xblk, int yblk, void *buffer)
         return FillBlock(buffer);
     }
 
-    srcfd = poSrc->DataFP();
+    VSILFILE *srcfd = poSrc->DataFP();
     if (NULL == srcfd) {
         CPLError( CE_Failure, CPLE_AppDefined, "MRF: Can't open source data file %s",
             poDS->source.c_str());

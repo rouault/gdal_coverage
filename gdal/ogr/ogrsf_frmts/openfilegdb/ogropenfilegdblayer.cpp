@@ -499,7 +499,7 @@ int OGROpenFileGDBLayer::BuildLayerDefinition()
             case FGFT_UNDEFINED:
             case FGFT_OBJECTID:
             case FGFT_GEOMETRY:
-                CPLAssert(FALSE);
+                CPLAssert(false);
                 break;
             case FGFT_BINARY:
             case FGFT_RASTER:
@@ -1112,7 +1112,7 @@ FileGDBIterator* OGROpenFileGDBLayer::BuildIteratorFromExprNode(swq_expr_node* p
                             case SWQ_EQ: eOp = FGSO_EQ; break;
                             case SWQ_GE: eOp = FGSO_GE; break;
                             case SWQ_GT: eOp = FGSO_GT; break;
-                            default: CPLAssert(FALSE); break;
+                            default: CPLAssert(false); break;
                         }
                     }
                     else
@@ -1127,7 +1127,7 @@ FileGDBIterator* OGROpenFileGDBLayer::BuildIteratorFromExprNode(swq_expr_node* p
                             case SWQ_EQ: eOp = FGSO_EQ; break;
                             case SWQ_GE: eOp = FGSO_LE; break;
                             case SWQ_GT: eOp = FGSO_LT; break;
-                            default: CPLAssert(FALSE); break;
+                            default: CPLAssert(false); break;
                         }
                     }
 
@@ -1435,7 +1435,7 @@ OGRFeature* OGROpenFileGDBLayer::GetNextFeature()
                 {
                     return NULL;
                 }
-                int iRow = (int)(size_t)m_pahFilteredFeatures[m_iCurFeat++];
+                int iRow = (int)(GUIntptr_t)m_pahFilteredFeatures[m_iCurFeat++];
                 if( m_poLyrTable->SelectRow(iRow) )
                 {
                     poFeature = GetCurrentFeature();

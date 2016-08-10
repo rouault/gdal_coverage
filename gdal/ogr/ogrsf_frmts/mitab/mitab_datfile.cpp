@@ -2003,14 +2003,12 @@ int TABDATFile::ReadDateTimeField(int nWidth, int *nYear, int *nMonth, int *nDay
  **********************************************************************/
 double TABDATFile::ReadDecimalField(int nWidth)
 {
-    const char *pszVal;
-
     // If current record has been deleted, then return an acceptable
     // default value.
     if (m_bCurRecordDeletedFlag)
         return 0.0;
 
-    pszVal = ReadCharField(nWidth);
+    const char *pszVal = ReadCharField(nWidth);
 
     return CPLAtof(pszVal);
 }
@@ -2215,7 +2213,6 @@ int TABDATFile::WriteLogicalField(const char *pszValue,
 int TABDATFile::WriteDateField(const char *pszValue,
                                TABINDFile *poINDFile, int nIndexNo)
 {
-    int nDay, nMonth, nYear;
     char **papszTok = NULL;
 
     /*-----------------------------------------------------------------
@@ -2227,6 +2224,9 @@ int TABDATFile::WriteDateField(const char *pszValue,
      * Try to automagically detect date format, one of:
      * "YYYY/MM/DD", "DD/MM/YYYY", or "YYYYMMDD"
      *----------------------------------------------------------------*/
+    int nDay;
+    int nMonth;
+    int nYear;
 
     if (strlen(pszValue) == 8)
     {
@@ -2328,9 +2328,6 @@ int TABDATFile::WriteDateField(int nYear, int nMonth, int nDay,
 int TABDATFile::WriteTimeField(const char *pszValue,
                                TABINDFile *poINDFile, int nIndexNo)
 {
-    int nHour, nMin, nSec, nMS;
-    char **papszTok = NULL;
-
     /*-----------------------------------------------------------------
      * Get rid of leading spaces.
      *----------------------------------------------------------------*/
@@ -2340,6 +2337,10 @@ int TABDATFile::WriteTimeField(const char *pszValue,
      * Try to automagically detect time format, one of:
      * "HH:MM:SS", or "HHMMSSmmm"
      *----------------------------------------------------------------*/
+    int nHour;
+    int nMin;
+    int nSec;
+    int nMS;
 
     if (strlen(pszValue) == 8)
     {
@@ -2387,10 +2388,8 @@ int TABDATFile::WriteTimeField(const char *pszValue,
                  "Invalid time field value `%s'.  Time field values must "
                  "be in the format `HH:MM:SS', or `HHMMSSmmm'",
                  pszValue);
-        CSLDestroy(papszTok);
         return -1;
     }
-    CSLDestroy(papszTok);
 
     return WriteTimeField(nHour, nMin, nSec, nMS, poINDFile, nIndexNo);
 }
@@ -2447,9 +2446,6 @@ d by 1 byte for the month, and 2 bytes for the year.
 int TABDATFile::WriteDateTimeField(const char *pszValue,
                                    TABINDFile *poINDFile, int nIndexNo)
 {
-    int nDay, nMonth, nYear, nHour, nMin, nSec, nMS;
-    char **papszTok = NULL;
-
     /*-----------------------------------------------------------------
      * Get rid of leading spaces.
      *----------------------------------------------------------------*/
@@ -2459,6 +2455,8 @@ int TABDATFile::WriteDateTimeField(const char *pszValue,
      * Try to automagically detect date format, one of:
      * "YYYY/MM/DD HH:MM:SS", "DD/MM/YYYY HH:MM:SS", or "YYYYMMDDhhmmssmmm"
      *----------------------------------------------------------------*/
+    int nDay, nMonth, nYear, nHour, nMin, nSec, nMS;
+    char **papszTok = NULL;
 
     if (strlen(pszValue) == 17)
     {
@@ -2559,7 +2557,7 @@ int TABDATFile::WriteDateTimeField(int nYear, int nMonth, int nDay,
         // __TODO__  (see bug #1844)
         // Indexing on DateTime Fields not currently supported, that will
         // require passing the 8 bytes datetime value to BuildKey() here...
-        CPLAssert(FALSE);
+        CPLAssert(false);
         GByte *pKey = poINDFile->BuildKey(nIndexNo, (nYear*0x10000 +
                                                      nMonth * 0x100 + nDay));
         if (poINDFile->AddEntry(nIndexNo, pKey, m_nCurRecordId) != 0)
@@ -2586,10 +2584,9 @@ int TABDATFile::WriteDecimalField(double dValue, int nWidth, int nPrec,
                                   TABINDFile *poINDFile, int nIndexNo)
 {
     char szFormat[10];
-    const char *pszVal;
 
     snprintf(szFormat, sizeof(szFormat), "%%%d.%df", nWidth, nPrec);
-    pszVal = CPLSPrintf(szFormat, dValue);
+    const char *pszVal = CPLSPrintf(szFormat, dValue);
     if ((int)strlen(pszVal) > nWidth)
         pszVal += strlen(pszVal) - nWidth;
 

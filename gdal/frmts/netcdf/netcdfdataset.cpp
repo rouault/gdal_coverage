@@ -569,11 +569,13 @@ netCDFRasterBand::netCDFRasterBand( netCDFDataset *poNCDFDS,
                 nc_datatype = NC_USHORT;
                 break;
             }
+            CPL_FALLTHROUGH
         case GDT_UInt32:
             if ( poNCDFDS->eFormat == NCDF_FORMAT_NC4 ) {
                 nc_datatype = NC_UINT;
                 break;
             }
+            CPL_FALLTHROUGH
 #endif
         default:
             if( nBand == 1 )
@@ -597,7 +599,7 @@ netCDFRasterBand::netCDFRasterBand( netCDFDataset *poNCDFDS,
         ( ( netCDFDataset * ) poDS )->SetDefineMode( true );
 
         char szTempPrivate[256+1];
-        const char* pszTemp;
+        const char* pszTemp = NULL;
         if ( !pszBandName || EQUAL(pszBandName,"")  )
         {
             snprintf( szTempPrivate, sizeof(szTempPrivate), "Band%d", nBand );
@@ -3474,8 +3476,7 @@ int NCDFWriteSRSVariable(int cdfid, OGRSpatialReference* poSRS,
 /* -------------------------------------------------------------------- */
 
         const OGR_SRSNode *poPROJCS = poSRS->GetAttrNode( "PROJCS" );
-        const char  *pszProjName;
-        pszProjName = poSRS->GetAttrValue( "PROJECTION" );
+        const char *pszProjName = poSRS->GetAttrValue( "PROJECTION" );
         if( pszProjName == NULL )
             return -1;
 
@@ -3662,7 +3663,7 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
                                          void * pProgressData )
 {
     int NCDFVarID = -1;
-    const char  *pszValue = NULL;
+    const char *pszValue = NULL;
     CPLErr eErr = CE_None;
 
     bool bWriteGridMapping = false;
@@ -4033,7 +4034,7 @@ CPLErr netCDFDataset::AddProjectionVars( GDALProgressFunc pfnProgress,
 
     if( bIsProjected )
     {
-        // const char  *pszProjection;
+        // const char *pszProjection;
         OGRSpatialReference *poLatLonSRS = NULL;
         OGRCoordinateTransformation *poTransform = NULL;
 
@@ -4430,7 +4431,7 @@ void netCDFDataset::CreateSubDatasetList( )
 {
     char         szName[ NC_MAX_NAME+1 ];
     char         szVarStdName[ NC_MAX_NAME+1 ];
-    int          *ponDimIds;
+    int          *ponDimIds = NULL;
     nc_type      nAttype;
     size_t       nAttlen;
 
@@ -6867,7 +6868,7 @@ netCDFDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     }
 
     /* copy projection */
-    void *pScaledProgress;
+    void *pScaledProgress = NULL;
     if ( pszWKT ) {
         poDS->SetProjection( pszWKT );
         /* now we can call AddProjectionVars() directly */
@@ -7622,8 +7623,7 @@ static void NCDFWriteProjAttribs( const OGR_SRSNode *poPROJCS,
         oAttMap[poMap[iMap].WKT_ATT] = poMap[iMap].CF_ATT;
     }
 
-    const char *pszParamStr;
-    const char *pszParamVal;
+    const char *pszParamVal = NULL;
     std::map< std::string, double > oValMap;
     for( int iChild = 0; iChild < poPROJCS->GetChildCount(); iChild++ ) {
 
@@ -7631,7 +7631,7 @@ static void NCDFWriteProjAttribs( const OGR_SRSNode *poPROJCS,
         if( !EQUAL(poNode->GetValue(),"PARAMETER")
             || poNode->GetChildCount() != 2 )
             continue;
-        pszParamStr = poNode->GetChild(0)->GetValue();
+        const char *pszParamStr = poNode->GetChild(0)->GetValue();
         pszParamVal = poNode->GetChild(1)->GetValue();
 
         oValMap[pszParamStr] = CPLAtof(pszParamVal);

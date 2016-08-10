@@ -826,9 +826,9 @@ OGRSpatialReference *TABFile::GetSpatialRef()
     /*-----------------------------------------------------------------
      * Fetch the parameters from the header.
      *----------------------------------------------------------------*/
-    TABMAPHeaderBlock *poHeader;
-    TABProjInfo     sTABProj;
+    TABProjInfo sTABProj;
 
+    TABMAPHeaderBlock *poHeader = NULL;
     if ((poHeader = m_poMAPFile->GetHeaderBlock()) == NULL ||
         poHeader->GetProjInfo( &sTABProj ) != 0)
     {
@@ -850,8 +850,8 @@ OGRSpatialReference* TABFile::GetSpatialRefFromTABProj(const TABProjInfo& sTABPr
     /*-----------------------------------------------------------------
      * Get the units name, and translation factor.
      *----------------------------------------------------------------*/
-    const char *pszUnitsName;
-    const char *pszUnitsConv;
+    const char *pszUnitsName = NULL;
+    const char *pszUnitsConv = NULL;
     /* double      dfConv = 1.0; */
 
     switch( sTABProj.nUnitsId )
@@ -1178,7 +1178,6 @@ OGRSpatialReference* TABFile::GetSpatialRefFromTABProj(const TABProjInfo& sTABPr
          * Stereographic
          *-------------------------------------------------------------*/
       case 20:
-      case 31: /* this is called Double Stereographic, whats the diff? */
         poSpatialRef->SetStereographic( sTABProj.adProjParams[1],
                                           sTABProj.adProjParams[0],
                                           sTABProj.adProjParams[2],
@@ -1223,6 +1222,17 @@ OGRSpatialReference* TABFile::GetSpatialRefFromTABProj(const TABProjInfo& sTABPr
                                sTABProj.adProjParams[0],
                                sTABProj.adProjParams[2],
                                sTABProj.adProjParams[3] );
+        break;
+
+        /*--------------------------------------------------------------
+         * Oblique Stereographic
+         *-------------------------------------------------------------*/
+      case 31:
+        poSpatialRef->SetOS( sTABProj.adProjParams[1],
+                                          sTABProj.adProjParams[0],
+                                          sTABProj.adProjParams[2],
+                                          sTABProj.adProjParams[3],
+                                          sTABProj.adProjParams[4] );
         break;
 
      /*--------------------------------------------------------------
@@ -1579,10 +1589,8 @@ int TABFile::GetTABProjFromSpatialRef(const OGRSpatialReference* poSpatialRef,
     /*-----------------------------------------------------------------
      * Get the linear units and conversion.
      *----------------------------------------------------------------*/
-    char        *pszLinearUnits;
-    double      dfLinearConv;
-
-    dfLinearConv = poSpatialRef->GetLinearUnits( &pszLinearUnits );
+    char *pszLinearUnits = NULL;
+    double dfLinearConv = poSpatialRef->GetLinearUnits( &pszLinearUnits );
     if( dfLinearConv == 0.0 )
         dfLinearConv = 1.0;
 
@@ -1791,6 +1799,17 @@ int TABFile::GetTABProjFromSpatialRef(const OGRSpatialReference* poSpatialRef,
         nParmCount = 5;
     }
 
+    else if (EQUAL(pszProjection,SRS_PT_OBLIQUE_STEREOGRAPHIC))
+    {
+        sTABProj.nProjId = 31;
+        parms[0] = poSpatialRef->GetProjParm(SRS_PP_CENTRAL_MERIDIAN, 0.0);
+        parms[1] = poSpatialRef->GetProjParm(SRS_PP_LATITUDE_OF_ORIGIN, 0.0);
+        parms[2] = poSpatialRef->GetProjParm(SRS_PP_SCALE_FACTOR, 1.0);
+        parms[3] = poSpatialRef->GetProjParm(SRS_PP_FALSE_EASTING, 0.0);
+        parms[4] = poSpatialRef->GetProjParm(SRS_PP_FALSE_NORTHING, 0.0);
+        nParmCount = 5;
+    }
+
     else if( EQUAL(pszProjection,SRS_PT_TRANSVERSE_MERCATOR) )
     {
         sTABProj.nProjId = 8;
@@ -1924,10 +1943,8 @@ int TABFile::GetTABProjFromSpatialRef(const OGRSpatialReference* poSpatialRef,
              && atoi(pszWKTDatum+4) != 999
              && atoi(pszWKTDatum+4) != 9999 )
     {
-        int     i;
-
         int nDatum = atoi(pszWKTDatum+4);
-        for( i = 0; asDatumInfoList[i].nMapInfoDatumID != -1; i++ )
+        for( int i = 0; asDatumInfoList[i].nMapInfoDatumID != -1; i++ )
         {
             if( nDatum == asDatumInfoList[i].nMapInfoDatumID )
             {
@@ -1950,10 +1967,8 @@ int TABFile::GetTABProjFromSpatialRef(const OGRSpatialReference* poSpatialRef,
     else if( STARTS_WITH_CI(pszWKTDatum, "MIF ")
              && (atoi(pszWKTDatum+4) == 999 || atoi(pszWKTDatum+4) == 9999) )
     {
-        char **papszFields;
-
         sTABProj.nDatumId = static_cast<GInt16>(atoi(pszWKTDatum+4));
-        papszFields =
+        char **papszFields =
             CSLTokenizeStringComplex( pszWKTDatum+4, ",", FALSE, TRUE);
 
         if( CSLCount(papszFields) >= 5 )
@@ -2059,12 +2074,15 @@ int TABFile::GetTABProjFromSpatialRef(const OGRSpatialReference* poSpatialRef,
     }
 
     // Google Merc
-    if( (poSpatialRef->GetAuthorityName(NULL) != NULL &&
-        EQUAL(poSpatialRef->GetAuthorityName(NULL), "EPSG") &&
-        poSpatialRef->GetAuthorityCode(NULL) != NULL &&
-        atoi(poSpatialRef->GetAuthorityCode(NULL)) == 3857) ||
-        (poSpatialRef->GetExtension(NULL, "PROJ4") != NULL &&
-         EQUAL(poSpatialRef->GetExtension(NULL, "PROJ4"),
+    const char* pszAuthorityName = NULL;
+    const char* pszAuthorityCode = NULL;
+    const char* pszExtension = NULL;
+    if( ((pszAuthorityName = poSpatialRef->GetAuthorityName(NULL)) != NULL &&
+        EQUAL(pszAuthorityName, "EPSG") &&
+        (pszAuthorityCode = poSpatialRef->GetAuthorityCode(NULL)) != NULL &&
+        atoi(pszAuthorityCode) == 3857) ||
+        ((pszExtension = poSpatialRef->GetExtension(NULL, "PROJ4")) != NULL &&
+         EQUAL(pszExtension,
                "+proj=merc +a=6378137 +b=6378137 +lat_ts=0.0 +lon_0=0.0 +x_0=0.0 +y_0=0 +k=1.0 +units=m +nadgrids=@null +wktext  +no_defs")) )
     {
         sTABProj.nDatumId = 157;

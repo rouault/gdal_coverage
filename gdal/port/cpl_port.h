@@ -257,6 +257,20 @@ typedef GIntBig          GPtrDiff_t;
 typedef int              GPtrDiff_t;
 #endif
 
+#ifdef GDAL_COMPILATION
+#if HAVE_UINTPTR_T
+#include <stdint.h>
+typedef uintptr_t GUIntptr_t;
+#elif SIZEOF_VOIDP == 8
+typedef GUIntBig GUIntptr_t;
+#else
+typedef unsigned int  GUIntptr_t;
+#endif
+
+#define CPL_IS_ALIGNED(ptr, quant) (((GUIntptr_t)(ptr) % (quant)) == 0)
+
+#endif
+
 #if defined(__MSVCRT__) || (defined(WIN32) && defined(_MSC_VER))
   #define CPL_FRMT_GB_WITHOUT_PREFIX     "I64"
 #elif HAVE_LONG_LONG
@@ -899,6 +913,7 @@ static const char *cvsid_aw() { return( cvsid_aw() ? NULL : cpl_cvsid ); }
 #ifndef __has_attribute
   #define __has_attribute(x) 0  // Compatibility with non-clang compilers.
 #endif
+
 /*! @endcond */
 
 #if ((defined(__GNUC__) && (__GNUC__ >= 5 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 9))) || __has_attribute(returns_nonnull)) && !defined(DOXYGEN_SKIP)
@@ -1006,7 +1021,7 @@ inline static bool CPL_TO_BOOL(int x) { return x != 0; }
 #define HAVE_GCC_SYSTEM_HEADER
 #endif
 
-#if defined(__clang__)
+#if defined(__clang__) && (__clang_major__ > 3 || (__clang_major__ == 3 && __clang_minor__ >=7)) && HAVE_CXX11
 /** Macro for fallthrough in a switch case construct */
 #  define CPL_FALLTHROUGH [[clang::fallthrough]];
 #else

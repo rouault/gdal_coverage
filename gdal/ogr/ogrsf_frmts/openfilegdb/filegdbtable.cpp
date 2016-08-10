@@ -48,9 +48,9 @@ CPL_CVSID("$Id$");
 #define ZEROES_AFTER_END_OF_BUFFER      4
 
 
-static const int EXT_SHAPE_Z_FLAG     = 0x80000000;
-static const int EXT_SHAPE_M_FLAG     = 0x40000000;
-static const int EXT_SHAPE_CURVE_FLAG = 0x20000000;
+static const GUInt32 EXT_SHAPE_Z_FLAG     = 0x80000000U;
+static const GUInt32 EXT_SHAPE_M_FLAG     = 0x40000000U;
+static const GUInt32 EXT_SHAPE_CURVE_FLAG = 0x20000000U;
 
 static const GUInt32 EXT_SHAPE_SEGMENT_ARC = 1;
 static const GUInt32 EXT_SHAPE_SEGMENT_BEZIER = 4;
@@ -367,7 +367,7 @@ int FileGDBTable::IsLikelyFeatureAtOffset(vsi_l_offset nOffset,
             case FGFT_UUID_2: nRequiredLength += UUID_SIZE_IN_BYTES; break;
 
             default:
-                CPLAssert(FALSE);
+                CPLAssert(false);
                 break;
         }
     }
@@ -442,7 +442,7 @@ int FileGDBTable::IsLikelyFeatureAtOffset(vsi_l_offset nOffset,
                 case FGFT_UUID_2: nRequiredLength += UUID_SIZE_IN_BYTES; break;
 
                 default:
-                    CPLAssert(FALSE);
+                    CPLAssert(false);
                     break;
             }
             if( nRequiredLength > nRowBlobLength )
@@ -1400,7 +1400,7 @@ const OGRField* FileGDBTable::GetFieldValue(int iCol)
             case FGFT_UUID_2: nLength = UUID_SIZE_IN_BYTES; break;
 
             default:
-                CPLAssert(FALSE);
+                CPLAssert(false);
                 break;
         }
 
@@ -1620,7 +1620,7 @@ const OGRField* FileGDBTable::GetFieldValue(int iCol)
         }
 
         default:
-            CPLAssert(FALSE);
+            CPLAssert(false);
             break;
     }
 
@@ -2596,7 +2596,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_POINTZ:
         case SHPT_POINTZM:
             bHasZ = true; /* go on */
-            // CPL_FALLTHROUGH
+            CPL_FALLTHROUGH
         case SHPT_POINT:
         case SHPT_POINTM:
         case SHPT_GENERALPOINT:
@@ -2642,7 +2642,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_MULTIPOINTZM:
         case SHPT_MULTIPOINTZ:
             bHasZ = true; /* go on */
-            // CPL_FALLTHROUGH
+            CPL_FALLTHROUGH
         case SHPT_MULTIPOINT:
         case SHPT_MULTIPOINTM:
         {
@@ -2709,7 +2709,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_ARCZ:
         case SHPT_ARCZM:
             bHasZ = true; /* go on */
-            // CPL_FALLTHROUGH
+            CPL_FALLTHROUGH
         case SHPT_ARC:
         case SHPT_ARCM:
         case SHPT_GENERALPOLYLINE:
@@ -2841,7 +2841,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_POLYGONZ:
         case SHPT_POLYGONZM:
             bHasZ = true; /* go on */
-            // CPL_FALLTHROUGH
+            CPL_FALLTHROUGH
         case SHPT_POLYGON:
         case SHPT_POLYGONM:
         case SHPT_GENERALPOLYGON:
@@ -3036,7 +3036,7 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
         case SHPT_MULTIPATCHM:
         case SHPT_MULTIPATCH:
             bHasZ = true; /* go on */
-            // CPL_FALLTHROUGH
+            CPL_FALLTHROUGH
         case SHPT_GENERALMULTIPATCH:
         {
             returnErrorIf(!ReadPartDefs(pabyCur, pabyEnd, nPoints, nParts, nCurves, false, true ) );

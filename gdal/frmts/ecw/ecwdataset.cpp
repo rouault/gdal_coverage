@@ -346,12 +346,16 @@ CPLErr ECWRasterBand::GetDefaultHistogram( double *pdfMin, double *pdfMax,
                 //Something went wrong during histogram computation.
                 return pamError;
             }
-        }else{
-            //No histogram, no forced computation.
+        }
+        else
+        {
+            // No histogram, no forced computation.
             return CE_Warning;
         }
-    }else {
-        //Statistics were already there and were used.
+    }
+    else
+    {
+        // Statistics were already there and were used.
         return CE_None;
     }
 }
@@ -361,7 +365,8 @@ CPLErr ECWRasterBand::GetDefaultHistogram( double *pdfMin, double *pdfMax,
 /************************************************************************/
 
 CPLErr ECWRasterBand::SetDefaultHistogram( double dfMin, double dfMax,
-                                           int nBuckets, GUIntBig *panHistogram )
+                                           int nBuckets,
+                                           GUIntBig *panHistogram )
 {
     //Only version 3 supports saving statistics.
     if (poGDS->psFileInfo->nFormatVersion < 3 || eBandInterp == GCI_AlphaBand){
@@ -371,13 +376,17 @@ CPLErr ECWRasterBand::SetDefaultHistogram( double dfMin, double dfMax,
     //determine if there are statistics in PAM file.
     double dummy;
     int dummy_i;
-    GUIntBig *dummy_histogram;
-    bool hasPAMDefaultHistogram = GDALPamRasterBand::GetDefaultHistogram(&dummy, &dummy, &dummy_i, &dummy_histogram, FALSE, NULL, NULL) == CE_None;
-    if (hasPAMDefaultHistogram){
+    GUIntBig *dummy_histogram = NULL;
+    bool hasPAMDefaultHistogram =
+        GDALPamRasterBand::GetDefaultHistogram(
+            &dummy, &dummy, &dummy_i, &dummy_histogram,
+            FALSE, NULL, NULL) == CE_None;
+    if( hasPAMDefaultHistogram ) {
         VSIFree(dummy_histogram);
     }
 
-    //ECW SDK ignores statistics for opacity bands. So we need to compute number of bands without opacity.
+    // ECW SDK ignores statistics for opacity bands. So we need to compute
+    // number of bands without opacity.
     GetBandIndexAndCountForStatistics(nStatsBandIndex, nStatsBandCount);
     UINT32 bucketCounts[256];
     std::fill_n(bucketCounts, nStatsBandCount, 0);
@@ -3199,7 +3208,7 @@ GDALColorInterp ECWGetColorInterpretationByName(const char *pszName)
 
 const char* ECWGetColorInterpretationName(GDALColorInterp eColorInterpretation, int nBandNumber)
 {
-    const char *pszResult;
+    const char *pszResult = NULL;
     switch (eColorInterpretation){
     case GCI_AlphaBand:
         pszResult = NCS_BANDDESC_AllOpacity;
@@ -3332,7 +3341,7 @@ void ECWInitialize()
 /*      Allow configuration of a local cache based on configuration     */
 /*      options.  Setting the location turns things on.                 */
 /* -------------------------------------------------------------------- */
-    const char *pszOpt;
+    const char *pszOpt = NULL;
 
 #if ECWSDK_VERSION >= 40
     pszOpt = CPLGetConfigOption( "ECWP_CACHE_SIZE_MB", NULL );

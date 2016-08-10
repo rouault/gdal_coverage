@@ -455,7 +455,7 @@ EXAMPLE_RECURSIVE      = NO
 # directories that contain image that are included in the documentation (see 
 # the \image command).
 
-IMAGE_PATH             = 
+IMAGE_PATH             = doc/grid
 
 # The INPUT_FILTER tag can be used to specify a program that doxygen should 
 # invoke to filter for each input file. Doxygen will invoke the filter program 
@@ -944,7 +944,9 @@ PREDEFINED             = HAVE_DLFCN_H \
                          UNUSED_IF_NO_GEOS= \
                          isinf \
                          HAVE_LIBXML2 \
-                         HAVE_RECENT_LIBXML2
+                         HAVE_RECENT_LIBXML2 \
+                         HAVE_LONG_LONG=1 \
+                         HAVE_SC_PHYS_PAGES=1
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then 
 # this tag can be used to specify a list of macro names that should be expanded. 

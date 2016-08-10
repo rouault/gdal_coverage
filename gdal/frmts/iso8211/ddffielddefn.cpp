@@ -425,7 +425,7 @@ void DDFFieldDefn::Dump( FILE * fp )
         break;
 
       default:
-        CPLAssert( FALSE );
+        CPLAssert( false );
         pszValue = "(unknown)";
     }
 
@@ -462,7 +462,7 @@ void DDFFieldDefn::Dump( FILE * fp )
         break;
 
       default:
-        CPLAssert( FALSE );
+        CPLAssert( false );
         pszValue = "(unknown)";
         break;
     }
@@ -482,7 +482,6 @@ void DDFFieldDefn::Dump( FILE * fp )
 int DDFFieldDefn::BuildSubfields()
 
 {
-    char        **papszSubfieldNames;
     const char  *pszSublist = _arrayDescr;
 
 /* -------------------------------------------------------------------- */
@@ -514,8 +513,8 @@ int DDFFieldDefn::BuildSubfields()
 /* -------------------------------------------------------------------- */
 /*      split list of fields .                                          */
 /* -------------------------------------------------------------------- */
-    papszSubfieldNames = CSLTokenizeStringComplex( pszSublist, "!",
-                                                   FALSE, FALSE );
+    char **papszSubfieldNames =
+        CSLTokenizeStringComplex( pszSublist, "!", FALSE, FALSE );
 
 /* -------------------------------------------------------------------- */
 /*      minimally initialize the subfields.  More will be done later.   */
@@ -623,11 +622,11 @@ char *DDFFieldDefn::ExpandFormat( const char * pszSrc )
         else if( (iSrc == 0 || pszSrc[iSrc-1] == ',')
                  && isdigit(pszSrc[iSrc]) )
         {
-            const char *pszNext;
             nRepeat = atoi(pszSrc+iSrc);
 
             // skip over repeat count.
-            for( pszNext = pszSrc+iSrc; isdigit(*pszNext); pszNext++ )
+            const char *pszNext = pszSrc + iSrc;  // Used after for.
+            for( ; isdigit(*pszNext); pszNext++ )
                 iSrc++;
 
             char       *pszContents = ExtractSubstring( pszNext );
@@ -721,9 +720,7 @@ int DDFFieldDefn::ApplyFormats()
          papszFormatItems[iFormatItem] != NULL;
          iFormatItem++ )
     {
-        const char      *pszPastPrefix;
-
-        pszPastPrefix = papszFormatItems[iFormatItem];
+        const char *pszPastPrefix = papszFormatItems[iFormatItem];
         while( *pszPastPrefix >= '0' && *pszPastPrefix <= '9' )
             pszPastPrefix++;
 
@@ -824,7 +821,7 @@ DDFSubfieldDefn *DDFFieldDefn::GetSubfield( int i )
 {
     if( i < 0 || i >= nSubfieldCount )
     {
-        CPLAssert( FALSE );
+        CPLAssert( false );
         return NULL;
     }
 
@@ -877,7 +874,7 @@ char *DDFFieldDefn::GetDefaultValue( int *pnSize )
         if( !papoSubfields[iSubfield]->GetDefaultValue(
                 pachData + nOffset, nTotalSize - nOffset, &nSubfieldSize ) )
         {
-            CPLAssert( FALSE );
+            CPLAssert( false );
             return NULL;
         }
 

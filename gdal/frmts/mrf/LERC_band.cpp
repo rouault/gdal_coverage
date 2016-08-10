@@ -31,7 +31,7 @@ USING_NAMESPACE_LERC
 NAMESPACE_MRF_START
 
 // Load a buffer into a zImg
-template <typename T> void CntZImgFill(CntZImage &zImg, T *src, const ILImage &img)
+template <typename T> static void CntZImgFill(CntZImage &zImg, T *src, const ILImage &img)
 {
     int w = img.pagesize.x;
     int h = img.pagesize.y;
@@ -52,7 +52,7 @@ template <typename T> void CntZImgFill(CntZImage &zImg, T *src, const ILImage &i
 }
 
 // Unload a zImg into a buffer
-template <typename T> void CntZImgUFill(CntZImage &zImg, T *dst, const ILImage &img)
+template <typename T> static void CntZImgUFill(CntZImage &zImg, T *dst, const ILImage &img)
 {
     int h = static_cast<int>(zImg.getHeight());
     int w = static_cast<int>(zImg.getWidth());
@@ -126,7 +126,7 @@ static CPLErr DecompressLERC(buf_mgr &dst, buf_mgr &src, const ILImage &img)
 
 // Populate a bitmask based on comparison with the image no data value
 // Returns the number of NoData values found
-template <typename T> int MaskFill(BitMask2 &bitMask, T *src, const ILImage &img)
+template <typename T> static int MaskFill(BitMask2 &bitMask, T *src, const ILImage &img)
 {
     int w = img.pagesize.x;
     int h = img.pagesize.y;
@@ -169,7 +169,7 @@ static CPLErr CompressLERC2(buf_mgr &dst, buf_mgr &src, const ILImage &img, doub
         case GDT_UInt32:        MASK(GUInt32);  break;
         case GDT_Float32:       MASK(float);    break;
         case GDT_Float64:       MASK(double);   break;
-        default:                CPLAssert(FALSE); break;
+        default:                CPLAssert(false); break;
 
 #undef MASK
         }
@@ -194,7 +194,7 @@ static CPLErr CompressLERC2(buf_mgr &dst, buf_mgr &src, const ILImage &img, doub
     case GDT_UInt32:    ENCODE(GUInt32);    break;
     case GDT_Float32:   ENCODE(float);      break;
     case GDT_Float64:   ENCODE(double);     break;
-    default:            CPLAssert(FALSE); break;
+    default:            CPLAssert(false); break;
 
 #undef ENCODE
     }
@@ -210,7 +210,7 @@ static CPLErr CompressLERC2(buf_mgr &dst, buf_mgr &src, const ILImage &img, doub
 }
 
 // Populate a bitmask based on comparison with the image no data value
-template <typename T> void UnMask(BitMask2 &bitMask, T *arr, const ILImage &img)
+template <typename T> static void UnMask(BitMask2 &bitMask, T *arr, const ILImage &img)
 {
     int w = img.pagesize.x;
     int h = img.pagesize.y;
@@ -245,7 +245,7 @@ CPLErr LERC_Band::Decompress(buf_mgr &dst, buf_mgr &src)
     case GDT_UInt32:    DECODE(GUInt32);    break;
     case GDT_Float32:   DECODE(float);      break;
     case GDT_Float64:   DECODE(double);     break;
-    default:            CPLAssert(FALSE);   break;
+    default:            CPLAssert(false);   break;
 #undef DECODE
     }
     if (!success) {
@@ -265,7 +265,7 @@ CPLErr LERC_Band::Decompress(buf_mgr &dst, buf_mgr &src)
     case GDT_UInt32:    UNMASK(GUInt32);    break;
     case GDT_Float32:   UNMASK(float);      break;
     case GDT_Float64:   UNMASK(double);     break;
-    default:            CPLAssert(FALSE);   break;
+    default:            CPLAssert(false);   break;
 #undef DECODE
     }
     return CE_None;

@@ -8,8 +8,8 @@ compiler:
   - clang
 
 before_install:
-  - sudo mv /etc/apt/sources.list.d/pgdg-source.list* /tmp
-  - sudo apt-get remove postgis libpq5 libpq-dev postgresql-9.1-postgis postgresql-9.2-postgis postgresql-9.3-postgis postgresql-9.1 postgresql-9.2 postgresql-9.3 libgdal1
+  - sudo mv /etc/apt/sources.list.d/pgdg* /tmp
+  - sudo apt-get remove postgis libpq5 libpq-dev postgresql-9.1-postgis postgresql-9.1-postgis-2.2-scripts postgresql-9.2-postgis postgresql-9.3-postgis postgresql-9.1 postgresql-9.2 postgresql-9.3 libgdal1
   - sudo add-apt-repository -y ppa:ubuntugis/ubuntugis-unstable
   - sudo add-apt-repository -y ppa:marlam/gta
   - sudo apt-get update -qq
@@ -80,7 +80,7 @@ install:
 # For libstdc++.so.6
   - export LD_LIBRARY_PATH=$PWD
   - export PATH=$PWD/install-llvm-3.7.0-light/bin:$PATH
-  - scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-mongocxx=/usr/local --without-grib
+  - scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap CXX="clang -std=c++11" ./configure --prefix=/usr --without-libtool --enable-debug --with-jpeg12 --with-poppler --with-podofo --with-spatialite --with-mysql --with-liblzma --with-webp --with-java --with-mdb --with-jvm-lib-add-rpath --with-epsilon --with-gta --with-ecw=/usr/local --with-mrsid=/usr/local --with-mrsid-lidar=/usr/local --with-fgdb=/usr/local --with-libkml --with-openjpeg=/usr/local --with-mongocxx=/usr/local --without-grib
   - scan-build -o scanbuildoutput -plist -v -enable-checker alpha.unix.cstring.OutOfBounds,alpha.unix.cstring.BufferOverlap make -j4
   - if grep -r "\.c" scanbuildoutput | grep "<string>" | grep -v "<key>" | grep -v degrib | grep -v libjpeg | grep -v libpng | grep -v EHapi | grep -v GDapi | grep -v SWapi | grep -v osr_cs_wkt_parser | grep -v ods_formula_parser | grep -v swq_parser; then echo "error" && /bin/false; else echo "ok"; fi 
 

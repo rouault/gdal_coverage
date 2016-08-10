@@ -4108,7 +4108,7 @@ void ComputeStatisticsInternal<GByte>( int nXCheck,
         // 32-byte alignment may not be enforced by linker, so do it at hand
         GByte aby32ByteUnaligned[32+32+32+32+32];
         GByte* paby32ByteAligned = aby32ByteUnaligned +
-                                    (32 - ((size_t)aby32ByteUnaligned % 32));
+                                    (32 - ((GUIntptr_t)aby32ByteUnaligned % 32));
         GByte* pabyMin = paby32ByteAligned;
         GByte* pabyMax = paby32ByteAligned + 32;
         GUInt32* panSum = (GUInt32*)(paby32ByteAligned + 32*2);
@@ -4246,7 +4246,7 @@ void ComputeStatisticsInternal<GByte>( int nXCheck,
         // 32-byte alignment may not be enforced by linker, so do it at hand
         GByte aby32ByteUnaligned[32+32+32+32+32];
         GByte* paby32ByteAligned = aby32ByteUnaligned +
-                                    (32 - ((size_t)aby32ByteUnaligned % 32));
+                                    (32 - ((GUIntptr_t)aby32ByteUnaligned % 32));
         GByte* pabyMin = paby32ByteAligned;
         GByte* pabyMax = paby32ByteAligned + 32;
         GUInt32* panSum = (GUInt32*)(paby32ByteAligned + 32*2);
@@ -6706,7 +6706,7 @@ int  GDALRasterBand::GetDataCoverageStatus( int nXOff,
 
 int  GDALRasterBand::IGetDataCoverageStatus( int /*nXOff*/,
                                              int /*nYOff*/,
-                                             int /*nXSize/*/,
+                                             int /*nXSize*/,
                                              int /*nYSize*/,
                                              int /*nMaskFlagStop*/,
                                              double* pdfDataPct)
@@ -6717,6 +6717,7 @@ int  GDALRasterBand::IGetDataCoverageStatus( int /*nXOff*/,
            GDAL_DATA_COVERAGE_STATUS_DATA;
 }
 
+//! @cond Doxygen_Suppress
 /************************************************************************/
 /*                          EnterReadWrite()                            */
 /************************************************************************/
@@ -6737,3 +6738,4 @@ void GDALRasterBand::LeaveReadWrite()
     if( poDS != NULL )
         poDS->LeaveReadWrite();
 }
+//! @endcond

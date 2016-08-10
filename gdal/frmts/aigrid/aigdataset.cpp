@@ -548,8 +548,6 @@ void AIGDataset::ReadRAT()
 GDALDataset *AIGDataset::Open( GDALOpenInfo * poOpenInfo )
 
 {
-    AIGInfo_t *psInfo;
-
 /* -------------------------------------------------------------------- */
 /*      If the pass name ends in .adf assume a file within the          */
 /*      coverage has been selected, and strip that off the coverage     */
@@ -649,7 +647,7 @@ GDALDataset *AIGDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Open the file.                                                  */
 /* -------------------------------------------------------------------- */
-    psInfo = AIGOpen( osCoverName.c_str(), "r" );
+    AIGInfo_t *psInfo = AIGOpen( osCoverName.c_str(), "r" );
 
     if( psInfo == NULL )
     {
@@ -934,7 +932,7 @@ static CPLErr AIGRename( const char *pszNewName, const char *pszOldName )
 
         if( !EQUALN(papszFileList[i],osOldPath,strlen(osOldPath)) )
         {
-            CPLAssert( FALSE );
+            CPLAssert( false );
             return CE_Failure;
         }
 

@@ -322,8 +322,7 @@ int TABINDFile::ReadHeader()
     /*-----------------------------------------------------------------
      * Read the header block
      *----------------------------------------------------------------*/
-    TABRawBinBlock *poHeaderBlock;
-    poHeaderBlock = new TABRawBinBlock(m_eAccessMode, TRUE);
+    TABRawBinBlock *poHeaderBlock = new TABRawBinBlock(m_eAccessMode, TRUE);
     if (poHeaderBlock->ReadFromFile(m_fp, 0, 512) != 0)
     {
         // CPLError() has already been called.
@@ -433,8 +432,7 @@ int TABINDFile::WriteHeader()
     /*-----------------------------------------------------------------
      * Write the 48 bytes of file header
      *----------------------------------------------------------------*/
-    TABRawBinBlock *poHeaderBlock;
-    poHeaderBlock = new TABRawBinBlock(m_eAccessMode, TRUE);
+    TABRawBinBlock *poHeaderBlock = new TABRawBinBlock(m_eAccessMode, TRUE);
     poHeaderBlock->InitNewBlock(m_fp, 512, 0);
 
     poHeaderBlock->WriteInt32( IND_MAGIC_COOKIE );
@@ -1344,7 +1342,7 @@ GInt32 TABINDNode::FindFirst(GByte *pKeyValue)
 
         // No node was found that contains the key value.
         // We should never get here... only leaf nodes should return 0
-        CPLAssert(FALSE);
+        CPLAssert(false);
         return 0;
     }
 
