@@ -2080,7 +2080,7 @@ def tiff_ovr_52():
     return 'success'
 
 ###############################################################################
-# Test that external overview building in several times can re-use existing overviews
+# Test external overviews building in several steps
 
 def tiff_ovr_53():
 
@@ -2088,47 +2088,55 @@ def tiff_ovr_53():
     if src_ds is None:
         return 'skip'
 
-    if False:
-        gdal.GetDriverByName('GTiff').CreateCopy('/vsimem/tiff_ovr_53.tif', src_ds)
-        ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
-        ds.BuildOverviews('NEAR', [2])
-        ds = None
-        ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
-        ds.BuildOverviews('NEAR', [4])
-        ds = None
-
-        ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
-        cs = ds.GetRasterBand(1).GetOverview(0).Checksum()
-        if cs != 1087:
-            gdaltest.post_reason('fail')
-            print(cs)
-            return 'fail'
-        cs = ds.GetRasterBand(1).GetOverview(1).Checksum()
-        if cs != 328:
-            gdaltest.post_reason('fail')
-            print(cs)
-            return 'fail'
-        ds = None
-
-        gdal.GetDriverByName('GTiff').Delete('/vsimem/tiff_ovr_53.tif')
-
-
     gdal.GetDriverByName('GTiff').CreateCopy('/vsimem/tiff_ovr_53.tif', src_ds)
     ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
-    ds.BuildOverviews('NONE', [2])
+    ds.BuildOverviews('NEAR', [2])
     ds = None
+    # Note: currently this will compute it from the base raster and not
+    # ov_factor=2 !
     ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
     ds.BuildOverviews('NEAR', [4])
     ds = None
 
     ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
     cs = ds.GetRasterBand(1).GetOverview(0).Checksum()
-    if cs != 0:
+    if cs != 1087:
         gdaltest.post_reason('fail')
         print(cs)
         return 'fail'
     cs = ds.GetRasterBand(1).GetOverview(1).Checksum()
-    if cs != 0:
+    if cs != 328:
+        gdaltest.post_reason('fail')
+        print(cs)
+        return 'fail'
+    ds = None
+
+    gdal.GetDriverByName('GTiff').Delete('/vsimem/tiff_ovr_53.tif')
+
+
+    # Compressed code path
+    gdal.GetDriverByName('GTiff').CreateCopy('/vsimem/tiff_ovr_53.tif', src_ds)
+    gdal.SetConfigOption('COMPRESS_OVERVIEW', 'DEFLATE')
+    gdal.SetConfigOption('INTERLEAVE_OVERVIEW', 'PIXEL')
+    ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
+    ds.BuildOverviews('NEAR', [2])
+    ds = None
+    # Note: currently this will compute it from the base raster and not
+    # ov_factor=2 !
+    ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
+    ds.BuildOverviews('NEAR', [4])
+    ds = None
+    gdal.SetConfigOption('COMPRESS_OVERVIEW', None)
+    gdal.SetConfigOption('INTERLEAVE_OVERVIEW', None)
+
+    ds = gdal.Open('/vsimem/tiff_ovr_53.tif')
+    cs = ds.GetRasterBand(1).GetOverview(0).Checksum()
+    if cs != 1087:
+        gdaltest.post_reason('fail')
+        print(cs)
+        return 'fail'
+    cs = ds.GetRasterBand(1).GetOverview(1).Checksum()
+    if cs != 328:
         gdaltest.post_reason('fail')
         print(cs)
         return 'fail'
