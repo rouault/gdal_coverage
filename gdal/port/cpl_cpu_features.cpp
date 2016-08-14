@@ -1,7 +1,6 @@
 /******************************************************************************
- * $Id$
  *
- * Project:  GDAL Gridding API.
+ * Project:  CPL - Common Portability Library
  * Purpose:  CPU features detection
  * Author:   Even Rouault, <even dot rouault at spatialys dot com>
  *
@@ -28,7 +27,10 @@
  ****************************************************************************/
 
 #include "cpl_port.h"
+#include "cpl_string.h"
 #include "cpl_cpu_features.h"
+
+CPL_CVSID("$Id$");
 
 //! @cond Doxygen_Suppress
 
@@ -120,6 +122,10 @@ bool CPLHaveRuntimeSSE()
 
 bool CPLHaveRuntimeSSSE3()
 {
+#ifdef DEBUG
+    if( !CPLTestBool(CPLGetConfigOption("GDAL_USE_SSSE3", "YES")) )
+        return false;
+#endif
     int cpuinfo[4] = { 0, 0, 0, 0 };
     CPL_CPUID(1, cpuinfo);
     return (cpuinfo[REG_ECX] & (1 << CPUID_SSSE3_ECX_BIT)) != 0;
