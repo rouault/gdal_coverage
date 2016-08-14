@@ -121,7 +121,7 @@ int CPLGetExecPath( char *pszPathBuf, int nMaxLength )
 
 #ifndef HAVE_IMPLEMENTATION
 
-int CPLGetExecPath( char * /* pszPathBuf */, int /* nMaxLength */ )
+int CPLGetExecPath( char * /* pszPathBuf */ , int /* nMaxLength */ )
 {
     return FALSE;
 }

@@ -264,7 +264,7 @@ char CPL_DLL *GOA2GetRefreshToken( const char *pszAuthToken,
  * user or http connection problems.
  *
  * @param pszRefreshToken the refresh token from GOA2GetRefreshToken().
- * @param pszScope the scope for which it is valid.
+ * @param pszScope the scope for which it is valid. Currently unused
  *
  * @return access token, to be freed with CPLFree(), null on failure.
  */
