@@ -455,7 +455,7 @@ OGRGeometry *OGRFeature::StealGeometry()
  * Sort of an inverse to SetGeometryDirectly().
  *
  * After this call the OGRFeature will have a NULL geometry.
- * 
+ *
  * @param iGeomField index of the geometry field.
  *
  * @return the pointer to the geometry.
@@ -1805,7 +1805,7 @@ static void OGRFeatureFormatDateTimeBuffer(char szTempBuffer[TEMP_BUFFER_SIZE],
 /**
  * \fn OGRFeature::GetFieldAsString( const char* pszFName )
  * \brief Fetch field value as a string.
- * 
+ *
  * OFTReal and OFTInteger fields will be translated to string using
  * sprintf(), but not necessarily using the established formatting rules.
  * Other field types, or errors will result in a return value of zero.
@@ -2193,7 +2193,7 @@ const char *OGR_F_GetFieldAsString( OGRFeatureH hFeat, int iField )
 /**
  * \fn OGRFeature::GetFieldAsIntegerList( const char* pszFName, int *pnCount )
  * \brief Fetch field value as a list of integers.
- * 
+ *
  * Currently this method only works for OFTIntegerList fields.
 
  * @param pszFName the name of the field to fetch.
@@ -2280,7 +2280,7 @@ const int *OGR_F_GetFieldAsIntegerList( OGRFeatureH hFeat, int iField,
 /**
  * \fn OGRFeature::GetFieldAsInteger64List( const char* pszFName, int *pnCount )
  * \brief Fetch field value as a list of 64 bit integers.
- * 
+ *
  * Currently this method only works for OFTInteger64List fields.
 
  * @param pszFName the name of the field to fetch.
@@ -2456,7 +2456,7 @@ const double *OGR_F_GetFieldAsDoubleList( OGRFeatureH hFeat, int iField,
  *
  * The returned list is terminated by a NULL pointer. The number of
  * elements can also be calculated using CSLCount().
- * 
+ *
  * @param pszFName the name of the field to fetch.
  *
  * @return the field value.  This list is internal, and should not be
@@ -2695,10 +2695,11 @@ int OGRFeature::GetFieldAsDateTime( int iField,
                                     int *pnHour, int *pnMinute, int *pnSecond,
                                     int *pnTZFlag )
 {
-    float fSecond;
-    int bRet = GetFieldAsDateTime( iField, pnYear, pnMonth, pnDay, pnHour, pnMinute,
-                                   &fSecond, pnTZFlag);
-    if( bRet && pnSecond ) *pnSecond = (int)fSecond;
+    float fSecond = 0.0f;
+    const bool bRet = CPL_TO_BOOL(
+        GetFieldAsDateTime( iField, pnYear, pnMonth, pnDay, pnHour, pnMinute,
+                            &fSecond, pnTZFlag));
+    if( bRet && pnSecond ) *pnSecond = static_cast<int>(fSecond);
     return bRet;
 }
 
@@ -2737,12 +2738,13 @@ int OGR_F_GetFieldAsDateTime( OGRFeatureH hFeat, int iField,
 {
     VALIDATE_POINTER1( hFeat, "OGR_F_GetFieldAsDateTime", 0 );
 
-    float fSecond;
-    int bRet =((OGRFeature *)hFeat)->GetFieldAsDateTime( iField,
-                                                      pnYear, pnMonth, pnDay,
-                                                      pnHour, pnMinute,&fSecond,
-                                                      pnTZFlag );
-    if( bRet && pnSecond ) *pnSecond = (int)fSecond;
+    float fSecond = 0.0f;
+    const bool bRet = CPL_TO_BOOL(reinterpret_cast<OGRFeature *>(hFeat)->
+        GetFieldAsDateTime( iField,
+                            pnYear, pnMonth, pnDay,
+                            pnHour, pnMinute,&fSecond,
+                            pnTZFlag ));
+    if( bRet && pnSecond ) *pnSecond = static_cast<int>(fSecond);
     return bRet;
 }
 
@@ -2830,7 +2832,7 @@ static int OGRFeatureGetIntegerValue(OGRFieldDefn *poFDefn, int nValue)
  * will be assigned a string representation of the value, but not necessarily
  * taking into account formatting constraints on this field.  Other field
  * types may be unaffected.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param nValue the value to assign.
  */
@@ -2955,7 +2957,7 @@ void OGR_F_SetFieldInteger( OGRFeatureH hFeat, int iField, int nValue )
  * will be assigned a string representation of the value, but not necessarily
  * taking into account formatting constraints on this field.  Other field
  * types may be unaffected.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param nValue the value to assign.
  */
@@ -3099,7 +3101,7 @@ void OGR_F_SetFieldInteger64( OGRFeatureH hFeat, int iField, GIntBig nValue )
  * will be assigned a string representation of the value, but not necessarily
  * taking into account formatting constraints on this field.  Other field
  * types may be unaffected.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param dfValue the value to assign.
  */
@@ -3229,7 +3231,7 @@ void OGR_F_SetFieldDouble( OGRFeatureH hFeat, int iField, double dfValue )
  * OFTInteger64 fields will be set based on an CPLAtoGIntBig() conversion of the string.
  * OFTReal fields will be set based on an CPLAtof() conversion of the string.
  * Other field types may be unaffected.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param pszValue the value to assign.
  */
@@ -3252,15 +3254,15 @@ void OGRFeature::SetField( int iField, const char * pszValue )
 
 {
     static int bWarn = -1;
-    OGRFieldDefn *poFDefn = poDefn->GetFieldDefn( iField );
-    char *pszLast = NULL;
-
     if( bWarn < 0 )
         bWarn = CPLTestBool( CPLGetConfigOption( "OGR_SETFIELD_NUMERIC_WARNING",
                                                  "YES" ) );
 
+    OGRFieldDefn *poFDefn = poDefn->GetFieldDefn( iField );
     if( poFDefn == NULL )
         return;
+
+    char *pszLast = NULL;
 
     OGRFieldType eType = poFDefn->GetType();
     if( eType == OFTString )
@@ -3444,7 +3446,7 @@ void OGR_F_SetFieldString( OGRFeatureH hFeat, int iField, const char *pszValue)
  *
  * This method currently on has an effect of OFTIntegerList, OFTInteger64List
  * and OFTRealList fields.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param nCount the number of values in the list being assigned.
  * @param panValues the values to assign.
@@ -3580,7 +3582,7 @@ void OGR_F_SetFieldIntegerList( OGRFeatureH hFeat, int iField,
  *
  * This method currently on has an effect of OFTIntegerList, OFTInteger64List
  * and OFTRealList fields.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param nCount the number of values in the list being assigned.
  * @param panValues the values to assign.
@@ -3707,7 +3709,7 @@ void OGR_F_SetFieldInteger64List( OGRFeatureH hFeat, int iField,
  *
  * This method currently on has an effect of OFTIntegerList, OFTInteger64List,
  * OFTRealList fields.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param nCount the number of values in the list being assigned.
  * @param padfValues the values to assign.
@@ -4021,7 +4023,7 @@ void OGR_F_SetFieldBinary( OGRFeatureH hFeat, int iField,
  *
  * This method currently only has an effect for OFTDate, OFTTime and OFTDateTime
  * fields.
- * 
+ *
  * @param pszFName the name of the field to set.
  * @param nYear (including century)
  * @param nMonth (1-12)
@@ -5602,8 +5604,8 @@ void OGR_F_SetStyleTable( OGRFeatureH hFeat,
  * @since GDAL 2.0
  */
 
-void OGRFeature::FillUnsetWithDefault(int bNotNullableOnly,
-                                      CPL_UNUSED char** papszOptions)
+void OGRFeature::FillUnsetWithDefault( int bNotNullableOnly,
+                                       CPL_UNUSED char** papszOptions)
 {
     int nFieldCount = poDefn->GetFieldCount();
     for(int i = 0; i < nFieldCount; i ++ )
@@ -5678,7 +5680,7 @@ void OGRFeature::FillUnsetWithDefault(int bNotNullableOnly,
 
 void OGR_F_FillUnsetWithDefault( OGRFeatureH hFeat,
                                  int bNotNullableOnly,
-                                 char** papszOptions)
+                                 char** papszOptions )
 
 {
     VALIDATE_POINTER0( hFeat, "OGR_F_FillUnsetWithDefault" );
@@ -5714,7 +5716,7 @@ void OGR_F_FillUnsetWithDefault( OGRFeatureH hFeat,
 int OGRFeature::Validate( int nValidateFlags, int bEmitError )
 
 {
-    int bRet = TRUE;
+    bool bRet = true;
 
     int nGeomFieldCount = poDefn->GetGeomFieldCount();
     for( int i = 0; i < nGeomFieldCount; i++ )
@@ -5723,7 +5725,7 @@ int OGRFeature::Validate( int nValidateFlags, int bEmitError )
             !poDefn->GetGeomFieldDefn(i)->IsNullable() &&
             GetGeomFieldRef(i) == NULL )
         {
-            bRet = FALSE;
+            bRet = false;
             if( bEmitError )
             {
                 CPLError(CE_Failure, CPLE_AppDefined,
@@ -5748,7 +5750,7 @@ int OGRFeature::Validate( int nValidateFlags, int bEmitError )
                 else if( (eType == wkbSetZ(wkbUnknown) && !wkbHasZ(eFType)) ||
                          (eType != wkbSetZ(wkbUnknown) && eFType != eType) )
                 {
-                    bRet = FALSE;
+                    bRet = false;
                     if( bEmitError )
                     {
                         CPLError(CE_Failure, CPLE_AppDefined,
@@ -5770,7 +5772,7 @@ int OGRFeature::Validate( int nValidateFlags, int bEmitError )
             (!(nValidateFlags & OGR_F_VAL_ALLOW_NULL_WHEN_DEFAULT) ||
                poDefn->GetFieldDefn(i)->GetDefault() == NULL))
         {
-            bRet = FALSE;
+            bRet = false;
             if( bEmitError )
             {
                 CPLError(CE_Failure, CPLE_AppDefined,
@@ -5785,7 +5787,7 @@ int OGRFeature::Validate( int nValidateFlags, int bEmitError )
             CPLIsUTF8(GetFieldAsString(i), -1) &&
             CPLStrlenUTF8(GetFieldAsString(i)) > poDefn->GetFieldDefn(i)->GetWidth())
         {
-            bRet = FALSE;
+            bRet = false;
             if( bEmitError )
             {
                 CPLError(CE_Failure, CPLE_AppDefined,
