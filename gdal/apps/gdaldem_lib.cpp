@@ -285,18 +285,20 @@ CPLErr GDALGeneric3x3Processing  ( GDALRasterBandH hSrcBand,
     }
 
     GDALDataType eDT;
+    int bIsSrcNoDataNan = FALSE;
+    const double dfNoDataValue = GDALGetRasterNoDataValue(hSrcBand,
+                                                              &bSrcHasNoData);
     if( std::numeric_limits<T>::is_integer )
     {
         eDT = GDT_Int32;
-        double dfNoDataValue = GDALGetRasterNoDataValue(hSrcBand, &bSrcHasNoData);
         if( bSrcHasNoData )
         {
-            const int mMinVal = (eDT == GDT_Byte ) ? 0 : (eDT == GDT_UInt16) ? 0 : -32768;
-            const int mMaxVal = (eDT == GDT_Byte ) ? 255 : (eDT == GDT_UInt16) ? 65535 : 32767;
-            if( fabs(dfNoDataValue - static_cast<int>(dfNoDataValue + 0.5)) < 1e-2 &&
-                dfNoDataValue >= mMinVal && dfNoDataValue <= mMaxVal )
+            const int nMinVal = (eDT == GDT_Byte ) ? 0 : (eDT == GDT_UInt16) ? 0 : -32768;
+            const int nMaxVal = (eDT == GDT_Byte ) ? 255 : (eDT == GDT_UInt16) ? 65535 : 32767;
+            if( fabs(dfNoDataValue - floor(dfNoDataValue + 0.5)) < 1e-2 &&
+                dfNoDataValue >= nMinVal && dfNoDataValue <= nMaxVal )
             {
-                fSrcNoDataValue = static_cast<T>(dfNoDataValue + 0.5);
+                fSrcNoDataValue = static_cast<T>(floor(dfNoDataValue + 0.5));
             }
             else
             {
@@ -307,12 +309,13 @@ CPLErr GDALGeneric3x3Processing  ( GDALRasterBandH hSrcBand,
     else
     {
         eDT = GDT_Float32;
-        fSrcNoDataValue = static_cast<T>(GDALGetRasterNoDataValue(hSrcBand, &bSrcHasNoData));
+        fSrcNoDataValue = static_cast<T>(dfNoDataValue);
+        bIsSrcNoDataNan = bSrcHasNoData && CPLIsNan(dfNoDataValue);
     }
+
     fDstNoDataValue = (float) GDALGetRasterNoDataValue(hDstBand, &bDstHasNoData);
     if (!bDstHasNoData)
         fDstNoDataValue = 0;
-    int bIsSrcNoDataNan = bSrcHasNoData && CPLIsNan(fSrcNoDataValue);
 
     int nLine1Off = 0*nXSize;
     int nLine2Off = 1*nXSize;
@@ -2194,19 +2197,21 @@ GDALGeneric3x3RasterBand<T>::GDALGeneric3x3RasterBand(GDALGeneric3x3Dataset<T> *
     nBlockYSize = 1;
 
     bSrcHasNoData = FALSE;
+    bIsSrcNoDataNan = FALSE;
+    const double dfNoDataValue = GDALGetRasterNoDataValue(poDSIn->hSrcBand,
+                                                          &bSrcHasNoData);
     if( std::numeric_limits<T>::is_integer )
     {
         eReadDT = GDT_Int32;
-        double dfNoDataValue = GDALGetRasterNoDataValue(poDSIn->hSrcBand, &bSrcHasNoData);
         if( bSrcHasNoData )
         {
             GDALDataType eSrcDT = GDALGetRasterDataType(poDSIn->hSrcBand);
-            const int mMinVal = (eSrcDT == GDT_Byte ) ? 0 : (eSrcDT == GDT_UInt16) ? 0 : -32768;
-            const int mMaxVal = (eSrcDT == GDT_Byte ) ? 255 : (eSrcDT == GDT_UInt16) ? 65535 : 32767;
-            if( fabs(dfNoDataValue - static_cast<int>(dfNoDataValue + 0.5)) < 1e-2 &&
-                dfNoDataValue >= mMinVal && dfNoDataValue <= mMaxVal )
+            const int nMinVal = (eSrcDT == GDT_Byte ) ? 0 : (eSrcDT == GDT_UInt16) ? 0 : -32768;
+            const int nMaxVal = (eSrcDT == GDT_Byte ) ? 255 : (eSrcDT == GDT_UInt16) ? 65535 : 32767;
+            if( fabs(dfNoDataValue - floor(dfNoDataValue + 0.5)) < 1e-2 &&
+                dfNoDataValue >= nMinVal && dfNoDataValue <= nMaxVal )
             {
-                fSrcNoDataValue = static_cast<T>(dfNoDataValue + 0.5);
+                fSrcNoDataValue = static_cast<T>(floor(dfNoDataValue + 0.5));
             }
             else
             {
@@ -2217,10 +2222,9 @@ GDALGeneric3x3RasterBand<T>::GDALGeneric3x3RasterBand(GDALGeneric3x3Dataset<T> *
     else
     {
         eReadDT = GDT_Float32;
-        fSrcNoDataValue = static_cast<T>(GDALGetRasterNoDataValue(poDSIn->hSrcBand,
-                                                        &bSrcHasNoData));
+        fSrcNoDataValue = static_cast<T>(dfNoDataValue);
+        bIsSrcNoDataNan = bSrcHasNoData && CPLIsNan(dfNoDataValue);
     }
-    bIsSrcNoDataNan = bSrcHasNoData && CPLIsNan(fSrcNoDataValue);
 }
 
 template<class T>
