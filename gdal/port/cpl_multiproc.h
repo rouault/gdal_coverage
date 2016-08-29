@@ -142,6 +142,7 @@ class CPL_DLL CPLMutexHolder
 {
   private:
     CPLMutex   *hMutex;
+    // Only used for debugging.
     const char *pszFile;
     int         nLine;
 
