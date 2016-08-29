@@ -132,7 +132,11 @@ CPLMutexHolder::CPLMutexHolder( CPLMutex **phMutex,
     // fprintf() will do the job right.
     fprintf( stderr,
              "CPLMutexHolder: Request %p for pid %ld at %d/%s.\n",
-             *phMutex, static_cast<long>(CPLGetPID()), nLine, pszFile );
+             *phMutex, reinterpret_cast<long>(CPLGetPID()), nLine, pszFile );
+#else
+    // TODO(schwehr): Find a better way to do handle this.
+    (void)pszFile;
+    (void)nLine;
 #endif
 
     if( !CPLCreateOrAcquireMutexEx( phMutex, dfWaitInSeconds, nOptions ) )
@@ -1682,7 +1686,7 @@ void CPLUnlockFile( void *hLock )
 GIntBig CPLGetPID()
 
 {
-    return static_cast<GIntBig>(pthread_self());
+    return (GIntBig)pthread_self();
 }
 
 static pthread_key_t oTLSKey;
