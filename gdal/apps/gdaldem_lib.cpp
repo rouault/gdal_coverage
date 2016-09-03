@@ -811,7 +811,7 @@ void*  GDALCreateHillshadeData(double* adfGeoTransform,
     double z_scale_factor = z / (((bZevenbergenThorne) ? 2 : 8) * scale);
     pData->cos_altRadians_mul_z_scale_factor =
         cos(alt * degreesToRadians) * z_scale_factor;
-    pData->cos_azRadians_mul_cos_altRadians_mul_z_scale_factor = 
+    pData->cos_azRadians_mul_cos_altRadians_mul_z_scale_factor =
         cos(pData->azRadians) * pData->cos_altRadians_mul_z_scale_factor;
     pData->sin_azRadians_mul_cos_altRadians_mul_z_scale_factor =
         sin(pData->azRadians) * pData->cos_altRadians_mul_z_scale_factor;
@@ -921,7 +921,7 @@ float GDALAspectAlg (const T* afWin, float fDstNoDataValue, void* pData)
     }
     else if ( psData->bAngleAsAzimuth )
     {
-        if (aspect > 90.0)
+        if (aspect > 90.0f)
             aspect = 450.0f - aspect;
         else
             aspect = 90.0f - aspect;
@@ -929,10 +929,10 @@ float GDALAspectAlg (const T* afWin, float fDstNoDataValue, void* pData)
     else
     {
         if (aspect < 0)
-            aspect += 360.0;
+            aspect += 360.0f;
     }
 
-    if (aspect == 360.0)
+    if (aspect == 360.0f)
         aspect = 0.0;
 
     return aspect;
@@ -960,7 +960,7 @@ float GDALAspectZevenbergenThorneAlg (const T* afWin, float fDstNoDataValue, voi
     }
     else if ( psData->bAngleAsAzimuth )
     {
-        if (aspect > 90.0)
+        if (aspect > 90.0f)
             aspect = 450.0f - aspect;
         else
             aspect = 90.0f - aspect;
@@ -968,10 +968,10 @@ float GDALAspectZevenbergenThorneAlg (const T* afWin, float fDstNoDataValue, voi
     else
     {
         if (aspect < 0)
-            aspect += 360.0;
+            aspect += 360.0f;
     }
 
-    if (aspect == 360.0)
+    if (aspect == 360.0f)
         aspect = 0.0;
 
     return aspect;
@@ -2074,7 +2074,7 @@ CPLErr GDALGenerateVRTColorRelief(const char* pszDstFilename,
 
 template<class T> static T MyAbs(T x);
 
-template<> float MyAbs(float x) { return fabs(x); }
+template<> float MyAbs(float x) { return fabsf(x); }
 template<> int MyAbs(int x) { return x >= 0 ? x : -x; }
 
 template<class T>
@@ -2785,7 +2785,7 @@ GDALDatasetH GDALDEMProcessing(const char *pszDest,
         || (GDALGetMetadataItem( hDriver, GDAL_DCAP_CREATE, NULL ) == NULL &&
             GDALGetMetadataItem( hDriver, GDAL_DCAP_CREATECOPY, NULL ) == NULL))
     {
-        int	iDr;
+        int iDr;
 
         CPLError(CE_Failure, CPLE_AppDefined, "Output driver `%s' not recognised to have output support.",
                  psOptions->pszFormat );
@@ -3003,7 +3003,7 @@ GDALDatasetH GDALDEMProcessing(const char *pszDest,
         {
             if( eSrcDT == GDT_Byte || eSrcDT == GDT_Int16 || eSrcDT == GDT_UInt16 )
             {
-                GDALGeneric3x3Dataset<GInt32>* poDS = 
+                GDALGeneric3x3Dataset<GInt32>* poDS =
                     new GDALGeneric3x3Dataset<GInt32>(hSrcDataset, hSrcBand,
                                             eDstDataType,
                                             bDstHasNoData,
@@ -3023,7 +3023,7 @@ GDALDatasetH GDALDEMProcessing(const char *pszDest,
             }
             else
             {
-                GDALGeneric3x3Dataset<float>* poDS = 
+                GDALGeneric3x3Dataset<float>* poDS =
                     new GDALGeneric3x3Dataset<float>(hSrcDataset, hSrcBand,
                                             eDstDataType,
                                             bDstHasNoData,

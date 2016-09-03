@@ -37,12 +37,10 @@ CPL_CVSID("$Id$");
 /*                          OGRPGeoTableLayer()                         */
 /************************************************************************/
 
-OGRPGeoTableLayer::OGRPGeoTableLayer( OGRPGeoDataSource *poDSIn )
-
+OGRPGeoTableLayer::OGRPGeoTableLayer( OGRPGeoDataSource *poDSIn ) :
+    pszQuery(NULL)
 {
     poDS = poDSIn;
-    pszQuery = NULL;
-    bUpdateAccess = TRUE;
     iNextShapeId = 0;
     nSRSId = -1;
     poFeatureDefn = NULL;

@@ -347,7 +347,7 @@
 
 ## @class Geo::GDAL::MajorObject
 # @brief An object, which holds meta data.
-# @details 
+# @details
 # @isa (Geo::GDAL)
 
 ## @sub Domains
@@ -388,7 +388,7 @@
 
 ## @class Geo::GDAL::Driver
 # @brief A driver for a specific dataset format.
-# @details 
+# @details
 # @isa (Geo::GDAL::MajorObject Geo::GDAL)
 
 ## @method Open
@@ -440,8 +440,9 @@
 # @return a boolean value.
 
 ## @method $Extension()
-# @return a suggested extension or extensions (e.g., ext1/ext2) for
-# datasets.
+# @note The returned extension does not contain a '.' prefix.
+# @return a suggested single extension or a list of extensions (in
+# list context) for datasets.
 
 ## @method $MIMEType()
 # @return a suggested MIME type for datasets.
@@ -473,7 +474,7 @@
 
 ## @method Geo::GDAL::Dataset Copy(%params)
 # Create a new raster Geo::GDAL::Dataset as a copy of an existing dataset.
-# @note a.k.a. CreateCopy 
+# @note a.k.a. CreateCopy
 #
 # @param params Named parameters:
 # - \a Name name for the new raster dataset.
@@ -493,7 +494,7 @@
 
 ## @class Geo::GDAL::GCP
 # @brief A ground control point for georeferencing rasters.
-# @details 
+# @details
 # @isa (Geo::GDAL)
 
 ## @cmethod $new($x = 0.0, $y = 0.0, $z = 0.0, $column = 0.0, $row = 0.0, $info = "", $id = "")
@@ -532,7 +533,7 @@
 
 ## @class Geo::GDAL::Dataset
 # @brief A set of associated raster bands or vector layer source.
-# @details 
+# @details
 # @isa (Geo::GDAL::MajorObject Geo::GDAL)
 
 ## @sub Geo::GDAL::Dataset Open
@@ -595,12 +596,12 @@
 #
 # @param %params Named parameters:
 # - \a Name (scalar) name for the new layer.
-# - \a Fields (array reference) a list of (scalar and geometry) field definitions as in 
+# - \a Fields (array reference) a list of (scalar and geometry) field definitions as in
 # Geo::OGR::Layer::CreateField.
 # - \a ApproxOK (boolean value, default is true) a flag, which is forwarded to Geo::OGR::Layer::CreateField.
 # - \a Options (hash reference) driver specific hash of layer creation options.
 # - \a Schema (hash reference, deprecated, use \a Fields and \a Name) may contain keys Name, Fields, GeomFields, GeometryType.
-# - \a SRS (scalar, deprecated) the spatial reference for the default geometry field.
+# - \a SRS (scalar) the spatial reference for the default geometry field.
 # - \a GeometryType (scalar) the type of the default geometry field
 # (if only one geometry field). Default is 'Unknown'.
 #
@@ -612,11 +613,11 @@
 # Example:
 # \code
 # my $roads = Geo::OGR::Driver('Memory')->Create('road')->
-# .   CreateLayer(
-# .       Fields => [ { Name => 'class', 
-# .                     Type => 'Integer' },
-# .                   { Name => 'geom', 
-# .                     Type => 'LineString25D' } ] );
+#    CreateLayer(
+#        Fields => [ { Name => 'class',
+#                      Type => 'Integer' },
+#                    { Name => 'geom',
+#                      Type => 'LineString25D' } ] );
 # \endcode
 #
 # @note Many formats allow only one spatial field, which currently
@@ -705,7 +706,7 @@
 # @return The added band.
 
 ## @method WriteRaster(%params)
-# Write data into the dataset. 
+# Write data into the dataset.
 #
 # @param params Named parameters:
 # - \a XOff x offset (cell coordinates) (default is 0)
@@ -918,7 +919,7 @@ Geo::GDAL::Driver('PNG')->Copy(Name => 'test.png', Src => $d->Dither->Dataset);
 
 ## @class Geo::GDAL::Band
 # @brief A raster band.
-# @details 
+# @details
 # @isa ( Geo::GDAL::MajorObject Geo::GDAL )
 
 ## @sub ColorInterpretations
@@ -1108,19 +1109,19 @@ Geo::GDAL::Driver('PNG')->Copy(Name => 'test.png', Src => $d->Dither->Dataset);
 # my($W,$H) = $dataset->Band(1)->Size();
 # my($xoff,$yoff,$w,$h) = (0,0,200,200);
 # while (1) {
-# .    if ($xoff >= $W) {
-# .        $xoff = 0;
-# .        $yoff += $h;
-# .        last if $yoff >= $H;
-# .    }
-# .    my $data = $dataset->Band(1)->ReadTile($xoff,$yoff,min($W-$xoff,$w),min($H-$yoff,$h));
-# .    # add your data processing code here
-# .    $dataset->Band(1)->WriteTile($data,$xoff,$yoff);
-# .    $xoff += $w;
+#     if ($xoff >= $W) {
+#         $xoff = 0;
+#         $yoff += $h;
+#         last if $yoff >= $H;
+#     }
+#     my $data = $dataset->Band(1)->ReadTile($xoff,$yoff,min($W-$xoff,$w),min($H-$yoff,$h));
+#     # add your data processing code here
+#     $dataset->Band(1)->WriteTile($data,$xoff,$yoff);
+#     $xoff += $w;
 # }
 #
 # sub min {
-# .    return $_[0] < $_[1] ? $_[0] : $_[1];
+#     return $_[0] < $_[1] ? $_[0] : $_[1];
 # }
 # \endcode
 # @param xoff Number of cell to skip before starting to read from a row. Pixels are read from left to right.
@@ -1365,7 +1366,7 @@ Geo::GDAL::Driver('PNG')->Copy(Name => 'test.png', Src => $d->Dither->Dataset);
 
 ## @class Geo::GDAL::ColorTable
 # @brief A color table from a raster band or a color table, which can be used for a band.
-# @details 
+# @details
 # @isa ( Geo::GDAL::MajorObject Geo::GDAL )
 
 ## @cmethod Geo::GDAL::ColorTable new($GDALPaletteInterp = 'RGB')
@@ -1422,7 +1423,7 @@ Geo::GDAL::Driver('PNG')->Copy(Name => 'test.png', Src => $d->Dither->Dataset);
 
 ## @class Geo::GDAL::RasterAttributeTable
 # @brief An attribute table in a raster band.
-# @details 
+# @details
 # @isa = ( Geo::GDAL::MajorObject Geo::GDAL )
 
 ## @cmethod Geo::GDAL::RasterAttributeTable new()
@@ -1537,7 +1538,7 @@ Geo::GDAL::Driver('PNG')->Copy(Name => 'test.png', Src => $d->Dither->Dataset);
 
 ## @class Geo::GDAL::VSIF
 # @brief A GDAL virtual file system.
-# @details 
+# @details
 # @isa = ( Geo::GDAL )
 
 ## @sub Geo::GDAL::VSIF Open($filename, $mode)

@@ -27,6 +27,7 @@
  ****************************************************************************/
 
 #include "ogr_plscenes.h"
+#include "ogrgeojsonreader.h"
 #include <algorithm>
 
 CPL_CVSID("$Id$");
@@ -88,39 +89,42 @@ static bool OGRPLScenesLayerFieldNameComparator(const CPLString& osFirst,
 /*                           OGRPLScenesLayer()                         */
 /************************************************************************/
 
-OGRPLScenesLayer::OGRPLScenesLayer(OGRPLScenesDataset* poDSIn,
-                                   const char* pszName,
-                                   const char* pszBaseURL,
-                                   json_object* poObjCount10)
+OGRPLScenesLayer::OGRPLScenesLayer( OGRPLScenesDataset* poDSIn,
+                                    const char* pszName,
+                                    const char* pszBaseURL,
+                                    json_object* poObjCount10 ) :
+    poDS(poDSIn),
+    osBaseURL(pszBaseURL),
+    poFeatureDefn(new OGRFeatureDefn(pszName)),
+    poSRS(new OGRSpatialReference(SRS_WKT_WGS84)),
+    bEOF(FALSE),
+    nNextFID(1),
+    nFeatureCount(-1),
+    poGeoJSONDS(NULL),
+    poGeoJSONLayer(NULL),
+    poMainFilter(NULL),
+    nPageSize(atoi(CPLGetConfigOption("PLSCENES_PAGE_SIZE", "1000"))),
+    bStillInFirstPage(FALSE),
+    bAcquiredAscending(-1),
+    bFilterMustBeClientSideEvaluated(FALSE)
 {
-    poDS = poDSIn;
-    osBaseURL = pszBaseURL;
     SetDescription(pszName);
-    poFeatureDefn = new OGRFeatureDefn(pszName);
     poFeatureDefn->SetGeomType(wkbMultiPolygon);
-    for(int i = 0; i < (int)sizeof(apsAttrs) / (int)sizeof(apsAttrs[0]); i++)
+    for( int i = 0;
+         i < static_cast<int>(sizeof(apsAttrs)) /
+             static_cast<int>(sizeof(apsAttrs[0]));
+         i++ )
     {
         OGRFieldDefn oField(apsAttrs[i].pszName, apsAttrs[i].eType);
         poFeatureDefn->AddFieldDefn(&oField);
     }
     poFeatureDefn->Reference();
-    poSRS = new OGRSpatialReference(SRS_WKT_WGS84);
     poFeatureDefn->GetGeomFieldDefn(0)->SetSpatialRef(poSRS);
-    bEOF = FALSE;
-    nFeatureCount = -1;
-    nNextFID = 1;
-    poGeoJSONDS = NULL;
-    poGeoJSONLayer = NULL;
-    poMainFilter = NULL;
-    nPageSize = atoi(CPLGetConfigOption("PLSCENES_PAGE_SIZE", "1000"));
-    bStillInFirstPage = FALSE;
-    bAcquiredAscending = -1;
-    bFilterMustBeClientSideEvaluated = FALSE;
     ResetReading();
 
     if( poObjCount10 != NULL )
     {
-        json_object* poCount = json_object_object_get(poObjCount10, "count");
+        json_object* poCount = CPL_json_object_object_get(poObjCount10, "count");
         if( poCount != NULL )
             nFeatureCount = MAX(0, json_object_get_int64(poCount));
 
@@ -382,7 +386,7 @@ int OGRPLScenesLayer::GetNextPage()
 
     if( !bFilterMustBeClientSideEvaluated && nFeatureCount < 0 )
     {
-        json_object* poType = json_object_object_get(poObj, "type");
+        json_object* poType = CPL_json_object_object_get(poObj, "type");
         if( poType && json_object_get_type(poType) == json_type_string &&
             strcmp(json_object_get_string(poType), "Feature") == 0 )
         {
@@ -390,7 +394,7 @@ int OGRPLScenesLayer::GetNextPage()
         }
         else
         {
-            json_object* poCount = json_object_object_get(poObj, "count");
+            json_object* poCount = CPL_json_object_object_get(poObj, "count");
             if( poCount == NULL )
             {
                 json_object_put(poObj);
@@ -413,10 +417,10 @@ int OGRPLScenesLayer::GetNextPage()
     osNextURL = "";
     if( poGeoJSONLayer )
     {
-        json_object* poLinks = json_object_object_get(poObj, "links");
+        json_object* poLinks = CPL_json_object_object_get(poObj, "links");
         if( poLinks && json_object_get_type(poLinks) == json_type_object )
         {
-            json_object* poNext = json_object_object_get(poLinks, "next");
+            json_object* poNext = CPL_json_object_object_get(poLinks, "next");
             if( poNext && json_object_get_type(poNext) == json_type_string )
             {
                 osNextURL = json_object_get_string(poNext);
@@ -642,7 +646,7 @@ GIntBig OGRPLScenesLayer::GetFeatureCount(int bForce)
             json_object* poObj = poDS->RunRequest(osURL);
             if( poObj != NULL )
             {
-                json_object* poCount = json_object_object_get(poObj, "count");
+                json_object* poCount = CPL_json_object_object_get(poObj, "count");
                 if( poCount != NULL )
                     nFeatureCount = MAX(0, json_object_get_int64(poCount));
 
