@@ -123,6 +123,14 @@
 #endif
 #endif
 
+/* Needed for std=c11 on Solaris to have strcasecmp() */
+#if defined(GDAL_COMPILATION) && defined(__sun__) && __STDC_VERSION__ >= 201112L && _XOPEN_SOURCE < 600
+#ifdef _XOPEN_SOURCE
+#undef _XOPEN_SOURCE
+#endif
+#define _XOPEN_SOURCE 600
+#endif
+
 /* ==================================================================== */
 /*      Standard include files.                                         */
 /* ==================================================================== */
@@ -611,7 +619,7 @@ static inline char* CPL_afl_friendly_strstr(const char* haystack, const char* ne
 #  define CPLIsNan(x) _isnan(x)
 #  define CPLIsInf(x) (!_isnan(x) && !_finite(x))
 #  define CPLIsFinite(x) _finite(x)
-#elif defined(HAVE_CXX11) && HAVE_CXX11 && defined(__GNUC__)
+#elif defined(__GNUC__) && ( __GNUC__ > 4 || ( __GNUC__ == 4 && __GNUC_MINOR__ >= 4 ) )
 /* When including <cmath> in C++11 the isnan() macro is undefined, so that */
 /* std::isnan() can work (#6489). This is a GCC specific workaround for now. */
 #  define CPLIsNan(x)    __builtin_isnan(x)
