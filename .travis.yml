@@ -16,7 +16,7 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install -y debootstrap
   - export LC_ALL=en_US
-  - sudo debootstrap --arch=precise "$chroot"
+  - sudo debootstrap xenial "$chroot"
   - sudo mount --rbind "$PWD" "$chroot$PWD"
   - sudo mount --rbind /dev/pts "$chroot/dev/pts"
   - sudo mount --rbind /proc "$chroot/proc"
