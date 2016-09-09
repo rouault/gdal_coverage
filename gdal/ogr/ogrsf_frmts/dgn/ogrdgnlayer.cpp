@@ -399,11 +399,11 @@ OGRFeature *OGRDGNLayer::ElementToFeature( DGNElemCore *psElement )
 /* -------------------------------------------------------------------- */
 /*      Lookup color.                                                   */
 /* -------------------------------------------------------------------- */
-    int gv_red;
-    int gv_green;
-    int gv_blue;
+    int gv_red = 0;
+    int gv_green = 0;
+    int gv_blue = 0;
 
-    char szFSColor[128];
+    char szFSColor[128] = {};
     szFSColor[0] = '\0';
     if( DGNLookupColor( hDGN, psElement->color,
                         &gv_red, &gv_green, &gv_blue ) )
@@ -790,8 +790,8 @@ GIntBig OGRDGNLayer::GetFeatureCount( int bForce )
 /* -------------------------------------------------------------------- */
 /*      Otherwise scan the index.                                       */
 /* -------------------------------------------------------------------- */
-    int nElementCount;
-    const DGNElementInfo *pasIndex = DGNGetElementIndex(hDGN,&nElementCount);
+    int nElementCount = 0;
+    const DGNElementInfo *pasIndex = DGNGetElementIndex(hDGN, &nElementCount);
 
     int nFeatureCount = 0;
     bool bInComplexShape = false;
@@ -809,13 +809,13 @@ GIntBig OGRDGNLayer::GetFeatureCount( int bForce )
             if( !(pasIndex[i].flags & DGNEIF_COMPLEX) || !bInComplexShape )
             {
                 nFeatureCount++;
-                bInComplexShape = FALSE;
+                bInComplexShape = false;
             }
             break;
 
           case DGNST_COMPLEX_HEADER:
             nFeatureCount++;
-            bInComplexShape = TRUE;
+            bInComplexShape = true;
             break;
 
           default:
