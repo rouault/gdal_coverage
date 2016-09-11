@@ -235,6 +235,12 @@ def vrtderived_6():
 
 def vrtderived_7():
 
+    # wine doesn't implement EnumProcessModulesEx API
+    if 'TRAVIS_BRANCH' in os.environ:
+        val = os.environ['TRAVIS_BRANCH']
+        if val.find('mingw_w64') >= 0:
+            return 'skip'
+
     import test_cli_utilities
     if test_cli_utilities.get_gdalinfo_path() is None:
         return 'skip'
@@ -314,7 +320,7 @@ def vrtderived_9():
     <ColorInterp>Gray</ColorInterp>
     <PixelFunctionType>identity</PixelFunctionType>
     <PixelFunctionCode><![CDATA[
-def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
     syntax_error
 ]]>
      </PixelFunctionCode>
@@ -360,7 +366,7 @@ def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
     <PixelFunctionType>identity</PixelFunctionType>
     <PixelFunctionLanguage>Python</PixelFunctionLanguage>
     <PixelFunctionCode><![CDATA[
-def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
 syntax_error
 ]]>
     </PixelFunctionCode>
@@ -382,7 +388,7 @@ syntax_error
     <PixelFunctionType>identity</PixelFunctionType>
     <PixelFunctionLanguage>Python</PixelFunctionLanguage>
     <PixelFunctionCode><![CDATA[
-def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
     runtime_error
 ]]>
     </PixelFunctionCode>
@@ -404,7 +410,7 @@ def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
     <PixelFunctionType>identity</PixelFunctionType>
     <PixelFunctionLanguage>Python</PixelFunctionLanguage>
     <PixelFunctionCode><![CDATA[
-def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
     raise Exception('my exception')
 ]]>
     </PixelFunctionCode>
@@ -426,7 +432,7 @@ def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
     <PixelFunctionType>unknown_function</PixelFunctionType>
     <PixelFunctionLanguage>Python</PixelFunctionLanguage>
     <PixelFunctionCode><![CDATA[
-def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
     pass
 ]]>
     </PixelFunctionCode>
@@ -448,7 +454,7 @@ def identity(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
     <PixelFunctionType>my_func</PixelFunctionType>
     <PixelFunctionLanguage>Python</PixelFunctionLanguage>
     <PixelFunctionCode><![CDATA[
-def my_func(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def my_func(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
     import foo
 ]]>
     </PixelFunctionCode>
@@ -470,7 +476,7 @@ def my_func(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
     <PixelFunctionType>my_func</PixelFunctionType>
     <PixelFunctionLanguage>Python</PixelFunctionLanguage>
     <PixelFunctionCode><![CDATA[
-def my_func(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def my_func(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
     open('/etc/passwd').read()
 ]]>
     </PixelFunctionCode>
@@ -527,7 +533,7 @@ def my_func(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
 ###############################################################################
 # Check Python function in another module
 
-def one_pix_func(in_ar, out_ar, xoff, yoff, xsize, ysize, r, gt, **kwargs):
+def one_pix_func(in_ar, out_ar, xoff, yoff, xsize, ysize, raster_xsize, raster_ysize, r, gt, **kwargs):
     out_ar.fill(1)
 
 def vrtderived_10():
