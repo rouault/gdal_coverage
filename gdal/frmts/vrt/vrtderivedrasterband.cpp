@@ -1340,10 +1340,10 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                      "CInt16/CInt32 data type not supported for SourceTransferType");
             goto end;
         }
-        GDALDataType eBufTypeModified = eBufType;
+        GDALDataType eDataTypeModified = eDataType;
         if( eBufType == GDT_CInt16 || eBufType == GDT_CInt32 )
         {
-            eBufTypeModified = GDT_CFloat64;
+            eDataTypeModified = GDT_CFloat64;
         }
 
         if( !InitializePython() )
@@ -1351,7 +1351,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
 
         GByte* pabyTmpBuffer = reinterpret_cast<GByte*>(VSI_CALLOC_VERBOSE(
                         static_cast<size_t>(nExtBufXSize) * nExtBufYSize,
-                        GDALGetDataTypeSizeBytes(eBufTypeModified)));
+                        GDALGetDataTypeSizeBytes(eDataTypeModified)));
         if( !pabyTmpBuffer )
             goto end;
 
@@ -1362,7 +1362,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         PyObject* poPyDstArray = GDALCreateNumpyArray(
                                     m_poPrivate->m_poGDALCreateNumpyArray,
                                     pabyTmpBuffer,
-                                    eBufTypeModified,
+                                    eDataTypeModified,
                                     nExtBufYSize,
                                     nExtBufXSize);
         if( !poPyDstArray )
@@ -1387,16 +1387,14 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         }
 
         // Create arguments
-        PyObject* pyArgs = PyTuple_New(10);
+        PyObject* pyArgs = PyTuple_New(8);
         PyTuple_SetItem(pyArgs, 0, pyArgInputArray);
         PyTuple_SetItem(pyArgs, 1, poPyDstArray);
         PyTuple_SetItem(pyArgs, 2, PyInt_FromLong(nXOff));
         PyTuple_SetItem(pyArgs, 3, PyInt_FromLong(nYOff));
         PyTuple_SetItem(pyArgs, 4, PyInt_FromLong(nXSize));
         PyTuple_SetItem(pyArgs, 5, PyInt_FromLong(nYSize));
-        PyTuple_SetItem(pyArgs, 6, PyInt_FromLong(nRasterXSize));
-        PyTuple_SetItem(pyArgs, 7, PyInt_FromLong(nRasterYSize));
-        PyTuple_SetItem(pyArgs, 8, PyInt_FromLong(nBufferRadius));
+        PyTuple_SetItem(pyArgs, 6, PyInt_FromLong(nBufferRadius));
 
         double adfGeoTransform[6];
         adfGeoTransform[0] = 0;
@@ -1410,7 +1408,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         PyObject* pyGT = PyTuple_New(6);
         for(int i = 0; i < 6; i++ )
             PyTuple_SetItem(pyGT, i, PyFloat_FromDouble(adfGeoTransform[i]));
-        PyTuple_SetItem(pyArgs, 9, pyGT);
+        PyTuple_SetItem(pyArgs, 7, pyGT);
 
         // Prepare kwargs
         PyObject* pyKwargs = PyDict_New();
@@ -1451,10 +1449,10 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         {
             size_t nSrcOffset = (static_cast<size_t>(iY + nBufferRadius) *
                 nExtBufXSize + nBufferRadius) *
-                GDALGetDataTypeSizeBytes(eBufTypeModified);
+                GDALGetDataTypeSizeBytes(eDataTypeModified);
             GDALCopyWords(pabyTmpBuffer + nSrcOffset,
-                          eBufTypeModified,
-                          GDALGetDataTypeSizeBytes(eBufTypeModified),
+                          eDataTypeModified,
+                          GDALGetDataTypeSizeBytes(eDataTypeModified),
                           reinterpret_cast<GByte*>(pData) + iY * nLineSpace,
                           eBufType,
                           static_cast<int>(nPixelSpace),
