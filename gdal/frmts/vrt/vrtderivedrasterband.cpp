@@ -866,7 +866,11 @@ bool VRTDerivedRasterBand::InitializePython()
         // Reject all imports except a few trusted modules
         const char* const apszTrustedImports[] = {
                 "import math",
+                "from math import",
                 "import numpy", // caution: numpy has lots of I/O functions !
+                "from numpy import",
+                // TODO: not sure if importing arbitrary stuff from numba is OK
+                // so let's just restrict to jit.
                 "from numba import jit" };
         for( size_t i = 0; i < CPL_ARRAYSIZE(apszTrustedImports); ++i )
         {
@@ -994,6 +998,7 @@ bool VRTDerivedRasterBand::InitializePython()
         {
             CPLError(CE_Failure, CPLE_AppDefined,
                  "%s", GetPyExceptionString().c_str());
+            Py_DecRef(poModule);
             return false;
         }
         m_poPrivate->m_poUserFunction = PyObject_GetAttrString(poUserModule,
@@ -1014,8 +1019,8 @@ bool VRTDerivedRasterBand::InitializePython()
     }
     if( !PyCallable_Check(m_poPrivate->m_poUserFunction) )
     {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "%s", GetPyExceptionString().c_str());
+        CPLError(CE_Failure, CPLE_AppDefined, "Object '%s' is not callable",
+                 osPythonFunction.c_str());
         Py_DecRef(poModule);
         return false;
     }
@@ -1025,6 +1030,7 @@ bool VRTDerivedRasterBand::InitializePython()
         PyObject_GetAttrString(poModule, "GDALCreateNumpyArray" );
     if (m_poPrivate->m_poGDALCreateNumpyArray == NULL || PyErr_Occurred())
     {
+        // Shouldn't happen normally...
         CPLError(CE_Failure, CPLE_AppDefined,
                  "%s", GetPyExceptionString().c_str());
         Py_DecRef(poModule);
