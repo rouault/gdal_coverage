@@ -286,9 +286,9 @@ static bool LoadPythonAPI()
             // Otherwise probe a few known objects
             const char* const apszPythonSO[] = { "libpython2.7." SO_EXT,
                                                  "libpython2.6." SO_EXT,
-                                                 "libpython3.4." SO_EXT,
-                                                 "libpython3.5." SO_EXT,
-                                                 "libpython3.6." SO_EXT,
+                                                 "libpython3.4m." SO_EXT,
+                                                 "libpython3.5m." SO_EXT,
+                                                 "libpython3.6m." SO_EXT,
                                                  "libpython3.3." SO_EXT,
                                                  "libpython3.2." SO_EXT };
             for( size_t i = 0; libHandle == NULL &&
@@ -868,14 +868,23 @@ bool VRTDerivedRasterBand::InitializePython()
             osCode.replaceAll(CPLString("import ") + apszTrustedModules[i], "");
         }
 
-        // Some dangerous built-in functions
+        // Some dangerous built-in functions or numpy functions
         const char* const apszUntrusted[] = { "import", // and __import__
                                               "eval",
                                               "compile",
                                               "open",
-                                              "reload",
-                                              "file", // and exec_file
+                                              "load", // reload, numpy.load
+                                              "file", // and exec_file, numpy.fromfile, numpy.tofile
                                               "input", // and raw_input
+                                              "save", // numpy.save
+                                              "memmap", // numpy.memmap
+                                              "DataSource", // numpy.DataSource
+                                              "genfromtxt", // numpy.genfromtxt
+                                              "getattr",
+                                              "ctypeslib", // numpy.ctypeslib
+                                              "testing", // numpy.testing
+                                              "dump", // numpy.ndarray.dump
+                                              "fromregex", // numpy.fromregex
                                              };
         for( size_t i = 0; i < CPL_ARRAYSIZE(apszUntrusted); ++i )
         {
@@ -1462,7 +1471,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         }
         VSIFree(pabyTmpBuffer);
     }
-    else if( eErr == CE_None ) {
+    else if( eErr == CE_None && pfnPixelFunc != NULL ) {
         eErr = pfnPixelFunc( reinterpret_cast<void **>( pBuffers ), nSources,
                              pData, nBufXSize, nBufYSize,
                              eSrcType, eBufType, static_cast<int>(nPixelSpace),
