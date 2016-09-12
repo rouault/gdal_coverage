@@ -5,7 +5,8 @@ platform:
 shallow_clone: true
 
 install:
-- set PATH=C:\Miniconda;C:\Miniconda\Scripts;%PATH%
+- if "%platform%" == "x86" set PATH=C:\Miniconda;C:\Miniconda\Scripts;%PATH%
+- if "%platform%" == "x64" set PATH=C:\Miniconda-x64;C:\Miniconda-x64\Scripts;%PATH%
 - conda config --set always_yes yes --set changeps1 no
 - conda update -q conda
 - conda info -a
