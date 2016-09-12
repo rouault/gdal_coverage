@@ -868,14 +868,22 @@ bool VRTDerivedRasterBand::InitializePython()
             osCode.replaceAll(CPLString("import ") + apszTrustedModules[i], "");
         }
 
-        // Some dangerous built-in functions
+        // Some dangerous built-in functions or numpy functions
         const char* const apszUntrusted[] = { "import", // and __import__
                                               "eval",
                                               "compile",
                                               "open",
-                                              "reload",
-                                              "file", // and exec_file
+                                              "load", // reload, numpy.load
+                                              "file", // and exec_file, numpy.fromfile, numpy.tofile
                                               "input", // and raw_input
+                                              "save", // numpy.save
+                                              "memmap", // numpy.memmap
+                                              "DataSource", // numpy.DataSource
+                                              "genfromtxt", // numpy.genfromtxt
+                                              "getattr",
+                                              "ctypeslib", // numpy.ctypeslib
+                                              "testing", // numpy.testing
+                                              "dump", // numpy.ndarray.dump
                                              };
         for( size_t i = 0; i < CPL_ARRAYSIZE(apszUntrusted); ++i )
         {
