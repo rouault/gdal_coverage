@@ -5,8 +5,14 @@ platform:
 shallow_clone: true
 
 install:
-- if "%platform%" == "x86" SET PATH=c:\python27;%PATH%
-- if "%platform%" == "x64" SET PATH=c:\Python27-x64;%PATH%
+- "set PATH=C:\Miniconda;C:\Miniconda\\Scripts;%PATH%"
+- conda config --set always_yes yes --set changeps1 no
+- conda update -q conda
+- conda info -a
+- "conda create -q -n test-environment python=2.7 numpy "
+- activate test-environment
+#- if "%platform%" == "x86" SET PATH=c:\python27;%PATH%
+#- if "%platform%" == "x64" SET PATH=c:\Python27-x64;%PATH%
 - if "%platform%" == "x86" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat"
 - if "%platform%" == "x64" "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
 - if "%platform%" == "x64" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_amd64
