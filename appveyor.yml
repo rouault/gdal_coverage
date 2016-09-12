@@ -5,11 +5,11 @@ platform:
 shallow_clone: true
 
 install:
-- "set PATH=C:\Miniconda;C:\Miniconda\\Scripts;%PATH%"
+- set PATH=C:\Miniconda;C:\Miniconda\Scripts;%PATH%
 - conda config --set always_yes yes --set changeps1 no
 - conda update -q conda
 - conda info -a
-- "conda create -q -n test-environment python=2.7 numpy "
+- conda create -q -n test-environment python=2.7 numpy
 - activate test-environment
 #- if "%platform%" == "x86" SET PATH=c:\python27;%PATH%
 #- if "%platform%" == "x64" SET PATH=c:\Python27-x64;%PATH%
