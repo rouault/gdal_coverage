@@ -238,7 +238,17 @@ static bool LoadPythonAPI()
 
     const char* pszPythonSO = CPLGetConfigOption("PYTHONSO", NULL);
 #if defined(HAVE_DLFCN_H) && !defined(WIN32)
-    if( pszPythonSO != NULL )
+
+    // First try in the current process in case the python symbols would
+    // be already loaded
+    libHandle = dlopen(NULL, RTLD_LAZY);
+    if( libHandle != NULL &&
+        dlsym(libHandle, "Py_SetProgramName") != NULL )
+    {
+        CPLDebug("VRT", "Current process has python symbols loaded");
+    }
+    // Then try the user provided shared object name
+    else if( pszPythonSO != NULL )
     {
         // coverity[tainted_string]
         libHandle = dlopen(pszPythonSO, RTLD_NOW | RTLD_GLOBAL);
@@ -259,16 +269,6 @@ static bool LoadPythonAPI()
     }
     else
     {
-        libHandle = dlopen(NULL, RTLD_LAZY);
-        // First try in the current process in case the python interpret would
-        // be already loaded
-        if( libHandle != NULL &&
-            dlsym(libHandle, "Py_SetProgramName") != NULL )
-        {
-            CPLDebug("VRT", "Current process has python symbols loaded");
-        }
-        else
-        {
 #if defined(__MACH__) && defined(__APPLE__)
 #define SO_EXT "dylib"
 #else
@@ -276,35 +276,56 @@ static bool LoadPythonAPI()
 #endif
 
 #ifdef PYTHONSO_DEFAULT
-            libHandle = dlopen(PYTHONSO_DEFAULT, RTLD_NOW | RTLD_GLOBAL);
-            if( !libHandle )
-            {
-                CPLDebug("VRT", "%s found", PYTHONSO_DEFAULT);
-            }
+        libHandle = dlopen(PYTHONSO_DEFAULT, RTLD_NOW | RTLD_GLOBAL);
+        if( !libHandle )
+        {
+            CPLDebug("VRT", "%s found", PYTHONSO_DEFAULT);
+        }
 #else
-            libHandle = NULL;
+        libHandle = NULL;
 #endif
 
-            // Otherwise probe a few known objects
-            const char* const apszPythonSO[] = { "libpython2.7." SO_EXT,
-                                                 "libpython2.6." SO_EXT,
-                                                 "libpython3.4m." SO_EXT,
-                                                 "libpython3.5m." SO_EXT,
-                                                 "libpython3.6m." SO_EXT,
-                                                 "libpython3.3." SO_EXT,
-                                                 "libpython3.2." SO_EXT };
-            for( size_t i = 0; libHandle == NULL &&
-                                i < CPL_ARRAYSIZE(apszPythonSO); ++i )
-            {
-                CPLDebug("VRT", "Trying %s", apszPythonSO[i]);
-                libHandle = dlopen(apszPythonSO[i], RTLD_NOW | RTLD_GLOBAL);
-                if( libHandle != NULL )
-                    CPLDebug("VRT", "... success");
-            }
+        // Otherwise probe a few known objects
+        const char* const apszPythonSO[] = { "libpython2.7." SO_EXT,
+                                                "libpython2.6." SO_EXT,
+                                                "libpython3.4m." SO_EXT,
+                                                "libpython3.5m." SO_EXT,
+                                                "libpython3.6m." SO_EXT,
+                                                "libpython3.3." SO_EXT,
+                                                "libpython3.2." SO_EXT };
+        for( size_t i = 0; libHandle == NULL &&
+                            i < CPL_ARRAYSIZE(apszPythonSO); ++i )
+        {
+            CPLDebug("VRT", "Trying %s", apszPythonSO[i]);
+            libHandle = dlopen(apszPythonSO[i], RTLD_NOW | RTLD_GLOBAL);
+            if( libHandle != NULL )
+                CPLDebug("VRT", "... success");
         }
     }
 #elif defined(WIN32)
-    if( pszPythonSO != NULL )
+
+    // First try in the current process in case the python symbols would
+    // be already loaded
+    HANDLE hProcess = GetCurrentProcess();
+    HMODULE ahModules[100];
+    DWORD nSizeNeeded = 0;
+
+    EnumProcessModules(hProcess, ahModules, sizeof(ahModules),
+                        &nSizeNeeded);
+
+    int nModules = MIN(100, nSizeNeeded / sizeof(HMODULE));
+    for(int i=0;i<nModules;i++)
+    {
+        if( GetProcAddress(ahModules[i], "Py_SetProgramName") )
+        {
+            libHandle = ahModules[i];
+            CPLDebug("VRT", "Current process has python symbols loaded");
+            break;
+        }
+    }
+
+    // Then try the user provided shared object name
+    if( libHandle == NULL && pszPythonSO != NULL )
     {
         UINT        uOldErrorMode;
         /* Avoid error boxes to pop up (#5211, #5525) */
@@ -328,57 +349,35 @@ static bool LoadPythonAPI()
             return false;
         }
     }
-    else
+    // Otherwise probe a few known objects
+    else if( libHandle == NULL )
     {
-        HANDLE hProcess = GetCurrentProcess();
-        HMODULE ahModules[100];
-        DWORD nSizeNeeded = 0;
-#if defined(_M_X64)
-        EnumProcessModulesEx(hProcess, ahModules, sizeof(ahModules),
-                             &nSizeNeeded, LIST_MODULES_DEFAULT);
-#else
-        EnumProcessModules(hProcess, ahModules, sizeof(ahModules),
-                           &nSizeNeeded);
-#endif
-        int nModules = MIN(100, nSizeNeeded / sizeof(HMODULE));
-        for(int i=0;i<nModules;i++)
-        {
-            if( GetProcAddress(ahModules[i], "Py_SetProgramName") )
-            {
-                libHandle = ahModules[i];
-                CPLDebug("VRT", "Current process has python symbols loaded");
-                break;
-            }
-        }
-        if( libHandle == NULL )
-        {
-            const char* const apszPythonSO[] = { "python27.dll",
-                                                "python26.dll",
-                                                "python34.dll",
-                                                "python35.dll",
-                                                "python36.dll",
-                                                "python33.dll",
-                                                "python32.dll" };
-            UINT        uOldErrorMode;
-            uOldErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX |
-                                         SEM_FAILCRITICALERRORS);
+        const char* const apszPythonSO[] = { "python27.dll",
+                                            "python26.dll",
+                                            "python34.dll",
+                                            "python35.dll",
+                                            "python36.dll",
+                                            "python33.dll",
+                                            "python32.dll" };
+        UINT        uOldErrorMode;
+        uOldErrorMode = SetErrorMode(SEM_NOOPENFILEERRORBOX |
+                                        SEM_FAILCRITICALERRORS);
 #ifdef PYTHONSO_DEFAULT
-            libHandle = LoadLibrary(PYTHONSO_DEFAULT);
-            if( !libHandle )
-            {
-                CPLDebug("VRT", "%s found", PYTHONSO_DEFAULT);
-            }
-#endif
-            for( size_t i = 0; libHandle == NULL &&
-                                i < CPL_ARRAYSIZE(apszPythonSO); ++i )
-            {
-                CPLDebug("VRT", "Trying %s", apszPythonSO[i]);
-                libHandle = LoadLibrary(apszPythonSO[i]);
-                if( libHandle != NULL )
-                    CPLDebug("VRT", "... success");
-            }
-            SetErrorMode(uOldErrorMode);
+        libHandle = LoadLibrary(PYTHONSO_DEFAULT);
+        if( !libHandle )
+        {
+            CPLDebug("VRT", "%s found", PYTHONSO_DEFAULT);
         }
+#endif
+        for( size_t i = 0; libHandle == NULL &&
+                            i < CPL_ARRAYSIZE(apszPythonSO); ++i )
+        {
+            CPLDebug("VRT", "Trying %s", apszPythonSO[i]);
+            libHandle = LoadLibrary(apszPythonSO[i]);
+            if( libHandle != NULL )
+                CPLDebug("VRT", "... success");
+        }
+        SetErrorMode(uOldErrorMode);
     }
 #endif
     if( !libHandle )
@@ -1398,10 +1397,11 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                      "CInt16/CInt32 data type not supported for SourceTransferType");
             goto end;
         }
-        GDALDataType eDataTypeModified = eDataType;
-        if( eBufType == GDT_CInt16 || eBufType == GDT_CInt32 )
+        if( eDataType == GDT_CInt16 || eDataType == GDT_CInt32 )
         {
-            eDataTypeModified = GDT_CFloat64;
+            CPLError(CE_Failure, CPLE_AppDefined,
+                     "CInt16/CInt32 data type not supported for data type");
+            goto end;
         }
 
         if( !InitializePython() )
@@ -1409,7 +1409,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
 
         GByte* pabyTmpBuffer = reinterpret_cast<GByte*>(VSI_CALLOC_VERBOSE(
                         static_cast<size_t>(nExtBufXSize) * nExtBufYSize,
-                        GDALGetDataTypeSizeBytes(eDataTypeModified)));
+                        GDALGetDataTypeSizeBytes(eDataType)));
         if( !pabyTmpBuffer )
             goto end;
 
@@ -1424,7 +1424,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         PyObject* poPyDstArray = GDALCreateNumpyArray(
                                     m_poPrivate->m_poGDALCreateNumpyArray,
                                     pabyTmpBuffer,
-                                    eDataTypeModified,
+                                    eDataType,
                                     nExtBufYSize,
                                     nExtBufXSize);
         if( !poPyDstArray )
@@ -1513,10 +1513,10 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         {
             size_t nSrcOffset = (static_cast<size_t>(iY + nBufferRadius) *
                 nExtBufXSize + nBufferRadius) *
-                GDALGetDataTypeSizeBytes(eDataTypeModified);
+                GDALGetDataTypeSizeBytes(eDataType);
             GDALCopyWords(pabyTmpBuffer + nSrcOffset,
-                          eDataTypeModified,
-                          GDALGetDataTypeSizeBytes(eDataTypeModified),
+                          eDataType,
+                          GDALGetDataTypeSizeBytes(eDataType),
                           reinterpret_cast<GByte*>(pData) + iY * nLineSpace,
                           eBufType,
                           static_cast<int>(nPixelSpace),
