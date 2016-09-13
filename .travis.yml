@@ -124,7 +124,8 @@ script:
 # Compile and test vsipreload
   - make vsipreload.so
   - LD_PRELOAD=./vsipreload.so gdalinfo /vsicurl/http://download.osgeo.org/gdal/data/ecw/spif83.ecw
-  - LD_PRELOAD=./vsipreload.so sqlite3  /vsicurl/http://download.osgeo.org/gdal/data/sqlite3/polygon.db "select * from polygon limit 10"
+  - sudo apt-get install -y valgrind
+  - LD_PRELOAD=./vsipreload.so valgrind sqlite3  /vsicurl/http://download.osgeo.org/gdal/data/sqlite3/polygon.db "select * from polygon limit 10"
   - cd ..
 # Download a sample file
   - mkdir -p ogr/tmp/cache/
