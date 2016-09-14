@@ -488,7 +488,7 @@ static CPLString GetPyExceptionString()
         "    except:\n"
         "       return (str(etype) + ', ' + str(value)).encode('UTF-8')\n");
 
-    CPLString osRet("An exception occured in exception formatting code...");
+    CPLString osRet("An exception occurred in exception formatting code...");
 
     static int nCounter = 0;
     CPLString osModuleName( CPLSPrintf("gdal_exception_%d", nCounter));
@@ -529,7 +529,7 @@ static CPLString GetPyExceptionString()
 
         if( PyErr_Occurred() )
         {
-            osRet = "An exception occured in exception formatting code...";
+            osRet = "An exception occurred in exception formatting code...";
             PyErr_Print();
         }
         else
@@ -1601,7 +1601,7 @@ CPLErr VRTDerivedRasterBand::XMLInit( CPLXMLNode *psTree,
                         atoi(CPLGetXMLValue( psTree, "BufferRadius", "0" ));
     if( m_poPrivate->m_nBufferRadius < 0 )
     {
-        CPLError(CE_Failure, CPLE_AppDefined, "Invalid Buffer");
+        CPLError(CE_Failure, CPLE_AppDefined, "Invalid value for BufferRadius");
         return CE_Failure;
     }
     if( m_poPrivate->m_nBufferRadius != 0 &&
