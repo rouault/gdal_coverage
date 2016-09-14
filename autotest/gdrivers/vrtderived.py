@@ -32,6 +32,7 @@
 import os
 import shutil
 import sys
+import threading
 from osgeo import gdal
 
 sys.path.append( '../pymod' )
@@ -671,50 +672,38 @@ def vrtderived_10():
         print(gdal.GetLastErrorMsg())
         return 'fail'
 
-    # GDAL_VRT_PYTHON_TRUSTED_MODULES defined but not including our module
-    ds = gdal.Open(content)
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', "foo")
-    with gdaltest.error_handler():
+    # GDAL_VRT_PYTHON_TRUSTED_MODULES *NOT* matching our module
+    for val in [ 'vrtderive',
+                 'vrtderivedX',
+                 'vrtderivedX*',
+                 'vrtderive.*'
+                 'vrtderivedX.*' ] :
+        ds = gdal.Open(content)
+        gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', val )
+        with gdaltest.error_handler():
+            cs = ds.GetRasterBand(1).Checksum()
+        gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', None)
+        if cs != 0:
+            gdaltest.post_reason( 'invalid checksum' )
+            print(cs)
+            print(gdal.GetLastErrorMsg())
+            return 'fail'
+
+    # GDAL_VRT_PYTHON_TRUSTED_MODULES matching our module
+    for val in [ 'foo,vrtderived,bar',
+                  '*',
+                 'foo,vrtderived*,bar',
+                 'foo,vrtderived.*,bar',
+                 'foo,vrtderi*,bar' ] :
+        ds = gdal.Open(content)
+        gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', val )
         cs = ds.GetRasterBand(1).Checksum()
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', None)
-    if cs != 0:
-        gdaltest.post_reason( 'invalid checksum' )
-        print(cs)
-        print(gdal.GetLastErrorMsg())
-        return 'fail'
-
-    # GDAL_VRT_PYTHON_TRUSTED_MODULES defined and including our module
-    ds = gdal.Open(content)
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', "foo,vrtderived,bar")
-    cs = ds.GetRasterBand(1).Checksum()
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', None)
-    if cs != 100:
-        gdaltest.post_reason( 'invalid checksum' )
-        print(cs)
-        print(gdal.GetLastErrorMsg())
-        return 'fail'
-
-    # GDAL_VRT_PYTHON_TRUSTED_MODULES defined and including our module with .*
-    ds = gdal.Open(content)
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', "foo,vrtderived.*,bar")
-    cs = ds.GetRasterBand(1).Checksum()
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', None)
-    if cs != 100:
-        gdaltest.post_reason( 'invalid checksum' )
-        print(cs)
-        print(gdal.GetLastErrorMsg())
-        return 'fail'
-
-    # GDAL_VRT_PYTHON_TRUSTED_MODULES defined and including our module with *
-    ds = gdal.Open(content)
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', "foo,vrtderi*,bar")
-    cs = ds.GetRasterBand(1).Checksum()
-    gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', None)
-    if cs != 100:
-        gdaltest.post_reason( 'invalid checksum' )
-        print(cs)
-        print(gdal.GetLastErrorMsg())
-        return 'fail'
+        gdal.SetConfigOption('GDAL_VRT_PYTHON_TRUSTED_MODULES', None)
+        if cs != 100:
+            gdaltest.post_reason( 'invalid checksum' )
+            print(cs)
+            print(gdal.GetLastErrorMsg())
+            return 'fail'
 
     return 'success'
 
@@ -876,6 +865,57 @@ def vrtderived_14():
     return 'success'
 
 ###############################################################################
+# Test threading
+
+def vrtderived_15_worker(args_dict):
+
+    content = """<VRTDataset rasterXSize="2000" rasterYSize="2000">
+  <VRTRasterBand dataType="Byte" band="1" subClass="VRTDerivedRasterBand">
+    <ColorInterp>Gray</ColorInterp>
+    <PixelFunctionType>vrtderived.one_pix_func</PixelFunctionType>
+    <PixelFunctionLanguage>Python</PixelFunctionLanguage>
+  </VRTRasterBand>
+</VRTDataset>
+"""
+    ds = gdal.Open(content)
+    for j in range(5):
+        cs = ds.GetRasterBand(1).Checksum()
+        if cs != 2304:
+            print(cs)
+            args_dict['ret'] = False
+        ds.FlushCache()
+
+def vrtderived_15():
+
+    try:
+        import numpy
+        numpy.ones
+    except:
+        return 'skip'
+
+    gdal.SetConfigOption('GDAL_VRT_ENABLE_PYTHON', "YES")
+
+    threads = []
+    args_array = []
+    for i in range(4):
+        args_dict = { 'ret': True }
+        t = threading.Thread(target=vrtderived_15_worker, args = (args_dict,))
+        args_array.append(args_dict)
+        threads.append(t)
+        t.start()
+
+    ret = 'success'
+    for i in range(4):
+        threads[i].join()
+        if not args_array[i]:
+            ret = 'fail'
+
+    gdal.SetConfigOption('GDAL_VRT_ENABLE_PYTHON', None)
+
+    return ret
+
+
+###############################################################################
 # Cleanup.
 
 def vrtderived_cleanup():
@@ -900,6 +940,7 @@ gdaltest_list = [
     vrtderived_12,
     vrtderived_13,
     vrtderived_14,
+    vrtderived_15,
     vrtderived_cleanup,
 ]
 
