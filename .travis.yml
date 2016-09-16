@@ -10,10 +10,12 @@ compiler:
   - clang
 
 before_install:
-  - sudo apt-get install qemu qemu-kvm
+  - sudo apt-get install qemu
+# qemu-kvm
   - wget ftp://ftp.stacklet.com/archive/x86-64/FreeBSD/9.2/freebsd.9-2.x86-64.20140103.raw.img.txz
   - tar xJvf freebsd.9-2.x86-64.20140103.raw.img.txz
-  - kvm -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
+#  - kvm -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
+  - qemu-system-x86_64 -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
   - wget http://fossies.org/linux/privat/sshpass-1.06.tar.gz
   - tar xvzf sshpass-1.06.tar.gz
   - cd sshpass-1.06 && ./configure && make -j3 && cd ..
