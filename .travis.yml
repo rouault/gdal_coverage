@@ -20,11 +20,6 @@ before_install:
   - export MYSSH="sshpass-1.06/sshpass -p password ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost -p10022"
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg bootstrap'
   - $MYSSH 'mkdir /etc/pkg'
-  - echo 'FreeBSD: {' > FreeBSD.conf
-  - echo '  url: "pkg+http://pkg.FreeBSD.org/${ABI}/latest",' >> FreeBSD.conf
-  - echo '  mirror_type: "srv",' >> FreeBSD.conf
-  - echo '  enabled: yes' >> FreeBSD.conf
-  - echo '}' >> FreeBSD.conf
   - sshpass-1.06/sshpass -p password scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P 10022 FreeBSD.conf root@localhost:/etc/pkg/FreeBSD.conf
   - $MYSSH 'cat /etc/pkg/FreeBSD.conf'
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg update'
@@ -38,7 +33,6 @@ before_install:
   - $MYSSH 'unzip trunk.zip'
 
 install:
-
   - $MYSSH 'cd gdal-trunk/gdal && env CC=gcc48 env CXX=g++48 ./configure --enable-debug --without-libtool'
   - $MYSSH 'cd gdal-trunk/gdal && gmake -j4 -s USER_DEFS=-Werror'
   - $MYSSH 'cd gdal-trunk/gdal/apps && gmake -j4 -s USER_DEFS=-Werror test_ogrsf'
