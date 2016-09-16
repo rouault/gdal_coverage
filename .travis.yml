@@ -20,6 +20,7 @@ before_install:
   - tar xvzf sshpass-1.06.tar.gz
   - cd sshpass-1.06 && ./configure && make -j3 && cd ..
   - export MYSSH="sshpass-1.06/sshpass -p password ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost -p10022"
+  - sleep 60
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg bootstrap'
   - $MYSSH 'mkdir /etc/pkg'
   - sshpass-1.06/sshpass -p password scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P 10022 FreeBSD.conf root@localhost:/etc/pkg/FreeBSD.conf
