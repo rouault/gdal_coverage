@@ -31,7 +31,7 @@ install:
   - export PATH=$PWD/apps/.libs:$PATH
   - export DYLD_LIBRARY_PATH=$PWD/.libs
   - export GDAL_DATA=$PWD/data
-  - export PYTHONPATH=$PWD/swig/python/build/lib.macosx-10.11-intel-2.7
+  - export PYTHONPATH=$PWD/swig/python/build/lib.macosx-10.11-x86_64-2.7
   - cd ../autotest/cpp
   - echo $PATH
 #  - sudo rm -rf /usr/local/Cellar/gdal/1.10.1_1/*
