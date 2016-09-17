@@ -175,8 +175,12 @@ class gdal_ext(build_ext):
                 return fetch_config(option)
 
     def finalize_options(self):
+        print(self.include_dirs)
         if self.include_dirs is None:
             self.include_dirs = include_dirs
+        else
+            self.include_dirs += include_dirs
+        print(self.include_dirs)
         if self.library_dirs is None:
             self.library_dirs = library_dirs
         if self.libraries is None:
