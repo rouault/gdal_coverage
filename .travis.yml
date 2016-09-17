@@ -55,6 +55,10 @@ script:
   - cd ..
 # Run all the Python autotests
 #  - make -j test
+  - sudo brew install valgrind
+  - cd ogr
+  - valgrind python ogr_gpkg.py
+  - cd ..
   - python run_all.py
 
 notifications:
