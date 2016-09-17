@@ -28,7 +28,7 @@ install:
   - cd apps
   - make USER_DEFS="-Wextra -Werror" test_ogrsf
   - cd ..
-  - export PATH=$PWD/apps/.libs:$PATH
+  - export PATH=$PWD/apps/.libs:$PWD/apps:$PATH
   - export DYLD_LIBRARY_PATH=$PWD/.libs
   - export GDAL_DATA=$PWD/data
   - export PYTHONPATH=$PWD/swig/python/build/lib.macosx-10.11-x86_64-2.7
@@ -40,9 +40,9 @@ install:
 #  - sudo ln -s /usr/include /usr/local/Cellar/gdal/1.10.1_1
 #  - sudo mkdir /usr/local/Cellar/gdal/1.10.1_1/share
 #  - sudo ln -s /usr/share/gdal /usr/local/Cellar/gdal/1.10.1_1/share
-  - PATH=/usr/bin:$PATH gdal-config --version
-  - PATH=/usr/bin:$PATH gdal-config --cflags
-  - PATH=/usr/bin:$PATH make -j3
+  - gdal-config --version
+  - gdal-config --cflags
+  - make -j3
   - cd ../../gdal
 
 script:
