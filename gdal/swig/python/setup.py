@@ -175,14 +175,14 @@ class gdal_ext(build_ext):
                 return fetch_config(option)
 
     def finalize_options(self):
-        print(self.include_dirs)
         if self.include_dirs is None:
             self.include_dirs = include_dirs
         elif isinstance(self.include_dirs, str):
             self.include_dirs += ':' + ':'.join(include_dirs)
-        print(self.include_dirs)
         if self.library_dirs is None:
             self.library_dirs = library_dirs
+        elif isinstance(self.library_dirs, str):
+            self.library_dirs += ':' + ':'.join(library_dirs)
         if self.libraries is None:
             if self.get_compiler() == 'msvc':
                 libraries.remove('gdal')
