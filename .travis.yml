@@ -2,6 +2,7 @@
 # with Travis-ci.org on a Mac-OSX machine
 
 language: objective-c
+osx_image: xcode8
 
 # We use clang, --without-libtool and --with-debug for faster build
 compiler:
@@ -10,9 +11,9 @@ compiler:
 install:
 # build proj
   - sudo brew uninstall gdal
-  - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz > proj-4.8.0.tar.gz
-  - tar xvzf proj-4.8.0.tar.gz
-  - cd proj-4.8.0/nad
+  - curl http://download.osgeo.org/proj/proj-4.9.3.tar.gz > proj-4.9.3.tar.gz
+  - tar xvzf proj-4.9.3.tar.gz
+  - cd proj-4.9.3/nad
   - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
   - tar xvzf proj-datumgrid-1.5.tar.gz
   - cd ..
