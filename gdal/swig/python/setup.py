@@ -178,7 +178,7 @@ class gdal_ext(build_ext):
         print(self.include_dirs)
         if self.include_dirs is None:
             self.include_dirs = include_dirs
-        else
+        else:
             self.include_dirs += include_dirs
         print(self.include_dirs)
         if self.library_dirs is None:
