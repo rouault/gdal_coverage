@@ -17,7 +17,7 @@ before_install:
 #  - kvm -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
   - qemu-system-x86_64 -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
   - wget http://fossies.org/linux/privat/sshpass-1.06.tar.gz
-  - tar xvzf sshpass-1.06.tar.gz
+  - tar xzf sshpass-1.06.tar.gz
   - cd sshpass-1.06 && ./configure && make -j3 && cd ..
   - export MYSSH="sshpass-1.06/sshpass -p password ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost -p10022"
   - sleep 60
@@ -26,19 +26,19 @@ before_install:
   - sshpass-1.06/sshpass -p password scp -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -P 10022 FreeBSD.conf root@localhost:/etc/pkg/FreeBSD.conf
   - $MYSSH 'cat /etc/pkg/FreeBSD.conf'
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg update'
-  - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg install gcc48'
+#  - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg install gcc48'
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg install gmake'
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg install python27'
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg install py27-numpy'
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg install sqlite3 curl'
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg install expat'
-  - $MYSSH 'wget https://github.com/OSGeo/gdal/archive/trunk.zip --no-check-certificate'
-  - $MYSSH 'unzip trunk.zip'
+  - $MYSSH 'curl -s -L https://github.com/OSGeo/gdal/archive/trunk.zip > trunk.zip'
+  - $MYSSH 'unzip -q trunk.zip'
 
 install:
   - $MYSSH 'cd gdal-trunk/gdal && env CC=gcc48 env CXX=g++48 ./configure --enable-debug --without-libtool'
-  - $MYSSH 'cd gdal-trunk/gdal && gmake -j4 -s USER_DEFS=-Werror'
-  - $MYSSH 'cd gdal-trunk/gdal/apps && gmake -j4 -s USER_DEFS=-Werror test_ogrsf'
+  - $MYSSH 'cd gdal-trunk/gdal && gmake -j3 USER_DEFS=-Werror'
+  - $MYSSH 'cd gdal-trunk/gdal/apps && gmake -s USER_DEFS=-Werror test_ogrsf'
   - $MYSSH 'cd gdal-trunk/gdal && cd swig/python/ && env CC=gcc48 python2.7 setup.py build'
 
 script:
