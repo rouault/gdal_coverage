@@ -23,14 +23,15 @@ install:
   - cd ..
 # build GDAL
   - cd gdal
-  - ./configure --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal --with-static-proj4=$HOME/install-proj
+  - ./configure --prefix=$HOME/install-gdal --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal --with-static-proj4=$HOME/install-proj
   - make USER_DEFS="-Wextra -Werror" -j3
   - cd apps
   - make USER_DEFS="-Wextra -Werror" test_ogrsf
   - cd ..
-  - export PATH=$PWD/apps/.libs:$PWD/apps:$PATH
-  - export DYLD_LIBRARY_PATH=$PWD/.libs
-  - export GDAL_DATA=$PWD/data
+  - make install
+  - export PATH=$HOME/install-gdal/bin:$PWD/apps/.libs:$PATH
+  - export DYLD_LIBRARY_PATH=$HOME/install-gdal/lib
+  - export GDAL_DATA=$HOME/install-gdal/share/gdal
   - export PYTHONPATH=$PWD/swig/python/build/lib.macosx-10.11-x86_64-2.7
   - cd ../autotest/cpp
   - echo $PATH
@@ -42,6 +43,7 @@ install:
 #  - sudo ln -s /usr/share/gdal /usr/local/Cellar/gdal/1.10.1_1/share
   - gdal-config --version
   - gdal-config --cflags
+  - gdal-config --libs
   - make -j3
   - cd ../../gdal
 
