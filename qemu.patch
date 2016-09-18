@@ -1,0 +1,11 @@
+--- Makefile.target.ori	2016-09-18 15:31:40.856646049 +0200
++++ Makefile.target	2016-09-18 15:31:49.924646077 +0200
+@@ -5,7 +5,7 @@
+ VPATH=$(SRC_PATH):$(TARGET_PATH):$(SRC_PATH)/hw
+ CPPFLAGS=-I. -I.. -I$(TARGET_PATH) -I$(SRC_PATH) -MMD -MT $@ -MP -DNEED_CPU_H
+ #CFLAGS+=-Werror
+-LIBS=
++LIBS=-lrt
+ 
+ ifdef CONFIG_USER_ONLY
+ # user emulator name

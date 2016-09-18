@@ -1,0 +1,107 @@
+--- kqemu-linux.c.ori	2016-09-18 15:20:18.548643898 +0200
++++ kqemu-linux.c	2016-09-18 15:22:05.552644235 +0200
+@@ -24,7 +24,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/version.h>
+ #include <linux/ioctl.h>
+-#include <linux/smp_lock.h>
++//#include <linux/smp_lock.h>
+ #include <linux/miscdevice.h>
+ #include <asm/atomic.h>
+ #include <asm/processor.h>
+@@ -69,6 +69,13 @@
+ MODULE_PARM(major,"i");
+ #endif
+ 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2, 6, 23)
++#include <linux/sched.h>
++#endif
++
++// Since ????
++#include <linux/slab.h>
++
+ /* Lock the page at virtual address 'user_addr' and return its
+    physical address (page index). Return a host OS private user page
+    identifier or NULL if error */
+@@ -78,7 +85,12 @@
+     int ret;
+     struct page *page;
+ 
+-    ret = get_user_pages(current, current->mm,
++    ret = get_user_pages(current,
++#if LINUX_VERSION_CODE < KERNEL_VERSION(2, 6, 23)
++                         current->mm,
++#else
++                         get_task_mm(current),
++#endif
+                          user_addr,
+                          1, /* 1 page. */
+                          1, /* 'write': intent to write. */
+@@ -213,7 +225,8 @@
+ static struct kqemu_global_state *kqemu_gs;
+ 
+ struct kqemu_instance {
+-    struct semaphore sem; 
++    //struct semaphore sem; 
++    struct mutex sem;
+     struct kqemu_state *state;
+ };
+ 
+@@ -224,7 +237,8 @@
+     ks = kmalloc(sizeof(struct kqemu_instance), GFP_KERNEL);
+     if (!ks)
+         return -ENOMEM;
+-    init_MUTEX(&ks->sem);
++    //init_MUTEX(&ks->sem);
++    mutex_init(&ks->sem);
+     ks->state = NULL;
+     filp->private_data = ks;
+     return 0;
+@@ -234,12 +248,14 @@
+ {
+     struct kqemu_instance *ks = filp->private_data;
+ 
+-    down(&ks->sem);
++    //down(&ks->sem);
++    mutex_lock(&ks->sem);
+     if (ks->state) {
+         kqemu_delete(ks->state);
+         ks->state = NULL;
+     }
+-    up(&ks->sem);
++    //up(&ks->sem);
++    mutex_unlock(&ks->sem);
+ 
+     kfree(ks);
+ 
+@@ -262,7 +278,8 @@
+     struct kqemu_state *s = ks->state;
+     long ret;
+ 
+-    down(&ks->sem);
++    //down(&ks->sem);
++    mutex_lock(&ks->sem);
+     switch(cmd) {
+     case KQEMU_INIT:
+         {
+@@ -341,7 +358,8 @@
+         ret = -ENOIOCTLCMD;
+         break;
+     }
+-    up(&ks->sem);
++    //up(&ks->sem);
++    mutex_unlock(&ks->sem);
+     return ret;
+ }
+ 
+--- Makefile.ori	2016-09-18 15:22:14.756644264 +0200
++++ Makefile	2016-09-18 15:22:20.288644281 +0200
+@@ -18,7 +18,7 @@
+ 
+ kqemu.ko:
+ 	make -C common all
+-	make -C $(KERNEL_PATH) M=`pwd` modules
++	make -C $(KERNEL_PATH) M=`pwd` ARCH=$(ARCH) modules
+ 
+ else
+ # 2.4 build

@@ -10,12 +10,30 @@ compiler:
   - clang
 
 before_install:
-  - sudo apt-get install qemu
+  #- sudo apt-get install qemu
 # qemu-kvm
+#  - kvm -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
+  - wget https://download.savannah.gnu.org/releases/qemu/qemu-0.11.1.tar.gz
+  - tar xzf qemu-0.11.1.tar.gz
+  - cd qemu-0.11.1
+  - patch -p0 < ../qemu.patch
+  - ./configure --target-list=x86_64-softmmu --prefix=$PWD/../install-qemu --disable-kvm
+  - make -j4
+  - make -j4 install
+  - cd ..
+  - wget http://wiki.qemu.org/download/kqemu-1.4.0pre1.tar.gz
+  - tar xzf kqemu-1.4.0pre1.tar.gz
+  - cd kqemu-1.4.0pre1
+  - patch -p0 < ../kqemu.patch
+  - ./configure
+  - make
+  - sudo insmod kqemu.ko
+  - sudo chmod a+rw /dev/kqemu
+  - cd ..
   - wget ftp://ftp.stacklet.com/archive/x86-64/FreeBSD/9.2/freebsd.9-2.x86-64.20140103.raw.img.txz
   - tar xJvf freebsd.9-2.x86-64.20140103.raw.img.txz
-#  - kvm -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
-  - qemu-system-x86_64 -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
+  - install-qemu/bin/qemu-system-x86_64 -enable-kqemu -daemonize -nographic freebsd.9-2.x86-64.20140103.raw.img -m 1536  -net user,hostfwd=tcp::10022-:22 -net nic,model=e1000 -parallel none
+  #- qemu-system-x86_64 -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
   - wget http://fossies.org/linux/privat/sshpass-1.06.tar.gz
   - tar xzf sshpass-1.06.tar.gz
   - cd sshpass-1.06 && ./configure && make -j3 && cd ..
