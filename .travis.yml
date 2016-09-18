@@ -39,7 +39,7 @@ before_install:
   - wget http://fossies.org/linux/privat/sshpass-1.06.tar.gz
   - tar xzf sshpass-1.06.tar.gz
   - cd sshpass-1.06 && ./configure && make -j3 && cd ..
-  - export MYSSH="sshpass-1.06/sshpass -p password ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost -p10022"
+  - export MYSSH="sshpass-1.06/sshpass -p password ssh  -o ServerAliveInterval=30 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost -p10022"
   - sleep 60
   - $MYSSH 'env ASSUME_ALWAYS_YES=YES pkg bootstrap'
   - $MYSSH 'mkdir /etc/pkg'
