@@ -10,6 +10,17 @@ compiler:
   - clang
 
 before_install:
+  - sudo apt-get install linux-headers-`uname -r`
+  - wget http://wiki.qemu.org/download/kqemu-1.4.0pre1.tar.gz
+  - tar xzf kqemu-1.4.0pre1.tar.gz
+  - cd kqemu-1.4.0pre1
+  - patch -p0 < ../kqemu.patch
+  - ./configure
+  - make
+  - sudo insmod kqemu.ko
+  - sudo chmod a+rw /dev/kqemu
+  - cd ..
+#  - sudo apt-get install user-mode-linux
   #- sudo apt-get install qemu
 # qemu-kvm
 #  - kvm -daemonize -display none freebsd.9-2.x86-64.20140103.raw.img -m 1536 -smp 4 -net user,hostfwd=tcp::10022-:22 -net nic
@@ -20,15 +31,6 @@ before_install:
   - ./configure --target-list=x86_64-softmmu --prefix=$PWD/../install-qemu --disable-kvm
   - make -j4
   - make -j4 install
-  - cd ..
-  - wget http://wiki.qemu.org/download/kqemu-1.4.0pre1.tar.gz
-  - tar xzf kqemu-1.4.0pre1.tar.gz
-  - cd kqemu-1.4.0pre1
-  - patch -p0 < ../kqemu.patch
-  - ./configure
-  - make
-  - sudo insmod kqemu.ko
-  - sudo chmod a+rw /dev/kqemu
   - cd ..
   - wget ftp://ftp.stacklet.com/archive/x86-64/FreeBSD/9.2/freebsd.9-2.x86-64.20140103.raw.img.txz
   - tar xJvf freebsd.9-2.x86-64.20140103.raw.img.txz
