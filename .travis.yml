@@ -78,6 +78,13 @@ install:
   - $MYSSH 'cd gdal-trunk/gdal && cd swig/python/ && env CC=gcc48 python2.7 setup.py build'
 
 script:
+  - $MYSSH 'sync'
+  - $MYSSH 'halt' || echo "halted"
+  - sleep 30
+  - killall qemu-system-x86_64
+  - export MYSSH="sshpass-1.06/sshpass -p password ssh  -o ServerAliveInterval=30 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@localhost -p10025"
+  - install-qemu/bin/qemu-system-x86_64 -daemonize -nographic freebsd.9-2.x86-64.20140103.raw.img -m 1536  -net user,hostfwd=tcp::10025-:22 -net nic,model=e1000 -parallel none
+  - sleep 60
   - $MYSSH 'cd gdal-trunk/autotest && env PYTHONPATH=$PWD/../gdal/swig/python/build/lib.freebsd-9.2-RELEASE-amd64-2.7 env LD_LIBRARY_PATH=$PWD/../gdal:/usr/local/lib/gcc48 env PATH=$PWD/../gdal/apps:$PATH env GDAL_DATA=$PWD/../gdal/data python2.7 run_all.py'
 
 notifications:
