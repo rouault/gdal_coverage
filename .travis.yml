@@ -12,10 +12,8 @@ compiler:
 before_install:
   - sudo apt-get install linux-headers-`uname -r`
   - cat /proc/cpuinfo
-  - sudo modprobe kvm || echo "kvm failed"
-  - sudo lsmod | grep kvm
-  - sudo /etc/init.d/qemu-kvm start
-  - sudo lsmod | grep kvm
+#  - sudo modprobe kvm || echo "kvm failed"
+#  - sudo lsmod | grep kvm
   - wget http://wiki.qemu.org/download/kqemu-1.4.0pre1.tar.gz
   - tar xzf kqemu-1.4.0pre1.tar.gz
   - cd kqemu-1.4.0pre1
