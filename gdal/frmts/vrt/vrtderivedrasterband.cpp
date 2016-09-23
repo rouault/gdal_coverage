@@ -234,6 +234,10 @@ typedef HMODULE LibraryHandle;
 /*                          LoadPythonAPI()                             */
 /************************************************************************/
 
+#ifdef LOAD_NOCHECK_WITH_NAME
+static LibraryHandle libHandleStatic = NULL;
+#endif
+
 /** Load the subset of the Python C API that we need */
 static bool LoadPythonAPI()
 {
@@ -245,7 +249,7 @@ static bool LoadPythonAPI()
 
 #ifdef LOAD_NOCHECK_WITH_NAME
     // The static here is just to avoid Coverity warning about resource leak.
-    static LibraryHandle libHandle = NULL;
+    LibraryHandle libHandle = NULL;
 
     const char* pszPythonSO = CPLGetConfigOption("PYTHONSO", NULL);
 #if defined(HAVE_DLFCN_H) && !defined(WIN32)
@@ -253,6 +257,7 @@ static bool LoadPythonAPI()
     // First try in the current process in case the python symbols would
     // be already loaded
     libHandle = dlopen(NULL, RTLD_LAZY);
+    libHandleStatic = libHandle;
     if( libHandle != NULL &&
         dlsym(libHandle, "Py_SetProgramName") != NULL )
     {
