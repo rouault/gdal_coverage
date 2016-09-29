@@ -34,6 +34,7 @@
 #include "cpl_string.h"
 #include "gdal_frmts.h"
 #include "nitfdataset.h"
+#include "gdal_mdreader.h"
 
 CPL_CVSID("$Id$");
 
@@ -1357,7 +1358,44 @@ GDALDataset *NITFDataset::OpenInternal( GDALOpenInfo * poOpenInfo,
 /* -------------------------------------------------------------------- */
 /*      Do we have RPC info.                                            */
 /* -------------------------------------------------------------------- */
-    if( psImage && bHasRPC00 )
+
+    // get _rpc.txt file
+    const char* pszDirName = CPLGetDirname(pszFilename);
+    const char* pszBaseName = CPLGetBasename(pszFilename);
+    const char* pszRPCTXTFilename = CPLFormFilename( pszDirName,
+                                                        CPLSPrintf("%s_rpc",
+                                                        pszBaseName),
+                                                        "txt" );
+    if (CPLCheckForFile((char*)pszRPCTXTFilename, poOpenInfo->GetSiblingFiles()))
+    {
+        poDS->m_osRPCTXTFilename = pszRPCTXTFilename;
+    }
+    else
+    {
+        pszRPCTXTFilename = CPLFormFilename( pszDirName, CPLSPrintf("%s_RPC",
+                                                pszBaseName), "TXT" );
+        if (CPLCheckForFile((char*)pszRPCTXTFilename, poOpenInfo->GetSiblingFiles()))
+        {
+            poDS->m_osRPCTXTFilename = pszRPCTXTFilename;
+        }
+    }
+    bool bHasLoadedRPCTXT = false;
+    if( !poDS->m_osRPCTXTFilename.empty() )
+    {
+        char** papszMD = GDALLoadRPCFile( poDS->m_osRPCTXTFilename );
+        if( papszMD != NULL )
+        {
+            bHasLoadedRPCTXT = true;
+            poDS->SetMetadata( papszMD, "RPC" );
+            CSLDestroy(papszMD);
+        }
+        else
+        {
+            poDS->m_osRPCTXTFilename.clear();
+        }
+    }
+
+    if( psImage && bHasRPC00 && !bHasLoadedRPCTXT )
     {
         char szValue[1280];
         CPLsnprintf( szValue, sizeof(szValue), "%.16g", sRPCInfo.LINE_OFF );
@@ -3630,6 +3668,9 @@ char **NITFDataset::GetFileList()
 /* -------------------------------------------------------------------- */
     papszFileList = AddFile( papszFileList, "RPB", "rpb" );
 
+    if( !m_osRPCTXTFilename.empty() )
+        papszFileList = CSLAddString(papszFileList, m_osRPCTXTFilename);
+
 /* -------------------------------------------------------------------- */
 /*      Check for other files.                                          */
 /* -------------------------------------------------------------------- */
@@ -3912,11 +3953,17 @@ NITFDataset::NITFDatasetCreate( const char *pszFilename, int nXSize, int nYSize,
         return NULL;
     }
 
-    const char* pszSDE_TRE = CSLFetchNameValue(papszOptions, "SDE_TRE");
-    if (pszSDE_TRE != NULL)
+    const char* const apszIgnoredOptions[] = { "SDE_TRE", "RPC00B", "RPCTXT",
+                                               NULL };
+    for( int i = 0; apszIgnoredOptions[i] != NULL; ++ i )
     {
-        CPLError( CE_Warning, CPLE_AppDefined,
-                  "SDE_TRE creation option ignored by Create() method (only valid in CreateCopy())" );
+        if( CSLFetchNameValue(papszOptions, apszIgnoredOptions[i]) )
+        {
+            CPLError( CE_Warning, CPLE_AppDefined,
+                      "%s creation option ignored by Create() method "
+                      "(only valid in CreateCopy())",
+                      apszIgnoredOptions[i] );
+        }
     }
 
 /* -------------------------------------------------------------------- */
@@ -4385,6 +4432,67 @@ NITFDataset::NITFCreateCopy(
     }
 
 /* -------------------------------------------------------------------- */
+/*      Do we have RPC information?                                     */
+/* -------------------------------------------------------------------- */
+    int nGCIFFlags = GCIF_PAM_DEFAULT;
+
+    char** papszRPC = poSrcDS->GetMetadata("RPC");
+    if( papszRPC != NULL &&
+        CPLFetchBool(papszFullOptions, "RPC00B", true))
+    {
+        if( CSLPartialFindString(papszFullOptions, "TRE=RPC00B=") >= 0 )
+        {
+            CPLDebug("NITF", "Both TRE=RPC00B and RPC metadata are available. "
+                     "Ignoring RPC metadata and re-using source TRE=RPC00B");
+        }
+        else
+        {
+            int bPrecisionLoss = FALSE;
+            char* pszRPC = NITFFormatRPC00BFromMetadata(papszRPC, &bPrecisionLoss);
+            if( pszRPC == NULL )
+            {
+                CPLError((bStrict) ? CE_Failure : CE_Warning, CPLE_NotSupported,
+                        "Cannot format a valid RPC00B TRE from the RPC metadata");
+                if(  bStrict )
+                {
+                    CSLDestroy(papszFullOptions);
+                    CSLDestroy(papszCgmMD);
+                    CSLDestroy(papszTextMD);
+                    return NULL;
+                }
+            }
+            else
+            {
+                CPLString osRPC00B("TRE=RPC00B=");
+                osRPC00B += pszRPC;
+                papszFullOptions = CSLAddString( papszFullOptions, osRPC00B ) ;
+
+                // If no precision loss occured during RPC conversion, then
+                // we can suppress it from PAM
+                if( !bPrecisionLoss )
+                    nGCIFFlags &= ~GCIF_METADATA;
+
+            }
+            CPLFree(pszRPC);
+        }
+    }
+    else if( !CPLFetchBool(papszFullOptions, "RPC00B", true) )
+    {
+        int nIdx = CSLPartialFindString(papszFullOptions, "TRE=RPC00B=");
+        if( nIdx >= 0 )
+        {
+            papszFullOptions = CSLRemoveStrings(papszFullOptions,
+                                                nIdx, 1, NULL);
+        }
+    }
+
+    if( papszRPC != NULL &&
+        CPLFetchBool(papszFullOptions, "RPCTXT", false))
+    {
+        GDALWriteRPCTXTFile( pszFilename, papszRPC );
+    }
+
+/* -------------------------------------------------------------------- */
 /*      Create the output file.                                         */
 /* -------------------------------------------------------------------- */
     const int nXSize = poSrcDS->GetRasterXSize();
@@ -4573,8 +4681,18 @@ NITFDataset::NITFCreateCopy(
             return NULL;
         }
 
+        // Save error state to restore it afterwards since some operations
+        // in Open() might reset it.
+        CPLErr eLastErr = CPLGetLastErrorType();
+        int nLastErrNo = CPLGetLastErrorNo();
+        CPLString osLastErrorMsg = CPLGetLastErrorMsg();
+
         GDALOpenInfo oOpenInfo( pszFilename, GA_Update );
         poDstDS = reinterpret_cast<NITFDataset *>( Open( &oOpenInfo ) );
+
+        if( CPLGetLastErrorType() == CE_None && eLastErr != CE_None )
+            CPLErrorSetState( eLastErr, nLastErrNo, osLastErrorMsg.c_str() );
+
         if( poDstDS == NULL )
         {
             CSLDestroy(papszCgmMD);
@@ -4660,7 +4778,20 @@ NITFDataset::NITFCreateCopy(
                           poSrcDS->GetGCPProjection() );
     }
 
-    poDstDS->CloneInfo( poSrcDS, GCIF_PAM_DEFAULT );
+    poDstDS->CloneInfo( poSrcDS, nGCIFFlags );
+
+    if( (nGCIFFlags & GCIF_METADATA) == 0 )
+    {
+        const int nSavedMOFlags = poDstDS->GetMOFlags();
+        if( poSrcDS->GetMetadata() != NULL )
+        {
+            if( CSLCount(poDstDS->GetMetadata()) != CSLCount(poSrcDS->GetMetadata()) )
+            {
+                poDstDS->SetMetadata( poSrcDS->GetMetadata() );
+            }
+        }
+        poDstDS->SetMOFlags(nSavedMOFlags);
+    }
 
     CSLDestroy(papszCgmMD);
     CSLDestroy(papszTextMD);
@@ -5783,7 +5914,9 @@ void GDALRegister_NITF()
         osCreationOptions += szFieldDescription;
     }
     osCreationOptions +=
-"   <Option name='SDE_TRE' type='boolean' description='Write GEOLOB and GEOPSB TREs (only geographic SRS for now)' default='NO'/>";
+"   <Option name='SDE_TRE' type='boolean' description='Write GEOLOB and GEOPSB TREs (only geographic SRS for now)' default='NO'/>"
+"   <Option name='RPC00B' type='boolean' description='Write RPC00B TRE (either from source TRE, or from RPC metadata)' default='YES'/>"
+"   <Option name='RPCTXT' type='boolean' description='Write out _RPC.TXT file' default='NO'/>";
     osCreationOptions += "</CreationOptionList>";
 
     GDALDriver *poDriver = new GDALDriver();
