@@ -2273,7 +2273,9 @@ static int NITFFormatRPC00BCoefficient( char* pszBuffer, double dfVal,
     // We need 12 bytes + 2=3-1 bytes for MSVC potentially outputing exponents
     // with 3 digits + 1 terminating byte
     char szTemp[12+2+1];
+#if defined(DEBUG) || defined(WIN32)
     size_t nLen;
+#endif
 
     if( fabs(dfVal) > 9.999999e9 )
     {
@@ -2283,7 +2285,9 @@ static int NITFFormatRPC00BCoefficient( char* pszBuffer, double dfVal,
     }
 
     CPLsnprintf( szTemp, sizeof(szTemp), "%+.6E", dfVal);
+#if defined(DEBUG) || defined(WIN32)
     nLen = strlen(szTemp);
+#endif
     CPLAssert( szTemp[9] == 'E' );
 #ifdef WIN32
     if( nLen == 14 ) // Old MSVC versions: 3 digits for the exponent
@@ -4237,6 +4241,8 @@ static void NITFPossibleIGEOLOReorientation( NITFImage *psImage )
 /*      Read DPPDB IMRFCA TRE (and the associated IMASDA TRE) if it is  */
 /*      available. IMRFCA RPC coefficients are remapped into RPC00B     */
 /*      organization.                                                   */
+/*      See table 68 for IMASDA and table 69 for IMRFCA in              */
+/*      http://earth-info.nga.mil/publications/specs/printed/89034/89034DPPDB.pdf */
 /************************************************************************/
 int NITFReadIMRFCA( NITFImage *psImage, NITFRPC00BInfo *psRPC )
 {
