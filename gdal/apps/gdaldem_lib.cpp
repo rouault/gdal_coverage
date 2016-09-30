@@ -87,7 +87,7 @@
 #include <algorithm>
 #include <float.h>
 #include <cstdlib>
-#include <cmath>
+#include <math.h>
 #include <limits>
 
 #include "cpl_conv.h"
@@ -358,8 +358,10 @@ CPLErr GDALGeneric3x3Processing  ( GDALRasterBandH hSrcBand,
     abLineHasNoDataValue[1] = CPL_TO_BOOL(bSrcHasNoData);
     abLineHasNoDataValue[2] = CPL_TO_BOOL(bSrcHasNoData);
 
-    for( int i = 0; i < 2 && i < nYSize; i++ )
+    // Create an extra scope for VC12 to ignore i.
     {
+      for( int i = 0; i < 2 && i < nYSize; i++ )
+      {
         if( GDALRasterIO( hSrcBand,
                           GF_Read,
                           0, i,
@@ -388,7 +390,8 @@ CPLErr GDALGeneric3x3Processing  ( GDALRasterBandH hSrcBand,
                 }
             }
         }
-    }
+      }
+    }  // End extra scope for VC12
 
     if( bComputeAtEdges && nXSize >= 2 && nYSize >= 2 )
     {
