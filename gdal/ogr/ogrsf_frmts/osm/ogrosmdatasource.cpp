@@ -46,78 +46,103 @@
 
 static const int LIMIT_IDS_PER_REQUEST = 200;
 
-#define MAX_NODES_PER_WAY 2000
+static const int MAX_NODES_PER_WAY = 2000;
 
-#define IDX_LYR_POINTS           0
-#define IDX_LYR_LINES            1
-#define IDX_LYR_MULTILINESTRINGS 2
-#define IDX_LYR_MULTIPOLYGONS    3
-#define IDX_LYR_OTHER_RELATIONS  4
+static const int IDX_LYR_POINTS = 0;
+static const int IDX_LYR_LINES = 1;
+static const int IDX_LYR_MULTILINESTRINGS = 2;
+static const int IDX_LYR_MULTIPOLYGONS = 3;
+static const int IDX_LYR_OTHER_RELATIONS = 4;
 
-#define DBL_TO_INT(x)            (int)floor((x) * 1e7 + 0.5)
-#define INT_TO_DBL(x)            ((x) / 1e7)
+static int DBL_TO_INT( double x )
+{
+  return static_cast<int>(floor(x * 1.0e7 + 0.5));
+}
+static double INT_TO_DBL( int x ) { return x / 1.0e7; }
 
-#define MAX_COUNT_FOR_TAGS_IN_WAY   255  /* must fit on 1 byte */
-#define MAX_SIZE_FOR_TAGS_IN_WAY    1024
+static const int MAX_COUNT_FOR_TAGS_IN_WAY = 255;  // Must fit on 1 byte.
+static const int MAX_SIZE_FOR_TAGS_IN_WAY = 1024;
 
-/* 5 bytes for encoding a int : really the worst case scenario ! */
-#define WAY_BUFFER_SIZE (1 /*is_area*/ + 1 + MAX_NODES_PER_WAY * 2 * 5 + MAX_SIZE_FOR_TAGS_IN_WAY)
+// 5 bytes for encoding a int : really the worst case scenario!
+static const int WAY_BUFFER_SIZE =
+    1 /*is_area*/ + 1 + MAX_NODES_PER_WAY * 2 * 5 + MAX_SIZE_FOR_TAGS_IN_WAY;
 
-#define NODE_PER_BUCKET     65536
+static const int NODE_PER_BUCKET = 65536;
 
- /* Initial Maximum count of buckets */
-#define INIT_BUCKET_COUNT        65536
+// Initial Maximum count of buckets.
+static const int INIT_BUCKET_COUNT = 65536;
 
-#define VALID_ID_FOR_CUSTOM_INDEXING(_id) ((_id) >= 0 && (_id / NODE_PER_BUCKET) < INT_MAX)
+static bool VALID_ID_FOR_CUSTOM_INDEXING( GIntBig _id )
+{
+    return
+        _id >= 0 &&
+        _id / NODE_PER_BUCKET < INT_MAX;
+}
 
-/* Minimum size of data written on disk, in *uncompressed* case */
-#define SECTOR_SIZE         512
-/* Which represents, 64 nodes */
-/* #define NODE_PER_SECTOR     SECTOR_SIZE / (2 * 4) */
-#define NODE_PER_SECTOR     64
-#define NODE_PER_SECTOR_SHIFT   6
+// Minimum size of data written on disk, in *uncompressed* case.
+static const int SECTOR_SIZE = 512;
+// Which represents, 64 nodes
+// static const int NODE_PER_SECTOR = SECTOR_SIZE / (2 * 4);
+static const int NODE_PER_SECTOR = 64;
+static const int NODE_PER_SECTOR_SHIFT = 6;
 
-/* Per bucket, we keep track of the absence/presence of sectors */
-/* only, to reduce memory usage */
-/* #define BUCKET_BITMAP_SIZE  NODE_PER_BUCKET / (8 * NODE_PER_SECTOR) */
-#define BUCKET_BITMAP_SIZE  128
+// Per bucket, we keep track of the absence/presence of sectors
+// only, to reduce memory usage.
+// #define BUCKET_BITMAP_SIZE  NODE_PER_BUCKET / (8 * NODE_PER_SECTOR)
+static const int BUCKET_BITMAP_SIZE = 128;
 
-/* #define BUCKET_SECTOR_SIZE_ARRAY_SIZE  NODE_PER_BUCKET / NODE_PER_SECTOR */
-/* Per bucket, we keep track of the real size of the sector. Each sector */
-/* size is encoded in a single byte, whose value is : */
-/* (sector_size in bytes - 8 ) / 2, minus 8. 252 means uncompressed */
-#define BUCKET_SECTOR_SIZE_ARRAY_SIZE   1024
+// #define BUCKET_SECTOR_SIZE_ARRAY_SIZE  NODE_PER_BUCKET / NODE_PER_SECTOR
+// Per bucket, we keep track of the real size of the sector. Each sector
+// size is encoded in a single byte, whose value is:
+// (sector_size in bytes - 8 ) / 2, minus 8. 252 means uncompressed
+static const int BUCKET_SECTOR_SIZE_ARRAY_SIZE = 1024;
 
-/* Must be a multiple of both BUCKET_BITMAP_SIZE and BUCKET_SECTOR_SIZE_ARRAY_SIZE */
-#define PAGE_SIZE   4096
+// Must be a multiple of both BUCKET_BITMAP_SIZE and
+// BUCKET_SECTOR_SIZE_ARRAY_SIZE
+static const int PAGE_SIZE = 4096;
 
-/* compressSize should not be greater than 512, so COMPRESS_SIZE_TO_BYTE() fits on a byte */
-#define COMPRESS_SIZE_TO_BYTE(nCompressSize)  (GByte)(((nCompressSize) - 8) / 2)
-#define ROUND_COMPRESS_SIZE(nCompressSize)    (((nCompressSize) + 1) / 2) * 2;
-#define COMPRESS_SIZE_FROM_BYTE(byte_on_size) ((byte_on_size) * 2 + 8)
+// compressSize should not be greater than 512, so COMPRESS_SIZE_TO_BYTE() fits
+// on a byte.
+static GByte COMPRESS_SIZE_TO_BYTE( size_t nCompressSize )
+{
+    return static_cast<GByte>((nCompressSize - 8) / 2);
+}
 
-/* Max number of features that are accumulated in pasWayFeaturePairs */
-#define MAX_DELAYED_FEATURES        75000
-/* Max number of tags that are accumulated in pasAccumulatedTags */
-#define MAX_ACCUMULATED_TAGS        MAX_DELAYED_FEATURES * 5
-/* Max size of the string with tag values that are accumulated in pabyNonRedundantValues */
-#define MAX_NON_REDUNDANT_VALUES    MAX_DELAYED_FEATURES * 10
-/* Max number of features that are accumulated in panUnsortedReqIds */
-#define MAX_ACCUMULATED_NODES       1000000
+template<typename T> static T ROUND_COMPRESS_SIZE( T nCompressSize )
+{
+    return ((nCompressSize + 1) / 2) * 2;
+}
+static int COMPRESS_SIZE_FROM_BYTE( GByte byte_on_size )
+{
+    return static_cast<int>(byte_on_size) * 2 + 8;
+}
+
+// Max number of features that are accumulated in pasWayFeaturePairs.
+static const int MAX_DELAYED_FEATURES = 75000;
+// Max number of tags that are accumulated in pasAccumulatedTags.
+static const int MAX_ACCUMULATED_TAGS  = MAX_DELAYED_FEATURES * 5;
+// Max size of the string with tag values that are accumulated in
+// pabyNonRedundantValues.
+static const int MAX_NON_REDUNDANT_VALUES = MAX_DELAYED_FEATURES * 10;
+// Max number of features that are accumulated in panUnsortedReqIds
+static const int MAX_ACCUMULATED_NODES = 1000000;
 
 #ifdef ENABLE_NODE_LOOKUP_BY_HASHING
-/* Size of panHashedIndexes array. Must be in the list at */
-/* http://planetmath.org/goodhashtableprimes , and greater than MAX_ACCUMULATED_NODES */
-#define HASHED_INDEXES_ARRAY_SIZE   3145739
-//#define HASHED_INDEXES_ARRAY_SIZE   1572869
-#define COLLISION_BUCKET_ARRAY_SIZE ((MAX_ACCUMULATED_NODES / 100) * 40)
-/* hash function = identity ! */
+// Size of panHashedIndexes array. Must be in the list at
+// http://planetmath.org/goodhashtableprimes , and greater than
+// MAX_ACCUMULATED_NODES.
+static const int HASHED_INDEXES_ARRAY_SIZE = 3145739;
+// #define HASHED_INDEXES_ARRAY_SIZE   1572869
+static const int COLLISION_BUCKET_ARRAY_SIZE =
+    (MAX_ACCUMULATED_NODES / 100) * 40;
+
+// hash function = identity
 #define HASH_ID_FUNC(x)             ((GUIntBig)(x))
 #endif // ENABLE_NODE_LOOKUP_BY_HASHING
 
-//#define FAKE_LOOKUP_NODES
+// #define FAKE_LOOKUP_NODES
 
-//#define DEBUG_MEM_USAGE
+// #define DEBUG_MEM_USAGE
 #ifdef DEBUG_MEM_USAGE
 size_t GetMaxTotalAllocs();
 #endif
@@ -654,7 +679,7 @@ bool OGROSMDataSource::FlushCurrentSectorCompressedCase()
 
     nCompressSize = ROUND_COMPRESS_SIZE(nCompressSize);
     GByte* pabyToWrite = NULL;
-    if(nCompressSize >= SECTOR_SIZE)
+    if( nCompressSize >= static_cast<size_t>(SECTOR_SIZE) )
     {
         nCompressSize = SECTOR_SIZE;
         pabyToWrite = pabySector;
@@ -695,7 +720,8 @@ bool OGROSMDataSource::FlushCurrentSectorCompressedCase()
 
 bool OGROSMDataSource::FlushCurrentSectorNonCompressedCase()
 {
-    if( VSIFWriteL(pabySector, 1, SECTOR_SIZE, fpNodes) == SECTOR_SIZE )
+    if( VSIFWriteL(pabySector, 1, static_cast<size_t>(SECTOR_SIZE),
+                   fpNodes) == static_cast<size_t>(SECTOR_SIZE) )
     {
         memset(pabySector, 0, SECTOR_SIZE);
         nNodesFileSize += SECTOR_SIZE;
@@ -964,7 +990,8 @@ void OGROSMDataSource::LookupNodes( )
 
 void OGROSMDataSource::LookupNodesSQLite( )
 {
-    CPLAssert(nUnsortedReqIds <= MAX_ACCUMULATED_NODES);
+    CPLAssert(
+        nUnsortedReqIds <= static_cast<unsigned int>(MAX_ACCUMULATED_NODES));
 
     nReqIds = 0;
     for( unsigned int i = 0; i < nUnsortedReqIds; i++)
@@ -1091,7 +1118,8 @@ void OGROSMDataSource::LookupNodesCustom( )
         nBucketOld = -1;
     }
 
-    CPLAssert(nUnsortedReqIds <= MAX_ACCUMULATED_NODES);
+    CPLAssert(
+        nUnsortedReqIds <= static_cast<unsigned int>(MAX_ACCUMULATED_NODES));
 
     for( unsigned int i = 0; i < nUnsortedReqIds; i++ )
     {
@@ -1157,8 +1185,7 @@ void OGROSMDataSource::LookupNodesCustom( )
 
 void OGROSMDataSource::LookupNodesCustomCompressedCase()
 {
-    unsigned int j = 0;
-#define SECURITY_MARGIN     (8 + 8 + 2 * NODE_PER_SECTOR)
+    static const int SECURITY_MARGIN = 8 + 8 + 2 * NODE_PER_SECTOR;
     GByte abyRawSector[SECTOR_SIZE + SECURITY_MARGIN];
     memset(abyRawSector + SECTOR_SIZE, 0, SECURITY_MARGIN);
 
@@ -1167,14 +1194,15 @@ void OGROSMDataSource::LookupNodesCustomCompressedCase()
     int k = 0;
     int nOffFromBucketStart = 0;
 
+    unsigned int j = 0;  // Used after for.
     for( unsigned int i = 0; i < nReqIds; i++ )
     {
-        GIntBig id = panReqIds[i];
-
-        int nBucket = static_cast<int>(id / NODE_PER_BUCKET);
-        int nOffInBucket = static_cast<int>(id % NODE_PER_BUCKET);
-        int nOffInBucketReduced = nOffInBucket >> NODE_PER_SECTOR_SHIFT;
-        int nOffInBucketReducedRemainer = nOffInBucket & ((1 << NODE_PER_SECTOR_SHIFT) - 1);
+        const GIntBig id = panReqIds[i];
+        const int nBucket = static_cast<int>(id / NODE_PER_BUCKET);
+        const int nOffInBucket = static_cast<int>(id % NODE_PER_BUCKET);
+        const int nOffInBucketReduced = nOffInBucket >> NODE_PER_SECTOR_SHIFT;
+        const int nOffInBucketReducedRemainer =
+            nOffInBucket & ((1 << NODE_PER_SECTOR_SHIFT) - 1);
 
         if( nBucket != l_nBucketOld )
         {
@@ -1200,20 +1228,25 @@ void OGROSMDataSource::LookupNodesCustomCompressedCase()
                 continue;
                 // FIXME ?
             }
-            int nSectorSize = COMPRESS_SIZE_FROM_BYTE(psBucket->u.panSectorSize[nOffInBucketReduced]);
+            const int nSectorSize =
+                COMPRESS_SIZE_FROM_BYTE(
+                    psBucket->u.panSectorSize[nOffInBucketReduced]);
 
             /* If we stay in the same bucket, we can reuse the previously */
             /* computed offset, instead of starting from bucket start */
             for( ; k < nOffInBucketReduced; k++ )
             {
                 if( psBucket->u.panSectorSize[k] )
-                    nOffFromBucketStart += COMPRESS_SIZE_FROM_BYTE(psBucket->u.panSectorSize[k]);
+                    nOffFromBucketStart +=
+                        COMPRESS_SIZE_FROM_BYTE(psBucket->u.panSectorSize[k]);
             }
 
             VSIFSeekL(fpNodes, psBucket->nOff + nOffFromBucketStart, SEEK_SET);
             if( nSectorSize == SECTOR_SIZE )
             {
-                if( VSIFReadL(pabySector, 1, SECTOR_SIZE, fpNodes) != SECTOR_SIZE )
+                if( VSIFReadL(pabySector, 1,
+                              static_cast<size_t>(SECTOR_SIZE),
+                              fpNodes) != static_cast<size_t>(SECTOR_SIZE) )
                 {
                     CPLError(CE_Failure,  CPLE_AppDefined,
                             "Cannot read node " CPL_FRMT_GIB, id);
@@ -1223,7 +1256,8 @@ void OGROSMDataSource::LookupNodesCustomCompressedCase()
             }
             else
             {
-                if( (int)VSIFReadL(abyRawSector, 1, nSectorSize, fpNodes) != nSectorSize )
+                if( static_cast<int>(VSIFReadL(abyRawSector, 1, nSectorSize,
+                                               fpNodes)) != nSectorSize )
                 {
                     CPLError(CE_Failure,  CPLE_AppDefined,
                             "Cannot read sector for node " CPL_FRMT_GIB, id);
@@ -1267,15 +1301,15 @@ void OGROSMDataSource::LookupNodesCustomNonCompressedCase()
 
     for( unsigned int i = 0; i < nReqIds; i++ )
     {
-        GIntBig id = panReqIds[i];
+        const GIntBig id = panReqIds[i];
+        const int nBucket = static_cast<int>(id / NODE_PER_BUCKET);
+        const int nOffInBucket = static_cast<int>(id % NODE_PER_BUCKET);
+        const int nOffInBucketReduced = nOffInBucket >> NODE_PER_SECTOR_SHIFT;
+        const int nOffInBucketReducedRemainer =
+            nOffInBucket & ((1 << NODE_PER_SECTOR_SHIFT) - 1);
 
-        int nBucket = static_cast<int>(id / NODE_PER_BUCKET);
-        int nOffInBucket = static_cast<int>(id % NODE_PER_BUCKET);
-        int nOffInBucketReduced = nOffInBucket >> NODE_PER_SECTOR_SHIFT;
-        int nOffInBucketReducedRemainer = nOffInBucket & ((1 << NODE_PER_SECTOR_SHIFT) - 1);
-
-        int nBitmapIndex = nOffInBucketReduced / 8;
-        int nBitmapRemainer = nOffInBucketReduced % 8;
+        const int nBitmapIndex = nOffInBucketReduced / 8;
+        const int nBitmapRemainer = nOffInBucketReduced % 8;
 
         if( nBucket >= nBuckets )
         {
@@ -1390,31 +1424,34 @@ static void WriteVarSInt64( GIntBig nSVal, GByte** ppabyData )
 /*                             CompressWay()                            */
 /************************************************************************/
 
-int OGROSMDataSource::CompressWay ( bool bIsArea, unsigned int nTags, IndexedKVP* pasTags,
+int OGROSMDataSource::CompressWay ( bool bIsArea, unsigned int nTags,
+                                    IndexedKVP* pasTags,
                                     int nPoints, LonLat* pasLonLatPairs,
                                     OSMInfo* psInfo,
                                     GByte* pabyCompressedWay )
 {
     GByte* pabyPtr = pabyCompressedWay;
     *pabyPtr = (bIsArea) ? 1 : 0;
-    pabyPtr ++;
-    pabyPtr ++; // skip tagCount
+    pabyPtr++;
+    pabyPtr++; // skip tagCount
 
     int nTagCount = 0;
-    CPLAssert(nTags < MAX_COUNT_FOR_TAGS_IN_WAY);
-    for(unsigned int iTag = 0; iTag < nTags; iTag++)
+    CPLAssert(nTags < static_cast<unsigned int>(MAX_COUNT_FOR_TAGS_IN_WAY));
+    for( unsigned int iTag = 0; iTag < nTags; iTag++ )
     {
-        if ((int)(pabyPtr - pabyCompressedWay) + 2 >= MAX_SIZE_FOR_TAGS_IN_WAY)
+        if( static_cast<int>(pabyPtr - pabyCompressedWay) + 2 >=
+            MAX_SIZE_FOR_TAGS_IN_WAY )
         {
             break;
         }
 
         WriteVarInt(pasTags[iTag].nKeyIndex, &pabyPtr);
 
-        /* to fit in 2 bytes, the theoretical limit would be 127 * 128 + 127 */
+        // To fit in 2 bytes, the theoretical limit would be 127 * 128 + 127.
         if( pasTags[iTag].bVIsIndex )
         {
-            if ((int)(pabyPtr - pabyCompressedWay) + 2 >= MAX_SIZE_FOR_TAGS_IN_WAY)
+            if( static_cast<int>(pabyPtr - pabyCompressedWay) + 2 >=
+                MAX_SIZE_FOR_TAGS_IN_WAY )
             {
                 break;
             }
@@ -1819,14 +1856,15 @@ bool OGROSMDataSource::IsClosedWayTaggedAsPolygon( unsigned int nTags, const OSM
 /*                              NotifyWay()                             */
 /************************************************************************/
 
-void OGROSMDataSource::NotifyWay (OSMWay* psWay)
+void OGROSMDataSource::NotifyWay( OSMWay* psWay )
 {
     nWaysProcessed++;
-    if( (nWaysProcessed % 10000) == 0 )
+    if( nWaysProcessed % 10000 == 0 )
     {
         CPLDebug("OSM", "Ways processed : %d", nWaysProcessed);
 #ifdef DEBUG_MEM_USAGE
-        CPLDebug("OSM", "GetMaxTotalAllocs() = " CPL_FRMT_GUIB, (GUIntBig)GetMaxTotalAllocs());
+        CPLDebug("OSM", "GetMaxTotalAllocs() = " CPL_FRMT_GUIB,
+                 static_cast<GUIntBig>(GetMaxTotalAllocs()));
 #endif
     }
 
@@ -1834,7 +1872,7 @@ void OGROSMDataSource::NotifyWay (OSMWay* psWay)
         return;
 
     //printf("way %d : %d nodes\n", (int)psWay->nID, (int)psWay->nRefs);
-    if( psWay->nRefs > MAX_NODES_PER_WAY )
+    if( psWay->nRefs > static_cast<unsigned int>(MAX_NODES_PER_WAY) )
     {
         CPLError(CE_Failure, CPLE_NotSupported,
                  "Ways with more than %d nodes are not supported",
@@ -1872,7 +1910,8 @@ void OGROSMDataSource::NotifyWay (OSMWay* psWay)
 
     OGRFeature* poFeature = NULL;
     bool bAttrFilterAlreadyEvaluated = false;
-    if( !bIsArea && papoLayers[IDX_LYR_LINES]->IsUserInterested() && bInterestingTag )
+    if( !bIsArea && papoLayers[IDX_LYR_LINES]->IsUserInterested() &&
+        bInterestingTag )
     {
         poFeature = new OGRFeature(papoLayers[IDX_LYR_LINES]->GetLayerDefn());
 
@@ -1880,11 +1919,12 @@ void OGROSMDataSource::NotifyWay (OSMWay* psWay)
             poFeature, psWay->nID, false, psWay->nTags, psWay->pasTags,
             &psWay->sInfo );
 
-        /* Optimization : if we have an attribute filter, that does not require geometry, */
-        /* and if we don't need to index ways, then we can just evaluate the attribute */
-        /* filter without the geometry */
+        // Optimization: if we have an attribute filter, that does not require
+        // geometry, and if we don't need to index ways, then we can just
+        // evaluate the attribute filter without the geometry.
         if( papoLayers[IDX_LYR_LINES]->HasAttributeFilter() &&
-            !papoLayers[IDX_LYR_LINES]->AttributeFilterEvaluationNeedsGeometry() &&
+            !papoLayers[IDX_LYR_LINES]->
+                AttributeFilterEvaluationNeedsGeometry() &&
             !bIndexWays )
         {
             if( !papoLayers[IDX_LYR_LINES]->EvaluateAttributeFilter(poFeature) )
@@ -1900,9 +1940,11 @@ void OGROSMDataSource::NotifyWay (OSMWay* psWay)
         return;
     }
 
-    if( nUnsortedReqIds + psWay->nRefs > MAX_ACCUMULATED_NODES ||
+    if( nUnsortedReqIds + psWay->nRefs >
+        static_cast<unsigned int>(MAX_ACCUMULATED_NODES) ||
         nWayFeaturePairs == MAX_DELAYED_FEATURES ||
-        nAccumulatedTags + psWay->nTags > MAX_ACCUMULATED_TAGS ||
+        nAccumulatedTags + psWay->nTags >
+        static_cast<unsigned int>(MAX_ACCUMULATED_TAGS) ||
         nNonRedundantValuesLen + 1024 > MAX_NON_REDUNDANT_VALUES )
     {
         ProcessWaysBatch();
@@ -1915,7 +1957,8 @@ void OGROSMDataSource::NotifyWay (OSMWay* psWay)
     psWayFeaturePairs->panNodeRefs = panUnsortedReqIds + nUnsortedReqIds;
     psWayFeaturePairs->poFeature = poFeature;
     psWayFeaturePairs->bIsArea = bIsArea;
-    psWayFeaturePairs->bAttrFilterAlreadyEvaluated = bAttrFilterAlreadyEvaluated;
+    psWayFeaturePairs->bAttrFilterAlreadyEvaluated =
+        bAttrFilterAlreadyEvaluated;
 
     if( bIsArea && papoLayers[IDX_LYR_MULTIPOLYGONS]->IsUserInterested() )
     {
@@ -2466,9 +2509,10 @@ void OGROSMDataSource::NotifyRelation (OSMRelation* psRelation)
 
     /* Optimization : if we have an attribute filter, that does not require geometry, */
     /* then we can just evaluate the attribute filter without the geometry */
-    int iCurLayer = (bMultiPolygon) ?    IDX_LYR_MULTIPOLYGONS :
-                    (bMultiLineString) ? IDX_LYR_MULTILINESTRINGS :
-                                         IDX_LYR_OTHER_RELATIONS;
+    const int iCurLayer =
+        bMultiPolygon ?    IDX_LYR_MULTIPOLYGONS :
+        bMultiLineString ? IDX_LYR_MULTILINESTRINGS :
+        IDX_LYR_OTHER_RELATIONS;
     if( !papoLayers[iCurLayer]->IsUserInterested() )
         return;
 
@@ -2506,7 +2550,8 @@ void OGROSMDataSource::NotifyRelation (OSMRelation* psRelation)
         if( !bInterestingTagFound )
         {
             poGeom = BuildMultiPolygon(psRelation, &nExtraTags, pasExtraTags);
-            CPLAssert(nExtraTags <= MAX_COUNT_FOR_TAGS_IN_WAY);
+            CPLAssert(nExtraTags <=
+                      static_cast<unsigned int>(MAX_COUNT_FOR_TAGS_IN_WAY));
             pasExtraTags[nExtraTags].pszK = "type";
             pasExtraTags[nExtraTags].pszV = pszTypeV;
             nExtraTags ++;
@@ -2603,7 +2648,8 @@ void OGROSMDataSource::ProcessPolygonsStandalone()
             const int nPoints = UncompressWay(
                 nBlobSize, reinterpret_cast<GByte *>(const_cast<void *>(blob)),
                 NULL, pasCoords, &nTags, pasTags, &sInfo );
-            CPLAssert(nTags <= MAX_COUNT_FOR_TAGS_IN_WAY);
+            CPLAssert(
+                nTags <= static_cast<unsigned int>(MAX_COUNT_FOR_TAGS_IN_WAY));
 
 
             OGRMultiPolygon* poMulti = new OGRMultiPolygon();
