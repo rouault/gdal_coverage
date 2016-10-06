@@ -34,12 +34,12 @@
 
 CPL_CVSID("$Id$");
 
-#define DT_IBM_4BYTES_FP         1
-#define DT_4BYTES_INT            2
-#define DT_2BYTES_INT            3
-#define DT_4BYTES_FP_WITH_GAIN   4
-#define DT_IEEE_4BYTES_FP        5
-#define DT_1BYTE_INT             8
+static const int DT_IBM_4BYTES_FP       = 1;
+static const int DT_4BYTES_INT          = 2;
+static const int DT_2BYTES_INT          = 3;
+static const int DT_4BYTES_FP_WITH_GAIN = 4;
+static const int DT_IEEE_4BYTES_FP      = 5;
+static const int DT_1BYTE_INT           = 8;
 
 typedef struct
 {
@@ -130,80 +130,80 @@ static const FieldDesc SEGYFields10[] =
     { "SHOTPOINT_SCALAR", OFTInteger },
 };
 
-#define TRACE_NUMBER_WITHIN_LINE 0
-#define TRACE_NUMBER_WITHIN_FILE 1
-#define ORIGINAL_FIELD_RECORD_NUMBER 2
-#define TRACE_NUMBER_WITHIN_ORIGINAL_FIELD_RECORD 3
-#define TRACE_IDENTIFICATION_CODE 4
-#define ENSEMBLE_NUMBER 5
-#define TRACE_NUMBER_WITHIN_ENSEMBLE 6
-#define NUMBER_VERTICAL_SUMMED_TRACES 7
-#define NUMBER_HORIZONTAL_STACKED_TRACES 8
-#define DATA_USE 9
-#define DISTANCE_SOURCE_GROUP 10
-#define RECEIVER_GROUP_ELEVATION 11
-#define SURFACE_ELEVATION_AT_SOURCE 12
-#define SOURCE_DEPTH_BELOW_SURFACE 13
-#define DATUM_ELEVATION_AT_RECEIVER_GROUP 14
-#define DATUM_ELEVATION_AT_SOURCE 15
-#define WATER_DEPTH_AT_SOURCE 16
-#define WATER_DEPTH_AT_GROUP 17
-#define VERTICAL_SCALAR 18
-#define HORIZONTAL_SCALAR 19
-#define SOURCE_X 20
-#define SOURCE_Y 21
-#define GROUP_X 22
-#define GROUP_Y 23
-#define COORDINATE_UNITS 24
-#define WEATHERING_VELOCITY 25
-#define SUB_WEATHERING_VELOCITY 26
-#define UPHOLE_TIME_AT_SOURCE 27
-#define UPHOLE_TIME_AT_GROUP 28
-#define SOURCE_STATIC_CORRECTION 29
-#define GROUP_STATIC_CORRECTION 30
-#define TOTAL_STATIC_CORRECTION 31
-#define LAG_TIME_A 32
-#define LAG_TIME_B 33
-#define DELAY_RECORDING_TIME 34
-#define MUTE_TIME_START 35
-#define MUTE_TIME_END 36
-#define SAMPLES 37
-#define SAMPLE_INTERVAL 38
-#define GAIN_TYPE 39
-#define INSTRUMENT_GAIN_CONSTANT 40
-#define INSTRUMENT_INITIAL_GAIN 41
-#define CORRELATED 42
-#define SWEEP_FREQUENCY_AT_START 43
-#define SWEEP_FREQUENCY_AT_END 44
-#define SWEEP_LENGTH 45
-#define SWEEP_TYPE 46
-#define SWEEP_TRACE_TAPER_LENGTH_AT_START 47
-#define SWEEP_TRACE_TAPER_LENGTH_AT_END 48
-#define TAPER_TYPE 49
-#define ALIAS_FILTER_FREQUENCY 50
-#define ALIAS_FILTER_SLOPE 51
-#define NOTCH_FILTER_FREQUENCY 52
-#define NOTCH_FILTER_SLOPE 53
-#define LOW_CUT_FREQUENCY 54
-#define HIGH_CUT_FREQUENCY 55
-#define LOW_CUT_SLOPE 56
-#define HIGH_CUT_SLOPE 57
-#define YEAR 58
-#define DAY_OF_YEAR 59
-#define HOUR 60
-#define MINUTE 61
-#define SECOND 62
-#define TIME_BASIC_CODE 63
-#define TRACE_WEIGHTING_FACTOR 64
-#define GEOPHONE_GROUP_NUMBER_OF_ROLL_SWITH 65
-#define GEOPHONE_GROUP_NUMBER_OF_TRACE_NUMBER_ONE 66
-#define GEOPHONE_GROUP_NUMBER_OF_LAST_TRACE 67
-#define GAP_SIZE 68
-#define OVER_TRAVEL 69
-#define INLINE_NUMBER 70
-#define CROSSLINE_NUMBER 71
-#define SHOTPOINT_NUMBER 72
-#define SHOTPOINT_SCALAR 73
+static const int TRACE_NUMBER_WITHIN_LINE = 0;
+static const int TRACE_NUMBER_WITHIN_FILE = 1;
+static const int ORIGINAL_FIELD_RECORD_NUMBER = 2;
+static const int TRACE_NUMBER_WITHIN_ORIGINAL_FIELD_RECORD = 3;
+static const int TRACE_IDENTIFICATION_CODE = 4;
+static const int ENSEMBLE_NUMBER = 5;
+static const int TRACE_NUMBER_WITHIN_ENSEMBLE = 6;
+static const int NUMBER_VERTICAL_SUMMED_TRACES = 7;
+static const int NUMBER_HORIZONTAL_STACKED_TRACES = 8;
+static const int DATA_USE = 9;
+static const int DISTANCE_SOURCE_GROUP = 10;
+static const int RECEIVER_GROUP_ELEVATION = 11;
+static const int SURFACE_ELEVATION_AT_SOURCE = 12;
+static const int SOURCE_DEPTH_BELOW_SURFACE = 13;
+static const int DATUM_ELEVATION_AT_RECEIVER_GROUP = 14;
+static const int DATUM_ELEVATION_AT_SOURCE = 15;
+static const int WATER_DEPTH_AT_SOURCE = 16;
+static const int WATER_DEPTH_AT_GROUP = 17;
+static const int VERTICAL_SCALAR = 18;
+static const int HORIZONTAL_SCALAR = 19;
+static const int SOURCE_X = 20;
+static const int SOURCE_Y = 21;
+static const int GROUP_X = 22;
+static const int GROUP_Y = 23;
+static const int COORDINATE_UNITS = 24;
+static const int WEATHERING_VELOCITY = 25;
+static const int SUB_WEATHERING_VELOCITY = 26;
+static const int UPHOLE_TIME_AT_SOURCE = 27;
+static const int UPHOLE_TIME_AT_GROUP = 28;
+static const int SOURCE_STATIC_CORRECTION = 29;
+static const int GROUP_STATIC_CORRECTION = 30;
+static const int TOTAL_STATIC_CORRECTION = 31;
+static const int LAG_TIME_A = 32;
+static const int LAG_TIME_B = 33;
+static const int DELAY_RECORDING_TIME = 34;
+static const int MUTE_TIME_START = 35;
+static const int MUTE_TIME_END = 36;
+static const int SAMPLES = 37;
+static const int SAMPLE_INTERVAL = 38;
+static const int GAIN_TYPE = 39;
+static const int INSTRUMENT_GAIN_CONSTANT = 40;
+static const int INSTRUMENT_INITIAL_GAIN = 41;
+static const int CORRELATED = 42;
+static const int SWEEP_FREQUENCY_AT_START = 43;
+static const int SWEEP_FREQUENCY_AT_END = 44;
+static const int SWEEP_LENGTH = 45;
+static const int SWEEP_TYPE = 46;
+static const int SWEEP_TRACE_TAPER_LENGTH_AT_START = 47;
+static const int SWEEP_TRACE_TAPER_LENGTH_AT_END = 48;
+static const int TAPER_TYPE = 49;
+static const int ALIAS_FILTER_FREQUENCY = 50;
+static const int ALIAS_FILTER_SLOPE = 51;
+static const int NOTCH_FILTER_FREQUENCY = 52;
+static const int NOTCH_FILTER_SLOPE = 53;
+static const int LOW_CUT_FREQUENCY = 54;
+static const int HIGH_CUT_FREQUENCY = 55;
+static const int LOW_CUT_SLOPE = 56;
+static const int HIGH_CUT_SLOPE = 57;
+static const int YEAR = 58;
+static const int DAY_OF_YEAR = 59;
+static const int HOUR = 60;
+static const int MINUTE = 61;
+static const int SECOND = 62;
+static const int TIME_BASIC_CODE = 63;
+static const int TRACE_WEIGHTING_FACTOR = 64;
+static const int GEOPHONE_GROUP_NUMBER_OF_ROLL_SWITH = 65;
+static const int GEOPHONE_GROUP_NUMBER_OF_TRACE_NUMBER_ONE = 66;
+static const int GEOPHONE_GROUP_NUMBER_OF_LAST_TRACE = 67;
+static const int GAP_SIZE = 68;
+static const int OVER_TRAVEL = 69;
+static const int INLINE_NUMBER = 70;
+static const int CROSSLINE_NUMBER = 71;
+static const int SHOTPOINT_NUMBER = 72;
+static const int SHOTPOINT_SCALAR = 73;
 
 #if 0
 /************************************************************************/
@@ -464,12 +464,12 @@ OGRFeature *OGRSEGYLayer::GetNextRawFeature()
     float fSampleInterval  = SEGYReadMSBFloat32(abyTraceHeader + 192);
     float fWaterBottomTime  = SEGYReadMSBFloat32(abyTraceHeader + 196);
     int nEndOfRp = SEGYReadMSBInt16(abyTraceHeader + 200);
-    CPLDebug("SIGY", "fDeepWaterDelay = %f", fDeepWaterDelay);
-    CPLDebug("SIGY", "fStartMuteTime = %f", fStartMuteTime);
-    CPLDebug("SIGY", "fEndMuteTime = %f", fEndMuteTime);
-    CPLDebug("SIGY", "fSampleInterval = %f", fSampleInterval);
-    CPLDebug("SIGY", "fWaterBottomTime = %f", fWaterBottomTime);
-    CPLDebug("SIGY", "nEndOfRp = %d", nEndOfRp);
+    CPLDebug("SEGY", "fDeepWaterDelay = %f", fDeepWaterDelay);
+    CPLDebug("SEGY", "fStartMuteTime = %f", fStartMuteTime);
+    CPLDebug("SEGY", "fEndMuteTime = %f", fEndMuteTime);
+    CPLDebug("SEGY", "fSampleInterval = %f", fSampleInterval);
+    CPLDebug("SEGY", "fWaterBottomTime = %f", fWaterBottomTime);
+    CPLDebug("SEGY", "nEndOfRp = %d", nEndOfRp);
 #endif
 
     double dfHorizontalScale = (nHorizontalScalar > 0) ? nHorizontalScalar :
@@ -486,90 +486,90 @@ OGRFeature *OGRSEGYLayer::GetNextRawFeature()
 #endif
 
 #if 0
-    CPLDebug("SIGY", "nTraceNumberWithinLine = %d", nTraceNumberWithinLine);
-    CPLDebug("SIGY", "nTraceNumberWithinFile = %d", nTraceNumberWithinFile);
-    CPLDebug("SIGY", "nOriginalFieldRecordNumber = %d", nOriginalFieldRecordNumber);
-    CPLDebug("SIGY", "nTraceNumberWithinOriginalFieldRecord = %d", nTraceNumberWithinOriginalFieldRecord);
-    CPLDebug("SIGY", "nTraceIdentificationCode = %d", nTraceIdentificationCode);
-    CPLDebug("SIGY", "nEnsembleNumber = %d", nEnsembleNumber);
-    CPLDebug("SIGY", "nTraceNumberWithinEnsemble = %d", nTraceNumberWithinEnsemble);
-    CPLDebug("SIGY", "nNumberVerticalSummedTraces = %d", nNumberVerticalSummedTraces);
-    CPLDebug("SIGY", "nNumberHorizontalStackedTraces = %d", nNumberHorizontalStackedTraces);
-    CPLDebug("SIGY", "nDataUse = %d", nDataUse);
-    CPLDebug("SIGY", "nDistanceSourceGroup = %d", nDistanceSourceGroup);
-    CPLDebug("SIGY", "nReceiverGroupElevation = %d", nReceiverGroupElevation);
-    CPLDebug("SIGY", "nSurfaceElevationAtSource = %d", nSurfaceElevationAtSource);
-    CPLDebug("SIGY", "nSourceDepthBelowSurface = %d", nSourceDepthBelowSurface);
-    CPLDebug("SIGY", "nDatumElevationAtReceiverGroup = %d", nDatumElevationAtReceiverGroup);
-    CPLDebug("SIGY", "nDatumElevationAtSource = %d", nDatumElevationAtSource);
-    CPLDebug("SIGY", "nWaterDepthAtSource = %d", nWaterDepthAtSource);
-    CPLDebug("SIGY", "nWaterDepthAtGroup = %d", nWaterDepthAtGroup);
-    CPLDebug("SIGY", "nVerticalScalar = %d", nVerticalScalar);
-    CPLDebug("SIGY", "nHorizontalScalar = %d", nHorizontalScalar);
-    CPLDebug("SIGY", "nSourceX = %d", nSourceX);
-    CPLDebug("SIGY", "nSourceY = %d", nSourceY);
-    CPLDebug("SIGY", "dfSourceX = %f", dfSourceX);
-    CPLDebug("SIGY", "dfSourceY = %f", dfSourceY);
-    CPLDebug("SIGY", "nGroupX = %d", nGroupX);
-    CPLDebug("SIGY", "nGroupY = %d", nGroupY);
-    CPLDebug("SIGY", "dfGroupX = %f", dfGroupX);
-    CPLDebug("SIGY", "dfGroupY = %f", dfGroupY);
-    CPLDebug("SIGY", "nCoordinateUnits = %d", nCoordinateUnits);
+    CPLDebug("SEGY", "nTraceNumberWithinLine = %d", nTraceNumberWithinLine);
+    CPLDebug("SEGY", "nTraceNumberWithinFile = %d", nTraceNumberWithinFile);
+    CPLDebug("SEGY", "nOriginalFieldRecordNumber = %d", nOriginalFieldRecordNumber);
+    CPLDebug("SEGY", "nTraceNumberWithinOriginalFieldRecord = %d", nTraceNumberWithinOriginalFieldRecord);
+    CPLDebug("SEGY", "nTraceIdentificationCode = %d", nTraceIdentificationCode);
+    CPLDebug("SEGY", "nEnsembleNumber = %d", nEnsembleNumber);
+    CPLDebug("SEGY", "nTraceNumberWithinEnsemble = %d", nTraceNumberWithinEnsemble);
+    CPLDebug("SEGY", "nNumberVerticalSummedTraces = %d", nNumberVerticalSummedTraces);
+    CPLDebug("SEGY", "nNumberHorizontalStackedTraces = %d", nNumberHorizontalStackedTraces);
+    CPLDebug("SEGY", "nDataUse = %d", nDataUse);
+    CPLDebug("SEGY", "nDistanceSourceGroup = %d", nDistanceSourceGroup);
+    CPLDebug("SEGY", "nReceiverGroupElevation = %d", nReceiverGroupElevation);
+    CPLDebug("SEGY", "nSurfaceElevationAtSource = %d", nSurfaceElevationAtSource);
+    CPLDebug("SEGY", "nSourceDepthBelowSurface = %d", nSourceDepthBelowSurface);
+    CPLDebug("SEGY", "nDatumElevationAtReceiverGroup = %d", nDatumElevationAtReceiverGroup);
+    CPLDebug("SEGY", "nDatumElevationAtSource = %d", nDatumElevationAtSource);
+    CPLDebug("SEGY", "nWaterDepthAtSource = %d", nWaterDepthAtSource);
+    CPLDebug("SEGY", "nWaterDepthAtGroup = %d", nWaterDepthAtGroup);
+    CPLDebug("SEGY", "nVerticalScalar = %d", nVerticalScalar);
+    CPLDebug("SEGY", "nHorizontalScalar = %d", nHorizontalScalar);
+    CPLDebug("SEGY", "nSourceX = %d", nSourceX);
+    CPLDebug("SEGY", "nSourceY = %d", nSourceY);
+    CPLDebug("SEGY", "dfSourceX = %f", dfSourceX);
+    CPLDebug("SEGY", "dfSourceY = %f", dfSourceY);
+    CPLDebug("SEGY", "nGroupX = %d", nGroupX);
+    CPLDebug("SEGY", "nGroupY = %d", nGroupY);
+    CPLDebug("SEGY", "dfGroupX = %f", dfGroupX);
+    CPLDebug("SEGY", "dfGroupY = %f", dfGroupY);
+    CPLDebug("SEGY", "nCoordinateUnits = %d", nCoordinateUnits);
 
-    CPLDebug("SIGY", "nWeatheringVelocity = %d", nWeatheringVelocity);
-    CPLDebug("SIGY", "nSubWeatheringVelocity = %d", nSubWeatheringVelocity);
-    CPLDebug("SIGY", "nUpholeTimeAtSource = %d", nUpholeTimeAtSource);
-    CPLDebug("SIGY", "nUpholeTimeAtGroup = %d", nUpholeTimeAtGroup);
-    CPLDebug("SIGY", "nSourceStaticCorrection = %d", nSourceStaticCorrection);
-    CPLDebug("SIGY", "nGroupStaticCorrection = %d", nGroupStaticCorrection);
-    CPLDebug("SIGY", "nTotalStaticCorrection = %d", nTotalStaticCorrection);
-    CPLDebug("SIGY", "nLagTimeA = %d", nLagTimeA);
-    CPLDebug("SIGY", "nLagTimeB = %d", nLagTimeB);
-    CPLDebug("SIGY", "nDelayRecordingTime = %d", nDelayRecordingTime);
-    CPLDebug("SIGY", "nMuteTimeStart = %d", nMuteTimeStart);
-    CPLDebug("SIGY", "nMuteTimeEnd = %d", nMuteTimeEnd);
+    CPLDebug("SEGY", "nWeatheringVelocity = %d", nWeatheringVelocity);
+    CPLDebug("SEGY", "nSubWeatheringVelocity = %d", nSubWeatheringVelocity);
+    CPLDebug("SEGY", "nUpholeTimeAtSource = %d", nUpholeTimeAtSource);
+    CPLDebug("SEGY", "nUpholeTimeAtGroup = %d", nUpholeTimeAtGroup);
+    CPLDebug("SEGY", "nSourceStaticCorrection = %d", nSourceStaticCorrection);
+    CPLDebug("SEGY", "nGroupStaticCorrection = %d", nGroupStaticCorrection);
+    CPLDebug("SEGY", "nTotalStaticCorrection = %d", nTotalStaticCorrection);
+    CPLDebug("SEGY", "nLagTimeA = %d", nLagTimeA);
+    CPLDebug("SEGY", "nLagTimeB = %d", nLagTimeB);
+    CPLDebug("SEGY", "nDelayRecordingTime = %d", nDelayRecordingTime);
+    CPLDebug("SEGY", "nMuteTimeStart = %d", nMuteTimeStart);
+    CPLDebug("SEGY", "nMuteTimeEnd = %d", nMuteTimeEnd);
 
-    CPLDebug("SIGY", "nSamples = %d", nSamples);
-    CPLDebug("SIGY", "nSampleInterval = %d", nSampleInterval);
+    CPLDebug("SEGY", "nSamples = %d", nSamples);
+    CPLDebug("SEGY", "nSampleInterval = %d", nSampleInterval);
 
-    CPLDebug("SIGY", "nGainType = %d", nGainType);
-    CPLDebug("SIGY", "nInstrumentGainConstant = %d", nInstrumentGainConstant);
-    CPLDebug("SIGY", "nInstrumentInitialGain = %d", nInstrumentInitialGain);
-    CPLDebug("SIGY", "nCorrelated = %d", nCorrelated);
-    CPLDebug("SIGY", "nSweepFrequencyAtStart = %d", nSweepFrequencyAtStart);
-    CPLDebug("SIGY", "nSweepFrequencyAtEnd = %d", nSweepFrequencyAtEnd);
-    CPLDebug("SIGY", "nSweepLength = %d", nSweepLength);
-    CPLDebug("SIGY", "nSweepType = %d", nSweepType);
-    CPLDebug("SIGY", "nSweepTraceTaperLengthAtStart = %d", nSweepTraceTaperLengthAtStart);
-    CPLDebug("SIGY", "nSweepTraceTaperLengthAtEnd = %d", nSweepTraceTaperLengthAtEnd);
-    CPLDebug("SIGY", "nTaperType = %d", nTaperType);
-    CPLDebug("SIGY", "nAliasFilterFrequency = %d", nAliasFilterFrequency);
-    CPLDebug("SIGY", "nAliasFilterSlope = %d", nAliasFilterSlope);
-    CPLDebug("SIGY", "nNotchFilterFrequency = %d", nNotchFilterFrequency);
-    CPLDebug("SIGY", "nNotchFilterSlope = %d", nNotchFilterSlope);
-    CPLDebug("SIGY", "nLowCutFrequency = %d", nLowCutFrequency);
-    CPLDebug("SIGY", "nHighCutFrequency = %d", nHighCutFrequency);
-    CPLDebug("SIGY", "nLowCutSlope = %d", nLowCutSlope);
-    CPLDebug("SIGY", "nHighCutSlope = %d", nHighCutSlope);
-    CPLDebug("SIGY", "nYear = %d", nYear);
-    CPLDebug("SIGY", "nDayOfYear = %d", nDayOfYear);
-    CPLDebug("SIGY", "nHour = %d", nHour);
-    CPLDebug("SIGY", "nMinute = %d", nMinute);
-    CPLDebug("SIGY", "nSecond = %d", nSecond);
-    CPLDebug("SIGY", "nTimeBasicCode = %d", nTimeBasicCode);
-    CPLDebug("SIGY", "nTraceWeightingFactor = %d", nTraceWeightingFactor);
-    CPLDebug("SIGY", "nGeophoneGroupNumberOfRollSwith = %d", nGeophoneGroupNumberOfRollSwith);
-    CPLDebug("SIGY", "nGeophoneGroupNumberOfTraceNumberOne = %d", nGeophoneGroupNumberOfTraceNumberOne);
-    CPLDebug("SIGY", "nGeophoneGroupNumberOfLastTrace = %d", nGeophoneGroupNumberOfLastTrace);
-    CPLDebug("SIGY", "nGapSize = %d", nGapSize);
-    CPLDebug("SIGY", "nOverTravel = %d", nOverTravel);
+    CPLDebug("SEGY", "nGainType = %d", nGainType);
+    CPLDebug("SEGY", "nInstrumentGainConstant = %d", nInstrumentGainConstant);
+    CPLDebug("SEGY", "nInstrumentInitialGain = %d", nInstrumentInitialGain);
+    CPLDebug("SEGY", "nCorrelated = %d", nCorrelated);
+    CPLDebug("SEGY", "nSweepFrequencyAtStart = %d", nSweepFrequencyAtStart);
+    CPLDebug("SEGY", "nSweepFrequencyAtEnd = %d", nSweepFrequencyAtEnd);
+    CPLDebug("SEGY", "nSweepLength = %d", nSweepLength);
+    CPLDebug("SEGY", "nSweepType = %d", nSweepType);
+    CPLDebug("SEGY", "nSweepTraceTaperLengthAtStart = %d", nSweepTraceTaperLengthAtStart);
+    CPLDebug("SEGY", "nSweepTraceTaperLengthAtEnd = %d", nSweepTraceTaperLengthAtEnd);
+    CPLDebug("SEGY", "nTaperType = %d", nTaperType);
+    CPLDebug("SEGY", "nAliasFilterFrequency = %d", nAliasFilterFrequency);
+    CPLDebug("SEGY", "nAliasFilterSlope = %d", nAliasFilterSlope);
+    CPLDebug("SEGY", "nNotchFilterFrequency = %d", nNotchFilterFrequency);
+    CPLDebug("SEGY", "nNotchFilterSlope = %d", nNotchFilterSlope);
+    CPLDebug("SEGY", "nLowCutFrequency = %d", nLowCutFrequency);
+    CPLDebug("SEGY", "nHighCutFrequency = %d", nHighCutFrequency);
+    CPLDebug("SEGY", "nLowCutSlope = %d", nLowCutSlope);
+    CPLDebug("SEGY", "nHighCutSlope = %d", nHighCutSlope);
+    CPLDebug("SEGY", "nYear = %d", nYear);
+    CPLDebug("SEGY", "nDayOfYear = %d", nDayOfYear);
+    CPLDebug("SEGY", "nHour = %d", nHour);
+    CPLDebug("SEGY", "nMinute = %d", nMinute);
+    CPLDebug("SEGY", "nSecond = %d", nSecond);
+    CPLDebug("SEGY", "nTimeBasicCode = %d", nTimeBasicCode);
+    CPLDebug("SEGY", "nTraceWeightingFactor = %d", nTraceWeightingFactor);
+    CPLDebug("SEGY", "nGeophoneGroupNumberOfRollSwith = %d", nGeophoneGroupNumberOfRollSwith);
+    CPLDebug("SEGY", "nGeophoneGroupNumberOfTraceNumberOne = %d", nGeophoneGroupNumberOfTraceNumberOne);
+    CPLDebug("SEGY", "nGeophoneGroupNumberOfLastTrace = %d", nGeophoneGroupNumberOfLastTrace);
+    CPLDebug("SEGY", "nGapSize = %d", nGapSize);
+    CPLDebug("SEGY", "nOverTravel = %d", nOverTravel);
 
     if (sBFH.dfSEGYRevisionNumber >= 1.0)
     {
-        CPLDebug("SIGY", "nInlineNumber = %d", nInlineNumber);
-        CPLDebug("SIGY", "nCrosslineNumber = %d", nCrosslineNumber);
-        CPLDebug("SIGY", "nShotpointNumber = %d", nShotpointNumber);
-        CPLDebug("SIGY", "nShotpointScalar = %d", nShotpointScalar);
+        CPLDebug("SEGY", "nInlineNumber = %d", nInlineNumber);
+        CPLDebug("SEGY", "nCrosslineNumber = %d", nCrosslineNumber);
+        CPLDebug("SEGY", "nShotpointNumber = %d", nShotpointNumber);
+        CPLDebug("SEGY", "nShotpointScalar = %d", nShotpointScalar);
     }
 #endif
 
@@ -764,44 +764,42 @@ static const FieldDesc SEGYHeaderFields[] =
     { "NUMBER_OF_EXTENDED_TEXTUAL_FILE_HEADER", OFTInteger },
 };
 
-#define HEADER_TEXT_HEADER 0
-#define HEADER_JOB_ID_NUMBER 1
-#define HEADER_LINE_NUMBER 2
-#define HEADER_REEL_NUMBER 3
-#define HEADER_DATA_TRACES_PER_ENSEMBLE 4
-#define HEADER_AUX_TRACES_PER_ENSEMBLE 5
-#define HEADER_SAMPLE_INTERVAL 6
-#define HEADER_SAMPLE_INTERVAL_ORIGINAL 7
-#define HEADER_SAMPLES_PER_DATA_TRACE 8
-#define HEADER_SAMPLES_PER_DATA_TRACE_ORIGINAL 9
-#define HEADER_DATA_SAMPLE_TYPE 10
-#define HEADER_ENSEMBLE_FOLD 11
-#define HEADER_TRACE_SORTING_CODE 12
-#define HEADER_VERTICAL_SUM_CODE 13
-#define HEADER_SWEEP_FREQUENCY_AT_START 14
-#define HEADER_SWEEP_FREQUENCY_AT_END 15
-#define HEADER_SWEEP_LENGTH 16
-#define HEADER_SWEEP_TYPE 17
-#define HEADER_TRACE_NUMBER_OF_SWEEP_CHANNEL 18
-#define HEADER_SWEEP_TRACE_TAPER_LENGTH_AT_START 19
-#define HEADER_SWEEP_TRACE_TAPER_LENGTH_AT_END 20
-#define HEADER_TAPER_TYPE 21
-#define HEADER_CORRELATED 22
-#define HEADER_BINARY_GAIN_RECOVERED 23
-#define HEADER_AMPLITUDE_RECOVERY_METHOD 24
-#define HEADER_MEASUREMENT_SYSTEM 25
-#define HEADER_IMPULSE_SIGNAL_POLARITY 26
-#define HEADER_VIBRATORY_POLARY_CODE 27
-#define HEADER_SEGY_REVISION_NUMBER 28
-#define HEADER_FLOAT_SEGY_REVISION_NUMBER 29
-#define HEADER_FIXED_LENGTH_TRACE_FLAG 30
-#define HEADER_NUMBER_OF_EXTENDED_TEXTUAL_FILE_HEADER 31
-
+static const int HEADER_TEXT_HEADER = 0;
+static const int HEADER_JOB_ID_NUMBER = 1;
+static const int HEADER_LINE_NUMBER = 2;
+static const int HEADER_REEL_NUMBER = 3;
+static const int HEADER_DATA_TRACES_PER_ENSEMBLE = 4;
+static const int HEADER_AUX_TRACES_PER_ENSEMBLE = 5;
+static const int HEADER_SAMPLE_INTERVAL = 6;
+static const int HEADER_SAMPLE_INTERVAL_ORIGINAL = 7;
+static const int HEADER_SAMPLES_PER_DATA_TRACE = 8;
+static const int HEADER_SAMPLES_PER_DATA_TRACE_ORIGINAL = 9;
+static const int HEADER_DATA_SAMPLE_TYPE = 10;
+static const int HEADER_ENSEMBLE_FOLD = 11;
+static const int HEADER_TRACE_SORTING_CODE = 12;
+static const int HEADER_VERTICAL_SUM_CODE = 13;
+static const int HEADER_SWEEP_FREQUENCY_AT_START = 14;
+static const int HEADER_SWEEP_FREQUENCY_AT_END = 15;
+static const int HEADER_SWEEP_LENGTH = 16;
+static const int HEADER_SWEEP_TYPE = 17;
+static const int HEADER_TRACE_NUMBER_OF_SWEEP_CHANNEL = 18;
+static const int HEADER_SWEEP_TRACE_TAPER_LENGTH_AT_START = 19;
+static const int HEADER_SWEEP_TRACE_TAPER_LENGTH_AT_END = 20;
+static const int HEADER_TAPER_TYPE = 21;
+static const int HEADER_CORRELATED = 22;
+static const int HEADER_BINARY_GAIN_RECOVERED = 23;
+static const int HEADER_AMPLITUDE_RECOVERY_METHOD = 24;
+static const int HEADER_MEASUREMENT_SYSTEM = 25;
+static const int HEADER_IMPULSE_SIGNAL_POLARITY = 26;
+static const int HEADER_VIBRATORY_POLARY_CODE = 27;
+static const int HEADER_SEGY_REVISION_NUMBER = 28;
+static const int HEADER_FLOAT_SEGY_REVISION_NUMBER = 29;
+static const int HEADER_FIXED_LENGTH_TRACE_FLAG = 30;
+static const int HEADER_NUMBER_OF_EXTENDED_TEXTUAL_FILE_HEADER = 31;
 
 /************************************************************************/
 /*                         OGRSEGYHeaderLayer()                         */
 /************************************************************************/
-
 
 OGRSEGYHeaderLayer::OGRSEGYHeaderLayer( const char* pszLayerName,
                                         SEGYBinaryFileHeader* psBFH,
