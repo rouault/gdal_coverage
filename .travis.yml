@@ -16,13 +16,13 @@ install:
   - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
   - tar xvzf proj-datumgrid-1.5.tar.gz
   - cd ..
-  - ./configure --prefix=/usr
+  - ./configure --prefix=/usr/local
   - make -j3
   - sudo make install
   - cd ..
 # build GDAL
   - cd gdal
-  - ./configure --prefix=/usr --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal
+  - ./configure --prefix=/usr/local --enable-debug --with-static-proj4=/usr/local --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal
   - make USER_DEFS="-Wextra -Werror" -j3
   - cd apps
   - make USER_DEFS="-Wextra -Werror" test_ogrsf
