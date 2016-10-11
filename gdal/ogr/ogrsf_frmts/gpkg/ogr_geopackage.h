@@ -227,6 +227,7 @@ class GDALGeoPackageDataset CPL_FINAL : public OGRSQLiteBaseDataSource, public G
 
         OGRErr              PragmaCheck(const char * pszPragma, const char * pszExpected, int nRowsExpected);
         OGRErr              SetApplicationId();
+        bool                ReOpenDB();
         bool                OpenOrCreateDB( int flags );
         bool                HasGDALAspatialExtension();
 };
@@ -331,6 +332,10 @@ class OGRGeoPackageTableLayer CPL_FINAL : public OGRGeoPackageLayer
     OGRErr              RegisterGeometryColumn();
 
     CPLString           GetColumnsOfCreateTable(const std::vector<OGRFieldDefn*> apoFields);
+    CPLString           BuildSelectFieldList(const std::vector<OGRFieldDefn*> apoFields);
+    OGRErr              RecreateTable(const CPLString& osColumnsForCreate,
+                                      const CPLString& osFieldListForSelect);
+    bool                IsTable();
 
     public:
                         OGRGeoPackageTableLayer( GDALGeoPackageDataset *poDS,
@@ -345,6 +350,8 @@ class OGRGeoPackageTableLayer CPL_FINAL : public OGRGeoPackageLayer
     OGRErr              CreateGeomField( OGRGeomFieldDefn *poGeomFieldIn,
                                          int bApproxOK = TRUE );
     virtual OGRErr      DeleteField(  int iFieldToDelete );
+    virtual OGRErr      AlterFieldDefn( int iFieldToAlter, OGRFieldDefn* poNewFieldDefn, int nFlagsIn );
+    virtual OGRErr      ReorderFields( int* panMap );
     void                ResetReading();
     OGRErr              ICreateFeature( OGRFeature *poFeater );
     OGRErr              ISetFeature( OGRFeature *poFeature );
@@ -379,7 +386,7 @@ class OGRGeoPackageTableLayer CPL_FINAL : public OGRGeoPackageLayer
                                 { m_bRegisterAsAspatial = bFlag; }
 
     void                CreateSpatialIndexIfNecessary();
-    bool                CreateSpatialIndex();
+    bool                CreateSpatialIndex(const char* pszTableName = NULL);
     bool                DropSpatialIndex(bool bCalledFromSQLFunction = false);
 
     virtual char **     GetMetadata( const char *pszDomain = NULL );
