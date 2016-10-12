@@ -853,10 +853,10 @@ class OGRGMLASDataSource: public GDALDataset
         std::vector<OGRGMLASLayer*>    m_apoLayers;
         std::map<CPLString, CPLString> m_oMapURIToPrefix;
         CPLString                      m_osGMLFilename;
-        bool                           m_bExposeMetadataLayers;
         OGRLayer                      *m_poFieldsMetadataLayer;
         OGRLayer                      *m_poLayersMetadataLayer;
         OGRLayer                      *m_poRelationshipsLayer;
+        std::vector<OGRLayer*>         m_apoRequestedMetadataLayers;
         VSILFILE                      *m_fpGML;
         VSILFILE                      *m_fpGMLParser;
         bool                           m_bLayerInitFinished;
@@ -888,6 +888,10 @@ class OGRGMLASDataSource: public GDALDataset
         vsi_l_offset                   m_nFileSize;
 
         GMLASReader*                   m_poReader;
+
+        bool                           m_bEndOfReaderLayers;
+
+        int                            m_nCurMetadataLayerIdx;
 
         GMLASXLinkResolver             m_oXLinkResolver;
 
