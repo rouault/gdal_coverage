@@ -162,6 +162,7 @@ GMLASSchemaAnalyzer::GMLASSchemaAnalyzer(
     : m_oIgnoredXPathMatcher(oIgnoredXPathMatcher)
     , m_bUseArrays(true)
     , m_bInstantiateGMLFeaturesOnly(true)
+    , m_nIdentifierMaxLength(0)
 {
     // A few hardcoded namespace uri->prefix mappings
     m_oMapURIToPrefix[ pszXMLNS_URI ] = "xmlns";
@@ -250,12 +251,14 @@ static CPLString GetNSOfLastXPathComponent(const CPLString& osXPath )
 }
 
 /************************************************************************/
-/*                         FixDuplicatedFieldNames()                    */
+/*                         LaunderFieldNames()                          */
 /************************************************************************/
 
 // Make sure that field names are unique within the class
-void GMLASSchemaAnalyzer::FixDuplicatedFieldNames( GMLASFeatureClass& oClass )
+void GMLASSchemaAnalyzer::LaunderFieldNames( GMLASFeatureClass& oClass )
 {
+    std::vector<GMLASField>& aoFields = oClass.GetFields();
+
     // Duplicates can happen if a class has both an element and an attribute
     // with same name, and/or attributes/elements with same name in different
     // namespaces.
@@ -266,7 +269,6 @@ void GMLASSchemaAnalyzer::FixDuplicatedFieldNames( GMLASFeatureClass& oClass )
 
         // Detect duplicated field names
         std::map<CPLString, std::vector<int> > oSetNames;
-        std::vector<GMLASField>& aoFields = oClass.GetFields();
         for(int i=0; i< static_cast<int>(aoFields.size());i++)
         {
             if( aoFields[i].GetCategory() == GMLASField::REGULAR )
@@ -339,12 +341,272 @@ void GMLASSchemaAnalyzer::FixDuplicatedFieldNames( GMLASFeatureClass& oClass )
     // until no renaming has been done.
     while( bHasDoneSomeRenaming );
 
+    // Now check if we must truncate names
+    if( m_nIdentifierMaxLength >=
+                    GMLASConfiguration::MIN_VALUE_OF_MAX_IDENTIFIER_LENGTH )
+    {
+        for(size_t i=0; i< aoFields.size();i++)
+        {
+            int nNameSize = static_cast<int>(aoFields[i].GetName().size());
+            if( nNameSize > m_nIdentifierMaxLength )
+            {
+                aoFields[i].SetName(TruncateIdentifier(aoFields[i].GetName()));
+            }
+        }
+
+        // Detect duplicated field names
+        std::map<CPLString, std::vector<int> > oSetNames;
+        for(int i=0; i< static_cast<int>(aoFields.size());i++)
+        {
+            if( aoFields[i].GetCategory() == GMLASField::REGULAR )
+            {
+                oSetNames[ aoFields[i].GetName() ].push_back(i ) ;
+            }
+        }
+
+        // Iterate over the unique names
+        std::map<CPLString, std::vector<int> >::const_iterator
+                oIter = oSetNames.begin();
+        for(; oIter != oSetNames.end(); ++oIter)
+        {
+            // Has it duplicates ?
+            const size_t nOccurrences = oIter->second.size();
+            if( nOccurrences > 1 )
+            {
+                for(size_t i=0; i<nOccurrences;i++)
+                {
+                    GMLASField& oField = aoFields[oIter->second[i]];
+                    CPLString osName(oField.GetName());
+                    CPLAssert( static_cast<int>(osName.size()) ==
+                                                m_nIdentifierMaxLength );
+                    const int nDigitsSize = (nOccurrences < 10) ? 1:
+                                            (nOccurrences < 100) ? 2 : 3;
+                    osName.resize(osName.size() - nDigitsSize);
+                    char szDigits[4];
+                    snprintf(szDigits, sizeof(szDigits), "%0*d",
+                             nDigitsSize, static_cast<int>(i+1));
+                    osName += szDigits;
+                    oField.SetName(osName);
+                }
+            }
+        }
+    }
+
     // Recursively process nested classes
-    std::vector<GMLASFeatureClass> aoNestedClasses = oClass.GetNestedClasses();
+    std::vector<GMLASFeatureClass>& aoNestedClasses = oClass.GetNestedClasses();
     for(size_t i=0; i<aoNestedClasses.size();i++)
     {
-        FixDuplicatedFieldNames( aoNestedClasses[i] );
+        LaunderFieldNames( aoNestedClasses[i] );
     }
+}
+
+/************************************************************************/
+/*                       CollectClassesReferences()                     */
+/************************************************************************/
+
+void GMLASSchemaAnalyzer::CollectClassesReferences(
+                                GMLASFeatureClass& oClass,
+                                std::vector<GMLASFeatureClass*>& aoClasses )
+{
+    aoClasses.push_back(&oClass);
+    std::vector<GMLASFeatureClass>& aoNestedClasses = oClass.GetNestedClasses();
+    for(size_t i=0; i<aoNestedClasses.size();i++)
+    {
+        CollectClassesReferences( aoNestedClasses[i], aoClasses );
+    }
+}
+
+/************************************************************************/
+/*                         LaunderClassNames()                          */
+/************************************************************************/
+
+void GMLASSchemaAnalyzer::LaunderClassNames()
+{
+    std::vector<GMLASFeatureClass*> aoClasses;
+    for(size_t i=0; i< m_aoClasses.size();i++)
+    {
+        CollectClassesReferences( m_aoClasses[i], aoClasses );
+    }
+
+    if( m_nIdentifierMaxLength >=
+                    GMLASConfiguration::MIN_VALUE_OF_MAX_IDENTIFIER_LENGTH )
+    {
+        for(size_t i=0; i< aoClasses.size();i++)
+        {
+            int nNameSize = static_cast<int>(aoClasses[i]->GetName().size());
+            if( nNameSize > m_nIdentifierMaxLength )
+            {
+                aoClasses[i]->SetName(TruncateIdentifier(aoClasses[i]->GetName()));
+            }
+        }
+    }
+
+    // Detect duplicated names. This should normally not happen in normal
+    // conditions except if you have classes like
+    // prefix_foo, prefix:foo, other_prefix:foo
+    // or if names have been truncated in the previous step
+    std::map<CPLString, std::vector<int> > oSetNames;
+    for(int i=0; i< static_cast<int>(aoClasses.size());i++)
+    {
+        oSetNames[ aoClasses[i]->GetName() ].push_back(i ) ;
+    }
+
+    // Iterate over the unique names
+    std::map<CPLString, std::vector<int> >::const_iterator
+            oIter = oSetNames.begin();
+    for(; oIter != oSetNames.end(); ++oIter)
+    {
+        // Has it duplicates ?
+        const size_t nOccurrences = oIter->second.size();
+        if( nOccurrences > 1 )
+        {
+            for(size_t i=0; i<nOccurrences;i++)
+            {
+                GMLASFeatureClass* poClass = aoClasses[oIter->second[i]];
+                CPLString osName(poClass->GetName());
+                const int nDigitsSize = (nOccurrences < 10) ? 1:
+                                        (nOccurrences < 100) ? 2 : 3;
+                char szDigits[4];
+                snprintf(szDigits, sizeof(szDigits), "%0*d",
+                         nDigitsSize, static_cast<int>(i+1));
+                if( m_nIdentifierMaxLength >=
+                    GMLASConfiguration::MIN_VALUE_OF_MAX_IDENTIFIER_LENGTH &&
+                    static_cast<int>(osName.size()) < m_nIdentifierMaxLength )
+                {
+                    if( static_cast<int>(osName.size()) + nDigitsSize < 
+                                                    m_nIdentifierMaxLength )
+                    {
+                        osName += szDigits;
+                    }
+                    else
+                    {
+                        osName.resize(m_nIdentifierMaxLength - nDigitsSize);
+                        osName += szDigits;
+                    }
+                }
+                else
+                {
+                    osName.resize(osName.size() - nDigitsSize);
+                    osName += szDigits;
+                }
+                poClass->SetName(osName);
+            }
+        }
+    }
+}
+
+/************************************************************************/
+/*                      TruncateIdentifier()                            */
+/************************************************************************/
+
+CPLString GMLASSchemaAnalyzer::TruncateIdentifier(const CPLString& osName)
+{
+    int nExtra = static_cast<int>(osName.size()) - m_nIdentifierMaxLength;
+    CPLAssert(nExtra > 0);
+
+    // Decompose in tokens
+    char** papszTokens = CSLTokenizeString2(osName, "_",
+                                            CSLT_ALLOWEMPTYTOKENS );
+    std::vector< char > achDelimiters;
+    std::vector< CPLString > aosTokens;
+    for( int j=0; papszTokens[j] != NULL; ++j )
+    {
+        const char* pszToken = papszTokens[j];
+        bool bIsCamelCase = false;
+        // Split parts like camelCase or CamelCase into several tokens
+        if( pszToken[0] != '\0' && islower(pszToken[1]) )
+        {
+            bIsCamelCase = true;
+            bool bLastIsLower = true;
+            std::vector<CPLString> aoParts;
+            CPLString osCurrentPart;
+            osCurrentPart += pszToken[0];
+            osCurrentPart += pszToken[1];
+            for( int k=2; pszToken[k]; ++k)
+            {
+                if( isupper(pszToken[k]) )
+                {
+                    if( !bLastIsLower )
+                    {
+                        bIsCamelCase = false;
+                        break;
+                    }
+                    aoParts.push_back(osCurrentPart);
+                    osCurrentPart.clear();
+                    bLastIsLower = false;
+                }
+                else
+                {
+                    bLastIsLower = true;
+                }
+                osCurrentPart += pszToken[k];
+            }
+            if( bIsCamelCase )
+            {
+                if( !osCurrentPart.empty() )
+                    aoParts.push_back(osCurrentPart);
+                for( size_t k=0; k<aoParts.size(); ++k )
+                {
+                    achDelimiters.push_back( (j > 0 && k == 0) ? '_' : '\0' );
+                    aosTokens.push_back( aoParts[k] );
+                }
+            }
+        }
+        if( !bIsCamelCase )
+        {
+            achDelimiters.push_back( (j > 0) ? '_' : '\0' );
+            aosTokens.push_back( pszToken );
+        }
+    }
+    CSLDestroy(papszTokens);
+
+    // Truncate identifier by removing last character of longest part
+    bool bHasDoneSomething = true;
+    while( nExtra > 0 && bHasDoneSomething )
+    {
+        bHasDoneSomething = false;
+        int nMaxSize = 0;
+        size_t nIdxMaxSize = 0;
+        for( size_t j=0; j < aosTokens.size(); ++j )
+        {
+            int nTokenLen = static_cast<int>(aosTokens[j].size());
+            if( nTokenLen > nMaxSize )
+            {
+                // Avoid truncating last token unless it is excessively longer
+                // than previous ones.
+                if( j < aosTokens.size() - 1 ||
+                    nTokenLen > 2 * nMaxSize )
+                {
+                    nMaxSize = nTokenLen;
+                    nIdxMaxSize = j;
+                }
+            }
+        }
+
+        if( nMaxSize > 1 )
+        {
+            aosTokens[nIdxMaxSize].resize( nMaxSize - 1 );
+            bHasDoneSomething = true;
+            nExtra --;
+        }
+    }
+
+    // Reassemble truncated parts
+    CPLString osNewName;
+    for( size_t j=0; j < aosTokens.size(); ++j )
+    {
+        if( achDelimiters[j] )
+            osNewName += achDelimiters[j];
+        osNewName += aosTokens[j];
+    }
+
+    // If we are still longer than max allowed, truncate beginning of name
+    if( nExtra > 0 )
+    {
+        osNewName = osNewName.substr(nExtra);
+    }
+    CPLAssert( static_cast<int>(osNewName.size()) == m_nIdentifierMaxLength );
+    return osNewName;
 }
 
 /************************************************************************/
@@ -646,6 +908,13 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
     std::set<XSElementDeclaration*> oSetVisitedEltDecl;
     std::set<XSModelGroup*> oSetVisitedModelGroups;
     std::vector<XSElementDeclaration*> oVectorEltsForTopClass;
+
+    // For some reason, different XSElementDeclaration* can point to the
+    // same element, but we only want to instanciate a single class.
+    // This is the case for base:SpatialDataSet in
+    // inspire/geologicalunit/geologicalunit.gml test dataset.
+    std::set<CPLString> aoSetXPathEltsForTopClass;
+
     for( int iPass = 0; iPass < 2; ++iPass )
     {
         for( size_t iNS = 0; iNS < aoNamespaces.size(); iNS++ )
@@ -686,6 +955,7 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
                             oSetVisitedEltDecl.insert( poEltDecl );
                             m_oSetEltsForTopClass.insert( poEltDecl );
                             oVectorEltsForTopClass.push_back( poEltDecl );
+                            aoSetXPathEltsForTopClass.insert( osXPath );
                         }
                         else
                         {
@@ -697,6 +967,7 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
                                     oSetVisitedEltDecl,
                                     oSetVisitedModelGroups,
                                     oVectorEltsForTopClass,
+                                    aoSetXPathEltsForTopClass,
                                     poModel,
                                     bSimpleEnoughOut);
                         }
@@ -729,6 +1000,7 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
         const CPLString osXPath(MakeXPath(
                             transcode(poEltDecl->getNamespace()),
                             transcode(poEltDecl->getName())));
+
         bool bError = false;
         bool bResolvedType = InstantiateClassFromEltDeclaration(poEltDecl,
                                                                 poModel,
@@ -747,6 +1019,8 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
             return false;
         }
     }
+
+    LaunderClassNames();
 
     return true;
 }
@@ -815,7 +1089,7 @@ bool GMLASSchemaAnalyzer::InstantiateClassFromEltDeclaration(
             return false;
         }
 
-        FixDuplicatedFieldNames( oClass );
+        LaunderFieldNames( oClass );
 
         m_aoClasses.push_back(oClass);
         return true;
@@ -1158,10 +1432,12 @@ void GMLASSchemaAnalyzer::CreateNonNestedRelationship(
         apoImplEltList.insert(apoImplEltList.begin(), poElt);
     }
 
+    std::set<CPLString> aoSetSubEltXPath;
     if( nMaxOccurs == 1 && !bForceJunctionTable )
     {
         // If the field isn't repeated, then we can link to each
         // potential realization types with a field
+
         for( size_t j = 0; j < apoImplEltList.size(); j++ )
         {
             XSElementDeclaration* poSubElt = apoImplEltList[j];
@@ -1169,6 +1445,15 @@ void GMLASSchemaAnalyzer::CreateNonNestedRelationship(
             const CPLString osSubEltXPath(
                 MakeXPath(transcode(poSubElt->getNamespace()),
                           osSubEltName) );
+
+            // For AbstractFeature_SpatialDataSet_pkid in SpatialDataSet_member
+            if( aoSetSubEltXPath.find(osSubEltXPath) !=
+                                            aoSetSubEltXPath.end() )
+            {
+                continue;
+            }
+            aoSetSubEltXPath.insert(osSubEltXPath);
+
             const CPLString osRealFullXPath( oClass.GetXPath() + "/" +
                                              osSubEltXPath );
 
@@ -1220,6 +1505,14 @@ void GMLASSchemaAnalyzer::CreateNonNestedRelationship(
             const CPLString osSubEltName( transcode(poSubElt->getName()) );
             const CPLString osSubEltXPath(
                 MakeXPath(transcode(poSubElt->getNamespace()), osSubEltName) );
+
+            // For AbstractFeature_SpatialDataSet_pkid in SpatialDataSet_member
+            if( aoSetSubEltXPath.find(osSubEltXPath) !=
+                                            aoSetSubEltXPath.end() )
+            {
+                continue;
+            }
+            aoSetSubEltXPath.insert(osSubEltXPath);
 
             // Instantiate a junction table
             GMLASFeatureClass oJunctionTable;
@@ -1336,6 +1629,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                             std::set<XSModelGroup*>& oSetVisitedModelGroups,
                             std::vector<XSElementDeclaration*>&
                                                         oVectorEltsForTopClass,
+                            std::set<CPLString>& aoSetXPathEltsForTopClass,
                             XSModel* poModel,
                             bool& bSimpleEnoughOut)
 {
@@ -1438,7 +1732,9 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
 
                     // Make sure we will instantiate the referenced element
                     if( m_oSetEltsForTopClass.find( poSubElt ) == 
-                                m_oSetEltsForTopClass.end() )
+                                m_oSetEltsForTopClass.end() &&
+                        aoSetXPathEltsForTopClass.find( osSubEltXPath )
+                                == aoSetXPathEltsForTopClass.end() )
                     {
 #ifdef DEBUG_VERBOSE
                         CPLDebug("GMLAS", "%s (%s) must be exposed as "
@@ -1451,6 +1747,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                         oSetVisitedEltDecl.insert(poSubElt);
                         m_oSetEltsForTopClass.insert(poSubElt);
                         oVectorEltsForTopClass.push_back(poSubElt);
+                        aoSetXPathEltsForTopClass.insert( osSubEltXPath );
 
                         XSComplexTypeDefinition* poSubEltCT =
                                             IsEltCompatibleOfFC(poSubElt);
@@ -1467,6 +1764,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                                             oSetVisitedEltDecl,
                                             oSetVisitedModelGroups,
                                             oVectorEltsForTopClass,
+                                            aoSetXPathEltsForTopClass,
                                             poModel,
                                             bSubSimpleEnoughOut ) )
                             {
@@ -1493,7 +1791,9 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                         if( m_oSetEltsForTopClass.find(poElt) ==
                                                 m_oSetEltsForTopClass.end() &&
                             m_oSetSimpleEnoughElts.find(poElt) ==
-                                                m_oSetSimpleEnoughElts.end() )
+                                                m_oSetSimpleEnoughElts.end() &&
+                            aoSetXPathEltsForTopClass.find( osXPath )
+                                == aoSetXPathEltsForTopClass.end() )
                         {
 #ifdef DEBUG_VERBOSE
                             CPLDebug("GMLAS", "%s (%s) must be exposed as "
@@ -1504,6 +1804,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
 #endif
                             m_oSetEltsForTopClass.insert(poElt);
                             oVectorEltsForTopClass.push_back(poElt);
+                            aoSetXPathEltsForTopClass.insert( osXPath );
                         }
                     }
                     else
@@ -1522,6 +1823,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                                             oSetVisitedEltDecl,
                                             oSetVisitedModelGroups,
                                             oVectorEltsForTopClass,
+                                            aoSetXPathEltsForTopClass,
                                             poModel,
                                             bSubSimpleEnoughOut ) )
                             {
@@ -1591,7 +1893,9 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                         // Make sure we will instantiate the referenced
                         //element
                         if( m_oSetEltsForTopClass.find( poTargetElt ) == 
-                                    m_oSetEltsForTopClass.end() )
+                                    m_oSetEltsForTopClass.end() &&
+                            aoSetXPathEltsForTopClass.find( osTargetEltXPath )
+                                == aoSetXPathEltsForTopClass.end() )
                         {
 #ifdef DEBUG_VERBOSE
                             CPLDebug("GMLAS",
@@ -1605,6 +1909,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                             oSetVisitedEltDecl.insert(poTargetElt);
                             m_oSetEltsForTopClass.insert( poTargetElt );
                             oVectorEltsForTopClass.push_back(poTargetElt);
+                            aoSetXPathEltsForTopClass.insert( osTargetEltXPath );
                         }
 
                         XSComplexTypeDefinition* poTargetEltCT =
@@ -1622,6 +1927,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                                             oSetVisitedEltDecl,
                                             oSetVisitedModelGroups,
                                             oVectorEltsForTopClass,
+                                            aoSetXPathEltsForTopClass,
                                             poModel,
                                             bSubSimpleEnoughOut) )
                             {
@@ -1644,6 +1950,7 @@ bool GMLASSchemaAnalyzer::FindElementsWithMustBeToLevel(
                                     oSetVisitedEltDecl,
                                     oSetVisitedModelGroups,
                                     oVectorEltsForTopClass,
+                                    aoSetXPathEltsForTopClass,
                                     poModel,
                                     bSimpleEnoughOut) )
             {
