@@ -34,7 +34,6 @@
 CPL_CVSID("$Id$");
 
 static const char * const apszDefDefn[] = {
-
     "Edsc_Table",
     "{1:lnumrows,}Edsc_Table",
 
@@ -150,8 +149,8 @@ void HFADictionary::AddType( HFAType *poType )
         )
     {
         nTypesMax = nTypes * 2 + 10;
-        papoTypes = (HFAType **) CPLRealloc( papoTypes,
-                                             sizeof(void*) * nTypesMax );
+        papoTypes = static_cast<HFAType **>(
+            CPLRealloc(papoTypes, sizeof(void *) * nTypesMax));
     }
 
     papoTypes[nTypes++] = poType;
@@ -167,7 +166,7 @@ HFAType * HFADictionary::FindType( const char * pszName )
     for( int i = 0; i < nTypes; i++ )
     {
         if( papoTypes[i]->pszTypeName != NULL &&
-            strcmp(pszName,papoTypes[i]->pszTypeName) == 0 )
+            strcmp(pszName, papoTypes[i]->pszTypeName) == 0 )
             return papoTypes[i];
     }
 
