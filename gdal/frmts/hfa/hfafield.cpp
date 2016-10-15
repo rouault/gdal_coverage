@@ -106,7 +106,7 @@ const char *HFAField::Initialize( const char * pszInput )
     if( strchr( "124cCesStlLfdmMbox", chItemType) == NULL )
     {
         CPLError(CE_Failure, CPLE_AppDefined,
-                 "Unrecognized item type : %c", chItemType);
+                 "Unrecognized item type: %c", chItemType);
         return NULL;
     }
 
@@ -121,7 +121,7 @@ const char *HFAField::Initialize( const char * pszInput )
         if( pszInput[i] == '\0' )
             return NULL;
 
-        pszItemObjectType = (char *) CPLMalloc(i+1);
+        pszItemObjectType = static_cast<char *>(CPLMalloc(i + 1));
         strncpy( pszItemObjectType, pszInput, i );
         pszItemObjectType[i] = '\0';
 
@@ -161,7 +161,7 @@ const char *HFAField::Initialize( const char * pszInput )
         if( pszInput[i] == '\0' )
             return NULL;
 
-        pszItemObjectType = (char *) CPLMalloc(i+1);
+        pszItemObjectType = static_cast<char *>(CPLMalloc(i + 1));
         strncpy( pszItemObjectType, pszInput, i );
         pszItemObjectType[i] = '\0';
 
@@ -179,13 +179,14 @@ const char *HFAField::Initialize( const char * pszInput )
         if( nEnumCount < 0 || nEnumCount > 100000 )
             return NULL;
 
-        pszInput = strchr(pszInput,':');
+        pszInput = strchr(pszInput, ':');
         if( pszInput == NULL )
             return NULL;
 
         pszInput++;
 
-        papszEnumNames = (char **) VSICalloc(sizeof(char *), nEnumCount+1);
+        papszEnumNames = static_cast<char **>(
+            VSICalloc(sizeof(char *), nEnumCount + 1));
         if( papszEnumNames == NULL )
             return NULL;
 
@@ -196,7 +197,7 @@ const char *HFAField::Initialize( const char * pszInput )
             if( pszInput[i] != ',' )
                 return NULL;
 
-            char *pszToken = (char *) CPLMalloc(i+1);
+            char *pszToken = static_cast<char *>(CPLMalloc(i + 1));
             strncpy( pszToken, pszInput, i );
             pszToken[i] = '\0';
 
@@ -213,7 +214,7 @@ const char *HFAField::Initialize( const char * pszInput )
     if( pszInput[i] == '\0' )
         return NULL;
 
-    pszFieldName = (char *) CPLMalloc(i+1);
+    pszFieldName = static_cast<char *>(CPLMalloc(i + 1));
     strncpy( pszFieldName, pszInput, i );
     pszFieldName[i] = '\0';
 
@@ -1209,7 +1210,7 @@ HFAField::ExtractInstValue( const char * pszField, int nIndexValue,
           else
           {
               CPLError(CE_Failure, CPLE_AppDefined,
-                       "Unknown base item type : %d", nBaseItemType);
+                       "Unknown base item type: %d", nBaseItemType);
               return false;
           }
       }
@@ -1537,7 +1538,7 @@ void HFAField::DumpInstValue( FILE *fpOut,
 /* -------------------------------------------------------------------- */
     void *pReturn = NULL;
 
-    for( int iEntry = 0; iEntry < MIN(MAX_ENTRY_REPORT,nEntries); iEntry++ )
+    for( int iEntry = 0; iEntry < MIN(MAX_ENTRY_REPORT, nEntries); iEntry++ )
     {
         if( nEntries == 1 )
             CPL_IGNORE_RET_VAL(
