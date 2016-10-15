@@ -251,6 +251,8 @@ static void GTIFCleanupImagineNames( char *pszCitation )
 
     if( *pszSkip == '$' )
         pszSkip++;
+    if( *pszSkip == '\n' )
+        pszSkip++;
 
     memmove( pszCitation, pszSkip, strlen(pszSkip)+1 );
 
@@ -390,8 +392,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
             int nKeyCount = 0;
             int anVersion[3] = { 0 };
 
-            if( hGTIF != NULL )
-                GTIFDirectoryInfo( hGTIF, anVersion, &nKeyCount );
+            GTIFDirectoryInfo( hGTIF, anVersion, &nKeyCount );
 
             if( nKeyCount > 0 ) // Use LOCAL_CS if we have any geokeys at all.
             {
@@ -550,7 +551,6 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
     if( psDefn->Model == ModelTypeProjected )
     {
         char szCTString[512] = { '\0' };
-        strcpy( szCTString, "unnamed" );
         if( psDefn->PCS != KvUserDefined )
         {
             char *pszPCSName = NULL;
@@ -563,27 +563,41 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
 
             oSRS.SetAuthority( "PROJCS", "EPSG", psDefn->PCS );
         }
-        else if(hGTIF && GDALGTIFKeyGetASCII( hGTIF, PCSCitationGeoKey,
+        else 
+        {
+            bool bTryGTCitationGeoKey = true;
+            if( GDALGTIFKeyGetASCII( hGTIF, PCSCitationGeoKey,
                                               szCTString, 0,
                                               sizeof(szCTString)) )
-        {
-            if (!SetCitationToSRS( hGTIF, szCTString, sizeof(szCTString),
-                                   PCSCitationGeoKey, &oSRS, &linearUnitIsSet) )
-                oSRS.SetNode( "PROJCS",szCTString );
-        }
-        else
-        {
-            if( hGTIF )
             {
+                bTryGTCitationGeoKey = false;
+                if (!SetCitationToSRS( hGTIF, szCTString, sizeof(szCTString),
+                                    PCSCitationGeoKey, &oSRS, &linearUnitIsSet) )
+                {
+                    if( !STARTS_WITH_CI(szCTString, "LUnits = ") )
+                    {
+                        oSRS.SetNode( "PROJCS",szCTString );
+                    }
+                    else
+                    {
+                        bTryGTCitationGeoKey = true;
+                    }
+                }
+            }
+
+            if( bTryGTCitationGeoKey &&
                 GDALGTIFKeyGetASCII( hGTIF, GTCitationGeoKey, szCTString,
-                                     0, sizeof(szCTString) );
+                                     0, sizeof(szCTString) ) )
+            {
                 if( !SetCitationToSRS( hGTIF, szCTString, sizeof(szCTString),
                                        GTCitationGeoKey, &oSRS,
                                        &linearUnitIsSet ) )
                     oSRS.SetNode( "PROJCS", szCTString );
             }
             else
-                oSRS.SetNode( "PROJCS", szCTString );
+            {
+                oSRS.SetNode( "PROJCS", "unnamed" );
+            }
         }
 
         /* Handle ESRI/Erdas style state plane and UTM in citation key */
@@ -599,7 +613,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
 
         /* Handle ESRI PE string in citation */
         szCTString[0] = '\0';
-        if( hGTIF && GDALGTIFKeyGetASCII( hGTIF, GTCitationGeoKey, szCTString,
+        if( GDALGTIFKeyGetASCII( hGTIF, GTCitationGeoKey, szCTString,
                                           0, sizeof(szCTString) ) )
             SetCitationToSRS( hGTIF, szCTString, sizeof(szCTString),
                               GTCitationGeoKey, &oSRS, &linearUnitIsSet );
@@ -616,7 +630,6 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
     char szGCSName[512] = { '\0' };
 
     if( !GTIFGetGCSInfo( psDefn->GCS, &pszGeogName, NULL, NULL, NULL )
-        && hGTIF != NULL
         && GDALGTIFKeyGetASCII( hGTIF, GeogCitationGeoKey, szGCSName, 0,
                        sizeof(szGCSName)) )
     {
