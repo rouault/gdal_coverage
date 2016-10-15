@@ -257,7 +257,7 @@ HFAEntry* HFAEntry::BuildEntryFromMIFObject( HFAEntry *poContainer,
         return NULL;
     }
 
-    GByte* l_pabyData = (GByte *) VSIMalloc(nMIFObjectSize);
+    GByte* l_pabyData = static_cast<GByte *>(VSIMalloc(nMIFObjectSize));
     if( l_pabyData == NULL )
         return NULL;
 
@@ -298,7 +298,7 @@ HFAEntry::HFAEntry( const char * pszDictionary,
 /* -------------------------------------------------------------------- */
 /*      Create a dummy HFAInfo_t.                                       */
 /* -------------------------------------------------------------------- */
-    psHFA = (HFAInfo_t *) CPLCalloc(sizeof(HFAInfo_t),1);
+    psHFA = static_cast<HFAInfo_t *>(CPLCalloc(sizeof(HFAInfo_t), 1));
 
     psHFA->eAccess = HFA_ReadOnly;
     psHFA->bTreeDirty = false;
@@ -483,7 +483,7 @@ void HFAEntry::LoadData()
 /* -------------------------------------------------------------------- */
 /*      Allocate buffer, and read data.                                 */
 /* -------------------------------------------------------------------- */
-    pabyData = (GByte *) VSI_MALLOC_VERBOSE(nDataSize + 1);
+    pabyData = static_cast<GByte *>(VSI_MALLOC_VERBOSE(nDataSize + 1));
     if( pabyData == NULL )
     {
         return;
@@ -553,7 +553,7 @@ GByte *HFAEntry::MakeData( int nSize )
 
     if( static_cast<int>(nDataSize) < nSize && nSize > 0 )
     {
-        pabyData = (GByte *) CPLRealloc(pabyData, nSize);
+        pabyData = static_cast<GByte *>(CPLRealloc(pabyData, nSize));
         memset( pabyData + nDataSize, 0, nSize - nDataSize );
         nDataSize = nSize;
 
@@ -629,16 +629,19 @@ std::vector<HFAEntry*> HFAEntry::FindChildren( const char *pszName,
         return apoChildren;
     }
 
-    for( HFAEntry *poEntry = GetChild(); poEntry != NULL; poEntry = poEntry->GetNext() )
+    for( HFAEntry *poEntry = GetChild();
+         poEntry != NULL;
+         poEntry = poEntry->GetNext() )
     {
         std::vector<HFAEntry*> apoEntryChildren;
 
-        if( (pszName == NULL || EQUAL(poEntry->GetName(),pszName))
-            && (pszType == NULL || EQUAL(poEntry->GetType(),pszType)) )
+        if( (pszName == NULL || EQUAL(poEntry->GetName(), pszName))
+            && (pszType == NULL || EQUAL(poEntry->GetType(), pszType)) )
             apoChildren.push_back( poEntry );
 
-        apoEntryChildren = poEntry->FindChildren( pszName, pszType, nRecLevel + 1,
-                                                  pbErrorDetected);
+        apoEntryChildren =
+          poEntry->FindChildren(pszName, pszType, nRecLevel + 1,
+                                pbErrorDetected);
         if( *pbErrorDetected )
             return apoChildren;
 
@@ -682,7 +685,7 @@ HFAEntry *HFAEntry::GetNamedChild( const char * pszName )
          poEntry != NULL;
          poEntry = poEntry->GetNext() )
     {
-        if( EQUALN(poEntry->GetName(),pszName,nNameLen)
+        if( EQUALN(poEntry->GetName(), pszName, nNameLen)
             && static_cast<int>(strlen(poEntry->GetName())) == nNameLen )
         {
             if( pszName[nNameLen] == '.' )
@@ -707,19 +710,19 @@ HFAEntry *HFAEntry::GetNamedChild( const char * pszName )
 
 int HFAEntry::GetFieldValue( const char * pszFieldPath,
                              char chReqType, void *pReqReturn,
-                             int *pnRemainingDataSize)
+                             int *pnRemainingDataSize )
 
 {
 /* -------------------------------------------------------------------- */
 /*      Is there a node path in this string?                            */
 /* -------------------------------------------------------------------- */
-    if( strchr(pszFieldPath,':') != NULL )
+    if( strchr(pszFieldPath, ':') != NULL )
     {
         HFAEntry* poEntry = GetNamedChild( pszFieldPath );
         if( poEntry == NULL )
             return FALSE;
 
-        pszFieldPath = strchr(pszFieldPath,':') + 1;
+        pszFieldPath = strchr(pszFieldPath, ':') + 1;
     }
 
 /* -------------------------------------------------------------------- */
@@ -751,13 +754,13 @@ int HFAEntry::GetFieldCount( const char * pszFieldPath, CPLErr * /* peErr */ )
 /* -------------------------------------------------------------------- */
 /*      Is there a node path in this string?                            */
 /* -------------------------------------------------------------------- */
-    if( strchr(pszFieldPath,':') != NULL )
+    if( strchr(pszFieldPath, ':') != NULL )
     {
         HFAEntry* poEntry = GetNamedChild( pszFieldPath );
         if( poEntry == NULL )
             return -1;
 
-        pszFieldPath = strchr(pszFieldPath,':') + 1;
+        pszFieldPath = strchr(pszFieldPath, ':') + 1;
     }
 
 /* -------------------------------------------------------------------- */
@@ -887,13 +890,13 @@ CPLErr HFAEntry::SetFieldValue( const char * pszFieldPath,
 /* -------------------------------------------------------------------- */
 /*      Is there a node path in this string?                            */
 /* -------------------------------------------------------------------- */
-    if( strchr(pszFieldPath,':') != NULL )
+    if( strchr(pszFieldPath, ':') != NULL )
     {
         HFAEntry* poEntry = GetNamedChild( pszFieldPath );
         if( poEntry == NULL )
             return CE_Failure;
 
-        pszFieldPath = strchr(pszFieldPath,':') + 1;
+        pszFieldPath = strchr(pszFieldPath, ':') + 1;
     }
 
 /* -------------------------------------------------------------------- */
@@ -1082,7 +1085,7 @@ CPLErr HFAEntry::FlushToDisk()
                 || VSIFWriteL( pabyData, nDataSize, 1, psHFA->fp ) != 1 )
             {
                 CPLError( CE_Failure, CPLE_FileIO,
-                          "Failed to write %d bytes HFAEntry %s(%s) data,"
+                          "Failed to write %d bytes HFAEntry %s(%s) data, "
                           "out of disk space?",
                           nDataSize, szName, szType );
                 return CE_Failure;
