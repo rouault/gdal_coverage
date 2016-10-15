@@ -106,7 +106,7 @@ const char *HFAField::Initialize( const char * pszInput )
     if( strchr( "124cCesStlLfdmMbox", chItemType) == NULL )
     {
         CPLError(CE_Failure, CPLE_AppDefined,
-                 "Unrecognized item type : %c", chItemType);
+                 "Unrecognized item type: %c", chItemType);
         return NULL;
     }
 
@@ -179,7 +179,7 @@ const char *HFAField::Initialize( const char * pszInput )
         if( nEnumCount < 0 || nEnumCount > 100000 )
             return NULL;
 
-        pszInput = strchr(pszInput,':');
+        pszInput = strchr(pszInput, ':');
         if( pszInput == NULL )
             return NULL;
 
@@ -1210,7 +1210,7 @@ HFAField::ExtractInstValue( const char * pszField, int nIndexValue,
           else
           {
               CPLError(CE_Failure, CPLE_AppDefined,
-                       "Unknown base item type : %d", nBaseItemType);
+                       "Unknown base item type: %d", nBaseItemType);
               return false;
           }
       }
@@ -1538,7 +1538,7 @@ void HFAField::DumpInstValue( FILE *fpOut,
 /* -------------------------------------------------------------------- */
     void *pReturn = NULL;
 
-    for( int iEntry = 0; iEntry < MIN(MAX_ENTRY_REPORT,nEntries); iEntry++ )
+    for( int iEntry = 0; iEntry < MIN(MAX_ENTRY_REPORT, nEntries); iEntry++ )
     {
         if( nEntries == 1 )
             CPL_IGNORE_RET_VAL(
