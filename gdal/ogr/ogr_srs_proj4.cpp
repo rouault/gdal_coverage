@@ -477,6 +477,15 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
             pszCleanCopy[i] = ' ';
     }
 
+    const char* pszInitEpsgCleanCopy = strstr(pszCleanCopy, "init=epsg:");
+    bool bSetAuthorityCode = true;
+    // If there's an override, then drop the authority code
+    if( pszInitEpsgCleanCopy != NULL && 
+        strchr(pszInitEpsgCleanCopy, '+') != NULL )
+    {
+        bSetAuthorityCode = false;
+    }
+
 /* -------------------------------------------------------------------- */
 /*      Try to normalize the definition.  This should expand +init=     */
 /*      clauses and so forth.                                           */
@@ -504,17 +513,24 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
 /* -------------------------------------------------------------------- */
 /*      If we have an EPSG based init string, and no existing +proj     */
 /*      portion then try to normalize into into a PROJ.4 string.        */
+/*      This can happen if the proj.4 epsg dictionnary is missing.      */
 /* -------------------------------------------------------------------- */
-    if( strstr(pszNormalized,"init=epsg:") != NULL
+    const char* pszInitEpsg = strstr(pszNormalized,"init=epsg:");
+    if( pszInitEpsg != NULL
         && strstr(pszNormalized,"proj=") == NULL )
     {
-        const char *pszNumber = strstr(pszNormalized,"init=epsg:") + 10;
+        const char *pszNumber = pszInitEpsg + strlen("init=epsg:");
 
         OGRErr eErr = importFromEPSG( atoi(pszNumber) );
-        if( eErr == OGRERR_NONE )
+        if( eErr != OGRERR_NONE || strchr(pszNumber, '+') == NULL )
         {
             CPLFree( pszNormalized );
             return eErr;
+        }
+        int nIdx = GetRoot()->FindChild("AUTHORITY");
+        if( nIdx >= 0 )
+        {
+            GetRoot()->DestroyChild( nIdx );
         }
     }
 
@@ -1377,11 +1393,13 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
 /* -------------------------------------------------------------------- */
     const char *pszINIT = CSLFetchNameValue(papszNV,"init");
     const char *pszColumn = NULL;
-    if( pszINIT != NULL && (pszColumn = strchr(pszINIT, ':')) != NULL &&
+    if( bSetAuthorityCode &&
+        pszINIT != NULL && (pszColumn = strchr(pszINIT, ':')) != NULL &&
         GetRoot()->FindChild( "AUTHORITY" ) < 0 )
     {
         CPLString osAuthority;
         osAuthority.assign(pszINIT, pszColumn - pszINIT);
+        osAuthority.toupper();
         OGR_SRSNode* poAuthNode = new OGR_SRSNode( "AUTHORITY" );
         poAuthNode->AddChild( new OGR_SRSNode( osAuthority ) );
         poAuthNode->AddChild( new OGR_SRSNode( pszColumn + 1 ) );
