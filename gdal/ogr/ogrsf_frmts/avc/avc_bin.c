@@ -1940,6 +1940,7 @@ AVCBinFile *_AVCBinReadOpenTable(const char *pszInfoPath,
     int            i;
     size_t         nFnameLen;
 
+    sTableDef.numFields = 0;
     sTableDef.pasFieldDef = NULL;
 
     /* Alloc a buffer big enough for the longest possible filename...
@@ -1983,6 +1984,14 @@ AVCBinFile *_AVCBinReadOpenTable(const char *pszInfoPath,
     {
         CPLError(CE_Failure, CPLE_OpenFailed,
                  "Failed to open table %s", pszTableName);
+        CPLFree(pszFname);
+        return NULL;
+    }
+    /* To please Coverity */
+    if( sTableDef.numFields < 0 || sTableDef.numFields >= 32767 )
+    {
+        CPLError(CE_Failure, CPLE_OpenFailed,
+                 "Invalid numFields in %s", pszTableName);
         CPLFree(pszFname);
         return NULL;
     }
