@@ -99,8 +99,6 @@ IGMLReader *CreateGMLReader(bool bUseExpatParserPreferably,
 
 #endif
 
-OGRGMLXercesState GMLReader::m_eXercesInitState = OGRGML_XERCES_UNINITIALIZED;
-int GMLReader::m_nInstanceCount = 0;
 CPLMutex *GMLReader::hMutex = NULL;
 
 /************************************************************************/
@@ -131,7 +129,8 @@ CPL_UNUSED
     m_poSAXReader(NULL),
     m_poCompleteFeature(NULL),
     m_GMLInputSource(NULL),
-  m_bEOF(false),
+    m_bEOF(false),
+    m_bXercesInitialized(false),
 #endif
 #ifdef HAVE_EXPAT
     oParser(NULL),
@@ -198,15 +197,8 @@ GMLReader::~GMLReader()
     delete m_poRecycledState;
 
 #ifdef HAVE_XERCES
-    {
-    CPLMutexHolderD(&hMutex);
-    --m_nInstanceCount;
-    if( m_nInstanceCount == 0 && m_eXercesInitState == OGRGML_XERCES_INIT_SUCCESSFUL )
-    {
-        XMLPlatformUtils::Terminate();
-        m_eXercesInitState = OGRGML_XERCES_UNINITIALIZED;
-    }
-    }
+    if( m_bXercesInitialized )
+        OGRDeinitializeXerces();
 #endif
 #ifdef HAVE_EXPAT
     CPLFree(pabyBuf);
@@ -299,28 +291,11 @@ bool GMLReader::SetupParser()
 
 bool GMLReader::SetupParserXerces()
 {
+    if( !m_bXercesInitialized )
     {
-    CPLMutexHolderD(&hMutex);
-    m_nInstanceCount++;
-    if( m_eXercesInitState == OGRGML_XERCES_UNINITIALIZED )
-    {
-        try
-        {
-            XMLPlatformUtils::Initialize();
-        }
-
-        catch (const XMLException& toCatch)
-        {
-            CPLError( CE_Warning, CPLE_AppDefined,
-                      "Exception initializing Xerces based GML reader.\n%s",
-                      tr_strdup(toCatch.getMessage()) );
-            m_eXercesInitState = OGRGML_XERCES_INIT_FAILED;
+        if( !OGRInitializeXerces() )
             return false;
-        }
-        m_eXercesInitState = OGRGML_XERCES_INIT_SUCCESSFUL;
-    }
-    if( m_eXercesInitState != OGRGML_XERCES_INIT_SUCCESSFUL )
-        return false;
+        m_bXercesInitialized = true;
     }
 
     // Cleanup any old parser.
@@ -358,11 +333,7 @@ bool GMLReader::SetupParserXerces()
 #else
         m_poSAXReader->setFeature( XMLUni::fgSAX2CoreValidation, false);
 
-#if XERCES_VERSION_MAJOR >= 3
         m_poSAXReader->setFeature( XMLUni::fgXercesSchema, false);
-#else
-        m_poSAXReader->setFeature( XMLUni::fgSAX2CoreNameSpaces, false);
-#endif
 
 #endif
         XMLString::release( &xmlUriValid );
@@ -467,16 +438,13 @@ void GMLReader::CleanupParser()
 
 GMLBinInputStream::GMLBinInputStream(VSILFILE* fpIn) :
     fp(fpIn)
-#if XERCES_VERSION_MAJOR >= 3
     ,emptyString(0)
-#endif
 {}
 
 GMLBinInputStream::~ GMLBinInputStream()
 {
 }
 
-#if XERCES_VERSION_MAJOR >= 3
 XMLFilePos GMLBinInputStream::curPos() const
 {
     return (XMLFilePos)VSIFTellL(fp);
@@ -491,17 +459,6 @@ const XMLCh* GMLBinInputStream::getContentType() const
 {
     return &emptyString;
 }
-#else
-unsigned int GMLBinInputStream::curPos() const
-{
-    return (unsigned int)VSIFTellL(fp);
-}
-
-unsigned int GMLBinInputStream::readBytes(XMLByte* const toFill, const unsigned int maxToRead)
-{
-    return (unsigned int)VSIFReadL(toFill, 1, maxToRead, fp);
-}
-#endif
 
 GMLInputSource::GMLInputSource(VSILFILE* fp, MemoryManager* const manager) :
     InputSource(manager),
@@ -561,18 +518,18 @@ GMLFeature *GMLReader::NextFeatureXerces()
     }
     catch (const XMLException& toCatch)
     {
-        char *pszErrorMessage = tr_strdup( toCatch.getMessage() );
+        CPLString osErrMsg;
+        transcode( toCatch.getMessage(), osErrMsg );
         CPLDebug( "GML",
                   "Error during NextFeature()! Message:\n%s",
-                  pszErrorMessage );
-        CPLFree(pszErrorMessage);
+                  osErrMsg.c_str() );
         m_bStopParsing = true;
     }
     catch (const SAXException& toCatch)
     {
-        char *pszErrorMessage = tr_strdup( toCatch.getMessage() );
-        CPLError(CE_Failure, CPLE_AppDefined, "%s", pszErrorMessage);
-        CPLFree(pszErrorMessage);
+        CPLString osErrMsg;
+        transcode( toCatch.getMessage(), osErrMsg );
+        CPLError(CE_Failure, CPLE_AppDefined, "%s", osErrMsg.c_str());
         m_bStopParsing = true;
     }
 
