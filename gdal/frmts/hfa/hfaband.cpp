@@ -288,7 +288,8 @@ CPLErr HFABand::LoadOverviews()
                 papoOverviews[nOverviews-1] = new HFABand( psOvHFA, poChild );
                 if( papoOverviews[nOverviews-1]->nWidth == 0 )
                 {
-                    nWidth = nHeight = 0;
+                    nWidth = 0;
+                    nHeight = 0;
                     delete papoOverviews[nOverviews-1];
                     papoOverviews[nOverviews-1] = NULL;
                     return CE_None;
@@ -875,7 +876,7 @@ static CPLErr UncompressBlock( GByte *pabyCData, int nSrcBytes,
 #if DEBUG_VERBOSE
                 // TODO(schwehr): Do something smarter with out-of-range data.
                 // Bad data can trigger this assert.  r23498
-                CPLAssert( nDataValue < 256 );
+                CPLAssert(nDataValue < 256);
 #endif
                 ((GByte *) pabyDest)[nPixelsOutput++] =
                     static_cast<GByte>(nDataValue);
@@ -900,8 +901,8 @@ static CPLErr UncompressBlock( GByte *pabyCData, int nSrcBytes,
 #if DEBUG_VERBOSE
                 // TODO(schwehr): Do something smarter with out-of-range data.
                 // Bad data can trigger this assert.  r23498
-                CPLAssert( nDataValue >= -127 );
-                CPLAssert( nDataValue < 128 );
+                CPLAssert(nDataValue >= -127);
+                CPLAssert(nDataValue < 128);
 #endif
                 ((GByte *) pabyDest)[nPixelsOutput++] =
                     static_cast<GByte>(nDataValue);
@@ -2143,7 +2144,8 @@ int HFABand::CreateOverview( int nOverviewLevel, const char *pszResampling )
 /* -------------------------------------------------------------------- */
     bool bCreateLargeRaster = CPLTestBool(
         CPLGetConfigOption("USE_SPILL", "NO") );
-    GIntBig nValidFlagsOffset = 0, nDataOffset = 0;
+    GIntBig nValidFlagsOffset = 0;
+    GIntBig nDataOffset = 0;
 
     if( (psRRDInfo->nEndOfFile
          + (nOXSize * static_cast<double>(nOYSize))
