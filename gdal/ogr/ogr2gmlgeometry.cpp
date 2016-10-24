@@ -66,32 +66,6 @@ static void MakeGMLCoordinate( char *pszTarget,
             *pszTarget = ',';
         pszTarget++;
     }
-
-#ifdef notdef
-    if( !b3D )
-    {
-        if( x == (int) x && y == (int) y )
-            sprintf( pszTarget, "%d,%d", (int) x, (int) y );
-        else if( fabs(x) < 370 && fabs(y) < 370 )
-            CPLsprintf( pszTarget, "%.16g,%.16g", x, y );
-        else if( fabs(x) > 100000000.0 || fabs(y) > 100000000.0 )
-            CPLsprintf( pszTarget, "%.16g,%.16g", x, y );
-        else
-            CPLsprintf( pszTarget, "%.3f,%.3f", x, y );
-    }
-    else
-    {
-        if( x == (int) x && y == (int) y && z == (int) z )
-            sprintf( pszTarget, "%d,%d,%d", (int) x, (int) y, (int) z );
-        else if( fabs(x) < 370 && fabs(y) < 370 )
-            CPLsprintf( pszTarget, "%.16g,%.16g,%.16g", x, y, z );
-        else if( fabs(x) > 100000000.0 || fabs(y) > 100000000.0
-                 || fabs(z) > 100000000.0 )
-            CPLsprintf( pszTarget, "%.16g,%.16g,%.16g", x, y, z );
-        else
-            CPLsprintf( pszTarget, "%.3f,%.3f,%.3f", x, y, z );
-    }
-#endif
 }
 
 /************************************************************************/
@@ -112,7 +86,8 @@ static void _GrowBuffer( size_t nNeeded, char **ppszText, size_t *pnMaxLength )
 /*                            AppendString()                            */
 /************************************************************************/
 
-static void AppendString( char **ppszText, size_t *pnLength, size_t *pnMaxLength,
+static void AppendString( char **ppszText, size_t *pnLength,
+                          size_t *pnMaxLength,
                           const char *pszTextToAppend )
 
 {
@@ -495,8 +470,13 @@ CPLXMLNode *OGR_G_ExportEnvelopeToGMLTree( OGRGeometryH hGeometry )
     char szCoordinate[256] = {};
     MakeGMLCoordinate( szCoordinate, sEnvelope.MinX, sEnvelope.MinY, 0.0,
                        false );
-    char *pszY = strstr(szCoordinate,",") + 1;
-    pszY[-1] = '\0';
+    char *pszY = strstr(szCoordinate, ",");
+    // There must be more after the comma or we have an internal consistency
+    // bug in MakeGMLCoordinate.
+    if( pszY == NULL || strlen(pszY) < 2)
+        CPLError(CE_Fatal, CPLE_AssertionFailed, "MakeGMLCoordinate failed." );
+    *pszY = '\0';
+    pszY++;
 
     CPLCreateXMLElementAndValue( psCoord, "gml:X", szCoordinate );
     CPLCreateXMLElementAndValue( psCoord, "gml:Y", pszY );
