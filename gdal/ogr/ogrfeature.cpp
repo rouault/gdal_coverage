@@ -105,8 +105,8 @@ OGRFeature::OGRFeature( OGRFeatureDefn * poDefnIn ) :
  * @param hDefn handle to the feature class (layer) definition to
  * which the feature will adhere.
  *
- * @return an handle to the new feature object with null fields and
- * no geometry, or, starting with GDAL 2.1, NULL in case out of memory situation.
+ * @return an handle to the new feature object with null fields and no geometry,
+ * or, starting with GDAL 2.1, NULL in case out of memory situation.
  */
 
 OGRFeatureH OGR_F_Create( OGRFeatureDefnH hDefn )
@@ -213,9 +213,9 @@ void OGR_F_Destroy( OGRFeatureH hFeat )
  *
  * @param poDefn Feature definition defining schema.
  *
- * @return new feature object with null fields and no geometry, or, starting with
- * GDAL 2.1, NULL in case of out of memory situation.  May be
- * deleted with DestroyFeature().
+ * @return new feature object with null fields and no geometry, or, starting
+ * with GDAL 2.1, NULL in case of out of memory situation.  May be deleted with
+ * DestroyFeature().
  */
 
 OGRFeature *OGRFeature::CreateFeature( OGRFeatureDefn *poDefn )
@@ -847,8 +847,8 @@ OGRErr OGR_F_SetGeomField( OGRFeatureH hFeat, int iField, OGRGeometryH hGeom )
  *
  * This method is the same as the C function OGR_F_Clone().
  *
- * @return new feature, exactly matching this feature. Or, starting with GDAL 2.1,
- *         NULL in case of out of memory situation.
+ * @return new feature, exactly matching this feature. Or, starting with GDAL
+ * 2.1, NULL in case of out of memory situation.
  */
 
 OGRFeature *OGRFeature::Clone()
@@ -1136,7 +1136,8 @@ int OGR_F_GetGeomFieldCount( OGRFeatureH hFeat )
 /**
  * \brief Fetch definition for this geometry field.
  *
- * This function is the same as the C++ method OGRFeature::GetGeomFieldDefnRef().
+ * This function is the same as the C++ method
+ * OGRFeature::GetGeomFieldDefnRef().
  *
  * @param hFeat handle to the feature on which the field is found.
  * @param i the field to fetch, from 0 to GetGeomFieldCount()-1.
@@ -1170,7 +1171,8 @@ OGRGeomFieldDefnH OGR_F_GetGeomFieldDefnRef( OGRFeatureH hFeat, int i )
  *
  * @param pszName the name of the geometry field to search for.
  *
- * @return the geometry field index, or -1 if no matching geometry field is found.
+ * @return the geometry field index, or -1 if no matching geometry field is
+ * found.
  *
  * @since GDAL 1.11
  */
@@ -1189,7 +1191,8 @@ OGRGeomFieldDefnH OGR_F_GetGeomFieldDefnRef( OGRFeatureH hFeat, int i )
  * @param hFeat handle to the feature on which the geometry field is found.
  * @param pszName the name of the geometry field to search for.
  *
- * @return the geometry field index, or -1 if no matching geometry field is found.
+ * @return the geometry field index, or -1 if no matching geometry field is
+ * found.
  *
  * @since GDAL 1.11
  */
@@ -1620,7 +1623,8 @@ GIntBig OGRFeature::GetFieldAsInteger64( int iField )
  * will be cast to integer.   Other field types, or errors will result in
  * a return value of zero.
  *
- * This function is the same as the C++ method OGRFeature::GetFieldAsInteger64().
+ * This function is the same as the C++ method
+ * OGRFeature::GetFieldAsInteger64().
  *
  * @param hFeat handle to the feature that owned the field.
  * @param iField the field to fetch, from 0 to GetFieldCount()-1.
@@ -1645,9 +1649,9 @@ GIntBig OGR_F_GetFieldAsInteger64( OGRFeatureH hFeat, int iField )
  * \fn OGRFeature::GetFieldAsDouble( const char* pszFName )
  * \brief Fetch field value as a double.
  *
- * OFTString features will be translated using CPLAtof().  OFTInteger and OFTInteger64 fields
- * will be cast to double.   Other field types, or errors will result in
- * a return value of zero.
+ * OFTString features will be translated using CPLAtof().  OFTInteger and
+ * OFTInteger64 fields will be cast to double.  Other field types, or errors
+ * will result in a return value of zero.
  *
  * @param pszFName the name of the field to fetch.
  *
@@ -1657,9 +1661,9 @@ GIntBig OGR_F_GetFieldAsInteger64( OGRFeatureH hFeat, int iField )
 /**
  * \brief Fetch field value as a double.
  *
- * OFTString features will be translated using CPLAtof().  OFTInteger and OFTInteger64 fields
- * will be cast to double.   Other field types, or errors will result in
- * a return value of zero.
+ * OFTString features will be translated using CPLAtof().  OFTInteger and
+ * OFTInteger64 fields will be cast to double.  Other field types, or errors
+ * will result in a return value of zero.
  *
  * This method is the same as the C function OGR_F_GetFieldAsDouble().
  *
@@ -2845,7 +2849,7 @@ char* OGRFeature::GetFieldAsSerializedJSon( int iField )
         return NULL;
     }
 
-    OGRFieldDefn        *poFDefn = poDefn->GetFieldDefn( iField );
+    OGRFieldDefn *poFDefn = poDefn->GetFieldDefn( iField );
 
     if( poFDefn == NULL )
         return NULL;
@@ -2917,10 +2921,10 @@ char* OGRFeature::GetFieldAsSerializedJSon( int iField )
 /**
  * \fn OGRFeature::SetField( const char* pszFName, int nValue )
  * \brief Set field to integer value.
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * @param pszFName the name of the field to set.
  * @param nValue the value to assign.
@@ -2929,10 +2933,10 @@ char* OGRFeature::GetFieldAsSerializedJSon( int iField )
 /**
  * \brief Set field to integer value.
  *
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * This method is the same as the C function OGR_F_SetFieldInteger().
  *
@@ -3015,10 +3019,10 @@ void OGRFeature::SetField( int iField, int nValue )
 /**
  * \brief Set field to integer value.
  *
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * This function is the same as the C++ method OGRFeature::SetField().
  *
@@ -3042,10 +3046,10 @@ void OGR_F_SetFieldInteger( OGRFeatureH hFeat, int iField, int nValue )
 /**
  * \fn OGRFeature::SetField( const char* pszFName, GIntBig nValue )
  * \brief Set field to 64 bit integer value.
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * @param pszFName the name of the field to set.
  * @param nValue the value to assign.
@@ -3054,10 +3058,10 @@ void OGR_F_SetFieldInteger( OGRFeatureH hFeat, int iField, int nValue )
 /**
  * \brief Set field to 64 bit integer value.
  *
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * This method is the same as the C function OGR_F_SetFieldInteger64().
  *
@@ -3157,10 +3161,10 @@ void OGRFeature::SetField( int iField, GIntBig nValue )
 /**
  * \brief Set field to 64 bit integer value.
  *
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * This function is the same as the C++ method OGRFeature::SetField().
  *
@@ -3186,10 +3190,10 @@ void OGR_F_SetFieldInteger64( OGRFeatureH hFeat, int iField, GIntBig nValue )
  * \fn OGRFeature::SetField( const char* pszFName, double dfValue )
  * \brief Set field to double value.
  *
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * @param pszFName the name of the field to set.
  * @param dfValue the value to assign.
@@ -3198,10 +3202,10 @@ void OGR_F_SetFieldInteger64( OGRFeatureH hFeat, int iField, GIntBig nValue )
 /**
  * \brief Set field to double value.
  *
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * This method is the same as the C function OGR_F_SetFieldDouble().
  *
@@ -3288,10 +3292,10 @@ void OGRFeature::SetField( int iField, double dfValue )
 /**
  * \brief Set field to double value.
  *
- * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString fields
- * will be assigned a string representation of the value, but not necessarily
- * taking into account formatting constraints on this field.  Other field
- * types may be unaffected.
+ * OFTInteger, OFTInteger64 and OFTReal fields will be set directly.  OFTString
+ * fields will be assigned a string representation of the value, but not
+ * necessarily taking into account formatting constraints on this field.  Other
+ * field types may be unaffected.
  *
  * This function is the same as the C++ method OGRFeature::SetField().
  *
@@ -3317,9 +3321,9 @@ void OGR_F_SetFieldDouble( OGRFeatureH hFeat, int iField, double dfValue )
  * \brief Set field to string value.
  *
  * OFTInteger fields will be set based on an atoi() conversion of the string.
- * OFTInteger64 fields will be set based on an CPLAtoGIntBig() conversion of the string.
- * OFTReal fields will be set based on an CPLAtof() conversion of the string.
- * Other field types may be unaffected.
+ * OFTInteger64 fields will be set based on an CPLAtoGIntBig() conversion of the
+ * string.  OFTReal fields will be set based on an CPLAtof() conversion of the
+ * string.  Other field types may be unaffected.
  *
  * @param pszFName the name of the field to set.
  * @param pszValue the value to assign.
@@ -3329,9 +3333,9 @@ void OGR_F_SetFieldDouble( OGRFeatureH hFeat, int iField, double dfValue )
  * \brief Set field to string value.
  *
  * OFTInteger fields will be set based on an atoi() conversion of the string.
- * OFTInteger64 fields will be set based on an CPLAtoGIntBig() conversion of the string.
- * OFTReal fields will be set based on an CPLAtof() conversion of the string.
- * Other field types may be unaffected.
+ * OFTInteger64 fields will be set based on an CPLAtoGIntBig() conversion of the
+ * string.  OFTReal fields will be set based on an CPLAtof() conversion of the
+ * string.  Other field types may be unaffected.
  *
  * This method is the same as the C function OGR_F_SetFieldString().
  *
@@ -3413,7 +3417,8 @@ void OGRFeature::SetField( int iField, const char * pszValue )
                 std::vector<int> anValues;
                 for( int i = 0; i < nLength; i++ )
                 {
-                    json_object* poItem = json_object_array_get_idx(poJSonObj, i);
+                    json_object* poItem =
+                        json_object_array_get_idx(poJSonObj, i);
                     anValues.push_back( json_object_get_int( poItem ) );
                 }
                 SetField( iField, nLength, &(anValues[0]) );
@@ -3423,7 +3428,8 @@ void OGRFeature::SetField( int iField, const char * pszValue )
                 std::vector<GIntBig> anValues;
                 for( int i = 0; i < nLength; i++ )
                 {
-                    json_object* poItem = json_object_array_get_idx(poJSonObj, i);
+                    json_object* poItem =
+                        json_object_array_get_idx(poJSonObj, i);
                     anValues.push_back( json_object_get_int64( poItem ) );
                 }
                 SetField( iField, nLength, &(anValues[0]) );
@@ -3433,7 +3439,8 @@ void OGRFeature::SetField( int iField, const char * pszValue )
                 std::vector<double> adfValues;
                 for( int i = 0; i < nLength; i++ )
                 {
-                    json_object* poItem = json_object_array_get_idx(poJSonObj, i);
+                    json_object* poItem =
+                        json_object_array_get_idx(poJSonObj, i);
                     adfValues.push_back( json_object_get_double( poItem ) );
                 }
                 SetField( iField, nLength, &(adfValues[0]) );
@@ -3527,15 +3534,17 @@ void OGRFeature::SetField( int iField, const char * pszValue )
                 }
                 CSLDestroy(papszValueList);
             }
-            // Is this a JSon array ?
-            else if( pszValue[0] == '[' && pszValue[strlen(pszValue)-1] == ']' &&
+            // Is this a JSon array?
+            else if( pszValue[0] == '[' &&
+                     pszValue[strlen(pszValue)-1] == ']' &&
                      OGRJSonParse(pszValue, &poJSonObj, false) )
             {
                 CPLStringList aoList;
                 const int nLength = json_object_array_length(poJSonObj);
                 for( int i = 0; i < nLength; i++ )
                 {
-                    json_object* poItem = json_object_array_get_idx(poJSonObj, i);
+                    json_object* poItem =
+                        json_object_array_get_idx(poJSonObj, i);
                     if( !poItem )
                         aoList.AddString("");
                     else
@@ -3565,9 +3574,9 @@ void OGRFeature::SetField( int iField, const char * pszValue )
  * \brief Set field to string value.
  *
  * OFTInteger fields will be set based on an atoi() conversion of the string.
- * OFTInteger64 fields will be set based on an CPLAtoGIntBig() conversion of the string.
- * OFTReal fields will be set based on an CPLAtof() conversion of the string.
- * Other field types may be unaffected.
+ * OFTInteger64 fields will be set based on an CPLAtoGIntBig() conversion of the
+ * string.  OFTReal fields will be set based on an CPLAtof() conversion of the
+ * string.  Other field types may be unaffected.
  *
  * This function is the same as the C++ method OGRFeature::SetField().
  *
@@ -3725,7 +3734,8 @@ void OGR_F_SetFieldIntegerList( OGRFeatureH hFeat, int iField,
 /************************************************************************/
 
 /**
- * \fn OGRFeature::SetField( const char* pszFName, int nCount, const GIntBig *panValues )
+ * \fn OGRFeature::SetField( const char* pszFName, int nCount, const GIntBig
+ * *panValues )
  * \brief Set field to list of 64 bit integers value.
  *
  * This method currently on has an effect of OFTIntegerList, OFTInteger64List
@@ -3927,7 +3937,8 @@ void OGRFeature::SetField( int iField, int nCount, double * padfValues )
         if( papszValues == NULL )
             return;
         for( int i = 0; i < nCount; i++ )
-            papszValues[i] = VSI_STRDUP_VERBOSE(CPLSPrintf("%.16g", padfValues[i]));
+            papszValues[i] =
+                VSI_STRDUP_VERBOSE(CPLSPrintf("%.16g", padfValues[i]));
         papszValues[nCount] = NULL;
         SetField( iField, papszValues);
         CSLDestroy(papszValues);
@@ -4164,9 +4175,9 @@ void OGR_F_SetFieldBinary( OGRFeatureH hFeat, int iField,
 /************************************************************************/
 
 /**
- * \fn OGRFeature::SetField( const char* pszFName, int nYear, int nMonth, int nDay,
- *                          int nHour, int nMinute, float fSecond,
- *                          int nTZFlag )
+ * \fn OGRFeature::SetField( const char* pszFName, int nYear, int nMonth,
+ *                           int nDay, int nHour, int nMinute, float fSecond,
+ *                           int nTZFlag )
  * \brief Set field to date.
  *
  * This method currently only has an effect for OFTDate, OFTTime and OFTDateTime
