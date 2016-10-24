@@ -133,7 +133,6 @@ class GMLASXSDCache: public GMLASResourceCache
                                     CPLString& osOutFilename );
 };
 
-
 /************************************************************************/
 /*                     GMLASBaseEntityResolver                          */
 /************************************************************************/
@@ -185,7 +184,6 @@ public:
     void    SetClosingCallback( IGMLASInputSourceClosing* cbk );
 };
 
-
 /************************************************************************/
 /*                            GMLASErrorHandler                         */
 /************************************************************************/
@@ -208,7 +206,6 @@ class GMLASErrorHandler: public ErrorHandler
 
         void handle (const SAXParseException& e, CPLErr eErr);
 };
-
 
 /************************************************************************/
 /*                        GMLASXLinkResolutionConf                      */
@@ -579,6 +576,9 @@ class GMLASField
             in the XPath ignored list. Needed to avoid warning when doing validation */
         bool m_bIgnored;
 
+        /** Documentation from schema */
+        CPLString m_osDoc;
+
     public:
         GMLASField();
 
@@ -608,6 +608,7 @@ class GMLASField
         void SetRelatedClassXPath(const CPLString& osName)
                                             { m_osRelatedClassXPath = osName; }
         void SetIgnored() { m_bIgnored = true; }
+        void SetDocumentation(const CPLString& osDoc) { m_osDoc = osDoc; }
 
         static CPLString MakePKIDFieldXPathFromXLinkHrefXPath(
             const CPLString& osBaseXPath)
@@ -620,7 +621,6 @@ class GMLASField
         static CPLString MakeXLinkDerivedFieldXPathFromXLinkHrefXPath(
             const CPLString& osBaseXPath, const CPLString& osName)
                             { return "{" + osBaseXPath + "}_derived_" + osName; }
-
 
         const CPLString& GetName() const { return m_osName; }
         const CPLString& GetXPath() const { return m_osXPath; }
@@ -644,6 +644,7 @@ class GMLASField
         const CPLString& GetRelatedClassXPath() const
                                                 { return m_osRelatedClassXPath; }
         bool IsIgnored() const { return m_bIgnored; }
+        const CPLString& GetDocumentation() const { return m_osDoc; }
 
         static GMLASFieldType GetTypeFromString( const CPLString& osType );
 };
@@ -682,6 +683,9 @@ class GMLASFeatureClass
         /** Whether this corresponds to a top-level XSD element in the schema */
         bool m_bIsTopLevelElt;
 
+        /** Documentation from schema */
+        CPLString m_osDoc;
+
     public:
         GMLASFeatureClass();
 
@@ -701,6 +705,7 @@ class GMLASFeatureClass
                                                 { m_osChildXPath = osXPath; }
         void SetIsTopLevelElt(bool bIsTopLevelElt )
                                         { m_bIsTopLevelElt = bIsTopLevelElt; }
+        void SetDocumentation(const CPLString& osDoc) { m_osDoc = osDoc; }
 
         const CPLString& GetName() const { return m_osName; }
         const CPLString& GetXPath() const { return m_osXPath; }
@@ -715,6 +720,7 @@ class GMLASFeatureClass
         const CPLString& GetParentXPath() const { return m_osParentXPath; }
         const CPLString& GetChildXPath() const { return m_osChildXPath; }
         bool IsTopLevelElt() const { return m_bIsTopLevelElt; }
+        const CPLString& GetDocumentation() const { return m_osDoc; }
 };
 
 /************************************************************************/
@@ -753,8 +759,8 @@ class GMLASSchemaAnalyzer
             derived ones. For that recursion in the map must be used.*/
         tMapParentEltToChildElt m_oMapParentEltToChildElt;
 
-        /** Map from a XSModelGroup* object to the name of its group. */
-        std::map< XSModelGroup*, CPLString> m_oMapModelGroupDefinitionToName;
+        /** Map from a XSModelGroup* object to the name of its group definition. */
+        std::map< XSModelGroup*, XSModelGroupDefinition*> m_oMapModelGroupToMGD;
 
         /** Map from (non namespace prefixed) element names to the number of
             elements that share the same namespace (in different namespaces) */
@@ -776,7 +782,7 @@ class GMLASSchemaAnalyzer
 
         static bool IsSame( const XSModelGroup* poModelGroup1,
                                   const XSModelGroup* poModelGroup2 );
-        CPLString GetGroupName( const XSModelGroup* poModelGroup );
+        XSModelGroupDefinition* GetGroupDefinition( const XSModelGroup* poModelGroup );
         void SetFieldFromAttribute(GMLASField& oField,
                                    XSAttributeUse* poAttr,
                                    const CPLString& osXPathPrefix,

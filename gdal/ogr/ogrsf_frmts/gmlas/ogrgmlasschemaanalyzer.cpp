@@ -59,7 +59,6 @@ static bool IsCompatibleOfArray( GMLASFieldType eType )
            eType == GMLAS_FT_ANYURI;
 }
 
-
 /************************************************************************/
 /*                       GMLASPrefixMappingHander                       */
 /************************************************************************/
@@ -810,7 +809,6 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
             return false;
         }
 
-
         // Some .xsd like
         // http://www.opengis.net/gwml-main/2.1 -> https://wfspoc.brgm-rec.fr/constellation/WS/wfs/BRGM:GWML2?request=DescribeFeatureType&version=2.0.0&service=WFS&namespace=xmlns(ns1=http://www.opengis.net/gwml-main/2.1)&typenames=ns1:GW_Aquifer
         // do not have a declared targetNamespace, so use the one of the
@@ -871,8 +869,8 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
             XSModelGroupDefinition* modelGroupDefinition =
                 reinterpret_cast<XSModelGroupDefinition*>(
                                             poMapModelGroupDefinition->item(i));
-            m_oMapModelGroupDefinitionToName[modelGroupDefinition->getModelGroup()]
-                            = transcode(modelGroupDefinition->getName());
+            m_oMapModelGroupToMGD[modelGroupDefinition->getModelGroup()]
+                            = modelGroupDefinition;
         }
 
         CPLDebug("GMLAS", "Discovering substitutions of %s (%s)",
@@ -1051,6 +1049,85 @@ bool GMLASSchemaAnalyzer::Analyze(GMLASXSDCache& oCache,
 }
 
 /************************************************************************/
+/*                            GetAnnotationDoc()                        */
+/************************************************************************/
+
+static CPLString GetAnnotationDoc( const XSAnnotation* annotation )
+{
+    if( !annotation )
+        return CPLString();
+    CPLString osAnnot(transcode(annotation->getAnnotationString()));
+    CPLXMLNode* psRoot = CPLParseXMLString(osAnnot);
+    CPLStripXMLNamespace(psRoot, NULL, TRUE);
+    CPLString osDoc( CPLGetXMLValue(psRoot, "=annotation.documentation", "") );
+    CPLDestroyXMLNode(psRoot);
+    return osDoc.Trim();
+}
+
+/************************************************************************/
+/*                            GetAnnotationDoc()                        */
+/************************************************************************/
+
+static CPLString GetAnnotationDoc( const XSAnnotationList* annotationList )
+{
+    if( !annotationList )
+        return CPLString();
+    CPLString osRet;
+    for( size_t i = 0; i < annotationList->size(); ++i )
+    {
+        CPLString osDoc( GetAnnotationDoc( annotationList->elementAt(i) ) );
+        if( !osDoc.empty() )
+        {
+            if( !osRet.empty() )
+                osRet += "\n";
+            osRet += osDoc;
+        }
+    }
+    return osRet;
+}
+
+/************************************************************************/
+/*                            GetAnnotationDoc()                        */
+/************************************************************************/
+
+static CPLString GetAnnotationDoc( const XSElementDeclaration* poEltDecl )
+{
+    XSTypeDefinition* poTypeDef = poEltDecl->getTypeDefinition();
+    CPLString osDoc = GetAnnotationDoc( poEltDecl->getAnnotation() );
+    XSAnnotationList* list = NULL;
+    while( poTypeDef != NULL )
+    {
+        if( poTypeDef->getTypeCategory() == XSTypeDefinition::COMPLEX_TYPE )
+        {
+            XSComplexTypeDefinition* poCT =
+                        reinterpret_cast<XSComplexTypeDefinition*>(poTypeDef);
+            list = poCT->getAnnotations();
+        }
+        else if( poTypeDef->getTypeCategory() == XSTypeDefinition::SIMPLE_TYPE )
+        {
+            XSSimpleTypeDefinition* poST =
+                        reinterpret_cast<XSSimpleTypeDefinition*>(poTypeDef);
+            list = poST->getAnnotations();
+        }
+        if( list != NULL )
+            break;
+        XSTypeDefinition* poNewTypeDef = poTypeDef->getBaseType();
+        if( poNewTypeDef == poTypeDef )
+            break;
+        poTypeDef = poNewTypeDef;
+    }
+    CPLString osDoc2 = GetAnnotationDoc( list );
+    if( !osDoc.empty() && !osDoc2.empty() )
+    {
+        osDoc += "\n";
+        osDoc += osDoc2;
+    }
+    else if( !osDoc2.empty() )
+        osDoc = osDoc2;
+    return osDoc;
+}
+
+/************************************************************************/
 /*                  InstantiateClassFromEltDeclaration()                */
 /************************************************************************/
 
@@ -1100,6 +1177,8 @@ bool GMLASSchemaAnalyzer::InstantiateClassFromEltDeclaration(
         BuildMapCountOccurencesOfSameName(
             poCT->getParticle()->getModelGroupTerm(),
             oMapCountOccurencesOfSameName);
+
+        oClass.SetDocumentation( GetAnnotationDoc(poEltDecl) );
 
         if( !ExploreModelGroup(
                             poCT->getParticle()->getModelGroupTerm(),
@@ -1252,11 +1331,11 @@ bool GMLASSchemaAnalyzer::IsSame( const XSModelGroup* poModelGroup1,
 /*  of model groups to figure out if they are the same.                 */
 /************************************************************************/
 
-CPLString GMLASSchemaAnalyzer::GetGroupName( const XSModelGroup* poModelGroup )
+XSModelGroupDefinition* GMLASSchemaAnalyzer::GetGroupDefinition( const XSModelGroup* poModelGroup )
 {
-    std::map< XSModelGroup*, CPLString>::const_iterator oIter =
-        m_oMapModelGroupDefinitionToName.begin();
-    for(; oIter != m_oMapModelGroupDefinitionToName.end(); ++oIter )
+    std::map< XSModelGroup*, XSModelGroupDefinition*>::const_iterator oIter =
+        m_oMapModelGroupToMGD.begin();
+    for(; oIter != m_oMapModelGroupToMGD.end(); ++oIter )
     {
         const XSModelGroup* psIterModelGroup = oIter->first;
         if( IsSame(poModelGroup, psIterModelGroup) )
@@ -1265,7 +1344,7 @@ CPLString GMLASSchemaAnalyzer::GetGroupName( const XSModelGroup* poModelGroup )
         }
     }
 
-    return CPLString();
+    return NULL;
 }
 
 /************************************************************************/
@@ -1349,6 +1428,7 @@ void GMLASSchemaAnalyzer::SetFieldFromAttribute(
         }
     }
 
+    oField.SetDocumentation( GetAnnotationDoc( poAttrDecl->getAnnotation() ) );
 }
 
 /************************************************************************/
@@ -2203,6 +2283,7 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                 else
                     oField.SetGeomType( eGeomType );
                 oField.SetXPath( osElementXPath );
+                oField.SetDocumentation( GetAnnotationDoc( poElt ) );
 
                 oClass.AddField( oField );
             }
@@ -2229,6 +2310,7 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                     oField.SetType( GMLAS_FT_ANYTYPE, "anyType" );
                 }
                 oField.SetIncludeThisEltInBlob( true );
+                oField.SetDocumentation( GetAnnotationDoc( poElt ) );
 
                 for( size_t j = 0; j < apoImplEltList.size(); j++ )
                 {
@@ -2271,6 +2353,7 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                 SetFieldTypeAndWidthFromDefinition(poST, oField);
                 oField.SetMinOccurs( nMinOccurs );
                 oField.SetMaxOccurs( nMaxOccurs );
+                oField.SetDocumentation( GetAnnotationDoc( poElt ) );
 
                 bool bNeedAuxTable = false;
                 const bool bIsList =
@@ -2316,6 +2399,8 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                     oUniqueField.SetType( oField.GetType(),
                                           oField.GetTypeName() );
                     oNestedClass.AddField(oUniqueField);
+                    oNestedClass.SetDocumentation( GetAnnotationDoc( poElt ) );
+
                     oClass.AddNestedClass( oNestedClass );
 
                     oField.SetName( osEltName );
@@ -2426,6 +2511,8 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                                                     "_anyAttributes" );
                     }
                     oField.SetXPath(  osElementXPath + "/@*" );
+                    oField.SetDocumentation( GetAnnotationDoc( poAttrWildcard->getAnnotation() ) );
+
                     aoFields.push_back(oField);
                 }
 
@@ -2472,6 +2559,8 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                         oField.SetMaxOccurs( nMaxOccurs );
                     }
                     oField.SetXPath( osElementXPath );
+                    oField.SetDocumentation( GetAnnotationDoc( poElt ) );
+
                     aoFields.push_back(oField);
                     if( oField.IsArray() )
                     {
@@ -2506,6 +2595,8 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                         oField.SetMaxOccurs( nMaxOccurs );
                     }
                     oField.SetXPath( osElementXPath );
+                    oField.SetDocumentation( GetAnnotationDoc( poElt ) );
+
                     aoFields.push_back(oField);
                 }
 
@@ -2532,6 +2623,7 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                                           ((bEltNameWillNeedPrefix) ? GetPrefix(osEltNS) + "_" : "") +
                                           osEltName );
                     oNestedClass.SetXPath( osElementXPath );
+                    oNestedClass.SetDocumentation( GetAnnotationDoc( poElt ) );
 
                     // NULL can happen, for example for gml:ReferenceType
                     // that is an empty sequence with just attributes
@@ -2756,6 +2848,7 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
                                         osEltName );
                     oNestedClass.SetXPath( osElementXPath );
                     oNestedClass.AppendFields( aoFields );
+                    oNestedClass.SetDocumentation( GetAnnotationDoc( poElt ) );
                     oClass.AddNestedClass( oNestedClass );
 
                     GMLASField oField;
@@ -2783,8 +2876,16 @@ bool GMLASSchemaAnalyzer::ExploreModelGroup(
             if( bRepeatedParticle )
             {
                 GMLASFeatureClass oNestedClass;
-                CPLString osGroupName = GetGroupName(psSubModelGroup);
-                if( osGroupName.empty() )
+                CPLString osGroupName;
+                XSModelGroupDefinition* psGroupDefinition =
+                                            GetGroupDefinition(psSubModelGroup);
+                if( psGroupDefinition != NULL )
+                {
+                    osGroupName = transcode( psGroupDefinition->getName() );
+                    oNestedClass.SetDocumentation(
+                        GetAnnotationDoc( psGroupDefinition->getAnnotation() ) );
+                }
+                else
                 {
                     // Shouldn't happen normally
                     nGroup ++;
