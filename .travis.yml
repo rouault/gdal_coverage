@@ -13,7 +13,6 @@ before_install:
   - brew update
   - brew uninstall gdal
   - brew install sqlite3
-  - brew upgrade sqlite3
   - brew cleanup
 
 install:
