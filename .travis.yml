@@ -8,10 +8,14 @@ osx_image: xcode8
 compiler:
   - clang
 
+# Could probably drop the osx check.
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install sqlite3; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew uninstall gdal; fi
+
 install:
 # build proj
-  - sudo brew uninstall gdal
-  - sudo brew install sqlite3
   - brew list --versions
   - curl http://download.osgeo.org/proj/proj-4.9.3.tar.gz > proj-4.9.3.tar.gz
   - tar xvzf proj-4.9.3.tar.gz
