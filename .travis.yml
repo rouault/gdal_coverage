@@ -10,6 +10,8 @@ compiler:
 
 # Could probably drop the osx check.
 before_install:
+  - ls -l /usr/lib | grep sqlite
+  - otool -L /usr/lib/libsqlite3.dylib
   - brew update
   - brew uninstall gdal
   - brew install sqlite3
@@ -20,8 +22,12 @@ install:
   - brew list --versions
   - echo "Where is sqlite coming from?  homebrew or system?"
   - brew info sqlite3
+  - brew ls --verbose sqlite3
   - mdfind libsqlite3 | egrep '[.](dylib|so|la|a)$'
   - mdfind sqlite3.h | grep sqlite3.h
+  - ls -l /usr/lib/*sqlite*
+  - grep SQLITE_VERSION /usr/include/sqlite3.h
+  - ls -l /usr/lib/libsqlite*
   - ls /usr/local/lib
   - ls /usr/local/include
   - curl http://download.osgeo.org/proj/proj-4.9.3.tar.gz > proj-4.9.3.tar.gz
@@ -43,6 +49,7 @@ install:
   - make USER_DEFS="-Wextra -Werror" test_ogrsf
   - echo "Show which shared libs got used:"
   - otool -L .libs/ogrinfo
+  - otool -L /usr/lib/libsqlite3.dylib
   - cd ..
   - make install
   - export PATH=$HOME/install-gdal/bin:$PWD/apps/.libs:$PATH
