@@ -10,9 +10,11 @@ compiler:
 
 # Could probably drop the osx check.
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update          ; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install sqlite3; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew uninstall gdal; fi
+  - brew update
+  - brew uninstall gdal
+  - brew install sqlite3
+  - brew upgrade sqlite3
+  - brew cleanup
 
 install:
 # build proj
