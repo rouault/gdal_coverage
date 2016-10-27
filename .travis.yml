@@ -26,6 +26,8 @@ install:
   - mdfind libsqlite3 | egrep '[.](dylib|so|la|a)$'
   - mdfind sqlite3.h | grep sqlite3.h
   - ls -l /usr/lib/*sqlite*
+  - ls -l /usr/local/opt/sqlite/lib
+  - ls -l /usr/local/opt/sqlite/include
   - grep SQLITE_VERSION /usr/include/sqlite3.h
   - ls -l /usr/lib/libsqlite*
   - ls /usr/local/lib
@@ -42,7 +44,7 @@ install:
   - cd ..
 # build GDAL
   - cd gdal
-  - ./configure --prefix=$HOME/install-gdal --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal --with-static-proj4=$HOME/install-proj
+  - ./configure --prefix=$HOME/install-gdal --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal --with-static-proj4=$HOME/install-proj --with-sqlite3=/usr/local/opt/sqlite
   - grep -i sqlite config.*
   - make USER_DEFS="-Wextra -Werror" -j3
   - cd apps
