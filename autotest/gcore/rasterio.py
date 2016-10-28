@@ -987,8 +987,8 @@ cellsize     0
 
     ds = gdal.GetDriverByName('MEM').Create('', 1000000, 1)
     ds.GetRasterBand(1).WriteRaster(ds.RasterXSize-1,0,1,1,struct.pack('B' * 1, 100))
-    data = ds.ReadRaster(buf_xsize = ds.RasterXSize/2, buf_ysize = 1, resample_alg = gdal.GRIORA_Average)
-    data = struct.unpack('B' * (ds.RasterXSize/2), data)
+    data = ds.ReadRaster(buf_xsize = int(ds.RasterXSize/2), buf_ysize = 1, resample_alg = gdal.GRIORA_Average)
+    data = struct.unpack('B' * int(ds.RasterXSize/2), data)
     if data[-1:][0] != 50:
         gdaltest.post_reason('fail')
         print(data[-1:][0])
@@ -1003,8 +1003,8 @@ cellsize     0
 
     ds = gdal.GetDriverByName('MEM').Create('', 1, 1000000)
     ds.GetRasterBand(1).WriteRaster(0,ds.RasterYSize-1,1,1,struct.pack('B' * 1, 100))
-    data = ds.ReadRaster(buf_xsize = 1, buf_ysize = ds.RasterYSize/2, resample_alg = gdal.GRIORA_Average)
-    data = struct.unpack('B' * (ds.RasterYSize/2), data)
+    data = ds.ReadRaster(buf_xsize = 1, buf_ysize = int(ds.RasterYSize/2), resample_alg = gdal.GRIORA_Average)
+    data = struct.unpack('B' * int(ds.RasterYSize/2), data)
     if data[-1:][0] != 50:
         gdaltest.post_reason('fail')
         print(data[-1:][0])
@@ -1050,6 +1050,37 @@ cellsize     0
 
     return 'success'
 
+###############################################################################
+# Test mode downsampling by a factor of 2 on exact boundaries
+
+def rasterio_16():
+
+    gdal.FileFromMemBuffer('/vsimem/rasterio_16.asc',
+"""ncols        6
+nrows        6
+xllcorner    0
+yllcorner    0
+cellsize     0
+  0   0   0   0   0   0
+  2   100 0   0   0   0
+100   100 0   0   0   0
+  0   100 0   0   0   0
+  0   0   0   0   0   0
+  0   0   0   0   0  0""")
+ 
+    ds = gdal.Translate('/vsimem/rasterio_16_out.asc', '/vsimem/rasterio_16.asc', options = '-of AAIGRID -r mode -outsize 50% 50%')
+    cs = ds.GetRasterBand(1).Checksum()
+    if cs != 15:
+        gdaltest.post_reason('fail')
+        print(cs)
+        print(ds.ReadAsArray())
+        return 'fail'
+
+    gdal.Unlink('/vsimem/rasterio_16.asc')
+    gdal.Unlink('/vsimem/rasterio_16_out.asc')
+
+    return 'success'
+
 
 gdaltest_list = [
     rasterio_1,
@@ -1066,10 +1097,11 @@ gdaltest_list = [
     rasterio_12,
     rasterio_13,
     rasterio_14,
-    rasterio_15
+    rasterio_15,
+    rasterio_16
     ]
 
-#gdaltest_list = [ rasterio_15 ]
+#gdaltest_list = [ rasterio_16 ]
 
 if __name__ == '__main__':
 
