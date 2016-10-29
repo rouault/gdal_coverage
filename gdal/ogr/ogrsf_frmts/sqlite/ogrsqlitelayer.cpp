@@ -124,24 +124,28 @@ int OGRIsBinaryGeomCol( sqlite3_stmt *hStmt,
 {
     OGRGeometry* poGeometry = NULL;
     const int nBytes = sqlite3_column_bytes( hStmt, iCol );
+    // coverity[tainted_data_return]
+    GByte* pabyBlob = (GByte*)sqlite3_column_blob( hStmt, iCol );
+    int nBytesConsumed = 0;
     CPLPushErrorHandler(CPLQuietErrorHandler);
     /* Try as spatialite first since createFromWkb() can sometimes */
     /* interpret spatialite blobs as WKB for certain SRID values */
     if( OGRSQLiteLayer::ImportSpatiaLiteGeometry(
-            (GByte*)sqlite3_column_blob( hStmt, iCol ), nBytes,
+            pabyBlob, nBytes,
             &poGeometry ) == OGRERR_NONE )
     {
         eGeomFormat = OSGF_SpatiaLite;
     }
     else if( OGRGeometryFactory::createFromWkb(
-            (GByte*)sqlite3_column_blob( hStmt, iCol ),
+            pabyBlob,
             NULL, &poGeometry, nBytes ) == OGRERR_NONE )
     {
         eGeomFormat = OSGF_WKB;
     }
     else if( OGRGeometryFactory::createFromFgf(
-            (GByte*)sqlite3_column_blob( hStmt, iCol ),
-            NULL, &poGeometry, nBytes, NULL ) == OGRERR_NONE )
+            pabyBlob,
+            NULL, &poGeometry, nBytes, &nBytesConsumed ) == OGRERR_NONE &&
+             nBytes == nBytesConsumed )
     {
         eGeomFormat = OSGF_FGF;
     }
@@ -164,7 +168,7 @@ int OGRIsBinaryGeomCol( sqlite3_stmt *hStmt,
 
 void OGRSQLiteLayer::BuildFeatureDefn( const char *pszLayerName,
                                        sqlite3_stmt *hStmtIn,
-                                       const std::set<CPLString>& aosGeomCols,
+                                       const std::set<CPLString>* paosGeomCols,
                                        const std::set<CPLString>& aosIgnoredCols )
 
 {
@@ -210,13 +214,14 @@ void OGRSQLiteLayer::BuildFeatureDefn( const char *pszLayerName,
         if( pszFIDColumn != NULL && EQUAL(pszFIDColumn, oField.GetNameRef()))
             continue;
 
-        //oField.SetWidth( MAX(0,poStmt->GetColSize( iCol )) );
+        // oField.SetWidth( std::max(0,poStmt->GetColSize( iCol )) );
 
         if( aosIgnoredCols.find( CPLString(oField.GetNameRef()).tolower() ) != aosIgnoredCols.end() )
         {
             continue;
         }
-        if( aosGeomCols.find( CPLString(oField.GetNameRef()).tolower() ) != aosGeomCols.end() )
+        if( paosGeomCols != NULL &&
+            paosGeomCols->find( CPLString(oField.GetNameRef()).tolower() ) != paosGeomCols->end() )
         {
             OGRSQLiteGeomFieldDefn* poGeomFieldDefn =
                 new OGRSQLiteGeomFieldDefn(oField.GetNameRef(), iCol);
@@ -386,7 +391,8 @@ void OGRSQLiteLayer::BuildFeatureDefn( const char *pszLayerName,
         }
 
         // Recognise some common geometry column names.
-        if( (EQUAL(oField.GetNameRef(),"wkt_geometry")
+        if( paosGeomCols == NULL &&
+            (EQUAL(oField.GetNameRef(),"wkt_geometry")
              || EQUAL(oField.GetNameRef(),"geometry")
              || STARTS_WITH_CI(oField.GetNameRef(), "asbinary(")
              || STARTS_WITH_CI(oField.GetNameRef(), "astext(")
@@ -455,7 +461,8 @@ void OGRSQLiteLayer::BuildFeatureDefn( const char *pszLayerName,
         }
 
         // SpatialLite / Gaia
-        if( EQUAL(oField.GetNameRef(),"GaiaGeometry")
+        if( paosGeomCols == NULL &&
+            EQUAL(oField.GetNameRef(),"GaiaGeometry")
             && (bAllowMultipleGeomFields || poFeatureDefn->GetGeomFieldCount() == 0) )
         {
             OGRSQLiteGeomFieldDefn* poGeomFieldDefn =
@@ -467,7 +474,8 @@ void OGRSQLiteLayer::BuildFeatureDefn( const char *pszLayerName,
 
         // Recognize a geometry column from trying to build the geometry
         // Useful for OGRSQLiteSelectLayer
-        if( nColType == SQLITE_BLOB &&
+        if( paosGeomCols == NULL &&
+            nColType == SQLITE_BLOB &&
             (bAllowMultipleGeomFields || poFeatureDefn->GetGeomFieldCount() == 0) )
         {
             const int nBytes = sqlite3_column_bytes( hStmtIn, iCol );
@@ -652,8 +660,9 @@ OGRFeature *OGRSQLiteLayer::GetNextRawFeature()
                 {
                     /* If the layer is the result of a sql select, we cannot be sure if it is */
                     /* WKB or SpatialLite format */
-                    if( ImportSpatiaLiteGeometry(
-                        (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol ), nBytes,
+                    // coverity[tainted_data_return]
+                    GByte* pabyBlob = (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol );
+                    if( ImportSpatiaLiteGeometry( pabyBlob, nBytes,
                         &poGeometry ) == OGRERR_NONE )
                     {
                         poGeomFieldDefn->eGeomFormat = OSGF_SpatiaLite;
@@ -663,26 +672,27 @@ OGRFeature *OGRSQLiteLayer::GetNextRawFeature()
 
                 if( poGeomFieldDefn->eGeomFormat == OSGF_WKB )
                 {
+                    // coverity[tainted_data_return]
+                    GByte* pabyBlob = (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol );
                     CPL_IGNORE_RET_VAL(OGRGeometryFactory::createFromWkb(
-                        (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol ),
-                        NULL, &poGeometry, nBytes ));
+                        pabyBlob, NULL, &poGeometry, nBytes ));
                 }
             }
             else if ( poGeomFieldDefn->eGeomFormat == OSGF_FGF )
             {
                 const int nBytes = sqlite3_column_bytes( hStmt, poGeomFieldDefn->iCol );
-
-                OGRGeometryFactory::createFromFgf(
-                        (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol ),
+                // coverity[tainted_data_return]
+                GByte* pabyBlob = (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol );
+                OGRGeometryFactory::createFromFgf( pabyBlob,
                         NULL, &poGeometry, nBytes, NULL );
             }
             else if ( poGeomFieldDefn->eGeomFormat == OSGF_SpatiaLite )
             {
                 const int nBytes = sqlite3_column_bytes( hStmt, poGeomFieldDefn->iCol );
-
+                // coverity[tainted_data_return]
+                GByte* pabyBlob = (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol );
                 CPL_IGNORE_RET_VAL(ImportSpatiaLiteGeometry(
-                        (GByte*)sqlite3_column_blob( hStmt, poGeomFieldDefn->iCol ), nBytes,
-                        &poGeometry ));
+                        pabyBlob, nBytes, &poGeometry ));
             }
 
             if (poGeometry != NULL )
@@ -739,9 +749,11 @@ OGRFeature *OGRSQLiteLayer::GetNextRawFeature()
         case OFTBinary:
             {
                 const int nBytes = sqlite3_column_bytes( hStmt, iRawField );
-
+                // coverity[tainted_data_return]
+                const GByte* pabyData = reinterpret_cast<const GByte*>(
+                    sqlite3_column_blob( hStmt, iRawField ) );
                 poFeature->SetField( iField, nBytes,
-                    (GByte*)sqlite3_column_blob( hStmt, iRawField ) );
+                                     const_cast<GByte*>(pabyData) );
             }
             break;
 
@@ -755,6 +767,7 @@ OGRFeature *OGRSQLiteLayer::GetNextRawFeature()
                               poFeatureDefn->GetFieldDefn(iField)->GetNameRef()) >= 0 )
             {
                 const int nBytes = sqlite3_column_bytes( hStmt, iRawField );
+                // coverity[tainted_data_return]
                 GByte* pabyBlob = (GByte*)sqlite3_column_blob( hStmt, iRawField );
 
                 void* pOut = CPLZLibInflate( pabyBlob, nBytes, NULL, 0, NULL );
@@ -838,7 +851,6 @@ OGRFeature *OGRSQLiteLayer::GetFeature( GIntBig nFeatureId )
     return OGRLayer::GetFeature( nFeatureId );
 }
 
-
 /************************************************************************/
 /*                     createFromSpatialiteInternal()                   */
 /************************************************************************/
@@ -853,7 +865,6 @@ OGRFeature *OGRSQLiteLayer::GetFeature( GIntBig nFeatureId )
 #else
 #define NEED_SWAP_SPATIALITE()  (eByteOrder == wkbNDR)
 #endif
-
 
 OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
                                                     OGRGeometry **ppoReturn,
@@ -2025,7 +2036,6 @@ OGRErr OGRSQLiteLayer::createFromSpatialiteInternal(const GByte *pabyData,
             if (NEED_SWAP_SPATIALITE())
                 CPL_SWAP32PTR( &nPointCount );
 
-
             if( nPointCount < 0 || nPointCount - 2 > (INT_MAX - 24 * 2) / 16)
             {
                 delete poPoly;
@@ -2687,7 +2697,6 @@ int OGRSQLiteLayer::GetSpatialiteGeometryCode(const OGRGeometry *poGeometry,
             }
             break;
 
-
         case wkbGeometryCollection:
             if ( bSpatialite2D == TRUE )
                 return OGRSpliteGeometryCollectionXY;
@@ -2954,7 +2963,6 @@ int OGRSQLiteLayer::ExportSpatiaLiteGeometryInternal(const OGRGeometry *poGeomet
             return 0;
     }
 }
-
 
 OGRErr OGRSQLiteLayer::ExportSpatiaLiteGeometry( const OGRGeometry *poGeometry,
                                                  GInt32 nSRID,

@@ -77,6 +77,8 @@ int OGRCouchDBDataSource::TestCapability( const char * pszCap )
         return TRUE;
     else if( bReadWrite && EQUAL(pszCap, ODsCDeleteLayer) )
         return TRUE;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return bReadWrite;
     else
         return FALSE;
 }
@@ -223,7 +225,6 @@ int OGRCouchDBDataSource::Open( const char * pszFilename, int bUpdateIn)
     if (pszUserPwd)
         osUserPwd = pszUserPwd;
 
-
     if ((strstr(osURL, "/_design/") && strstr(osURL, "/_view/")) ||
         strstr(osURL, "/_all_docs"))
     {
@@ -305,7 +306,6 @@ int OGRCouchDBDataSource::Open( const char * pszFilename, int bUpdateIn)
 
     return TRUE;
 }
-
 
 /************************************************************************/
 /*                          ICreateLayer()                              */
@@ -390,7 +390,6 @@ OGRLayer   *OGRCouchDBDataSource::ICreateLayer( const char *pszNameIn,
 
         json_object_put(poAnswerObj);
     }
-
 
 /* -------------------------------------------------------------------- */
 /*      Create validation function                                      */
@@ -670,7 +669,6 @@ OGRLayer * OGRCouchDBDataSource::ExecuteSQL( const char *pszSQLCommand,
             return NULL;
         }
 
-
         return NULL;
     }
 
@@ -769,13 +767,14 @@ OGRLayer * OGRCouchDBDataSource::ExecuteSQLStats( const char *pszSQLCommand )
     sFieldList.table_defs = sSelectInfo.table_defs;
 
     sFieldList.count = 0;
-    sFieldList.names = (char **) CPLMalloc( sizeof(char *) * nFieldCount );
-    sFieldList.types = (swq_field_type *)
-        CPLMalloc( sizeof(swq_field_type) * nFieldCount );
-    sFieldList.table_ids = (int *)
-        CPLMalloc( sizeof(int) * nFieldCount );
-    sFieldList.ids = (int *)
-        CPLMalloc( sizeof(int) * nFieldCount );
+    sFieldList.names = static_cast<char **>(
+        CPLMalloc( sizeof(char *) * nFieldCount ));
+    sFieldList.types = static_cast<swq_field_type *>(
+        CPLMalloc( sizeof(swq_field_type) * nFieldCount ));
+    sFieldList.table_ids = static_cast<int *>(
+        CPLMalloc( sizeof(int) * nFieldCount ));
+    sFieldList.ids = static_cast<int *>(
+        CPLMalloc( sizeof(int) * nFieldCount ));
 
     PointerAutoFree oHolderNames(sFieldList.names);
     PointerAutoFree oHolderTypes(sFieldList.types);

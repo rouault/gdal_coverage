@@ -170,7 +170,7 @@ CPLErr OGRWalkTableLayer::Initialize( const char *pszLayerName,
         {
             if( CPLODBCStatement::GetTypeMapping(
                     oGetCol.GetColType( iColumn )) == SQL_C_BINARY )
-                bGeomColumnWKB = TRUE;
+                bGeomColumnWKB = true;
         }
     }
 
@@ -301,7 +301,6 @@ OGRErr OGRWalkTableLayer::SetAttributeFilter( const char *pszQueryIn )
     return OGRERR_NONE;
 }
 
-
 /************************************************************************/
 /*                           TestCapability()                           */
 /************************************************************************/
@@ -312,8 +311,7 @@ int OGRWalkTableLayer::TestCapability( const char * pszCap )
     if( EQUAL(pszCap,OLCRandomRead) )
         return TRUE;
 
-    else
-        return OGRWalkLayer::TestCapability( pszCap );
+    return OGRWalkLayer::TestCapability( pszCap );
 }
 
 /************************************************************************/

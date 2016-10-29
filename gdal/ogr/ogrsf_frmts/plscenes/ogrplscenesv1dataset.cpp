@@ -54,7 +54,7 @@ OGRPLScenesV1Dataset::~OGRPLScenesV1Dataset()
         delete m_papoLayers[i];
     CPLFree(m_papoLayers);
 
-    if (m_bMustCleanPersistent)
+    if( m_bMustCleanPersistent )
     {
         char **papszOptions =
             CSLSetNameValue(
@@ -151,7 +151,6 @@ OGRLayer* OGRPLScenesV1Dataset::ParseCatalog(json_object* poCatalog)
     return poPLLayer;
 }
 
-
 /************************************************************************/
 /*                          ParseCatalogsPage()                         */
 /************************************************************************/
@@ -243,8 +242,12 @@ char** OGRPLScenesV1Dataset::GetBaseHTTPOptions()
     m_bMustCleanPersistent = true;
 
     char** papszOptions = NULL;
-    papszOptions = CSLAddString(papszOptions, CPLSPrintf("PERSISTENT=PLSCENES:%p", this));
-    papszOptions = CSLAddString(papszOptions, CPLSPrintf("HEADERS=Authorization: api-key %s", m_osAPIKey.c_str()));
+    papszOptions =
+        CSLAddString(papszOptions, CPLSPrintf("PERSISTENT=PLSCENES:%p", this));
+    papszOptions =
+        CSLAddString(papszOptions,
+                     CPLSPrintf("HEADERS=Authorization: api-key %s",
+                                m_osAPIKey.c_str()));
     return papszOptions;
 }
 
@@ -270,6 +273,7 @@ json_object* OGRPLScenesV1Dataset::RunRequest(const char* pszURL,
         papszOptions = CSLSetNameValue(papszOptions, "HEADERS", osHeaders);
         papszOptions = CSLSetNameValue(papszOptions, "POSTFIELDS", pszPostContent);
     }
+    papszOptions = CSLSetNameValue(papszOptions, "MAX_RETRY", "3");
     CPLHTTPResult *psResult = NULL;
     if( STARTS_WITH(m_osBaseURL, "/vsimem/") &&
         STARTS_WITH(pszURL, "/vsimem/") )
@@ -312,7 +316,7 @@ json_object* OGRPLScenesV1Dataset::RunRequest(const char* pszURL,
     }
     CSLDestroy(papszOptions);
 
-    if ( pszPostContent != NULL && m_bMustCleanPersistent)
+    if( pszPostContent != NULL && m_bMustCleanPersistent )
     {
         papszOptions = CSLSetNameValue(NULL, "CLOSE_PERSISTENT", CPLSPrintf("PLSCENES:%p", this));
         CPLHTTPDestroyResult(CPLHTTPFetch(m_osBaseURL, papszOptions));
@@ -589,13 +593,15 @@ retry:
     osRasterURL = InsertAPIKeyInURL(osRasterURL);
 
     CPLString osOldHead(CPLGetConfigOption("CPL_VSIL_CURL_USE_HEAD", ""));
-    CPLString osOldExt(CPLGetConfigOption("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", ""));
+    CPLString osOldAllowedFilename(CPLGetConfigOption("CPL_VSIL_CURL_ALLOWED_FILENAME", ""));
 
     const bool bUseVSICURL =
         CPLFetchBool(poOpenInfo->papszOpenOptions, "RANDOM_ACCESS", true);
     if( bUseVSICURL && !(STARTS_WITH(m_osBaseURL, "/vsimem/")) )
     {
         CPLSetThreadLocalConfigOption("CPL_VSIL_CURL_USE_HEAD", "NO");
+        CPLSetThreadLocalConfigOption("CPL_VSIL_CURL_ALLOWED_FILENAME",
+                                      ("/vsicurl/" + osRasterURL).c_str());
 
         VSIStatBufL sStat;
         if( VSIStatL(("/vsicurl/" + osRasterURL).c_str(), &sStat) == 0 &&
@@ -607,13 +613,16 @@ retry:
         {
             CPLDebug("PLSCENES", "Cannot use random access for that file");
         }
-
-        // URLs with tokens can have . in them which confuses CPL_VSIL_CURL_ALLOWED_EXTENSIONS={noext} if
-        // it is run before the previous VSIStatL()
-        CPLSetThreadLocalConfigOption("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", "{noext}");
     }
 
-    GDALDataset* poOutDS = (GDALDataset*) GDALOpenEx(osRasterURL, GDAL_OF_RASTER, NULL, NULL, NULL);
+    char** papszAllowedDrivers = NULL;
+    papszAllowedDrivers = CSLAddString(papszAllowedDrivers, "HTTP");
+    papszAllowedDrivers = CSLAddString(papszAllowedDrivers, "GTiff");
+    papszAllowedDrivers = CSLAddString(papszAllowedDrivers, "PNG");
+    papszAllowedDrivers = CSLAddString(papszAllowedDrivers, "JPEG");
+    GDALDataset* poOutDS = (GDALDataset*) GDALOpenEx(osRasterURL, GDAL_OF_RASTER,
+                                                     papszAllowedDrivers, NULL, NULL);
+    CSLDestroy(papszAllowedDrivers);
     if( poOutDS )
     {
         OGRLayer* poLayer = GetLayerByName(pszCatalog);
@@ -675,8 +684,8 @@ retry:
     {
         CPLSetThreadLocalConfigOption("CPL_VSIL_CURL_USE_HEAD",
                                     osOldHead.size() ? osOldHead.c_str(): NULL);
-        CPLSetThreadLocalConfigOption("CPL_VSIL_CURL_ALLOWED_EXTENSIONS",
-                                    osOldExt.size() ? osOldExt.c_str(): NULL);
+        CPLSetThreadLocalConfigOption("CPL_VSIL_CURL_ALLOWED_FILENAME",
+                                    osOldAllowedFilename.size() ? osOldAllowedFilename.c_str(): NULL);
     }
 
     return poOutDS;

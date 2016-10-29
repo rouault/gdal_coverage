@@ -29,6 +29,7 @@
 # DEALINGS IN THE SOFTWARE.
 ###############################################################################
 
+import struct
 import sys
 
 sys.path.append( '../pymod' )
@@ -529,6 +530,7 @@ def rasterio_9():
     if data is None:
         gdaltest.post_reason('failure')
         return 'fail'
+    data_ar = struct.unpack('h' * 10 * 10, data)
     cs = rasterio_9_checksum(data, 10, 10, data_type = gdal.GDT_Int16)
     if cs != 1211: # checksum of gdal_translate data/byte.tif out.tif -outsize 10 10 -r BILINEAR
         gdaltest.post_reason('failure')
@@ -537,6 +539,19 @@ def rasterio_9():
 
     if abs(tab[0] - 1.0) > 1e-5:
         gdaltest.post_reason('failure')
+        return 'fail'
+
+    # Same but query with GDT_Float32. Check that we do not get floating-point
+    # values, since the band type is Byte
+    data = ds.GetRasterBand(1).ReadRaster(buf_type = gdal.GDT_Float32,
+                                          buf_xsize = 10,
+                                          buf_ysize = 10,
+                                          resample_alg = gdal.GRIORA_Bilinear)
+
+    data_float32_ar = struct.unpack('f' * 10 * 10, data)
+    if data_ar != data_float32_ar:
+        gdaltest.post_reason('failure')
+        print(data_float32_ar)
         return 'fail'
 
     # Test RasterBand.ReadRaster, with Lanczos
@@ -941,6 +956,132 @@ def rasterio_13():
 
     return 'success'
 
+###############################################################################
+# Test average downsampling by a factor of 2 on exact boundaries
+
+def rasterio_14():
+
+    gdal.FileFromMemBuffer('/vsimem/rasterio_14.asc',
+"""ncols        6
+nrows        6
+xllcorner    0
+yllcorner    0
+cellsize     0
+  0   0   100 0   0   0
+  0   100 0   0   0 100
+  0   0   0   0 100   0
+100   0 100   0   0   0
+  0 100   0 100   0   0
+  0   0   0   0   0 100""")
+ 
+    ds = gdal.Translate('/vsimem/rasterio_14_out.asc', '/vsimem/rasterio_14.asc', options = '-of AAIGRID -r average -outsize 50% 50%')
+    cs = ds.GetRasterBand(1).Checksum()
+    if cs != 110:
+        gdaltest.post_reason('fail')
+        print(cs)
+        print(ds.ReadAsArray())
+        return 'fail'
+
+    gdal.Unlink('/vsimem/rasterio_14.asc')
+    gdal.Unlink('/vsimem/rasterio_14_out.asc')
+
+    ds = gdal.GetDriverByName('MEM').Create('', 1000000, 1)
+    ds.GetRasterBand(1).WriteRaster(ds.RasterXSize-1,0,1,1,struct.pack('B' * 1, 100))
+    data = ds.ReadRaster(buf_xsize = int(ds.RasterXSize/2), buf_ysize = 1, resample_alg = gdal.GRIORA_Average)
+    data = struct.unpack('B' * int(ds.RasterXSize/2), data)
+    if data[-1:][0] != 50:
+        gdaltest.post_reason('fail')
+        print(data[-1:][0])
+        return 'fail'
+
+    data = ds.ReadRaster(ds.RasterXSize - 2, 0, 2, 1, buf_xsize = 1, buf_ysize = 1, resample_alg = gdal.GRIORA_Average)
+    data = struct.unpack('B' * 1, data)
+    if data[0] != 50:
+        gdaltest.post_reason('fail')
+        print(data[0])
+        return 'fail'
+
+    ds = gdal.GetDriverByName('MEM').Create('', 1, 1000000)
+    ds.GetRasterBand(1).WriteRaster(0,ds.RasterYSize-1,1,1,struct.pack('B' * 1, 100))
+    data = ds.ReadRaster(buf_xsize = 1, buf_ysize = int(ds.RasterYSize/2), resample_alg = gdal.GRIORA_Average)
+    data = struct.unpack('B' * int(ds.RasterYSize/2), data)
+    if data[-1:][0] != 50:
+        gdaltest.post_reason('fail')
+        print(data[-1:][0])
+        return 'fail'
+
+    data = ds.ReadRaster(0, ds.RasterYSize - 2, 1, 2, buf_xsize = 1, buf_ysize = 1, resample_alg = gdal.GRIORA_Average)
+    data = struct.unpack('B' * 1, data)
+    if data[0] != 50:
+        gdaltest.post_reason('fail')
+        print(data[0])
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+# Test average oversampling by an integer factor (should behave like nearest)
+
+def rasterio_15():
+
+    gdal.FileFromMemBuffer('/vsimem/rasterio_15.asc',
+"""ncols        2
+nrows        2
+xllcorner    0
+yllcorner    0
+cellsize     0
+  0   100
+100   100""")
+ 
+    ds = gdal.Translate('/vsimem/rasterio_15_out.asc', '/vsimem/rasterio_15.asc', options = '-of AAIGRID -outsize 200% 200%')
+    data_ref = ds.GetRasterBand(1).ReadRaster()
+    ds = None
+    ds = gdal.Translate('/vsimem/rasterio_15_out.asc', '/vsimem/rasterio_15.asc', options = '-of AAIGRID -r average -outsize 200% 200%')
+    data = ds.GetRasterBand(1).ReadRaster()
+    cs = ds.GetRasterBand(1).Checksum()
+    if data != data_ref or cs != 134:
+        gdaltest.post_reason('fail')
+        print(cs)
+        print(ds.ReadAsArray())
+        return 'fail'
+
+    gdal.Unlink('/vsimem/rasterio_15.asc')
+    gdal.Unlink('/vsimem/rasterio_15_out.asc')
+
+    return 'success'
+
+###############################################################################
+# Test mode downsampling by a factor of 2 on exact boundaries
+
+def rasterio_16():
+
+    gdal.FileFromMemBuffer('/vsimem/rasterio_16.asc',
+"""ncols        6
+nrows        6
+xllcorner    0
+yllcorner    0
+cellsize     0
+  0   0   0   0   0   0
+  2   100 0   0   0   0
+100   100 0   0   0   0
+  0   100 0   0   0   0
+  0   0   0   0   0   0
+  0   0   0   0   0  0""")
+ 
+    ds = gdal.Translate('/vsimem/rasterio_16_out.asc', '/vsimem/rasterio_16.asc', options = '-of AAIGRID -r mode -outsize 50% 50%')
+    cs = ds.GetRasterBand(1).Checksum()
+    if cs != 15:
+        gdaltest.post_reason('fail')
+        print(cs)
+        print(ds.ReadAsArray())
+        return 'fail'
+
+    gdal.Unlink('/vsimem/rasterio_16.asc')
+    gdal.Unlink('/vsimem/rasterio_16_out.asc')
+
+    return 'success'
+
+
 gdaltest_list = [
     rasterio_1,
     rasterio_2,
@@ -954,8 +1095,13 @@ gdaltest_list = [
     rasterio_10,
     rasterio_11,
     rasterio_12,
-    rasterio_13
+    rasterio_13,
+    rasterio_14,
+    rasterio_15,
+    rasterio_16
     ]
+
+#gdaltest_list = [ rasterio_16 ]
 
 if __name__ == '__main__':
 

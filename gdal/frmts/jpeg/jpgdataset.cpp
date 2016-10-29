@@ -40,6 +40,8 @@
 
 #include <setjmp.h>
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 static const int TIFF_VERSION = 42;
@@ -83,7 +85,6 @@ typedef struct
     int bDoPAMInitialize;
     int bUseInternalOverviews;
 } JPGDatasetOpenArgs;
-
 
 #if defined(JPEG_DUAL_MODE_8_12) && !defined(JPGDataset)
 GDALDataset* JPEGDataset12Open(JPGDatasetOpenArgs* psArgs);
@@ -286,6 +287,9 @@ class JPGDataset : public JPGDatasetCommon
 #endif
     void   SetScaleNumAndDenom();
 
+    static GDALDataset*  OpenStage2( JPGDatasetOpenArgs* psArgs,
+                                     JPGDataset*& poDS );
+
   public:
                  JPGDataset();
     virtual ~JPGDataset();
@@ -296,7 +300,16 @@ class JPGDataset : public JPGDatasetCommon
                                     int bStrict, char ** papszOptions,
                                     GDALProgressFunc pfnProgress,
                                     void * pProgressData );
-
+    static GDALDataset* CreateCopyStage2( const char * pszFilename, GDALDataset *poSrcDS,
+                              char ** papszOptions,
+                              GDALProgressFunc pfnProgress, void * pProgressData,
+                              VSILFILE* fpImage,
+                              GDALDataType eDT,
+                              int nQuality,
+                              GDALJPEGErrorStruct& sErrorStruct,
+                              struct jpeg_compress_struct& sCInfo,
+                              struct jpeg_error_mgr& sJErr,
+                              GByte*& pabyScanline);
     static void ErrorExit(j_common_ptr cinfo);
 };
 
@@ -1837,7 +1850,6 @@ void JPGDataset::LoadDefaultTables( int n )
         /* symbols[] is the list of Huffman symbols, in code-length order */
         huff_ptr->huffval[i] = DC_HUFFVAL[i];
     }
-
 }
 #endif // !defined(JPGDataset)
 
@@ -1875,7 +1887,6 @@ CPLErr JPGDataset::Restart()
     jpeg_abort_decompress( &sDInfo );
     jpeg_destroy_decompress( &sDInfo );
     jpeg_create_decompress( &sDInfo );
-
 
 #if !defined(JPGDataset)
     LoadDefaultTables( 0 );
@@ -2217,6 +2228,12 @@ GDALDataset *JPGDataset::Open( JPGDatasetOpenArgs* psArgs )
 
 {
     JPGDataset  *poDS = new JPGDataset();
+    return OpenStage2( psArgs, poDS );
+}
+
+GDALDataset *JPGDataset::OpenStage2( JPGDatasetOpenArgs* psArgs,
+                                     JPGDataset*& poDS )
+{
     /* Will detect mismatch between compile-time and run-time libjpeg versions */
     if (setjmp(poDS->sErrorStruct.setjmp_buffer))
     {
@@ -2367,8 +2384,9 @@ GDALDataset *JPGDataset::Open( JPGDatasetOpenArgs* psArgs )
     {
         // If the user doesn't provide a value for JPEGMEM, we want to be sure
         // that at least 500 MB will be used before creating the temporary file.
+        const long nMinMemory = 500 * 1024 * 1024;
         poDS->sDInfo.mem->max_memory_to_use =
-            MAX(poDS->sDInfo.mem->max_memory_to_use, 500 * 1024 * 1024);
+            std::max(poDS->sDInfo.mem->max_memory_to_use, nMinMemory);
     }
 
 /* -------------------------------------------------------------------- */
@@ -3356,14 +3374,6 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     VSILFILE *fpImage = NULL;
     GDALJPEGErrorStruct sErrorStruct;
     sErrorStruct.bNonFatalErrorEncountered = FALSE;
-
-    if (setjmp(sErrorStruct.setjmp_buffer))
-    {
-        if( fpImage )
-            VSIFCloseL( fpImage );
-        return NULL;
-    }
-
     GDALDataType eDT = poSrcDS->GetRasterBand(1)->GetRasterDataType();
 
 #if defined(JPEG_LIB_MK1_OR_12BIT) || defined(JPEG_DUAL_MODE_8_12)
@@ -3438,12 +3448,40 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         return NULL;
     }
 
+    struct jpeg_compress_struct sCInfo;
+    struct jpeg_error_mgr sJErr;
+    GByte* pabyScanline;
+
+    // Nasty trick to avoid variable clobbering issues with setjmp/longjmp
+    return CreateCopyStage2(pszFilename, poSrcDS, papszOptions,
+                            pfnProgress, pProgressData,
+                            fpImage, eDT, nQuality,
+                            sErrorStruct, sCInfo, sJErr, pabyScanline);
+}
+
+GDALDataset *
+JPGDataset::CreateCopyStage2( const char * pszFilename, GDALDataset *poSrcDS,
+                              char ** papszOptions,
+                              GDALProgressFunc pfnProgress, void * pProgressData,
+                              VSILFILE* fpImage,
+                              GDALDataType eDT,
+                              int nQuality,
+                              GDALJPEGErrorStruct& sErrorStruct,
+                              struct jpeg_compress_struct& sCInfo,
+                              struct jpeg_error_mgr& sJErr,
+                              GByte*& pabyScanline)
+
+{
+    if (setjmp(sErrorStruct.setjmp_buffer))
+    {
+        if( fpImage )
+            VSIFCloseL( fpImage );
+        return NULL;
+    }
+
 /* -------------------------------------------------------------------- */
 /*      Initialize JPG access to the file.                              */
 /* -------------------------------------------------------------------- */
-
-    struct jpeg_compress_struct sCInfo;
-    struct jpeg_error_mgr sJErr;
     sCInfo.err = jpeg_std_error( &sJErr );
     sJErr.error_exit = JPGDataset::ErrorExit;
     sErrorStruct.p_previous_emit_message = sJErr.emit_message;
@@ -3456,6 +3494,7 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 
     const int nXSize = poSrcDS->GetRasterXSize();
     const int nYSize = poSrcDS->GetRasterYSize();
+    const int nBands = poSrcDS->GetRasterCount();
     sCInfo.image_width = nXSize;
     sCInfo.image_height = nYSize;
     sCInfo.input_components = nBands;
@@ -3474,8 +3513,9 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
     {
         // If the user doesn't provide a value for JPEGMEM, we want to be sure
         // that at least 500 MB will be used before creating the temporary file.
+        const long nMinMemory = 500 * 1024 * 1024;
         sCInfo.mem->max_memory_to_use =
-                MAX(sCInfo.mem->max_memory_to_use, 500 * 1024 * 1024);
+            std::max(sCInfo.mem->max_memory_to_use, nMinMemory);
     }
 
     if( eDT == GDT_UInt16 )
@@ -3579,12 +3619,20 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
 /*      Loop over image, copying image data.                            */
 /* -------------------------------------------------------------------- */
-    CPLErr eErr = CE_None;
     const int nWorkDTSize = GDALGetDataTypeSizeBytes(eWorkDT);
-    bool bClipWarn = false;
-    GByte *pabyScanline
+    pabyScanline
         = static_cast<GByte *>( CPLMalloc( nBands * nXSize * nWorkDTSize ) );
 
+    if (setjmp(sErrorStruct.setjmp_buffer))
+    {
+        VSIFCloseL( fpImage );
+        CPLFree( pabyScanline );
+        jpeg_destroy_compress( &sCInfo );
+        return NULL;
+    }
+
+    CPLErr eErr = CE_None;
+    bool bClipWarn = false;
     for( int iLine = 0; iLine < nYSize && eErr == CE_None; iLine++ )
     {
         eErr = poSrcDS->RasterIO( GF_Read, 0, iLine, nXSize, 1,
@@ -3635,11 +3683,13 @@ JPGDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
 /*      Cleanup and close.                                              */
 /* -------------------------------------------------------------------- */
-    CPLFree( pabyScanline );
-
     if( eErr == CE_None )
         jpeg_finish_compress( &sCInfo );
     jpeg_destroy_compress( &sCInfo );
+
+    // Free scanline and image after jpeg_finish_compress since this could
+    // cause a longjmp to occur
+    CPLFree( pabyScanline );
 
     VSIFCloseL( fpImage );
 
@@ -3733,8 +3783,7 @@ class GDALJPGDriver: public GDALDriver
 
         char      **GetMetadata( const char * pszDomain = "" );
         const char *GetMetadataItem( const char * pszName,
-                                      const char * pszDomain = "" );
-
+                                     const char * pszDomain = "" );
 };
 
 char** GDALJPGDriver::GetMetadata( const char * pszDomain )

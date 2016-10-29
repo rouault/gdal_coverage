@@ -66,7 +66,7 @@ CPL_CVSID("$Id$");
  *                      class TABMAPToolBlock
  *====================================================================*/
 
-#define MAP_TOOL_HEADER_SIZE   8
+static const int MAP_TOOL_HEADER_SIZE = 8;
 
 /**********************************************************************
  *                   TABMAPToolBlock::TABMAPToolBlock()
@@ -308,7 +308,6 @@ void TABMAPToolBlock::SetMAPBlockManagerRef(TABBinBlockManager *poBlockMgr)
     m_poBlockManagerRef = poBlockMgr;
 };
 
-
 /**********************************************************************
  *                   TABMAPToolBlock::ReadBytes()
  *
@@ -436,9 +435,6 @@ int  TABMAPToolBlock::CheckAvailableSpace(int nToolType)
 
     return 0;
 }
-
-
-
 
 /**********************************************************************
  *                   TABMAPToolBlock::Dump()

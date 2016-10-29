@@ -116,7 +116,7 @@ int DDFRecord::Read()
 /* -------------------------------------------------------------------- */
     if( !nReuseHeader )
     {
-        return( ReadHeader() );
+        return ReadHeader();
     }
 
 /* -------------------------------------------------------------------- */
@@ -885,7 +885,7 @@ DDFRecord::GetStringSubfield( const char * pszField, int iFieldIndex,
 /* -------------------------------------------------------------------- */
     *pnSuccess = TRUE;
 
-    return( poSFDefn->ExtractStringData( l_pachData, nBytesRemaining, NULL ) );
+    return poSFDefn->ExtractStringData( l_pachData, nBytesRemaining, NULL );
 }
 
 /************************************************************************/
@@ -1001,7 +1001,6 @@ DDFRecord *DDFRecord::CloneOn( DDFModule *poTargetModule )
 
     return poClone;
 }
-
 
 /************************************************************************/
 /*                            DeleteField()                             */

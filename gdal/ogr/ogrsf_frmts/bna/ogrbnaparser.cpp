@@ -225,7 +225,6 @@ static int BNA_GetLine(char szLineBuffer[LINE_BUFFER_SIZE+1], VSILFILE* f)
     return BNA_LINE_OK;
 }
 
-
 BNARecord* BNA_GetNextRecord(VSILFILE* f,
                              int* ok,
                              int* curLine,
@@ -255,7 +254,7 @@ BNARecord* BNA_GetNextRecord(VSILFILE* f,
       numChar = 0;
       (*curLine)++;
 
-      int retGetLine = BNA_GetLine(szLineBuffer, f);
+      const int retGetLine = BNA_GetLine(szLineBuffer, f);
       if (retGetLine == BNA_LINE_TOO_LONG)
       {
           detailedErrorMsg = LINE_TOO_LONG;
@@ -419,22 +418,26 @@ BNARecord* BNA_GetNextRecord(VSILFILE* f,
             }
             else if (nCoords == 1)
             {
-              currentFeatureType = record->featureType = BNA_POINT;
+              currentFeatureType = BNA_POINT;
+              record->featureType = BNA_POINT;
               record->nCoords = 1;
             }
             else if (nCoords == 2)
             {
-              currentFeatureType = record->featureType = BNA_ELLIPSE;
+              currentFeatureType = BNA_ELLIPSE;
+              record->featureType = BNA_ELLIPSE;
               record->nCoords = 2;
             }
             else if (nCoords > 0)
             {
-              currentFeatureType = record->featureType = BNA_POLYGON;
+              currentFeatureType = BNA_POLYGON;
+              record->featureType = BNA_POLYGON;
               record->nCoords = nCoords;
             }
             else
             {
-              currentFeatureType = record->featureType = BNA_POLYLINE;
+              currentFeatureType = BNA_POLYLINE;
+              record->featureType = BNA_POLYLINE;
               record->nCoords = -nCoords;
             }
 
@@ -447,7 +450,8 @@ BNARecord* BNA_GetNextRecord(VSILFILE* f,
               {
                 if (tmpBufferLength[i] && tmpBuffer[i][0])
                 {
-                  record->ids[i] = (char*)CPLMalloc(tmpBufferLength[i] + 1);
+                  record->ids[i] = static_cast<char *>(
+                      CPLMalloc(tmpBufferLength[i] + 1));
                   tmpBuffer[i][tmpBufferLength[i]] = 0;
                   memcpy(record->ids[i], tmpBuffer[i], tmpBufferLength[i] + 1);
                 }

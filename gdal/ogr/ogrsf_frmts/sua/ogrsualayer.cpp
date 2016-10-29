@@ -43,8 +43,8 @@ OGRSUALayer::OGRSUALayer( VSILFILE* fp ) :
     poFeatureDefn(new OGRFeatureDefn( "layer" )),
     poSRS(new OGRSpatialReference(SRS_WKT_WGS84)),
     fpSUA(fp),
-    bEOF(FALSE),
-    bHasLastLine(FALSE),
+    bEOF(false),
+    bHasLastLine(false),
     nNextFID(0)
 {
     SetDescription( poFeatureDefn->GetName() );
@@ -79,7 +79,6 @@ OGRSUALayer::~OGRSUALayer()
     VSIFCloseL( fpSUA );
 }
 
-
 /************************************************************************/
 /*                            ResetReading()                            */
 /************************************************************************/
@@ -88,11 +87,10 @@ void OGRSUALayer::ResetReading()
 
 {
     nNextFID = 0;
-    bEOF = FALSE;
-    bHasLastLine = FALSE;
+    bEOF = false;
+    bHasLastLine = false;
     VSIFSeekL( fpSUA, 0, SEEK_SET );
 }
-
 
 /************************************************************************/
 /*                           GetNextFeature()                           */
@@ -118,20 +116,18 @@ OGRFeature *OGRSUALayer::GetNextFeature()
     }
 }
 
-
-
 /************************************************************************/
 /*                              GetLatLon()                             */
 /************************************************************************/
 
-static int GetLatLon(const char* pszStr, double& dfLat, double& dfLon)
+static bool GetLatLon( const char* pszStr, double& dfLat, double& dfLon )
 {
     if (pszStr[7] != ' ')
-        return FALSE;
+        return false;
     if (pszStr[0] != 'N' && pszStr[0] != 'S')
-        return FALSE;
+        return false;
     if (pszStr[8] != 'E' && pszStr[8] != 'W')
-        return FALSE;
+        return false;
 
     char szDeg[4], szMin[3], szSec[3];
     szDeg[0] = pszStr[1];
@@ -163,7 +159,7 @@ static int GetLatLon(const char* pszStr, double& dfLat, double& dfLon)
     if (pszStr[8] == 'W')
         dfLon = -dfLon;
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -185,27 +181,26 @@ OGRFeature *OGRSUALayer::GetNextRawFeature()
     double dfLastLon = 0.0;
     bool bFirst = true;
 
-
     while( true )
     {
         const char* pszLine = NULL;
-        if (bFirst && bHasLastLine)
+        if( bFirst && bHasLastLine )
         {
             pszLine = osLastLine.c_str();
-            bFirst = FALSE;
+            bFirst = false;
         }
         else
         {
             pszLine = CPLReadLine2L(fpSUA, 1024, NULL);
             if (pszLine == NULL)
             {
-                bEOF = TRUE;
+                bEOF = true;
                 if (oLR.getNumPoints() == 0)
                     return NULL;
                 break;
             }
             osLastLine = pszLine;
-            bHasLastLine = TRUE;
+            bHasLastLine = true;
         }
 
         if (pszLine[0] == '#' || pszLine[0] == '\0')
@@ -239,7 +234,8 @@ OGRFeature *OGRSUALayer::GetNextRawFeature()
             if (strlen(pszLine) != 16)
                 continue;
 
-            double dfLat, dfLon;
+            double dfLat = 0.0;
+            double dfLon = 0.0;
             if (!GetLatLon(pszLine, dfLat, dfLon))
                 continue;
 
@@ -265,7 +261,8 @@ OGRFeature *OGRSUALayer::GetNextRawFeature()
             pszCENTRE += 7;
             if (strlen(pszCENTRE) < 17 || pszCENTRE[16] != ' ')
                 continue;
-            double dfCenterLat, dfCenterLon;
+            double dfCenterLat = 0.0;
+            double dfCenterLon = 0.0;
             if (!GetLatLon(pszCENTRE, dfCenterLat, dfCenterLon))
                 continue;
 
@@ -324,7 +321,8 @@ OGRFeature *OGRSUALayer::GetNextRawFeature()
             pszCENTRE += 7;
             if (strlen(pszCENTRE) != 16)
                 continue;
-            double dfCenterLat, dfCenterLon;
+            double dfCenterLat = 0.0;
+            double dfCenterLon = 0.0;
             if (!GetLatLon(pszCENTRE, dfCenterLat, dfCenterLon))
                 continue;
 

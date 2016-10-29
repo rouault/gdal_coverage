@@ -410,7 +410,7 @@ GDALDataset *MAPDataset::Open( GDALOpenInfo * poOpenInfo )
 
     CSLDestroy(papszLines);
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/
@@ -433,7 +433,6 @@ CPLErr MAPDataset::GetGeoTransform( double * padfTransform )
 
     return (nGCPCount == 0) ? CE_None : CE_Failure;
 }
-
 
 /************************************************************************/
 /*                           GetGCPCount()                              */

@@ -47,7 +47,6 @@ CPL_CVSID("$Id$");
 /*       or for 4 ReadVarUInt64NoCheck */
 #define ZEROES_AFTER_END_OF_BUFFER      4
 
-
 static const GUInt32 EXT_SHAPE_Z_FLAG     = 0x80000000U;
 static const GUInt32 EXT_SHAPE_M_FLAG     = 0x40000000U;
 static const GUInt32 EXT_SHAPE_CURVE_FLAG = 0x20000000U;
@@ -867,7 +866,7 @@ int FileGDBTable::Open(const char* pszFilename,
                     }
                     else if( eType == FGFT_DATETIME && defaultValueLength == 8 )
                     {
-                        double dfVal = GetFloat64(pabyIter, 0);
+                        const double dfVal = GetFloat64(pabyIter, 0);
                         FileGDBDoubleDateToOGRDate(dfVal, &sDefault);
                     }
                 }
@@ -1532,7 +1531,7 @@ const OGRField* FileGDBTable::GetFieldValue(int iCol)
             }
 
             /* Number of days since 1899/12/30 00:00:00 */
-            double dfVal = GetFloat64(pabyIterVals, 0);
+            const double dfVal = GetFloat64(pabyIterVals, 0);
 
             FileGDBDoubleDateToOGRDate(dfVal, &sCurField);
             /* eCurFieldType = OFTDateTime; */
@@ -1925,7 +1924,7 @@ int FileGDBTable::DoesGeometryIntersectsFilterEnvelope(const OGRField* psField)
                 return FALSE;
             ReadVarUInt64NoCheck(pabyCur, y);
             y --;
-            return( y >= nFilterYMin && y <= nFilterYMax );
+            return y >= nFilterYMin && y <= nFilterYMax;
         }
 
         case SHPT_MULTIPOINTZM:
@@ -2016,7 +2015,6 @@ FileGDBField::~FileGDBField()
           sDefault.Set.nMarker2 == OGRUnsetMarker) )
         CPLFree(sDefault.String);
 }
-
 
 /************************************************************************/
 /*                            HasIndex()                                */
@@ -2619,21 +2617,25 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
             if( nGeomType == SHPT_POINTM || nGeomType == SHPT_POINTZM )
                 bHasM = true;
 
-            double dfX, dfY, dfZ;
             ReadVarUInt64NoCheck(pabyCur, x);
             ReadVarUInt64NoCheck(pabyCur, y);
 
-            dfX = (x - 1) / poGeomField->GetXYScale() + poGeomField->GetXOrigin();
-            dfY = (y - 1) / poGeomField->GetXYScale() + poGeomField->GetYOrigin();
+            const double dfX =
+                (x - 1) / poGeomField->GetXYScale() + poGeomField->GetXOrigin();
+            const double dfY =
+                (y - 1) / poGeomField->GetXYScale() + poGeomField->GetYOrigin();
+            double dfZ = 0.0;
             if( bHasZ )
             {
                 ReadVarUInt64NoCheck(pabyCur, z);
                 dfZ = (z - 1) / poGeomField->GetZScale() + poGeomField->GetZOrigin();
                 if( bHasM )
                 {
-                    GUIntBig m;
+                    GUIntBig m = 0;
                     ReadVarUInt64NoCheck(pabyCur, m);
-                    double dfM = (m - 1) / poGeomField->GetMScale() + poGeomField->GetMOrigin();
+                    const double dfM =
+                        (m - 1) /
+                        poGeomField->GetMScale() + poGeomField->GetMOrigin();
                     return new OGRPoint(dfX, dfY, dfZ, dfM);
                 }
                 return new OGRPoint(dfX, dfY, dfZ);
@@ -2641,9 +2643,11 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
             else if( bHasM )
             {
                 OGRPoint* poPoint = new OGRPoint(dfX, dfY);
-                GUIntBig m;
+                GUIntBig m = 0;
                 ReadVarUInt64NoCheck(pabyCur, m);
-                double dfM = (m - 1) / poGeomField->GetMScale() + poGeomField->GetMOrigin();
+                const double dfM =
+                    (m - 1) /
+                    poGeomField->GetMScale() + poGeomField->GetMOrigin();
                 poPoint->setM(dfM);
                 return poPoint;
             }
@@ -3150,7 +3154,6 @@ OGRGeometry* FileGDBOGRGeometryConverterImpl::GetAsGeometry(const OGRField* psFi
     }
     return NULL;
 }
-
 
 /************************************************************************/
 /*                           BuildConverter()                           */

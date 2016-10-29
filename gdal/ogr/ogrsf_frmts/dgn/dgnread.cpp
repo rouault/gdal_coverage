@@ -28,12 +28,13 @@
 
 #include "dgnlibp.h"
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 static DGNElemCore *DGNParseTCB( DGNInfo * );
 static DGNElemCore *DGNParseColorTable( DGNInfo * );
 static DGNElemCore *DGNParseTagSet( DGNInfo * );
-
 
 /************************************************************************/
 /*                           DGNGotoElement()                           */
@@ -121,7 +122,6 @@ int DGNLoadRawElement( DGNInfo *psDGN, int *pnType, int *pnLevel )
     return TRUE;
 }
 
-
 /************************************************************************/
 /*                          DGNGetRawExtents()                          */
 /*                                                                      */
@@ -174,7 +174,6 @@ DGNGetRawExtents( DGNInfo *psDGN, int nType, unsigned char *pabyRawData,
         return false;
     }
 }
-
 
 /************************************************************************/
 /*                        DGNGetElementExtents()                        */
@@ -277,8 +276,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
     {
       case DGNT_CELL_HEADER:
       {
-          DGNElemCellHeader *psCell = (DGNElemCellHeader *)
-              CPLCalloc(sizeof(DGNElemCellHeader),1);
+          DGNElemCellHeader *psCell = static_cast<DGNElemCellHeader *>(
+              CPLCalloc(sizeof(DGNElemCellHeader), 1));
           psElement = (DGNElemCore *) psCell;
           psElement->stype = DGNST_CELL_HEADER;
           DGNParseCore( psDGN, psElement );
@@ -316,13 +315,12 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
               psCell->origin.y = DGN_INT32( psDGN->abyElem + 88 );
 
               {
-              double a, b, c, d, a2, c2;
-              a = DGN_INT32( psDGN->abyElem + 68 );
-              b = DGN_INT32( psDGN->abyElem + 72 );
-              c = DGN_INT32( psDGN->abyElem + 76 );
-              d = DGN_INT32( psDGN->abyElem + 80 );
-              a2 = a * a;
-              c2 = c * c;
+              const double a = DGN_INT32( psDGN->abyElem + 68 );
+              const double b = DGN_INT32( psDGN->abyElem + 72 );
+              const double c = DGN_INT32( psDGN->abyElem + 76 );
+              const double d = DGN_INT32( psDGN->abyElem + 80 );
+              const double a2 = a * a;
+              const double c2 = c * c;
 
               psCell->xscale = sqrt(a2 + c2) / 214748;
               psCell->yscale = sqrt(b*b + d*d) / 214748;
@@ -378,8 +376,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
 
       case DGNT_CELL_LIBRARY:
       {
-          DGNElemCellLibrary *psCell = (DGNElemCellLibrary *)
-              CPLCalloc(sizeof(DGNElemCellLibrary),1);
+          DGNElemCellLibrary *psCell = static_cast<DGNElemCellLibrary *>(
+              CPLCalloc(sizeof(DGNElemCellLibrary), 1));
           psElement = (DGNElemCore *) psCell;
           psElement->stype = DGNST_CELL_LIBRARY;
           DGNParseCore( psDGN, psElement );
@@ -417,8 +415,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
 
       case DGNT_LINE:
       {
-          DGNElemMultiPoint *psLine = (DGNElemMultiPoint *)
-              CPLCalloc(sizeof(DGNElemMultiPoint),1);
+          DGNElemMultiPoint *psLine = static_cast<DGNElemMultiPoint *>(
+              CPLCalloc(sizeof(DGNElemMultiPoint), 1));
           psElement = (DGNElemCore *) psLine;
           psElement->stype = DGNST_MULTIPOINT;
           DGNParseCore( psDGN, psElement );
@@ -458,8 +456,9 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
               CPLError(CE_Failure, CPLE_AssertionFailed, "count < 2");
               return NULL;
           }
-          DGNElemMultiPoint *psLine = (DGNElemMultiPoint *)
-              CPLCalloc(sizeof(DGNElemMultiPoint)+(count-2)*sizeof(DGNPoint),1);
+          DGNElemMultiPoint *psLine = static_cast<DGNElemMultiPoint *>(
+              CPLCalloc(sizeof(DGNElemMultiPoint)+(count-2)*sizeof(DGNPoint),
+                        1));
           psElement = (DGNElemCore *) psLine;
           psElement->stype = DGNST_MULTIPOINT;
           DGNParseCore( psDGN, psElement );
@@ -498,8 +497,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
 
       case DGNT_TEXT_NODE:
       {
-          DGNElemTextNode *psNode =
-              (DGNElemTextNode *) CPLCalloc(sizeof(DGNElemTextNode),1);
+          DGNElemTextNode *psNode = static_cast<DGNElemTextNode *>(
+              CPLCalloc(sizeof(DGNElemTextNode), 1));
           psElement = (DGNElemCore *) psNode;
           psElement->stype = DGNST_TEXT_NODE;
           DGNParseCore( psDGN, psElement );
@@ -533,7 +532,6 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
               psNode->origin.z = DGN_INT32( psDGN->abyElem + 82 );
           }
           DGNTransformPoint( psDGN, &(psNode->origin) );
-
       }
       break;
 
@@ -544,7 +542,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
         }
         else
         {
-            psElement = (DGNElemCore *) CPLCalloc(sizeof(DGNElemCore),1);
+            psElement = static_cast<DGNElemCore *>(
+                CPLCalloc(sizeof(DGNElemCore), 1));
             psElement->stype = DGNST_CORE;
             DGNParseCore( psDGN, psElement );
         }
@@ -553,7 +552,7 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
       case DGNT_ELLIPSE:
       {
           DGNElemArc *psEllipse =
-              (DGNElemArc *) CPLCalloc(sizeof(DGNElemArc),1);
+              static_cast<DGNElemArc *>(CPLCalloc(sizeof(DGNElemArc), 1));
           psElement = (DGNElemCore *) psEllipse;
           psElement->stype = DGNST_ARC;
           DGNParseCore( psDGN, psElement );
@@ -608,7 +607,7 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
           GInt32 nSweepVal = 0;
 
           DGNElemArc *psEllipse =
-              (DGNElemArc *) CPLCalloc(sizeof(DGNElemArc), 1);
+              static_cast<DGNElemArc *>(CPLCalloc(sizeof(DGNElemArc), 1));
           psElement = (DGNElemCore *) psEllipse;
           psElement->stype = DGNST_ARC;
           DGNParseCore( psDGN, psElement );
@@ -681,8 +680,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
           else
               num_chars = psDGN->abyElem[74];
 
-          DGNElemText *psText =
-              (DGNElemText *) CPLCalloc(sizeof(DGNElemText)+num_chars,1);
+          DGNElemText *psText = static_cast<DGNElemText *>(
+              CPLCalloc(sizeof(DGNElemText)+num_chars, 1));
           psElement = (DGNElemCore *) psText;
           psElement->stype = DGNST_TEXT;
           DGNParseCore( psDGN, psElement );
@@ -752,8 +751,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
       case DGNT_COMPLEX_CHAIN_HEADER:
       case DGNT_COMPLEX_SHAPE_HEADER:
       {
-          DGNElemComplexHeader *psHdr = (DGNElemComplexHeader *)
-              CPLCalloc(sizeof(DGNElemComplexHeader), 1);
+          DGNElemComplexHeader *psHdr = static_cast<DGNElemComplexHeader *>(
+              CPLCalloc(sizeof(DGNElemComplexHeader), 1));
           psElement = (DGNElemCore *) psHdr;
           psElement->stype = DGNST_COMPLEX_HEADER;
           DGNParseCore( psDGN, psElement );
@@ -765,8 +764,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
 
       case DGNT_TAG_VALUE:
       {
-          DGNElemTagValue *psTag = (DGNElemTagValue *)
-              CPLCalloc(sizeof(DGNElemTagValue),1);
+          DGNElemTagValue *psTag = static_cast<DGNElemTagValue *>(
+              CPLCalloc(sizeof(DGNElemTagValue), 1));
           psElement = (DGNElemCore *) psTag;
           psElement->stype = DGNST_TAG_VALUE;
           DGNParseCore( psDGN, psElement );
@@ -807,7 +806,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
         }
         else
         {
-            psElement = (DGNElemCore *) CPLCalloc(sizeof(DGNElemCore),1);
+            psElement = static_cast<DGNElemCore *>(
+                CPLCalloc(sizeof(DGNElemCore), 1));
             psElement->stype = DGNST_CORE;
             DGNParseCore( psDGN, psElement );
         }
@@ -822,7 +822,7 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
           }
 
           DGNElemCone *psCone =
-              (DGNElemCone *) CPLCalloc(sizeof(DGNElemCone),1);
+              static_cast<DGNElemCone *>(CPLCalloc(sizeof(DGNElemCone), 1));
           psElement = (DGNElemCore *) psCone;
           psElement->stype = DGNST_CONE;
           DGNParseCore( psDGN, psElement );
@@ -861,8 +861,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
       case DGNT_3DSURFACE_HEADER:
       case DGNT_3DSOLID_HEADER:
         {
-          DGNElemComplexHeader *psShape =
-            (DGNElemComplexHeader *) CPLCalloc(sizeof(DGNElemComplexHeader), 1);
+          DGNElemComplexHeader *psShape = static_cast<DGNElemComplexHeader *>(
+              CPLCalloc(sizeof(DGNElemComplexHeader), 1));
           psElement = (DGNElemCore *) psShape;
           psElement->stype = DGNST_COMPLEX_HEADER;
           DGNParseCore( psDGN, psElement );
@@ -877,8 +877,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
       case DGNT_BSPLINE_SURFACE_HEADER:
         {
           DGNElemBSplineSurfaceHeader *psSpline =
-              (DGNElemBSplineSurfaceHeader *)
-              CPLCalloc(sizeof(DGNElemBSplineSurfaceHeader), 1);
+              static_cast<DGNElemBSplineSurfaceHeader *>(
+                  CPLCalloc(sizeof(DGNElemBSplineSurfaceHeader), 1));
           psElement = (DGNElemCore *) psSpline;
           psElement->stype = DGNST_BSPLINE_SURFACE_HEADER;
           DGNParseCore( psDGN, psElement );
@@ -906,8 +906,9 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
       break;
       case DGNT_BSPLINE_CURVE_HEADER:
         {
-          DGNElemBSplineCurveHeader *psSpline = (DGNElemBSplineCurveHeader *)
-              CPLCalloc(sizeof(DGNElemBSplineCurveHeader), 1);
+          DGNElemBSplineCurveHeader *psSpline =
+              static_cast<DGNElemBSplineCurveHeader *>(
+                  CPLCalloc(sizeof(DGNElemBSplineCurveHeader), 1));
           psElement = (DGNElemCore *) psSpline;
           psElement->stype = DGNST_BSPLINE_CURVE_HEADER;
           DGNParseCore( psDGN, psElement );
@@ -934,9 +935,9 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
           }
 
           DGNElemBSplineSurfaceBoundary *psBounds =
-              (DGNElemBSplineSurfaceBoundary *)
-              CPLCalloc(sizeof(DGNElemBSplineSurfaceBoundary) +
-                        (numverts-1)*sizeof(DGNPoint), 1);
+              static_cast<DGNElemBSplineSurfaceBoundary *>(
+                  CPLCalloc(sizeof(DGNElemBSplineSurfaceBoundary) +
+                            (numverts-1)*sizeof(DGNPoint), 1));
           psElement = (DGNElemCore *) psBounds;
           psElement->stype = DGNST_BSPLINE_SURFACE_BOUNDARY;
           DGNParseCore( psDGN, psElement );
@@ -961,8 +962,9 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
             (psDGN->abyElem[30] + psDGN->abyElem[31]*256)*2 - 32;
           int numelems = (psDGN->nElemBytes - 36 - attr_bytes)/4;
 
-          DGNElemKnotWeight *psArray = (DGNElemKnotWeight *)
-            CPLCalloc(sizeof(DGNElemKnotWeight) + (numelems-1)*sizeof(float), 1);
+          DGNElemKnotWeight *psArray = static_cast<DGNElemKnotWeight *>(
+              CPLCalloc(sizeof(DGNElemKnotWeight) + (numelems-1)*sizeof(float),
+                        1));
 
           psElement = (DGNElemCore *) psArray;
           psElement->stype = DGNST_KNOT_WEIGHT;
@@ -977,8 +979,9 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
       break;
       case DGNT_SHARED_CELL_DEFN:
       {
-          DGNElemSharedCellDefn *psShared = (DGNElemSharedCellDefn *)
-              CPLCalloc(sizeof(DGNElemSharedCellDefn),1);
+          DGNElemSharedCellDefn *psShared =
+              static_cast<DGNElemSharedCellDefn *>(
+                  CPLCalloc(sizeof(DGNElemSharedCellDefn), 1));
           psElement = (DGNElemCore *) psShared;
           psElement->stype = DGNST_SHARED_CELL_DEFN;
           DGNParseCore( psDGN, psElement );
@@ -988,7 +991,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
       break;
       default:
       {
-          psElement = (DGNElemCore *) CPLCalloc(sizeof(DGNElemCore),1);
+          psElement = static_cast<DGNElemCore *>(
+              CPLCalloc(sizeof(DGNElemCore), 1));
           psElement->stype = DGNST_CORE;
           DGNParseCore( psDGN, psElement );
       }
@@ -1004,7 +1008,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
         || (psDGN->options & DGNO_CAPTURE_RAW_DATA) )
     {
         psElement->raw_bytes = psDGN->nElemBytes;
-        psElement->raw_data = (unsigned char *)CPLMalloc(psElement->raw_bytes);
+        psElement->raw_data = static_cast<unsigned char *>(
+            CPLMalloc(psElement->raw_bytes));
 
         memcpy( psElement->raw_data, psDGN->abyElem, psElement->raw_bytes );
     }
@@ -1014,7 +1019,8 @@ static DGNElemCore *DGNProcessElement( DGNInfo *psDGN, int nType, int nLevel )
 /* -------------------------------------------------------------------- */
     psElement->element_id = psDGN->next_element_id - 1;
 
-    psElement->offset = static_cast<int>(VSIFTell( psDGN->fp )) - psDGN->nElemBytes;
+    psElement->offset =
+        static_cast<int>(VSIFTell( psDGN->fp )) - psDGN->nElemBytes;
     psElement->size = psDGN->nElemBytes;
 
     return psElement;
@@ -1155,7 +1161,6 @@ int DGNElemTypeHasDispHdr( int nElemType )
     }
 }
 
-
 /************************************************************************/
 /*                            DGNParseCore()                            */
 /************************************************************************/
@@ -1194,8 +1199,8 @@ int DGNParseCore( DGNInfo *psDGN, DGNElemCore *psElement )
         psElement->attr_bytes = psDGN->nElemBytes - nAttIndex*2 - 32;
         if( psElement->attr_bytes > 0 )
         {
-            psElement->attr_data = (unsigned char *)
-                CPLMalloc(psElement->attr_bytes);
+            psElement->attr_data = static_cast<unsigned char *>(
+                CPLMalloc(psElement->attr_bytes));
             memcpy( psElement->attr_data, psData + nAttIndex * 2 + 32,
                     psElement->attr_bytes );
         }
@@ -1220,8 +1225,8 @@ int DGNParseCore( DGNInfo *psDGN, DGNElemCore *psElement )
 static DGNElemCore *DGNParseColorTable( DGNInfo * psDGN )
 
 {
-    DGNElemColorTable *psColorTable = (DGNElemColorTable *)
-        CPLCalloc(sizeof(DGNElemColorTable),1);
+    DGNElemColorTable *psColorTable = static_cast<DGNElemColorTable *>(
+        CPLCalloc(sizeof(DGNElemColorTable), 1));
     DGNElemCore *psElement = (DGNElemCore *) psColorTable;
     psElement->stype = DGNST_COLORTABLE;
 
@@ -1252,7 +1257,7 @@ static DGNElemCore *DGNParseTagSet( DGNInfo * psDGN )
 
 {
     DGNElemTagSet *psTagSet =
-        (DGNElemTagSet *) CPLCalloc(sizeof(DGNElemTagSet),1);
+        static_cast<DGNElemTagSet *>(CPLCalloc(sizeof(DGNElemTagSet), 1));
     DGNElemCore *psElement = (DGNElemCore *) psTagSet;
     psElement->stype = DGNST_TAG_SET;
 
@@ -1283,8 +1288,8 @@ static DGNElemCore *DGNParseTagSet( DGNInfo * psDGN )
 /* -------------------------------------------------------------------- */
 /*      Parse each of the tag definitions.                              */
 /* -------------------------------------------------------------------- */
-    psTagSet->tagList = (DGNTagDef *)
-        CPLCalloc(sizeof(DGNTagDef), psTagSet->tagCount);
+    psTagSet->tagList = static_cast<DGNTagDef *>(
+        CPLCalloc(sizeof(DGNTagDef), psTagSet->tagCount));
 
     size_t nDataOffset = 48 + strlen(psTagSet->tagSetName) + 1 + 1;
 
@@ -1312,7 +1317,6 @@ static DGNElemCore *DGNParseTagSet( DGNInfo * psDGN )
         /* Get User Prompt */
         tagDef->prompt = CPLStrdup( (char *) psDGN->abyElem + nDataOffset );
         nDataOffset += strlen(tagDef->prompt)+1;
-
 
         /* Get type */
         tagDef->type = psDGN->abyElem[nDataOffset]
@@ -1357,7 +1361,8 @@ static DGNElemCore *DGNParseTagSet( DGNInfo * psDGN )
 static DGNElemCore *DGNParseTCB( DGNInfo * psDGN )
 
 {
-    DGNElemTCB *psTCB = (DGNElemTCB *) CPLCalloc(sizeof(DGNElemTCB), 1);
+    DGNElemTCB *psTCB = static_cast<DGNElemTCB *>(
+        CPLCalloc(sizeof(DGNElemTCB), 1));
     DGNElemCore *psElement = (DGNElemCore *) psTCB;
     psElement->stype = DGNST_TCB;
     DGNParseCore( psDGN, psElement );
@@ -1545,9 +1550,9 @@ void DGNInverseTransformPoint( DGNInfo *psDGN, DGNPoint *psPoint )
     psPoint->y = (psPoint->y + psDGN->origin_y) / psDGN->scale;
     psPoint->z = (psPoint->z + psDGN->origin_z) / psDGN->scale;
 
-    psPoint->x = MAX(-2147483647,MIN(2147483647,psPoint->x));
-    psPoint->y = MAX(-2147483647,MIN(2147483647,psPoint->y));
-    psPoint->z = MAX(-2147483647,MIN(2147483647,psPoint->z));
+    psPoint->x = std::max(-2147483647.0, std::min(2147483647.0, psPoint->x));
+    psPoint->y = std::max(-2147483647.0, std::min(2147483647.0, psPoint->y));
+    psPoint->z = std::max(-2147483647.0, std::min(2147483647.0, psPoint->z));
 }
 
 /************************************************************************/
@@ -1558,19 +1563,18 @@ void DGNInverseTransformPointToInt( DGNInfo *psDGN, DGNPoint *psPoint,
                                     unsigned char *pabyTarget )
 
 {
-    double     adfCT[3];
+    double adfCT[3] = {
+        (psPoint->x + psDGN->origin_x) / psDGN->scale,
+        (psPoint->y + psDGN->origin_y) / psDGN->scale,
+        (psPoint->z + psDGN->origin_z) / psDGN->scale
+    };
 
-    adfCT[0] = (psPoint->x + psDGN->origin_x) / psDGN->scale;
-    adfCT[1] = (psPoint->y + psDGN->origin_y) / psDGN->scale;
-    adfCT[2] = (psPoint->z + psDGN->origin_z) / psDGN->scale;
-
-    const int nIter = MIN(3, psDGN->dimension);
+    const int nIter = std::min(3, psDGN->dimension);
     for( int i = 0; i < nIter; i++ )
     {
-        GInt32 nCTI;
+        GInt32 nCTI = static_cast<GInt32>(
+            std::max(-2147483647.0, std::min(2147483647.0, adfCT[i])));
         unsigned char *pabyCTI = (unsigned char *) &nCTI;
-
-        nCTI = (GInt32) MAX(-2147483647,MIN(2147483647,adfCT[i]));
 
 #ifdef WORDS_BIGENDIAN
         pabyTarget[i*4+0] = pabyCTI[1];
@@ -1688,17 +1692,18 @@ const DGNElementInfo *DGNGetElementIndex( DGNHandle hDGN, int *pnElementCount )
 int DGNGetExtents( DGNHandle hDGN, double * padfExtents )
 
 {
-    DGNInfo     *psDGN = (DGNInfo *) hDGN;
+    DGNInfo *psDGN = (DGNInfo *) hDGN;
 
     DGNBuildIndex( psDGN );
 
     if( !psDGN->got_bounds )
         return FALSE;
 
-    DGNPoint sMin;
-    sMin.x = psDGN->min_x - 2147483648.0;
-    sMin.y = psDGN->min_y - 2147483648.0;
-    sMin.z = psDGN->min_z - 2147483648.0;
+    DGNPoint sMin = {
+        psDGN->min_x - 2147483648.0,
+        psDGN->min_y - 2147483648.0,
+        psDGN->min_z - 2147483648.0
+    };
 
     DGNTransformPoint( psDGN, &sMin );
 
@@ -1706,10 +1711,11 @@ int DGNGetExtents( DGNHandle hDGN, double * padfExtents )
     padfExtents[1] = sMin.y;
     padfExtents[2] = sMin.z;
 
-    DGNPoint sMax;
-    sMax.x = psDGN->max_x - 2147483648.0;
-    sMax.y = psDGN->max_y - 2147483648.0;
-    sMax.z = psDGN->max_z - 2147483648.0;
+    DGNPoint sMax = {
+        psDGN->max_x - 2147483648.0,
+        psDGN->max_y - 2147483648.0,
+        psDGN->max_z - 2147483648.0
+    };
 
     DGNTransformPoint( psDGN, &sMax );
 
@@ -1826,12 +1832,12 @@ void DGNBuildIndex( DGNInfo *psDGN )
 #endif
             if( psDGN->got_bounds )
             {
-                psDGN->min_x = MIN(psDGN->min_x, anRegion[0]);
-                psDGN->min_y = MIN(psDGN->min_y, anRegion[1]);
-                psDGN->min_z = MIN(psDGN->min_z, anRegion[2]);
-                psDGN->max_x = MAX(psDGN->max_x, anRegion[3]);
-                psDGN->max_y = MAX(psDGN->max_y, anRegion[4]);
-                psDGN->max_z = MAX(psDGN->max_z, anRegion[5]);
+                psDGN->min_x = std::min(psDGN->min_x, anRegion[0]);
+                psDGN->min_y = std::min(psDGN->min_y, anRegion[1]);
+                psDGN->min_z = std::min(psDGN->min_z, anRegion[2]);
+                psDGN->max_x = std::max(psDGN->max_x, anRegion[3]);
+                psDGN->max_y = std::max(psDGN->max_y, anRegion[4]);
+                psDGN->max_z = std::max(psDGN->max_z, anRegion[5]);
             }
             else
             {

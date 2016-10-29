@@ -208,10 +208,8 @@ bool AOToOGRFieldType(esriFieldType aoType, OGRFieldType* pOut)
       */
       return false;
     }
-
   }
 }
-
 
 bool AOGeometryToOGRGeometry(bool forceMulti, esriGeometry::IGeometry* pInAOGeo, OGRSpatialReference* pOGRSR, unsigned char* & pInOutWorkingBuffer, long & inOutBufferSize, OGRGeometry** ppOutGeometry)
 {
@@ -251,7 +249,6 @@ bool AOGeometryToOGRGeometry(bool forceMulti, esriGeometry::IGeometry* pInAOGeo,
 
   // force geometries to multi if requested
 
-
   // If it is a polygon, force to MultiPolygon since we always produce multipolygons
   if (wkbFlatten(pOGRGeometry->getGeometryType()) == wkbPolygon)
   {
@@ -268,7 +265,6 @@ bool AOGeometryToOGRGeometry(bool forceMulti, esriGeometry::IGeometry* pInAOGeo,
       pOGRGeometry = OGRGeometryFactory::forceToMultiPoint(pOGRGeometry);
     }
   }
-
 
   *ppOutGeometry = pOGRGeometry;
 
@@ -413,7 +409,7 @@ bool InitAttemptWithoutExtension(esriLicenseProductCode product)
 
   esriLicenseStatus status = esriLicenseFailure;
   ipInit->Initialize(product, &status);
-  return (status == esriLicenseCheckedOut);
+  return status == esriLicenseCheckedOut;
 }
 
 // Attempt to initialize with an extension
@@ -430,7 +426,7 @@ bool InitAttemptWithExtension(esriLicenseProductCode product,
     if (licenseStatus == esriLicenseCheckedOut)
       ipInit->CheckOutExtension(extension, &licenseStatus);
   }
-  return (licenseStatus == esriLicenseCheckedOut);
+  return licenseStatus == esriLicenseCheckedOut;
 }
 
 // Shutdown the driver and check-in the license if needed.

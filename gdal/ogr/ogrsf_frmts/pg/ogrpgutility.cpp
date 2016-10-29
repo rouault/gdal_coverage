@@ -38,14 +38,9 @@ CPL_CVSID("$Id$");
 PGresult *OGRPG_PQexec(PGconn *conn, const char *query, int bMultipleCommandAllowed,
                        int bErrorAsDebug)
 {
-#if defined(PG_PRE74)
-    /* PQexecParams introduced in PG >= 7.4 */
-    PGresult* hResult = PQexec(conn, query);
-#else
     PGresult* hResult = bMultipleCommandAllowed
         ? PQexec(conn, query)
         : PQexecParams(conn, query, 0, NULL, NULL, NULL, NULL, 0);
-#endif
 
 #ifdef DEBUG
     const char* pszRetCode = "UNKNOWN";
@@ -89,4 +84,21 @@ PGresult *OGRPG_PQexec(PGconn *conn, const char *query, int bMultipleCommandAllo
     }
 
     return hResult;
+}
+
+/************************************************************************/
+/*                       OGRPG_Check_Table_Exists()                     */
+/************************************************************************/
+
+bool OGRPG_Check_Table_Exists(PGconn *hPGConn, const char * pszTableName)
+{
+    CPLString osSQL;
+    osSQL.Printf("SELECT 1 FROM information_schema.tables WHERE table_name = %s LIMIT 1",
+                 OGRPGEscapeString(hPGConn, pszTableName).c_str());
+    PGresult* hResult = OGRPG_PQexec(hPGConn, osSQL);
+    bool bRet = ( hResult && PQntuples(hResult) == 1 );
+    if( !bRet )
+        CPLDebug("PG", "Does not have %s table", pszTableName);
+    OGRPGClearResult( hResult );
+    return bRet;
 }

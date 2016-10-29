@@ -189,7 +189,6 @@ static int countonbits( GUInt32 dw )
     return r;
 }
 
-
 static int findfirstonbit( GUInt32 n )
 {
     for( int x = 0; x < 32; x++ )
@@ -199,7 +198,6 @@ static int findfirstonbit( GUInt32 n )
     }
     return -1;
 }
-
 
 /************************************************************************/
 /* ==================================================================== */
@@ -886,7 +884,6 @@ BMPComprRasterBand::BMPComprRasterBand( BMPDataset *poDSIn, int nBandIn ) :
     // rcg, release compressed buffer here.
     CPLFree( pabyComprBuf );
     pabyComprBuf = NULL;
-
 }
 
 /************************************************************************/
@@ -1358,7 +1355,7 @@ GDALDataset *BMPDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
     poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename );
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/

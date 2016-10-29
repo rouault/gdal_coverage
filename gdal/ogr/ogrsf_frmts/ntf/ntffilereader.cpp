@@ -33,6 +33,8 @@
 #include "cpl_string.h"
 #include "ogr_api.h"
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 static int DefaultNTFRecordGrouper( NTFFileReader *, NTFRecord **,
@@ -362,7 +364,6 @@ int NTFFileReader::Open( const char * pszFilenameIn )
             for( int iChar = static_cast<int>(strlen(pszPVName))-1;
                  iChar > 0 && pszPVName[iChar] == ' ';
                  pszPVName[iChar--] = '\0' ) {}
-
         }
 
         delete poRecord;
@@ -546,30 +547,28 @@ OGRGeometry *NTFFileReader::ProcessGeometry( NTFRecord * poRecord,
                                              int * pnGeomId )
 
 {
-    int            nGType, nNumCoord;
-    OGRGeometry    *poGeometry = NULL;
-
     if( poRecord->GetType() == NRT_GEOMETRY3D )
         return ProcessGeometry3D( poRecord, pnGeomId );
 
     else if( poRecord->GetType() != NRT_GEOMETRY )
         return NULL;
 
-    nGType = atoi(poRecord->GetField(9,9));            // GTYPE
-    nNumCoord = atoi(poRecord->GetField(10,13));       // NUM_COORD
+    const int nGType = atoi(poRecord->GetField(9,9));            // GTYPE
+    const int nNumCoord = atoi(poRecord->GetField(10,13));       // NUM_COORD
     if( pnGeomId != NULL )
         *pnGeomId = atoi(poRecord->GetField(3,8));     // GEOM_ID
 
 /* -------------------------------------------------------------------- */
 /*      Point                                                           */
 /* -------------------------------------------------------------------- */
+    OGRGeometry *poGeometry = NULL;
     if( nGType == 1 )
     {
-        double      dfX, dfY;
-
-        dfX = atoi(poRecord->GetField(14,14+GetXYLen()-1)) * GetXYMult()
+        const double dfX =
+            atoi(poRecord->GetField(14,14+GetXYLen()-1)) * GetXYMult()
             + GetXOrigin();
-        dfY = atoi(poRecord->GetField(14+GetXYLen(),14+GetXYLen()*2-1))
+        const double dfY =
+            atoi(poRecord->GetField(14+GetXYLen(),14+GetXYLen()*2-1))
             * GetXYMult() + GetYOrigin();
 
         poGeometry = new OGRPoint( dfX, dfY );
@@ -581,19 +580,20 @@ OGRGeometry *NTFFileReader::ProcessGeometry( NTFRecord * poRecord,
     else if( nGType == 2 || nGType == 3 || nGType == 4 )
     {
         OGRLineString      *poLine = new OGRLineString;
-        double             dfX, dfY, dfXLast=0.0, dfYLast=0.0;
-        int                iCoord, nOutCount = 0;
+        double dfXLast = 0.0;
+        double dfYLast = 0.0;
+        int nOutCount = 0;
 
         poGeometry = poLine;
         poLine->setNumPoints( nNumCoord );
-        for( iCoord = 0; iCoord < nNumCoord; iCoord++ )
+        for( int iCoord = 0; iCoord < nNumCoord; iCoord++ )
         {
-            int            iStart = 14 + iCoord * (GetXYLen()*2+1);
+            const int iStart = 14 + iCoord * (GetXYLen()*2+1);
 
-            dfX = atoi(poRecord->GetField(iStart+0,
+            const double dfX = atoi(poRecord->GetField(iStart+0,
                                           iStart+GetXYLen()-1))
                 * GetXYMult() + GetXOrigin();
-            dfY = atoi(poRecord->GetField(iStart+GetXYLen(),
+            const double dfY = atoi(poRecord->GetField(iStart+GetXYLen(),
                                           iStart+GetXYLen()*2-1))
                 * GetXYMult() + GetYOrigin();
 
@@ -645,26 +645,28 @@ OGRGeometry *NTFFileReader::ProcessGeometry( NTFRecord * poRecord,
 /* -------------------------------------------------------------------- */
     else if( nGType == 7 )
     {
-        double  dfCenterX, dfCenterY, dfArcX, dfArcY, dfRadius;
-        int     iCenterStart = 14;
-        int     iArcStart = 14 + 2 * GetXYLen() + 1;
+        const int iCenterStart = 14;
+        const int iArcStart = 14 + 2 * GetXYLen() + 1;
 
-        dfCenterX = atoi(poRecord->GetField(iCenterStart,
-                                            iCenterStart+GetXYLen()-1))
+        const double dfCenterX =
+            atoi(poRecord->GetField(iCenterStart, iCenterStart+GetXYLen()-1))
             * GetXYMult() + GetXOrigin();
-        dfCenterY = atoi(poRecord->GetField(iCenterStart+GetXYLen(),
-                                            iCenterStart+GetXYLen()*2-1))
+        const double dfCenterY =
+            atoi(poRecord->GetField(iCenterStart+GetXYLen(),
+                                    iCenterStart+GetXYLen()*2-1))
             * GetXYMult() + GetYOrigin();
 
-        dfArcX = atoi(poRecord->GetField(iArcStart,
-                                         iArcStart+GetXYLen()-1))
+        const double dfArcX =
+            atoi(poRecord->GetField(iArcStart, iArcStart+GetXYLen()-1))
             * GetXYMult() + GetXOrigin();
-        dfArcY = atoi(poRecord->GetField(iArcStart+GetXYLen(),
-                                         iArcStart+GetXYLen()*2-1))
+        const double dfArcY =
+            atoi(poRecord->GetField(iArcStart+GetXYLen(),
+                                    iArcStart+GetXYLen()*2-1))
             * GetXYMult() + GetYOrigin();
 
-        dfRadius = sqrt( (dfCenterX - dfArcX) * (dfCenterX - dfArcX)
-                         + (dfCenterY - dfArcY) * (dfCenterY - dfArcY) );
+        const double dfRadius =
+            sqrt( (dfCenterX - dfArcX) * (dfCenterX - dfArcX)
+                  + (dfCenterY - dfArcY) * (dfCenterY - dfArcY) );
 
         poGeometry = NTFStrokeArcToOGRGeometry_Angles( dfCenterX, dfCenterY,
                                                        dfRadius,
@@ -692,52 +694,52 @@ OGRGeometry *NTFFileReader::ProcessGeometry3D( NTFRecord * poRecord,
                                                int * pnGeomId )
 
 {
-    int            nGType, nNumCoord;
-    OGRGeometry    *poGeometry = NULL;
+    OGRGeometry *poGeometry = NULL;
 
     if( poRecord->GetType() != NRT_GEOMETRY3D )
         return NULL;
 
-    nGType = atoi(poRecord->GetField(9,9));            // GTYPE
-    nNumCoord = atoi(poRecord->GetField(10,13));       // NUM_COORD
+    const int nGType = atoi(poRecord->GetField(9,9));  // GTYPE
+    const int nNumCoord = atoi(poRecord->GetField(10,13));       // NUM_COORD
     if( pnGeomId != NULL )
         *pnGeomId = atoi(poRecord->GetField(3,8));     // GEOM_ID
 
     if( nGType == 1 )
     {
-        double      dfX, dfY, dfZ;
-
-        dfX = atoi(poRecord->GetField(14,14+GetXYLen()-1)) * GetXYMult()
+        const double dfX =
+            atoi(poRecord->GetField(14,14+GetXYLen()-1)) * GetXYMult()
             + GetXOrigin();
-        dfY = atoi(poRecord->GetField(14+GetXYLen(),14+GetXYLen()*2-1))
+        const double dfY =
+            atoi(poRecord->GetField(14+GetXYLen(),14+GetXYLen()*2-1))
             * GetXYMult() + GetYOrigin();
-        dfZ = atoi(poRecord->GetField(14+1+2*GetXYLen(),
-                                      14+1+2*GetXYLen()+nZWidth-1)) * dfZMult;
-
+        const double dfZ =
+            atoi(poRecord->GetField(14+1+2*GetXYLen(),
+                                    14+1+2*GetXYLen()+nZWidth-1)) * dfZMult;
 
         poGeometry = new OGRPoint( dfX, dfY, dfZ );
     }
 
     else if( nGType == 2 )
     {
-        OGRLineString      *poLine = new OGRLineString;
-        double             dfX, dfY, dfZ, dfXLast=0.0, dfYLast=0.0;
-        int                iCoord, nOutCount = 0;
+        OGRLineString *poLine = new OGRLineString;
+        double dfXLast = 0.0;
+        double dfYLast = 0.0;
+        int nOutCount = 0;
 
         poGeometry = poLine;
         poLine->setNumPoints( nNumCoord );
-        for( iCoord = 0; iCoord < nNumCoord; iCoord++ )
+        for( int iCoord = 0; iCoord < nNumCoord; iCoord++ )
         {
-            int            iStart = 14 + iCoord * (GetXYLen()*2+nZWidth+2);
+            const int iStart = 14 + iCoord * (GetXYLen()*2+nZWidth+2);
 
-            dfX = atoi(poRecord->GetField(iStart+0,
+            const double dfX = atoi(poRecord->GetField(iStart+0,
                                           iStart+GetXYLen()-1))
                 * GetXYMult() + GetXOrigin();
-            dfY = atoi(poRecord->GetField(iStart+GetXYLen(),
+            const double dfY = atoi(poRecord->GetField(iStart+GetXYLen(),
                                           iStart+GetXYLen()*2-1))
                 * GetXYMult() + GetYOrigin();
 
-            dfZ = atoi(poRecord->GetField(iStart+1+2*GetXYLen(),
+            const double dfZ = atoi(poRecord->GetField(iStart+1+2*GetXYLen(),
                                           iStart+1+2*GetXYLen()+nZWidth-1))
                 * dfZMult;
 
@@ -1082,7 +1084,6 @@ void NTFFileReader::ApplyAttributeValues( OGRFeature * poFeature,
     CSLDestroy( papszTypes );
     CSLDestroy( papszValues );
 }
-
 
 /************************************************************************/
 /*                        ApplyAttributeValue()                         */
@@ -1509,7 +1510,7 @@ OGRFeature * NTFFileReader::ReadOGRFeature( OGRNTFLayer * poTargetLayer )
         nFeatureCount = nSavedFeatureId - nBaseFeatureId;
     }
 
-    return( poFeature );
+    return poFeature;
 }
 
 /************************************************************************/
@@ -1586,7 +1587,7 @@ void NTFFileReader::IndexFile()
 /* -------------------------------------------------------------------- */
         if( anIndexSize[iType] <= iId )
         {
-            int nNewSize = MAX(iId+1,anIndexSize[iType] * 2 + 10);
+            const int nNewSize = std::max(iId+1, anIndexSize[iType] * 2 + 10);
 
             apapoRecordIndex[iType] = (NTFRecord **)
                 CPLRealloc(apapoRecordIndex[iType],
@@ -1674,7 +1675,6 @@ static void AddToIndexGroup( NTFRecord **papoGroup, NTFRecord * poRecord )
     papoGroup[i] = poRecord;
     papoGroup[i+1] = NULL;
 }
-
 
 /************************************************************************/
 /*                     GetNextIndexedRecordGroup()                      */
@@ -1831,7 +1831,6 @@ NTFRecord **NTFFileReader::GetNextIndexedRecordGroup( NTFRecord **
                 GetIndexedRecord( NRT_ATTREC,
                                   atoi(poAnchor->GetField(iStart,iStart+5)) ));
         }
-
     }
 
 /* -------------------------------------------------------------------- */

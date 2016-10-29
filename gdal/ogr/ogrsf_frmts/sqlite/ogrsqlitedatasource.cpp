@@ -558,7 +558,6 @@ void OGRSQLiteBaseDataSourceNotifyFileOpened (void* pfnUserData,
     ((OGRSQLiteBaseDataSource*)pfnUserData)->NotifyFileOpened(pszFilename, fp);
 }
 
-
 /************************************************************************/
 /*                          NotifyFileOpened()                          */
 /************************************************************************/
@@ -575,7 +574,7 @@ void OGRSQLiteBaseDataSource::NotifyFileOpened(const char* pszFilename,
 #ifdef USE_SQLITE_DEBUG_MEMALLOC
 
 /* DMA9 */
-#define DMA_SIGNATURE 0x444D4139
+static const int DMA_SIGNATURE = 0x444D4139;
 
 static void* OGRSQLiteDMA_Malloc(int size)
 {
@@ -1503,7 +1502,6 @@ int OGRSQLiteDataSource::Open( const char * pszNewName, int bUpdateIn,
             sqlite3_free_table(papszResult);
         }
 
-
         if (bListAllTables)
             goto all_tables;
 
@@ -1683,6 +1681,8 @@ int OGRSQLiteDataSource::TestCapability( const char * pszCap )
     else if( EQUAL(pszCap,ODsCMeasuredGeometries) )
         return TRUE;
     else if EQUAL(pszCap,ODsCCreateGeomFieldAfterCreateLayer)
+        return bUpdate;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
         return bUpdate;
     else
         return OGRSQLiteBaseDataSource::TestCapability(pszCap);
@@ -2056,6 +2056,20 @@ OGRSQLiteDataSource::ICreateLayer( const char * pszLayerNameIn,
                   m_pszFilename, pszLayerNameIn );
 
         return NULL;
+    }
+
+    if ( bIsSpatiaLiteDB && eType != wkbNone )
+    {
+        // We need to catch this right now as AddGeometryColumn does not
+        // return an error
+        OGRwkbGeometryType eFType = wkbFlatten(eType);
+        if( eFType > wkbGeometryCollection )
+        {
+            CPLError(CE_Failure, CPLE_NotSupported,
+                    "Cannot create geometry field of type %s",
+                    OGRToOGCGeomType(eType));
+            return NULL;
+        }
     }
 
     for( int iLayer = 0; iLayer < nLayers; iLayer++ )
@@ -2475,7 +2489,6 @@ OGRErr OGRSQLiteDataSource::DeleteLayer(int iLayer)
     return OGRERR_NONE;
 }
 
-
 /************************************************************************/
 /*                         StartTransaction()                           */
 /*                                                                      */
@@ -2679,7 +2692,6 @@ OGRErr OGRSQLiteBaseDataSource::DoTransactionCommand(const char* pszCommand)
     const int rc = sqlite3_exec( hDB, pszCommand, NULL, NULL, &pszErrMsg );
     if( rc != SQLITE_OK )
     {
-        nSoftTransactionLevel--;
         CPLError( CE_Failure, CPLE_AppDefined,
                   "%s transaction failed: %s",
                   pszCommand, pszErrMsg );

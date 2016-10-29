@@ -34,7 +34,7 @@
 
 CPL_CVSID("$Id$");
 
-#define MAX_LINK        5000
+static const int MAX_LINK = 5000;
 
 /************************************************************************/
 /*                         TranslateCodePoint()                         */
@@ -499,7 +499,7 @@ static OGRFeature *TranslateBoundarylineCollection( NTFFileReader *poReader,
     poFeature->SetField( 0, atoi(papoGroup[0]->GetField( 3, 8 )) );
 
     // NUM_PARTS
-    int         nNumLinks = atoi(papoGroup[0]->GetField( 9, 12 ));
+    int nNumLinks = atoi(papoGroup[0]->GetField( 9, 12 ));
 
     if( nNumLinks > MAX_LINK )
     {
@@ -671,7 +671,6 @@ static OGRFeature *TranslateBoundarylinePoly( NTFFileReader *poReader,
 
     // RingStart
     poFeature->SetField( 7, nRings, anRingStart );
-
 
 /* -------------------------------------------------------------------- */
 /*      collect information for whole complex polygon.                  */
@@ -868,7 +867,6 @@ static OGRFeature *TranslateBL2000Poly( NTFFileReader *poReader,
 
     // RingStart
     poFeature->SetField( 6, nRings, anRingStart );
-
 
 /* -------------------------------------------------------------------- */
 /*      collect information for whole complex polygon.                  */
@@ -1136,7 +1134,6 @@ static OGRFeature *TranslateMeridian2Line( NTFFileReader *poReader,
                                     "TR", 6, "PN", 7, "RI", 8, "LC", 9,
                                     "RC", 10, "LD", 11, "RD", 12, "WI", 14,
                                     NULL );
-
 
     return poFeature;
 }

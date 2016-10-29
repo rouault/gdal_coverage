@@ -118,16 +118,16 @@ OGRFeature *OGRIngresLayer::GetNextFeature()
 /*                              ParseXY()                               */
 /************************************************************************/
 
-static int ParseXY( const char **ppszNext, double *padfXY )
+static bool ParseXY( const char **ppszNext, double *padfXY )
 
 {
-    int iStartY;
     const char *pszNext = *ppszNext;
 
-    for( iStartY = 0; ; iStartY++ )
+    int iStartY = 0;  // Used after for.
+    for( ; ; iStartY++ )
     {
         if( pszNext[iStartY] == '\0' )
-            return FALSE;
+            return false;
 
         if( pszNext[iStartY] == ',' )
         {
@@ -139,19 +139,16 @@ static int ParseXY( const char **ppszNext, double *padfXY )
     padfXY[0] = CPLAtof(pszNext);
     padfXY[1] = CPLAtof(pszNext + iStartY);
 
-    int iEnd;
-
-    for( iEnd = iStartY;
-         pszNext[iEnd] != ')';
-         iEnd++ )
+    int iEnd = iStartY;  // Used after for.
+    for( ; pszNext[iEnd] != ')'; iEnd++ )
     {
         if( pszNext[iEnd] == '\0' )
-            return FALSE;
+            return false;
     }
 
     *ppszNext += iEnd;
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -172,8 +169,9 @@ OGRGeometry *OGRIngresLayer::TranslateGeometry( const char *pszGeom )
 /*      spaces may occur between tokens.                                */
 /* -------------------------------------------------------------------- */
     double *padfXY = NULL;
-    int    nVertMax = 0, nVertCount = 0;
-    int    nDepth = 0;
+    int nVertMax = 0;
+    int nVertCount = 0;
+    int nDepth = 0;
     const char *pszNext = pszGeom;
 
     while( *pszNext != '\0' )
@@ -389,7 +387,6 @@ OGRFeature *OGRIngresLayer::RecordToFeature( char **papszRow )
             continue;
         }
 
-
 /* -------------------------------------------------------------------- */
 /*      Transfer regular data fields.                                   */
 /* -------------------------------------------------------------------- */
@@ -568,7 +565,6 @@ int OGRIngresLayer::TestCapability( const char * pszCap )
 #endif
 }
 
-
 /************************************************************************/
 /*                            GetFIDColumn()                            */
 /************************************************************************/
@@ -588,7 +584,6 @@ const char *OGRIngresLayer::GetGeometryColumn()
 {
     return osGeomColumn;
 }
-
 
 /************************************************************************/
 /*                         FetchSRSId()                                 */

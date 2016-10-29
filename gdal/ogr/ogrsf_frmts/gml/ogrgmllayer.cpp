@@ -277,6 +277,7 @@ OGRFeature *OGRGMLLayer::GetNextFeature()
                                                   poDS->GetInvertAxisOrderIfLatLong(),
                                                   pszSRSName,
                                                   poDS->GetConsiderEPSGAsURN(),
+                                                  poDS->GetSwapCoordinates(),
                                                   poDS->GetSecondaryGeometryOption(),
                                                   hCacheSRS,
                                                   bFaceHoleNegative );
@@ -325,6 +326,7 @@ OGRFeature *OGRGMLLayer::GetNextFeature()
                                                   poDS->GetInvertAxisOrderIfLatLong(),
                                                   pszSRSName,
                                                   poDS->GetConsiderEPSGAsURN(),
+                                                  poDS->GetSwapCoordinates(),
                                                   poDS->GetSecondaryGeometryOption(),
                                                   hCacheSRS,
                                                   bFaceHoleNegative );
@@ -553,11 +555,13 @@ GIntBig OGRGMLLayer::GetFeatureCount( int bForce )
 OGRErr OGRGMLLayer::GetExtent(OGREnvelope *psExtent, int bForce )
 
 {
-    double dfXMin, dfXMax, dfYMin, dfYMax;
-
     if( GetGeomType() == wkbNone )
         return OGRERR_FAILURE;
 
+    double dfXMin = 0.0;
+    double dfXMax = 0.0;
+    double dfYMin = 0.0;
+    double dfYMax = 0.0;
     if( poFClass != NULL &&
         poFClass->GetExtents( &dfXMin, &dfXMax, &dfYMin, &dfYMax ) )
     {
@@ -705,7 +709,6 @@ OGRErr OGRGMLLayer::ICreateFeature( OGRFeature *poFeature )
                              poFeature->GetFID() );
         }
     }
-
 
     for( int iGeomField = 0; iGeomField < poFeatureDefn->GetGeomFieldCount(); iGeomField++ )
     {
@@ -939,10 +942,13 @@ int OGRGMLLayer::TestCapability( const char * pszCap )
 
     else if( EQUAL(pszCap,OLCFastGetExtent) )
     {
-        double  dfXMin, dfXMax, dfYMin, dfYMax;
-
         if( poFClass == NULL )
             return FALSE;
+
+        double dfXMin = 0.0;
+        double dfXMax = 0.0;
+        double dfYMin = 0.0;
+        double dfYMax = 0.0;
 
         return poFClass->GetExtents( &dfXMin, &dfXMax, &dfYMin, &dfYMax );
     }
@@ -1005,7 +1011,6 @@ OGRErr OGRGMLLayer::CreateField( OGRFieldDefn *poField, int bApproxOK )
 
     CPLFree( pszName );
 
-
     poFeatureDefn->AddFieldDefn( &oCleanCopy );
 
     return OGRERR_NONE;
@@ -1048,7 +1053,6 @@ OGRErr OGRGMLLayer::CreateGeomField( OGRGeomFieldDefn *poField, int bApproxOK )
     }
 
     CPLFree( pszName );
-
 
     poFeatureDefn->AddGeomFieldDefn( &oCleanCopy );
 

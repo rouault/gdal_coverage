@@ -105,7 +105,6 @@ void OGRSVGDataSource::startElementValidateCbk(const char *pszNameIn,
     }
 }
 
-
 /************************************************************************/
 /*                      dataHandlerValidateCbk()                        */
 /************************************************************************/
@@ -121,7 +120,6 @@ void OGRSVGDataSource::dataHandlerValidateCbk(CPL_UNUSED const char *data,
         XML_StopParser(oCurrentParser, XML_FALSE);
     }
 }
-
 
 static void XMLCALL startElementValidateCbk(void *pUserData,
                                             const char *pszName, const char **ppszAttr)
@@ -242,7 +240,7 @@ int OGRSVGDataSource::Open( const char * pszFilename )
         }
     }
 
-    return (nLayers > 0);
+    return nLayers > 0;
 #else
     char aBuf[256];
     VSILFILE* fp = VSIFOpenL(pszFilename, "r");

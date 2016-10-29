@@ -229,7 +229,7 @@ CPLString getFname(CPLXMLNode *, const char *, const CPLString &, const char *);
 CPLString getFname(const CPLString &, const char *);
 double getXMLNum(CPLXMLNode *, const char *, double);
 GIntBig IdxOffset(const ILSize &, const ILImage &);
-double logb(double val, double base);
+double logbase(double val, double base);
 int IsPower(double value, double base);
 CPLXMLNode *SearchXMLSiblings(CPLXMLNode *psRoot, const char *pszElement);
 CPLString PrintDouble(double d, const char *frmt = "%12.8f");
@@ -373,7 +373,7 @@ protected:
     CPLErr Initialize(CPLXMLNode *);
 
     // Do nothing, this is not possible in an MRF
-    CPLErr CleanOverviews(void) { return CE_None; }
+    CPLErr CleanOverviews() { return CE_None; }
 
     // Add uniform scale overlays, returns the new size of the index file
     GIntBig AddOverviews(int scale);
@@ -599,7 +599,6 @@ public:
 
 private:
     PNG_Codec& operator= (const PNG_Codec& src); // not implemented. but suppress MSVC warning about 'assignment operator could not be generated'
-
 };
 
 class PNG_Band : public GDALMRFRasterBand {

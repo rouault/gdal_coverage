@@ -68,7 +68,6 @@ protected:
                          const char *psBuff, GUInt32 nBufLen,
                          double *dfX, double *dfY, double *dfH = NULL);
 
-
     OGRFeature *TranslatePoint(const SXFRecordDescription& certifInfo, const char * psRecordBuf, GUInt32 nBufLen);
     OGRFeature *TranslateText(const SXFRecordDescription& certifInfo, const char * psBuff, GUInt32 nBufLen);
     OGRFeature *TranslatePolygon(const SXFRecordDescription& certifInfo, const char * psBuff, GUInt32 nBufLen);
@@ -95,9 +94,10 @@ public:
 
     virtual GByte GetId() const { return nLayerID; };
     virtual void AddClassifyCode(unsigned nClassCode, const char *szName = NULL);
-    virtual int AddRecord(long nFID, unsigned nClassCode, vsi_l_offset nOffset, bool bHasSemantic, size_t nSemanticsSize);
+    virtual bool AddRecord( long nFID, unsigned nClassCode,
+                            vsi_l_offset nOffset, bool bHasSemantic,
+                            size_t nSemanticsSize );
 };
-
 
 /************************************************************************/
 /*                        OGRSXFDataSource                       */
@@ -114,7 +114,7 @@ class OGRSXFDataSource : public OGRDataSource
 
     VSILFILE* fpSXF;
     CPLMutex  *hIOMutex;
-    void FillLayers(void);
+    void FillLayers();
     void CreateLayers();
     void CreateLayers(VSILFILE* fpRSC);
     OGRErr ReadSXFInformationFlags(VSILFILE* fpSXF, SXFPassport& passport);

@@ -28,6 +28,8 @@
 
 #include "ogrwalk.h"
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 /************************************************************************/
@@ -40,7 +42,7 @@ OGRWalkLayer::OGRWalkLayer() :
     poSRS(NULL),
     iNextShapeId(0),
     poDS(NULL),
-    bGeomColumnWKB(FALSE),
+    bGeomColumnWKB(false),
     pszGeomColumn(NULL),
     pszFIDColumn(NULL),
     panFieldOrdinals(NULL)
@@ -94,7 +96,8 @@ CPLErr OGRWalkLayer::BuildFeatureDefn( const char *pszLayerName,
     {
         OGRFieldDefn    oField( poStmtIn->GetColName(iCol), OFTString );
 
-        oField.SetWidth( MAX(0,poStmtIn->GetColSize( iCol )) );
+        oField.SetWidth(
+            std::max(static_cast<short>(0), poStmtIn->GetColSize( iCol )));
 
         if( pszGeomColumn != NULL
             && EQUAL(poStmtIn->GetColName(iCol),pszGeomColumn) )    //If Geometry Column, continue to next field
@@ -179,7 +182,6 @@ void OGRWalkLayer::ResetReading()
 {
     iNextShapeId = 0;
 }
-
 
 /************************************************************************/
 /*                           GetNextFeature()                           */

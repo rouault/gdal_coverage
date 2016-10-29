@@ -668,6 +668,8 @@ int OGROCIDataSource::TestCapability( const char * pszCap )
         return TRUE;
     else if( EQUAL(pszCap,ODsCDeleteLayer) && bDSUpdate )
         return TRUE;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return bDSUpdate;
     else
         return FALSE;
 }
@@ -684,8 +686,6 @@ OGRLayer *OGROCIDataSource::GetLayer( int iLayer )
     else
         return papoLayers[iLayer];
 }
-
-
 
 /************************************************************************/
 /*                             ExecuteSQL()                             */
@@ -1017,7 +1017,6 @@ int OGROCIDataSource::FetchSRSId( OGRSpatialReference * poSRS )
     else
         return nSRSId;
 }
-
 
 /************************************************************************/
 /*                           GetLayerByName()                           */

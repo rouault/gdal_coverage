@@ -111,7 +111,8 @@ DGNHandle DGNOpen( const char * pszFilename, int bUpdate )
 /*      Verify the format ... add later.                                */
 /* -------------------------------------------------------------------- */
     GByte abyHeader[512];
-    const int nHeaderBytes = static_cast<int>(VSIFRead( abyHeader, 1, sizeof(abyHeader), fp ));
+    const int nHeaderBytes =
+        static_cast<int>(VSIFRead( abyHeader, 1, sizeof(abyHeader), fp ));
     if( !DGNTestOpen( abyHeader, nHeaderBytes ) )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
@@ -126,7 +127,7 @@ DGNHandle DGNOpen( const char * pszFilename, int bUpdate )
 /* -------------------------------------------------------------------- */
 /*      Create the info structure.                                      */
 /* -------------------------------------------------------------------- */
-    DGNInfo *psDGN = (DGNInfo *) CPLCalloc(sizeof(DGNInfo),1);
+    DGNInfo *psDGN = static_cast<DGNInfo *>(CPLCalloc(sizeof(DGNInfo), 1));
     psDGN->fp = fp;
     psDGN->next_element_id = 0;
 
@@ -215,7 +216,7 @@ void DGNSetSpatialFilter( DGNHandle hDGN,
                           double dfXMax, double dfYMax )
 
 {
-    DGNInfo     *psDGN = (DGNInfo *) hDGN;
+    DGNInfo *psDGN = (DGNInfo *) hDGN;
 
     if( dfXMin == 0.0 && dfXMax == 0.0
         && dfYMin == 0.0 && dfYMax == 0.0 )
@@ -233,7 +234,6 @@ void DGNSetSpatialFilter( DGNHandle hDGN,
     psDGN->sf_max_y_geo = dfYMax;
 
     DGNSpatialFilterToUOR( psDGN );
-
 }
 
 /************************************************************************/

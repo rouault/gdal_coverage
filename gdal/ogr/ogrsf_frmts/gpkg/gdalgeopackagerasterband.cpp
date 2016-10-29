@@ -30,6 +30,8 @@
 #include "memdataset.h"
 #include "gdal_alg_priv.h"
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 #if !defined(DEBUG_VERBOSE) && defined(DEBUG_VERBOSE_GPKG)
@@ -143,6 +145,10 @@ CPLErr GDALGPKGMBTilesLikeRasterBand::FlushCache()
 CPLErr GDALGPKGMBTilesLikePseudoDataset::FlushTiles()
 {
     CPLErr eErr = CE_None;
+    GDALGPKGMBTilesLikePseudoDataset* poMainDS = m_poParentDS ? m_poParentDS : this;
+    if( poMainDS->m_nTileInsertionCount < 0 )
+        return CE_Failure;
+
     if( IGetUpdate() )
     {
         if( m_nShiftXPixelsMod || m_nShiftYPixelsMod )
@@ -155,11 +161,17 @@ CPLErr GDALGPKGMBTilesLikePseudoDataset::FlushTiles()
         }
     }
 
-    GDALGPKGMBTilesLikePseudoDataset* poMainDS = m_poParentDS ? m_poParentDS : this;
-    if( poMainDS->m_nTileInsertionCount )
+    if( poMainDS->m_nTileInsertionCount > 0 )
     {
-        poMainDS->ICommitTransaction();
-        poMainDS->m_nTileInsertionCount = 0;
+        if( poMainDS->ICommitTransaction() != OGRERR_NONE )
+        {
+            poMainDS->m_nTileInsertionCount = -1;
+            eErr = CE_Failure;
+        }
+        else
+        {
+            poMainDS->m_nTileInsertionCount = 0;
+        }
     }
     return eErr;
 }
@@ -334,7 +346,7 @@ static int GPKGFindBestEntry(GDALColorTable* poCT,
                              GByte c1, GByte c2, GByte c3, GByte c4,
                              int nTileBandCount)
 {
-    const int nEntries = MIN(256, poCT->GetColorEntryCount());
+    const int nEntries = std::min(256, poCT->GetColorEntryCount());
     int iBestIdx = 0;
     int nBestDistance = 4 * 256 * 256;
     for(int i=0;i<nEntries;i++)
@@ -419,7 +431,7 @@ CPLErr GDALGPKGMBTilesLikePseudoDataset::ReadTile(const CPLString& osMemFileName
     if( nBands == 1 && m_poCT != NULL && nTileBandCount != 1 )
     {
         std::map< GUInt32, int > oMapEntryToIndex;
-        int nEntries = MIN(256, m_poCT->GetColorEntryCount());
+        const int nEntries = std::min(256, m_poCT->GetColorEntryCount());
         for(int i=0;i<nEntries;i++)
         {
             const GDALColorEntry* psEntry = m_poCT->GetColorEntry(i);
@@ -510,7 +522,7 @@ CPLErr GDALGPKGMBTilesLikePseudoDataset::ReadTile(const CPLString& osMemFileName
         if( poCT != NULL )
         {
             GByte abyCT[4*256];
-            int nEntries = MIN(256, poCT->GetColorEntryCount());
+            const int nEntries = std::min(256, poCT->GetColorEntryCount());
             for( int i = 0; i < nEntries; i++ )
             {
                 const GDALColorEntry* psEntry = poCT->GetColorEntry(i);
@@ -831,7 +843,6 @@ retry:
         m_poTPD->m_asCachedTilesDesc[3].nCol = nColMin + 1;
         m_poTPD->m_asCachedTilesDesc[1].nIdxWithinTileData = -1;
         m_poTPD->m_asCachedTilesDesc[3].nIdxWithinTileData = -1;
-
     }
 
     for(int nRow = nRowMin; nRow <= nRowMax; nRow ++)
@@ -916,7 +927,6 @@ retry:
                         }
                     }
 #endif
-
                 }
                 else
                 {
@@ -975,7 +985,6 @@ retry:
 
                 if( poBlock )
                     poBlock->DropLock();
-
             }
         }
     }
@@ -1015,6 +1024,10 @@ static bool WEBPSupports4Bands()
 
 CPLErr GDALGPKGMBTilesLikePseudoDataset::WriteTile()
 {
+    GDALGPKGMBTilesLikePseudoDataset* poMainDS = m_poParentDS ? m_poParentDS : this;
+    if( poMainDS->m_nTileInsertionCount < 0 )
+        return CE_Failure;
+
     CPLAssert(!m_bInWriteTile);
     m_bInWriteTile = true;
     CPLErr eErr = WriteTileInternal();
@@ -1398,7 +1411,7 @@ CPLErr GDALGPKGMBTilesLikePseudoDataset::WriteTileInternal()
         else if( nBands == 1 && m_poCT != NULL && nTileBands > 1 )
         {
             GByte abyCT[4*256];
-            int nEntries = MIN(256, m_poCT->GetColorEntryCount());
+            const int nEntries = std::min(256, m_poCT->GetColorEntryCount());
             for( int i = 0; i < nEntries; i++ )
             {
                 const GDALColorEntry* psEntry = m_poCT->GetColorEntry(i);
@@ -1493,7 +1506,14 @@ CPLErr GDALGPKGMBTilesLikePseudoDataset::WriteTileInternal()
             }
             else if( poMainDS->m_nTileInsertionCount == 1000 )
             {
-                poMainDS->ICommitTransaction();
+                if( poMainDS->ICommitTransaction() != OGRERR_NONE )
+                {
+                    poMainDS->m_nTileInsertionCount = -1;
+                    CPLFree(pabyBlob);
+                    VSIUnlink(osMemFileName);
+                    delete poMEMDS;
+                    return CE_Failure;
+                }
                 poMainDS->IStartTransaction();
                 poMainDS->m_nTileInsertionCount = 0;
             }
@@ -2342,9 +2362,12 @@ CPLErr GDALGPKGMBTilesLikeRasterBand::IWriteBlock(int nBlockXOff, int nBlockYOff
                 if( m_poTPD->m_nShiftXPixelsMod == 0 && m_poTPD->m_nShiftYPixelsMod == 0 )
                     m_poTPD->m_asCachedTilesDesc[0].abBandDirty[iBand - 1] = true;
 
-                int nDstXOffset = 0, nDstXSize = nBlockXSize,
-                    nDstYOffset = 0, nDstYSize = nBlockYSize;
-                int nSrcXOffset = 0, nSrcYOffset = 0;
+                int nDstXOffset = 0;
+                int nDstXSize = nBlockXSize;
+                int nDstYOffset = 0;
+                int nDstYSize = nBlockYSize;
+                int nSrcXOffset = 0;
+                int nSrcYOffset = 0;
                 // Composite block data into tile data
                 if( m_poTPD->m_nShiftXPixelsMod == 0 && m_poTPD->m_nShiftYPixelsMod == 0 )
                 {
@@ -2403,7 +2426,6 @@ CPLErr GDALGPKGMBTilesLikeRasterBand::IWriteBlock(int nBlockXOff, int nBlockYOff
                                     (nBlockYSize - nYEndValidity) * nBlockXSize );
                         }
                     }
-
                 }
                 else
                 {

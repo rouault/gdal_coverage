@@ -84,6 +84,8 @@ int OGRCARTODataSource::TestCapability( const char * pszCap )
         return TRUE;
     else if( bReadWrite && EQUAL(pszCap,ODsCDeleteLayer) )
         return TRUE;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return bReadWrite;
     else
         return FALSE;
 }
@@ -438,7 +440,6 @@ OGRLayer   *OGRCARTODataSource::ICreateLayer( const char *pszNameIn,
         osName = pszTmp;
         CPLFree(pszTmp);
     }
-
 
     OGRCARTOTableLayer* poLayer = new OGRCARTOTableLayer(this, osName);
     const bool bGeomNullable =

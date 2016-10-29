@@ -31,6 +31,7 @@
 #include <cfloat>
 #include <climits>
 
+#include <algorithm>
 #include <string>
 
 #include "gdal_frmts.h"
@@ -279,7 +280,7 @@ string ReadElement(string section, string entry, string filename)
 
     IniFile MyIniFile (filename);
 
-    return MyIniFile.GetKeyValue(section, entry);;
+    return MyIniFile.GetKeyValue(section, entry);
 }
 
 bool WriteElement(string sSection, string sEntry,
@@ -445,7 +446,6 @@ static CPLErr GetStoreType(string pszFileName, ilwisStoreType &stStoreType)
     return CE_None;
 }
 
-
 ILWISDataset::ILWISDataset() :
     pszProjection(CPLStrdup("")),
     bGeoDirty(FALSE),
@@ -535,9 +535,7 @@ void ILWISDataset::CollectTransformCoef(string &pszRefName)
             adfGeoTransform[4] = 0.0;
             adfGeoTransform[5] = -PixelSizeY;
         }
-
     }
-
 }
 
 /************************************************************************/
@@ -609,7 +607,7 @@ CPLErr ILWISDataset::WriteGeoReference()
 const char *ILWISDataset::GetProjectionRef()
 
 {
-   return ( pszProjection );
+   return pszProjection;
 }
 
 /************************************************************************/
@@ -634,7 +632,7 @@ CPLErr ILWISDataset::GetGeoTransform( double * padfTransform )
 
 {
     memcpy( padfTransform,  adfGeoTransform, sizeof(double) * 6 );
-    return( CE_None );
+    return CE_None;
 }
 
 /************************************************************************/
@@ -760,7 +758,8 @@ GDALDataset *ILWISDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
 /*      Capture raster size from ILWIS file (.mpr).                     */
 /* -------------------------------------------------------------------- */
-    int Row = 0, Col = 0;
+    int Row = 0;
+    int Col = 0;
     if ( GetRowCol(mapsize, Row, Col) != CE_None)
     {
         delete poDS;
@@ -838,7 +837,7 @@ GDALDataset *ILWISDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
     poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename, poOpenInfo->GetSiblingFiles() );
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/
@@ -1002,7 +1001,7 @@ GDALDataset *ILWISDataset::Create(const char* pszFilename,
     }
 
     return poDS;
-    //return (GDALDataset *) GDALOpen( pszFilename, GA_Update );
+    // return (GDALDataset *) GDALOpen( pszFilename, GA_Update );
 }
 
 /************************************************************************/
@@ -1308,7 +1307,6 @@ ILWISRasterBand::~ILWISRasterBand()
     }
 }
 
-
 /************************************************************************/
 /*                             ILWISOpen()                             */
 /************************************************************************/
@@ -1490,7 +1488,7 @@ CPLErr ILWISRasterBand::IReadBlock( CPL_UNUSED int nBlockXOff, int nBlockYOff,
     {
         CPLError( CE_Failure, CPLE_OpenFailed,
                   "Failed to open ILWIS data file.");
-        return( CE_Failure );
+        return CE_Failure;
     }
 
 /* -------------------------------------------------------------------- */
@@ -1958,7 +1956,7 @@ void ValueRange::init( double rRaw0 )
         }
 
         short iBeforeDec = 1;
-        double rMax = MAX(fabs(get_rLo()), fabs(get_rHi()));
+        double rMax = std::max(fabs(get_rLo()), fabs(get_rHi()));
         if (rMax != 0)
             iBeforeDec = (short)floor(log10(rMax)) + 1;
         if (get_rLo() < 0)
@@ -2044,7 +2042,6 @@ int ValueRange::iRaw(double rValueIn)
     rVal -= _r0;
     return intConv(rVal);
 }
-
 
 /************************************************************************/
 /*                    GDALRegister_ILWIS()                              */

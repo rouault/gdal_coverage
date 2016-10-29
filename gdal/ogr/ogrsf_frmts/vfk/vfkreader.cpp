@@ -38,11 +38,7 @@
 #include "cpl_error.h"
 #include "cpl_string.h"
 
-#define SUPPORT_GEOMETRY
-
-#ifdef SUPPORT_GEOMETRY
-#  include "ogr_geometry.h"
-#endif
+#include "ogr_geometry.h"
 
 CPL_CVSID("$Id$");
 
@@ -69,12 +65,12 @@ IVFKReader *CreateVFKReader(const char *pszFilename)
   \brief VFKReader constructor
 */
 VFKReader::VFKReader( const char *pszFilename ) :
-    m_bLatin2(TRUE),  // Encoding ISO-8859-2 or WINDOWS-1250.
+    m_bLatin2(true),  // Encoding ISO-8859-2 or WINDOWS-1250.
     m_poFD(NULL),
     m_pszFilename(CPLStrdup(pszFilename)),
     m_poFStat((VSIStatBuf*) CPLMalloc(sizeof(VSIStatBuf))),
     // VFK are provided in two forms - stative and amendment data.
-    m_bAmendment(FALSE),
+    m_bAmendment(false),
     m_nDataBlockCount(0),
     m_papoDataBlock(NULL)
 {
@@ -87,7 +83,7 @@ VFKReader::VFKReader( const char *pszFilename ) :
                "%s is not a regular file.", m_pszFilename);
     }
 
-    m_poFD = VSIFOpen(m_pszFilename, "rb");
+    m_poFD = VSIFOpenL(m_pszFilename, "rb");
     if (m_poFD == NULL) {
         CPLError(CE_Failure, CPLE_OpenFailed,
                  "Failed to open file %s.", m_pszFilename);
@@ -102,7 +98,7 @@ VFKReader::~VFKReader()
     CPLFree(m_pszFilename);
 
     if (m_poFD)
-        VSIFClose(m_poFD);
+        VSIFCloseL(m_poFD);
     CPLFree(m_poFStat);
 
     /* clear data blocks */
@@ -138,7 +134,7 @@ char *GetDataBlockName(const char *pszLine)
 */
 char *VFKReader::ReadLine( bool bRecode )
 {
-    const char *pszRawLine = CPLReadLine(m_poFD);
+    const char *pszRawLine = CPLReadLine2L(m_poFD, 100 * 1024, NULL);
     if (pszRawLine == NULL)
         return NULL;
 
@@ -147,8 +143,9 @@ char *VFKReader::ReadLine( bool bRecode )
                          m_bLatin2 ? "ISO-8859-2" : "WINDOWS-1250",
                          CPL_ENC_UTF8);
 
-    char *pszLine = (char *) CPLMalloc(strlen(pszRawLine) + 1);
-    strcpy(pszLine, pszRawLine);
+    const size_t nLineLen = strlen(pszRawLine);
+    char *pszLine = (char *) CPLMalloc(nLineLen + 1);
+    memcpy(pszLine, pszRawLine, nLineLen + 1);
 
     return pszLine;
 }
@@ -164,7 +161,7 @@ int VFKReader::ReadDataBlocks()
 {
     CPLAssert(NULL != m_pszFilename);
 
-    VSIFSeek(m_poFD, 0, SEEK_SET);
+    VSIFSeekL(m_poFD, 0, SEEK_SET);
     bool bInHeader = true;
     char *pszLine = NULL;
     while ((pszLine = ReadLine()) != NULL) {
@@ -199,7 +196,7 @@ int VFKReader::ReadDataBlocks()
         else if (pszLine[1] == 'H') {
             /* check for amendment file */
             if (EQUAL(pszLine, "&HZMENY;1")) {
-                m_bAmendment = TRUE;
+                m_bAmendment = true;
             }
 
             /* header - metadata */
@@ -221,7 +218,6 @@ int VFKReader::ReadDataBlocks()
 
     return m_nDataBlockCount;
 }
-
 
 /*!
   \brief Load data records (&D)
@@ -252,7 +248,7 @@ int VFKReader::ReadDataRecords(IVFKDataBlock *poDataBlock)
         poDataBlockCurrent = NULL;
     }
 
-    VSIFSeek(m_poFD, 0, SEEK_SET);
+    VSIFSeekL(m_poFD, 0, SEEK_SET);
 
     int iLine = 0;
     int nSkipped = 0;
@@ -264,7 +260,7 @@ int VFKReader::ReadDataRecords(IVFKDataBlock *poDataBlock)
 
     while ((pszLine = ReadLine()) != NULL) {
         iLine++;
-        int nLength = static_cast<int>(strlen(pszLine));
+        size_t nLength = strlen(pszLine);
         if (nLength < 2) {
             CPLFree(pszLine);
             continue;
@@ -304,15 +300,22 @@ int VFKReader::ReadDataRecords(IVFKDataBlock *poDataBlock)
                         osMultiLine.erase(osMultiLine.size() - 1);
 
                         CPLFree(pszLine);
+                        if( osMultiLine.size() > 100U * 1024U * 1024U )
+                        {
+                            CPLFree(pszBlockName);
+                            return -1;
+                        }
                     }
                     if( pszLine )
                         osMultiLine += pszLine;
                     CPLFree(pszLine);
 
-                    nLength = static_cast<int>(osMultiLine.size());
-                    // Coverity worries about nLength = 2147483647.
-                    // coverity[overflow] for CID 1074645.
-                    // coverity[overflow_sink] for CID 1074645.
+                    nLength = osMultiLine.size();
+                    if( nLength > 100U * 1024U * 1024U )
+                    {
+                        CPLFree(pszBlockName);
+                        return -1;
+                    }
                     pszLine = (char *) CPLMalloc(nLength + 1);
                     strncpy(pszLine, osMultiLine.c_str(), nLength);
                     pszLine[nLength] = '\0';
@@ -523,7 +526,7 @@ void VFKReader::AddInfo(const char *pszLine)
     /* recode values, assuming Latin2 */
     if (EQUAL(pszKey, "CODEPAGE")) {
         if (!EQUAL(pszValue, "WE8ISO8859P2"))
-            m_bLatin2 = FALSE;
+            m_bLatin2 = false;
     }
 
     char *pszValueEnc = CPLRecode(pszValue,

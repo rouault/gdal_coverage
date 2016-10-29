@@ -60,10 +60,7 @@ MSGCommand::MSGCommand() :
     channel[i] = 0;
 }
 
-MSGCommand::~MSGCommand()
-{
-
-}
+MSGCommand::~MSGCommand() {}
 
 std::string MSGCommand::sTrimSpaces(std::string const& str)
 {
@@ -268,7 +265,7 @@ int MSGCommand::iChannel(int iChannelNumber)
   }
 
   // will return a number between 1 and 12
-  return (iRet + 1);
+  return iRet + 1;
 }
 
 int MSGCommand::iNrStrips(int iChannel)
@@ -362,7 +359,7 @@ std::string MSGCommand::sTimeStampToFolder(std::string & sTimeStamp)
   std::string sYear (sTimeStamp.substr(0,4));
   std::string sMonth (sTimeStamp.substr(4, 2));
   std::string sDay (sTimeStamp.substr(6, 2));
-  return (sYear + PATH_SEP + sMonth + PATH_SEP + sDay + PATH_SEP);
+  return sYear + PATH_SEP + sMonth + PATH_SEP + sDay + PATH_SEP;
 }
 
 int MSGCommand::iDaysInMonth(int iMonth, int iYear)
@@ -446,7 +443,7 @@ std::string MSGCommand::sCycle(int iCycle)
 std::string MSGCommand::sFileName(int iSatellite, int iSequence, int iStrip)
 {
   int iNr = iNrChannels();
-  int iChannelNumber = 1 + (iSequence - 1) % iNr;;
+  int iChannelNumber = 1 + (iSequence - 1) % iNr;
   int iCycle = 1 + (iSequence - 1) / iNr;
   char sRet [4096];
   std::string siThCycle (sCycle(iCycle));

@@ -267,7 +267,6 @@ bool OGRDODSSequenceLayer::BuildFields( BaseType *poFieldVar,
         OGRDODSGetVarPath(poFieldVar).c_str(), "dds",
         poTargetVar, poSuperSeq );
 
-
     if( pszPathToSequence )
         papoFields[poFeatureDefn->GetFieldCount()-1]->pszPathToSequence
             = CPLStrdup( pszPathToSequence );
@@ -447,12 +446,13 @@ OGRFeature *OGRDODSSequenceLayer::GetFeature( GIntBig nFeatureId )
         iSubSeq = nFeatureId;
     else
     {
-        int nSeqOffset = 0, iSuperSeq;
+        int nSeqOffset = 0;
 
-        // for now we just scan through till find find out what
+        // For now we just scan through till find find out what
         // super sequence this in.  In the long term we need a better (cached)
         // approach that doesn't involve this quadratic cost.
-        for( iSuperSeq = 0;
+        int iSuperSeq = 0;  // Used after for.
+        for( ;
              iSuperSeq < nSuperSeqCount;
              iSuperSeq++ )
         {
@@ -776,14 +776,17 @@ OGRFeature *OGRDODSSequenceLayer::GetFeature( GIntBig nFeatureId )
         else if( poFeature->GetFieldDefnRef(iXField)->GetType() == OFTRealList
             && poFeature->GetFieldDefnRef(iYField)->GetType() == OFTRealList )
         {
-            const double *padfX, *padfY, *padfZ = NULL;
             int nPointCount, i;
             OGRLineString *poLS = new OGRLineString();
 
-            padfX = poFeature->GetFieldAsDoubleList( iXField, &nPointCount );
-            padfY = poFeature->GetFieldAsDoubleList( iYField, &nPointCount );
-            if( iZField != -1 )
-                padfZ = poFeature->GetFieldAsDoubleList(iZField,&nPointCount);
+            const double *padfX =
+                poFeature->GetFieldAsDoubleList(iXField, &nPointCount);
+            const double *padfY =
+                poFeature->GetFieldAsDoubleList(iYField, &nPointCount);
+            const double *padfZ =
+                iZField != -1
+                ? poFeature->GetFieldAsDoubleList(iZField, &nPointCount)
+                : NULL;
 
             poLS->setPoints( nPointCount, (double *) padfX, (double *) padfY,
                              (double *) padfZ );
@@ -997,7 +1000,6 @@ bool OGRDODSIsFloatInvalid( const float * pfValToCheck )
 /*      For now we are really just checking if the value is NaN, Inf    */
 /*      or -Inf.                                                        */
 /************************************************************************/
-
 
 bool OGRDODSIsDoubleInvalid( const double * pdfValToCheck )
 

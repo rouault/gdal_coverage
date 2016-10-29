@@ -346,7 +346,6 @@ bool FGdbDataSource::LoadLayers(const std::wstring &root)
     return true;
 }
 
-
 #if 0
 /************************************************************************/
 /*                            LoadLayersOld()                              */
@@ -424,7 +423,6 @@ bool FGdbDataSource::LoadLayersOld(const std::vector<wstring> & datasetTypes,
 }
 #endif
 
-
 /************************************************************************/
 /*                            DeleteLayer()                             */
 /************************************************************************/
@@ -480,9 +478,11 @@ int FGdbDataSource::TestCapability( const char * pszCap )
         return m_bUpdate;
     else if EQUAL(pszCap,ODsCCreateGeomFieldAfterCreateLayer)
         return TRUE;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return m_bUpdate;
+
     return FALSE;
 }
-
 
 /************************************************************************/
 /*                              GetLayer()                              */
@@ -524,7 +524,6 @@ FGdbDataSource::ICreateLayer( const char * pszLayerName,
 
     return pLayer;
 }
-
 
 /************************************************************************/
 /*                   OGRFGdbSingleFeatureLayer                          */
@@ -575,7 +574,6 @@ OGRFGdbSingleFeatureLayer::~OGRFGdbSingleFeatureLayer()
         poFeatureDefn->Release();
     CPLFree(pszVal);
 }
-
 
 /************************************************************************/
 /*                           GetNextFeature()                           */

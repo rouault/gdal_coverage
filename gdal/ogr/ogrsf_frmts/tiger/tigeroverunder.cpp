@@ -31,7 +31,7 @@
 
 CPL_CVSID("$Id$");
 
-#define FILE_CODE       "U"
+static const char FILE_CODE[] = "U";
 
 static const TigerFieldInfo rtU_fields[] = {
   // fieldname    fmt  type OFTType      beg  end  len  bDefine bSet bWrite
@@ -52,7 +52,6 @@ static const TigerRecordInfo rtU_info =
     sizeof(rtU_fields) / sizeof(TigerFieldInfo),
     80
   };
-
 
 /************************************************************************/
 /*                           TigerOverUnder()                           */

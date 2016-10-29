@@ -40,7 +40,7 @@ class OGRSEGUKOOABaseLayer : public OGRLayer
 {
   protected:
     OGRFeatureDefn*    poFeatureDefn;
-    int                bEOF;
+    bool               bEOF;
     int                nNextFID;
 
     virtual OGRFeature *       GetNextRawFeature() = 0;
@@ -97,7 +97,6 @@ class OGRSEGUKOOALineLayer : public OGRSEGUKOOABaseLayer
 
     virtual void                ResetReading();
 };
-
 
 /************************************************************************/
 /*                         OGRSEGP1Layer                                */

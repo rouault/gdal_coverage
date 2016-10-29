@@ -33,8 +33,6 @@
 * limitations under the License.
 */
 
-
-  
 /*
  * JPEG band
  * JPEG page compression and decompression functions, gets compiled twice
@@ -92,7 +90,6 @@ static void errorExit(j_common_ptr cinfo)
     // return control to the setjmp point
     longjmp(psErrorStruct->setjmpBuffer, 1);
 }
-
 
 /**
 *\brief Do nothing stub function for JPEG library, called
@@ -228,7 +225,6 @@ CPLErr JPEG_Codec::CompressJPEG(buf_mgr &dst, buf_mgr &src)
     return CE_None;
 }
 
-
 /**
 *\brief In memory decompression of JPEG file
 *
@@ -260,7 +256,8 @@ CPLErr JPEG_Codec::DecompressJPEG(buf_mgr &dst, buf_mgr &isrc)
 
     src.next_input_byte = (JOCTET *)isrc.buffer;
     src.bytes_in_buffer = isrc.size;
-    src.term_source = src.init_source = stub_source_dec;
+    src.term_source = stub_source_dec;
+    src.init_source = stub_source_dec;
     src.skip_input_data = skip_input_data_dec;
     src.fill_input_buffer = fill_input_buffer_dec;
     src.resync_to_restart = jpeg_resync_to_restart;

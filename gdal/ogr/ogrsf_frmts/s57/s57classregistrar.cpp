@@ -34,7 +34,6 @@
 
 CPL_CVSID("$Id$");
 
-
 #ifdef S57_BUILTIN_CLASSES
 #include "s57tables.h"
 #endif
@@ -96,10 +95,10 @@ S57ClassContentExplorer::~S57ClassContentExplorer()
 /*                              FindFile()                              */
 /************************************************************************/
 
-int S57ClassRegistrar::FindFile( const char *pszTarget,
-                                 const char *pszDirectory,
-                                 int bReportErr,
-                                 VSILFILE **pfp )
+bool S57ClassRegistrar::FindFile( const char *pszTarget,
+                                  const char *pszDirectory,
+                                  bool bReportErr,
+                                  VSILFILE **pfp )
 
 {
     const char *pszFilename = NULL;
@@ -160,17 +159,17 @@ const char *S57ClassRegistrar::ReadLine( VSILFILE * fp )
         papszNextLine = NULL;
         return NULL;
     }
-    else
-        return *(papszNextLine++);
+
+    return *(papszNextLine++);
 }
 
 /************************************************************************/
 /*                              LoadInfo()                              */
 /************************************************************************/
 
-int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
-                                 const char * pszProfile,
-                                 int bReportErr )
+bool S57ClassRegistrar::LoadInfo( const char * pszDirectory,
+                                  const char * pszProfile,
+                                  bool bReportErr )
 
 {
     if( pszDirectory == NULL )
@@ -185,10 +184,12 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
     char szTargetFile[1024];  // TODO: Get this off of the stack.
     if( EQUAL(pszProfile, "Additional_Military_Layers") )
     {
+        // Has been suppressed in GDAL data/
        snprintf( szTargetFile, sizeof(szTargetFile), "s57objectclasses_%s.csv", "aml" );
     }
     else if ( EQUAL(pszProfile, "Inland_Waterways") )
     {
+        // Has been suppressed in GDAL data/
        snprintf( szTargetFile, sizeof(szTargetFile), "s57objectclasses_%s.csv", "iw" );
     }
     else if( strlen(pszProfile) > 0 )
@@ -202,7 +203,16 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
 
     VSILFILE *fp = NULL;
     if( !FindFile( szTargetFile, pszDirectory, bReportErr, &fp ) )
-        return FALSE;
+    {
+        if( EQUAL(pszProfile, "Additional_Military_Layers") ||
+            EQUAL(pszProfile, "Inland_Waterways") )
+        {
+            strcpy( szTargetFile, "s57objectclasses.csv" );
+            if( !FindFile( szTargetFile, pszDirectory, bReportErr, &fp ) )
+                return false;
+        }
+        return false;
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Skip the line defining the column titles.                       */
@@ -217,7 +227,7 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
                   "s57objectclasses columns don't match expected format!\n" );
         if( fp != NULL )
             VSIFCloseL( fp );
-        return FALSE;
+        return false;
     }
 
 /* -------------------------------------------------------------------- */
@@ -226,6 +236,8 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
     apszClassesInfo.Clear();
     while( (pszLine = ReadLine(fp)) != NULL )
     {
+        if( strstr(pszLine, "###") != NULL )
+            continue;
         apszClassesInfo.AddString(pszLine);
     }
 
@@ -237,7 +249,7 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
 
     nClasses = apszClassesInfo.size();
     if( nClasses == 0 )
-        return FALSE;
+        return false;
 
 /* ==================================================================== */
 /*      Read the attributes list.                                       */
@@ -245,10 +257,12 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
 
     if( EQUAL(pszProfile, "Additional_Military_Layers") )
     {
+        // Has been suppressed in GDAL data/
       snprintf( szTargetFile, sizeof(szTargetFile), "s57attributes_%s.csv", "aml" );
     }
     else if ( EQUAL(pszProfile, "Inland_Waterways") )
     {
+        // Has been suppressed in GDAL data/
        snprintf( szTargetFile, sizeof(szTargetFile),"s57attributes_%s.csv", "iw" );
     }
     else if( strlen(pszProfile) > 0 )
@@ -261,7 +275,16 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
     }
 
     if( !FindFile( szTargetFile, pszDirectory, bReportErr, &fp ) )
-        return FALSE;
+    {
+        if( EQUAL(pszProfile, "Additional_Military_Layers") ||
+            EQUAL(pszProfile, "Inland_Waterways") )
+        {
+            strcpy( szTargetFile, "s57attributes.csv" );
+            if( !FindFile( szTargetFile, pszDirectory, bReportErr, &fp ) )
+                return false;
+        }
+        return false;
+    }
 
 /* -------------------------------------------------------------------- */
 /*      Skip the line defining the column titles.                       */
@@ -275,7 +298,7 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
                   "s57attributes columns don't match expected format!\n" );
         if( fp != NULL )
             VSIFCloseL( fp );
-        return FALSE;
+        return false;
     }
 
 /* -------------------------------------------------------------------- */
@@ -283,12 +306,15 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
 /* -------------------------------------------------------------------- */
     while( (pszLine = ReadLine(fp)) != NULL )
     {
+        if( strstr(pszLine, "###") != NULL )
+            continue;
+
         char    **papszTokens = CSLTokenizeStringComplex( pszLine, ",",
                                                           TRUE, TRUE );
 
         if( CSLCount(papszTokens) < 5 )
         {
-            CPLAssert( false );
+            CSLDestroy(papszTokens);
             continue;
         }
 
@@ -339,18 +365,18 @@ int S57ClassRegistrar::LoadInfo( const char * pszDirectory,
         }
     } while( bModified );
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
 /*                         SelectClassByIndex()                         */
 /************************************************************************/
 
-int S57ClassContentExplorer::SelectClassByIndex( int nNewIndex )
+bool S57ClassContentExplorer::SelectClassByIndex( int nNewIndex )
 
 {
     if( nNewIndex < 0 || nNewIndex >= poRegistrar->nClasses )
-        return FALSE;
+        return false;
 
 /* -------------------------------------------------------------------- */
 /*      Do we have our cache of class information field lists?          */
@@ -372,14 +398,14 @@ int S57ClassContentExplorer::SelectClassByIndex( int nNewIndex )
 
     iCurrentClass = nNewIndex;
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
 /*                             SelectClass()                            */
 /************************************************************************/
 
-int S57ClassContentExplorer::SelectClass( int nOBJL )
+bool S57ClassContentExplorer::SelectClass( int nOBJL )
 
 {
     for( int i = 0; i < poRegistrar->nClasses; i++ )
@@ -395,7 +421,7 @@ int S57ClassContentExplorer::SelectClass( int nOBJL )
 /*                            SelectClass()                             */
 /************************************************************************/
 
-int S57ClassContentExplorer::SelectClass( const char *pszAcronym )
+bool S57ClassContentExplorer::SelectClass( const char *pszAcronym )
 
 {
     for( int i = 0; i < poRegistrar->nClasses; i++ )
@@ -403,11 +429,12 @@ int S57ClassContentExplorer::SelectClass( const char *pszAcronym )
         if( !SelectClassByIndex( i ) )
             continue;
 
-        if( strcmp(GetAcronym(),pszAcronym) == 0 )
-            return TRUE;
+        const char* pszClassAcronym = GetAcronym();
+        if( pszClassAcronym != NULL && strcmp(pszClassAcronym,pszAcronym) == 0 )
+            return true;
     }
 
-    return FALSE;
+    return false;
 }
 
 /************************************************************************/

@@ -29,6 +29,8 @@
 
 #include "dgnlibp.h"
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 static void DGNDumpRawElement( DGNHandle hDGN, DGNElemCore *psCore,
@@ -84,7 +86,7 @@ int main( int argc, char ** argv )
         }
         else if( strcmp(argv[iArg],"-r") == 0 && iArg < argc-1 )
         {
-            achRaw[MAX(0,MIN(127,atoi(argv[iArg+1])))] = 1;
+            achRaw[std::max(0, std::min(127, atoi(argv[iArg+1])))] = 1;
             bRaw = true;
             iArg++;
         }
@@ -124,7 +126,8 @@ int main( int argc, char ** argv )
 
             if( bReportExtents )
             {
-                DGNPoint sMin, sMax;
+                DGNPoint sMin = { 0.0, 0.0, 0.0 };
+                DGNPoint sMax = { 0.0, 0.0, 0.0 };
                 if( DGNGetElementExtents( hDGN, psElement, &sMin, &sMax ) )
                     printf( "  Extents: (%.6f,%.6f,%.6f)\n"
                             "        to (%.6f,%.6f,%.6f)\n",

@@ -71,7 +71,6 @@ class MSGNDataset : public GDALDataset
 
     CPLErr     GetGeoTransform( double * padfTransform );
     const char *GetProjectionRef();
-
 };
 
 /************************************************************************/
@@ -111,7 +110,6 @@ class MSGNRasterBand : public GDALRasterBand
     virtual double GetMaximum(int *pbSuccess = NULL );
     virtual const char* GetDescription() const { return band_description; }
 };
-
 
 /************************************************************************/
 /*                           MSGNRasterBand()                            */
@@ -338,7 +336,7 @@ CPLErr MSGNDataset::GetGeoTransform( double * padfTransform )
 const char *MSGNDataset::GetProjectionRef()
 
 {
-    return ( pszProjection );
+    return pszProjection;
 }
 
 /************************************************************************/
@@ -435,7 +433,6 @@ GDALDataset *MSGNDataset::Open( GDALOpenInfo * poOpenInfo )
         poDS->nRasterXSize *= 3;
         poDS->nRasterYSize *= 3;
     }
-
 
 /* -------------------------------------------------------------------- */
 /*      Create band information objects.                                */
@@ -538,7 +535,7 @@ GDALDataset *MSGNDataset::Open( GDALOpenInfo * poOpenInfo )
         delete open_info;
     }
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/

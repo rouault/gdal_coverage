@@ -96,7 +96,8 @@ int OGRAeronavFAADataSource::Open( const char * pszFilename )
         return FALSE;
 
     char szBuffer[10000];
-    int nbRead = (int)VSIFReadL(szBuffer, 1, sizeof(szBuffer) - 1, fp);
+    const int nbRead = static_cast<int>(
+        VSIFReadL(szBuffer, 1, sizeof(szBuffer) - 1, fp));
     szBuffer[nbRead] = '\0';
 
     const bool bIsDOF =
@@ -132,7 +133,7 @@ int OGRAeronavFAADataSource::Open( const char * pszFilename )
     {
         VSIFSeekL( fp, 0, SEEK_SET );
         nLayers = 1;
-        papoLayers = (OGRLayer**) CPLMalloc(sizeof(OGRLayer*));
+        papoLayers = static_cast<OGRLayer **>(CPLMalloc(sizeof(OGRLayer*)));
         papoLayers[0] = new OGRAeronavFAADOFLayer(fp, CPLGetBasename(pszFilename));
         return TRUE;
     }
@@ -140,7 +141,7 @@ int OGRAeronavFAADataSource::Open( const char * pszFilename )
     {
         VSIFSeekL( fp, 0, SEEK_SET );
         nLayers = 1;
-        papoLayers = (OGRLayer**) CPLMalloc(sizeof(OGRLayer*));
+        papoLayers = static_cast<OGRLayer **>(CPLMalloc(sizeof(OGRLayer*)));
         papoLayers[0] = new OGRAeronavFAANAVAIDLayer(fp, CPLGetBasename(pszFilename));
         return TRUE;
     }
@@ -148,7 +149,7 @@ int OGRAeronavFAADataSource::Open( const char * pszFilename )
     {
         VSIFSeekL( fp, 0, SEEK_SET );
         nLayers = 1;
-        papoLayers = (OGRLayer**) CPLMalloc(sizeof(OGRLayer*));
+        papoLayers = static_cast<OGRLayer **>(CPLMalloc(sizeof(OGRLayer*)));
         papoLayers[0] = new OGRAeronavFAAIAPLayer(fp, CPLGetBasename(pszFilename));
         return TRUE;
     }
@@ -159,7 +160,7 @@ int OGRAeronavFAADataSource::Open( const char * pszFilename )
             strstr(szBuffer, "STARS - STANDARD TERMINAL ARRIVALS") != NULL;
         VSIFSeekL( fp, 0, SEEK_SET );
         nLayers = 1;
-        papoLayers = (OGRLayer**) CPLMalloc(sizeof(OGRLayer*));
+        papoLayers = static_cast<OGRLayer **>(CPLMalloc(sizeof(OGRLayer*)));
         papoLayers[0] = new OGRAeronavFAARouteLayer(fp, CPLGetBasename(pszFilename), bIsDPOrSTARS);
         return TRUE;
     }

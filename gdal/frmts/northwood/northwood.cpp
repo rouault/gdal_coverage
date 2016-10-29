@@ -190,7 +190,6 @@ int nwt_ParseHeader( NWT_GRID * pGrd, char *nwtHeader )
 
     pGrd->cFormat += nwtHeader[1023];    // the msb for grd/grc was already set
 
-
     // there are more types than this - need to build other types for testing
     if( pGrd->cFormat & 0x80 )
     {
@@ -201,7 +200,6 @@ int nwt_ParseHeader( NWT_GRID * pGrd, char *nwtHeader )
     }
     else
         pGrd->nBitsPerPixel = nwtHeader[1023] * 8;
-
 
     if( pGrd->cFormat & 0x80 )        // if is GRC load the Dictionary
     {
@@ -273,7 +271,6 @@ int nwt_ParseHeader( NWT_GRID * pGrd, char *nwtHeader )
 
     return TRUE;
 }
-
 
 // Create a color gradient ranging from ZMin to Zmax using the color
 // inflections defined in grid
@@ -442,7 +439,6 @@ void nwt_HillShade( unsigned char *r, unsigned char *g, unsigned char *b,
     *b = rgb.b;
     return;
 }
-
 
 NWT_GRID *nwtOpenGrid( char *filename )
 {
@@ -644,7 +640,6 @@ HLS RGBtoHLS( NWT_RGB rgb )
     return hls;
 }
 
-
 /* utility routine for HLStoRGB */
 static short HueToRGB( short n1, short n2, short hue )
 {
@@ -657,15 +652,16 @@ static short HueToRGB( short n1, short n2, short hue )
 
     /* return r,g, or b value from this tridrant */
     if( hue < (HLSMAX / 6) )
-        return (n1 + (((n2 - n1) * hue + (HLSMAX / 12)) / (HLSMAX / 6)));
+        return n1 + (((n2 - n1) * hue + (HLSMAX / 12)) / (HLSMAX / 6));
     if( hue < (HLSMAX / 2) )
-        return (n2);
+        return n2;
     if( hue < ((HLSMAX * 2) / 3) )
-        return (n1 +
-                (((n2 - n1) * (((HLSMAX * 2) / 3) - hue) +
-                (HLSMAX / 12)) / (HLSMAX / 6)));
+        return
+            n1 +
+            (((n2 - n1) * (((HLSMAX * 2) / 3) - hue) +
+              (HLSMAX / 12)) / (HLSMAX / 6));
     else
-        return (n1);
+        return n1;
 }
 
 NWT_RGB HLStoRGB( HLS hls )
@@ -674,7 +670,9 @@ NWT_RGB HLStoRGB( HLS hls )
 
     if( hls.s == 0 )
     {                            /* achromatic case */
-        rgb.r = rgb.g = rgb.b = static_cast<unsigned char>( (hls.l * RGBMAX) / HLSMAX );
+        rgb.r = static_cast<unsigned char>( (hls.l * RGBMAX) / HLSMAX );
+        rgb.g = rgb.r;
+        rgb.b = rgb.r;
         if( hls.h != UNDEFINED )
         {
             /* ERROR */

@@ -228,7 +228,6 @@ RawRasterBand::~RawRasterBand()
     CPLFree( pLineBuffer );
 }
 
-
 /************************************************************************/
 /*                             SetAccess()                              */
 /************************************************************************/
@@ -251,7 +250,10 @@ CPLErr RawRasterBand::FlushCache()
 {
     CPLErr eErr = GDALRasterBand::FlushCache();
     if( eErr != CE_None )
+    {
+        bDirty = FALSE;
         return eErr;
+    }
 
     // If we have unflushed raw, flush it to disk now.
     if ( bDirty )
@@ -1009,7 +1011,6 @@ CPLErr RawRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                                        nPixelOffset );
                     }
                 }
-
             }
 
             bDirty = TRUE;
@@ -1205,7 +1206,6 @@ CPLVirtualMem  *RawRasterBand::GetVirtualMemAuto( GDALRWFlag eRWFlag,
 /*      RawDataset                                                      */
 /* ==================================================================== */
 /************************************************************************/
-
 
 /************************************************************************/
 /*                            RawDataset()                              */

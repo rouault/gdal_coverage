@@ -210,6 +210,8 @@
 
 #include "mitab.h"
 
+#include <cmath>
+
 CPL_CVSID("$Id$");
 
 /* -------------------------------------------------------------------- */
@@ -822,7 +824,6 @@ OGRSpatialReference *TABFile::GetSpatialRef()
     if (m_poSpatialRef != NULL)
         return m_poSpatialRef;
 
-
     /*-----------------------------------------------------------------
      * Fetch the parameters from the header.
      *----------------------------------------------------------------*/
@@ -844,6 +845,12 @@ OGRSpatialReference *TABFile::GetSpatialRef()
 /**********************************************************************
  *                   TABFile::GetSpatialRefFromTABProj()
  **********************************************************************/
+
+static bool TAB_EQUAL( double a, double b )
+{
+    // TODO(schwehr): Use std::abs.
+    return (a < b ? (b - a) : (a - b)) < 1.0e-10;
+}
 
 OGRSpatialReference* TABFile::GetSpatialRefFromTABProj(const TABProjInfo& sTABProj)
 {
@@ -1291,7 +1298,6 @@ OGRSpatialReference* TABFile::GetSpatialRefFromTABProj(const TABProjInfo& sTABPr
      * were in the order of 1e-150 when they should have actually been zeros,
      * we will use an epsilon in our scan instead of looking for equality.
      *----------------------------------------------------------------*/
-#define TAB_EQUAL(a, b) (((a)<(b) ? ((b)-(a)) : ((a)-(b))) < 1e-10)
     const MapInfoDatumInfo *psDatumInfo = NULL;
 
     for( int iDatumInfo = 0;
@@ -1399,7 +1405,8 @@ OGRSpatialReference* TABFile::GetSpatialRefFromTABProj(const TABProjInfo& sTABPr
     /*-----------------------------------------------------------------
      * Set the spheroid.
      *----------------------------------------------------------------*/
-    double      dfSemiMajor=0.0, dfInvFlattening=0.0;
+    double dfSemiMajor = 0.0;
+    double dfInvFlattening = 0.0;
     const char *pszSpheroidName = NULL;
 
     for( int i = 0; asSpheroidInfoList[i].nMapInfoId != -1; i++ )
@@ -1631,7 +1638,7 @@ int TABFile::GetTABProjFromSpatialRef(const OGRSpatialReference* poSpatialRef,
         parms[2] = 90.0;
         nParmCount = 3;
 
-        if( ABS((ABS(parms[1]) - 90)) > 0.001 )
+        if( std::abs((std::abs(parms[1]) - 90)) > 0.001 )
             sTABProj.nProjId = 28;
     }
 
@@ -1696,7 +1703,7 @@ int TABFile::GetTABProjFromSpatialRef(const OGRSpatialReference* poSpatialRef,
         parms[2] = 90.0;
         nParmCount = 3;
 
-        if( ABS((ABS(parms[1]) - 90)) > 0.001 )
+        if( std::abs((std::abs(parms[1]) - 90)) > 0.001 )
             sTABProj.nProjId = 29;
     }
 

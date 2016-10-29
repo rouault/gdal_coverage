@@ -69,7 +69,6 @@ OGRILI1Layer::~OGRILI1Layer()
         poFeatureDefn->Release();
 }
 
-
 OGRErr OGRILI1Layer::AddFeature (OGRFeature *poFeature)
 {
     nFeatures++;
@@ -322,7 +321,6 @@ int OGRILI1Layer::GeometryAppend( OGRGeometry *poGeometry )
             if( !GeometryAppend( poMember ) )
                 return FALSE;
         }
-
     }
     else if( poGeometry->getGeometryType() == wkbCompoundCurve
              || poGeometry->getGeometryType() == wkbCompoundCurveZ )
@@ -442,7 +440,6 @@ OGRErr OGRILI1Layer::CreateField( OGRFieldDefn *poField, int /* bApproxOK */ ) {
     return OGRERR_NONE;
 }
 
-
 /************************************************************************/
 /*                         Internal routines                            */
 /************************************************************************/
@@ -489,7 +486,6 @@ void OGRILI1Layer::JoinGeomLayers()
         CPLSetThreadLocalConfigOption("OGR_ARC_STEPSIZE", NULL);
 }
 
-
 void OGRILI1Layer::JoinSurfaceLayer( OGRILI1Layer* poSurfaceLineLayer,
                                      int nSurfaceFieldIndex )
 {
@@ -521,7 +517,7 @@ void OGRILI1Layer::JoinSurfaceLayer( OGRILI1Layer* poSurfaceLineLayer,
                         feature->GetGeomFieldRef(nSurfaceFieldIndex) );
             OGRMultiCurve *lines = reinterpret_cast<OGRMultiCurve *>(
                 linefeature->GetGeomFieldRef(0) );
-            for( int i = 0; i < lines->getNumGeometries(); i++ ) {
+            for( int i = 0; lines != NULL && i < lines->getNumGeometries(); i++ ) {
                 OGRCurve *line = reinterpret_cast<OGRCurve*>(lines->getGeometryRef(i));
                 OGRCurve *ring = NULL;
                 if (surface_lines) {
@@ -658,7 +654,6 @@ OGRMultiPolygon* OGRILI1Layer::Polygonize( OGRGeometryCollection* poLines,
     return new OGRMultiPolygon();
 #endif
 }
-
 
 void OGRILI1Layer::PolygonizeAreaLayer( OGRILI1Layer* poAreaLineLayer,
                                         int

@@ -182,7 +182,6 @@ bool OGRCloudantTableLayer::RunSpatialFilterQueryIfNecessary()
     return true;
 }
 
-
 /************************************************************************/
 /*                          GetSpatialView()                          */
 /************************************************************************/
@@ -226,7 +225,7 @@ void OGRCloudantTableLayer::GetSpatialView()
         }
 
         const size_t nLen = strlen(papszTokens[0]) + strlen(papszTokens[1]) + 2;
-        pszSpatialDDoc = (char*) CPLCalloc(nLen, 1);
+        pszSpatialDDoc = static_cast<char *>(CPLCalloc(nLen, 1));
 
         snprintf(pszSpatialDDoc, nLen, "%s/%s", papszTokens[0], papszTokens[1]);
 
@@ -253,7 +252,6 @@ void OGRCloudantTableLayer::WriteMetadata()
     osURI += "/";
     osURI += pszSpatialDDoc;
 
-
    json_object* poDDocObj = poDS->GET(osURI);
     if (poDDocObj == NULL)
         return;
@@ -278,7 +276,6 @@ void OGRCloudantTableLayer::WriteMetadata()
         json_object_put(poDDocObj);
         return;
     }
-
 
     if (poSRS)
     {
@@ -308,7 +305,6 @@ void OGRCloudantTableLayer::WriteMetadata()
             {
                 json_object_object_add(poDDocObj, "srsid",
                                    json_object_new_string(pszUrn));
-
             }
         }
     }

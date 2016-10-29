@@ -40,6 +40,8 @@
 #include "degrib18/degrib/filedatasource.h"
 #include "degrib18/degrib/memorydatasource.h"
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 static CPLMutex *hGRIBMutex = NULL;
@@ -372,7 +374,7 @@ CPLErr GRIBRasterBand::IReadBlock( int /* nBlockXOff */,
     if( nBlockYOff >= nGribDataYSize ) // off image?
         return CE_None;
 
-    const int nCopyWords = MIN(nRasterXSize,nGribDataXSize);
+    const int nCopyWords = std::min(nRasterXSize, nGribDataXSize);
 
     memcpy( pImage,
             m_Grib_Data + nGribDataXSize*(nGribDataYSize-nBlockYOff-1),
@@ -762,7 +764,7 @@ GDALDataset *GRIBDataset::Open( GDALOpenInfo * poOpenInfo )
                                  poOpenInfo->GetSiblingFiles() );
     CPLAcquireMutex(hGRIBMutex, 1000.0);
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/

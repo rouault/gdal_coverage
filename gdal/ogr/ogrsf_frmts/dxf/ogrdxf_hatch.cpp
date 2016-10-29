@@ -207,10 +207,10 @@ OGRErr OGRDXFLayer::CollectBoundaryPath( OGRGeometryCollection *poGC )
 /* -------------------------------------------------------------------- */
 /*      Read the edge type.                                             */
 /* -------------------------------------------------------------------- */
-#define ET_LINE         1
-#define ET_CIRCULAR_ARC 2
-#define ET_ELLIPTIC_ARC 3
-#define ET_SPLINE       4
+        const int ET_LINE = 1;
+        const int ET_CIRCULAR_ARC = 2;
+        const int ET_ELLIPTIC_ARC = 3;
+        // const int ET_SPLINE = 4;
 
         nCode = poDS->ReadValue(szLineBuf,sizeof(szLineBuf));
         if( nCode != 72 )
@@ -464,12 +464,13 @@ OGRErr OGRDXFLayer::CollectPolylinePath( OGRGeometryCollection *poGC )
     char szLineBuf[257];
     DXFSmoothPolyline oSmoothPolyline;
     double dfBulge = 0.0;
-    double dfX = 0.0, dfY = 0.0;
-    int bHaveX = FALSE;
-    int bHaveY = FALSE;
-    int bIsClosed = FALSE;
+    double dfX = 0.0;
+    double dfY = 0.0;
+    bool bHaveX = false;
+    bool bHaveY = false;
+    bool bIsClosed = false;
     int nVertexCount = -1;
-    int bHaveBulges = FALSE;
+    bool bHaveBulges = false;
 
 /* -------------------------------------------------------------------- */
 /*      Read the boundary path type.                                    */
@@ -486,11 +487,11 @@ OGRErr OGRDXFLayer::CollectPolylinePath( OGRGeometryCollection *poGC )
             break;
 
           case 72:
-            bHaveBulges = atoi(szLineBuf);
+            bHaveBulges = CPL_TO_BOOL(atoi(szLineBuf));
             break;
 
           case 73:
-            bIsClosed = atoi(szLineBuf);
+            bIsClosed = CPL_TO_BOOL(atoi(szLineBuf));
             break;
 
           case 10:
@@ -498,10 +499,10 @@ OGRErr OGRDXFLayer::CollectPolylinePath( OGRGeometryCollection *poGC )
             {
                 oSmoothPolyline.AddPoint(dfX, dfY, 0.0, dfBulge);
                 dfBulge = 0.0;
-                bHaveY = FALSE;
+                bHaveY = false;
             }
             dfX = CPLAtof(szLineBuf);
-            bHaveX = TRUE;
+            bHaveX = true;
             break;
 
           case 20:
@@ -509,15 +510,16 @@ OGRErr OGRDXFLayer::CollectPolylinePath( OGRGeometryCollection *poGC )
             {
                 oSmoothPolyline.AddPoint( dfX, dfY, 0.0, dfBulge );
                 dfBulge = 0.0;
-                bHaveX = bHaveY = FALSE;
+                bHaveX = false;
             }
             dfY = CPLAtof(szLineBuf);
-            bHaveY = TRUE;
+            bHaveY = true;
             if( bHaveX && bHaveY && !bHaveBulges )
             {
                 oSmoothPolyline.AddPoint( dfX, dfY, 0.0, dfBulge );
                 dfBulge = 0.0;
-                bHaveX = bHaveY = FALSE;
+                bHaveX = false;
+                bHaveY = false;
             }
             break;
 
@@ -527,7 +529,8 @@ OGRErr OGRDXFLayer::CollectPolylinePath( OGRGeometryCollection *poGC )
             {
                 oSmoothPolyline.AddPoint( dfX, dfY, 0.0, dfBulge );
                 dfBulge = 0.0;
-                bHaveX = bHaveY = FALSE;
+                bHaveX = false;
+                bHaveY = false;
             }
             break;
 

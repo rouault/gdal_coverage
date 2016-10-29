@@ -40,7 +40,6 @@ OGRXPlaneReader* OGRXPlaneCreateAwyFileReader( OGRXPlaneDataSource* poDataSource
     return poReader;
 }
 
-
 /************************************************************************/
 /*                         OGRXPlaneAwyReader()                         */
 /************************************************************************/
@@ -83,7 +82,6 @@ OGRXPlaneReader* OGRXPlaneAwyReader::CloneForLayer(OGRXPlaneLayer* poLayer)
     return poReader;
 }
 
-
 /************************************************************************/
 /*                       IsRecognizedVersion()                          */
 /************************************************************************/
@@ -92,7 +90,6 @@ int OGRXPlaneAwyReader::IsRecognizedVersion( const char* pszVersionString)
 {
     return STARTS_WITH_CI(pszVersionString, "640 Version");
 }
-
 
 /************************************************************************/
 /*                                Read()                                */
@@ -112,10 +109,10 @@ void OGRXPlaneAwyReader::Read()
         {
             CSLDestroy(papszTokens);
             papszTokens = NULL;
-            bEOF = TRUE;
+            bEOF = true;
             return;
         }
-        else if (nTokens == 0 || assertMinCol(10) == FALSE)
+        else if( nTokens == 0 || !assertMinCol(10) )
         {
             CSLDestroy(papszTokens);
             papszTokens = NULL;
@@ -127,12 +124,12 @@ void OGRXPlaneAwyReader::Read()
         CSLDestroy(papszTokens);
         papszTokens = NULL;
 
-        if (poInterestLayer && poInterestLayer->IsEmpty() == FALSE)
+        if( poInterestLayer && !poInterestLayer->IsEmpty() )
             return;
     }
 
     papszTokens = NULL;
-    bEOF = TRUE;
+    bEOF = true;
 }
 
 /************************************************************************/
@@ -141,8 +138,10 @@ void OGRXPlaneAwyReader::Read()
 
 void OGRXPlaneAwyReader::ParseRecord()
 {
-    double dfLat1, dfLon1;
-    double dfLat2, dfLon2;
+    double dfLat1 = 0.0;
+    double dfLon1 = 0.0;
+    double dfLat2 = 0.0;
+    double dfLon2 = 0.0;
 
     const char* pszFirstPointName = papszTokens[0];
     RET_IF_FAIL(readLatLon(&dfLat1, &dfLon1, 1));
@@ -197,7 +196,6 @@ void OGRXPlaneAwyReader::ParseRecord()
         }
     }
 }
-
 
 /************************************************************************/
 /*                       OGRXPlaneAirwaySegmentLayer()                  */
@@ -300,19 +298,22 @@ OGRFeature*
 /*                 EqualAirwayIntersectionFeature                       */
 /************************************************************************/
 
-static int EqualAirwayIntersectionFeatureFunc(const void* _feature1, const void* _feature2)
+static int EqualAirwayIntersectionFeatureFunc(
+    const void* _feature1, const void* _feature2 )
 {
     OGRFeature* feature1 = (OGRFeature*)_feature1;
     OGRFeature* feature2 = (OGRFeature*)_feature2;
-    if (strcmp(feature1->GetFieldAsString(0), feature2->GetFieldAsString(0)) == 0)
+    if (strcmp(feature1->GetFieldAsString(0),
+               feature2->GetFieldAsString(0)) == 0)
     {
         OGRPoint* point1 = (OGRPoint*) feature1->GetGeometryRef();
         OGRPoint* point2 = (OGRPoint*) feature2->GetGeometryRef();
-        return (point1->getX() == point2->getX() && point1->getY() == point2->getY());
+        return
+            point1->getX() == point2->getX() &&
+            point1->getY() == point2->getY();
     }
-    return FALSE;
+    return false;
 }
-
 
 /************************************************************************/
 /*                      OGRXPlaneAirwayHashDouble()                     */

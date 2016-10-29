@@ -139,7 +139,6 @@ static const TigerRecordInfo rt2_info =
     208         // <--- nRecordLength
   };
 
-
 static const TigerFieldInfo rt3_2000_Redistricting_fields[] = {
   // fieldname    fmt  type OFTType       beg  end  len  bDefine bSet bWrite
   { "TLID",       'R', 'N', OFTInteger,     6,  15,  10,       0,   0,     1 },
@@ -200,8 +199,8 @@ static const TigerFieldInfo rt3_fields[] = {
 
   { "VTDL",       'L', 'A', OFTString,    104, 107,   4,       1,   1,     1 },
   { "VTDR",       'L', 'A', OFTString,    108, 111,   4,       1,   1,     1 }
-
 };
+
 static const TigerRecordInfo rt3_info =
   {
     rt3_fields,
@@ -219,7 +218,7 @@ TigerCompleteChain::TigerCompleteChain(
     fpShape(NULL),
     panShapeRecordId(NULL),
     fpRT3(NULL),
-    bUsingRT3(FALSE),
+    bUsingRT3(false),
     psRT1Info(NULL),
     psRT2Info(NULL),
     psRT3Info(NULL)
@@ -231,10 +230,10 @@ TigerCompleteChain::TigerCompleteChain(
 
     if (poDS->GetVersion() >= TIGER_2002) {
       psRT1Info = &rt1_2002_info;
-      // bUsingRT3 = FALSE;
+      // bUsingRT3 = false;
     } else {
       psRT1Info = &rt1_info;
-      bUsingRT3 = TRUE;
+      bUsingRT3 = true;
     }
 
     psRT2Info = &rt2_info;
@@ -257,7 +256,8 @@ TigerCompleteChain::TigerCompleteChain(
     /*      Fields from type 3 record.  Eventually we should verify that    */
     /*      a .RT3 file is available before adding these fields.            */
     /* -------------------------------------------------------------------- */
-    if( bUsingRT3 ) {
+    if( bUsingRT3 )
+    {
       AddFieldDefns( psRT3Info, poFeatureDefn );
     }
 }
@@ -282,11 +282,11 @@ TigerCompleteChain::~TigerCompleteChain()
 /*                             SetModule()                              */
 /************************************************************************/
 
-int TigerCompleteChain::SetModule( const char * pszModuleIn )
+bool TigerCompleteChain::SetModule( const char * pszModuleIn )
 
 {
     if( !OpenFile( pszModuleIn, "1" ) )
-        return FALSE;
+        return false;
 
     EstablishFeatureCount();
 
@@ -366,7 +366,7 @@ int TigerCompleteChain::SetModule( const char * pszModuleIn )
         CPLFree( pszFilename );
     }
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -444,7 +444,6 @@ OGRFeature *TigerCompleteChain::GetFeature( int nRecordId )
         }
 
         SetFields( psRT3Info, poFeature, achRT3Rec );
-
     }
 
 /* -------------------------------------------------------------------- */
@@ -478,7 +477,7 @@ OGRFeature *TigerCompleteChain::GetFeature( int nRecordId )
 /*      and add the points to the passed line geometry.                 */
 /************************************************************************/
 
-int TigerCompleteChain::AddShapePoints( int nTLID, int nRecordId,
+bool TigerCompleteChain::AddShapePoints( int nTLID, int nRecordId,
                                         OGRLineString * poLine,
                                         CPL_UNUSED int nSeqNum )
 {
@@ -486,11 +485,11 @@ int TigerCompleteChain::AddShapePoints( int nTLID, int nRecordId,
 
     // -2 means an error occurred.
     if( nShapeRecId == -2 )
-        return FALSE;
+        return false;
 
     // -1 means there are no extra shape vertices, but things worked fine.
     if( nShapeRecId == -1 )
-        return TRUE;
+        return true;
 
 /* -------------------------------------------------------------------- */
 /*      Read all the sequential records with the same TLID.             */
@@ -509,7 +508,7 @@ int TigerCompleteChain::AddShapePoints( int nTLID, int nRecordId,
             CPLError( CE_Failure, CPLE_FileIO,
                       "Failed to seek to %d of %s2",
                       (nShapeRecId-1) * nShapeRecLen, pszModule );
-            return FALSE;
+            return false;
         }
 
         nBytesRead = static_cast<int>(VSIFReadL( achShapeRec, 1, psRT2Info->nRecordLength,
@@ -530,7 +529,7 @@ int TigerCompleteChain::AddShapePoints( int nTLID, int nRecordId,
                       "Failed to read %d bytes of record %d of %s2 at offset %d",
                       psRT2Info->nRecordLength, nShapeRecId, pszModule,
                       (nShapeRecId-1) * nShapeRecLen );
-            return FALSE;
+            return false;
         }
 
         if( atoi(GetField(achShapeRec,6,15)) != nTLID )
@@ -560,7 +559,7 @@ int TigerCompleteChain::AddShapePoints( int nTLID, int nRecordId,
             break;
     }
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -669,11 +668,11 @@ int TigerCompleteChain::GetShapeRecordId( int nChainId, int nTLID )
 /************************************************************************/
 /*                           SetWriteModule()                           */
 /************************************************************************/
-int TigerCompleteChain::SetWriteModule( const char *pszFileCode, int nRecLen,
-                                        OGRFeature *poFeature )
+bool TigerCompleteChain::SetWriteModule( const char *pszFileCode, int nRecLen,
+                                         OGRFeature *poFeature )
 
 {
-    const int bSuccess =
+    const bool bSuccess =
         TigerFileBase::SetWriteModule( pszFileCode, nRecLen, poFeature);
     if( !bSuccess )
         return bSuccess;
@@ -718,7 +717,7 @@ int TigerCompleteChain::SetWriteModule( const char *pszFileCode, int nRecLen,
         CPLFree( pszFilename );
     }
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -752,7 +751,8 @@ OGRErr TigerCompleteChain::CreateFeature( OGRFeature *poFeature )
     /* -------------------------------------------------------------------- */
     /*      Write geographic entity codes (RT3)                             */
     /* -------------------------------------------------------------------- */
-    if (bUsingRT3) {
+    if( bUsingRT3 )
+    {
       memset( szRecord, ' ', psRT3Info->nRecordLength );
       WriteFields( psRT3Info, poFeature, szRecord );
       WriteRecord( szRecord, psRT3Info->nRecordLength, "3", fpRT3 );

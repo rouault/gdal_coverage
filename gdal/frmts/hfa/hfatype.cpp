@@ -99,8 +99,8 @@ const char *HFAType::Initialize( const char * pszInput )
         pszInput = poNewField->Initialize( pszInput );
         if( pszInput != NULL )
         {
-            papoFields = (HFAField **)
-                CPLRealloc(papoFields, sizeof(void*) * (nFields+1) );
+            papoFields = static_cast<HFAField **>(
+                CPLRealloc(papoFields, sizeof(void*) * (nFields + 1)));
             papoFields[nFields++] = poNewField;
         }
         else
@@ -115,7 +115,7 @@ const char *HFAType::Initialize( const char * pszInput )
 /* -------------------------------------------------------------------- */
 /*      Collect the name.                                               */
 /* -------------------------------------------------------------------- */
-    pszInput++;  // skip `}'
+    pszInput++;  // Skip `}'
     int i = 0;  // Used after for.
     for( ; pszInput[i] != '\0' && pszInput[i] != ','; i++ ) {}
     if( pszInput[i] == '\0' )
@@ -208,20 +208,20 @@ HFAType::SetInstValue( const char * pszFieldPath,
 /*      Parse end of field name, possible index value and               */
 /*      establish where the remaining fields (if any) would start.      */
 /* -------------------------------------------------------------------- */
-    if( strchr(pszFieldPath,'[') != NULL )
+    if( strchr(pszFieldPath, '[') != NULL )
     {
-        const char *pszEnd = strchr(pszFieldPath,'[');
+        const char *pszEnd = strchr(pszFieldPath, '[');
 
         nArrayIndex = atoi(pszEnd+1);
         nNameLen = static_cast<int>(pszEnd - pszFieldPath);
 
-        pszRemainder = strchr(pszFieldPath,'.');
+        pszRemainder = strchr(pszFieldPath, '.');
         if( pszRemainder != NULL )
             pszRemainder++;
     }
-    else if( strchr(pszFieldPath,'.') != NULL )
+    else if( strchr(pszFieldPath, '.') != NULL )
     {
-        const char *pszEnd = strchr(pszFieldPath,'.');
+        const char *pszEnd = strchr(pszFieldPath, '.');
 
         nNameLen = static_cast<int>(pszEnd - pszFieldPath);
 
@@ -240,7 +240,7 @@ HFAType::SetInstValue( const char * pszFieldPath,
     int iField = 0;
     for( ; iField < nFields && nByteOffset < nDataSize; iField++ )
     {
-        if( EQUALN(pszFieldPath,papoFields[iField]->pszFieldName,nNameLen)
+        if( EQUALN(pszFieldPath, papoFields[iField]->pszFieldName, nNameLen)
             && papoFields[iField]->pszFieldName[nNameLen] == '\0' )
         {
             break;
@@ -250,7 +250,8 @@ HFAType::SetInstValue( const char * pszFieldPath,
             papoFields[iField]->GetInstBytes( pabyData+nByteOffset,
                                               nDataSize - nByteOffset );
 
-        if( nInc < 0 || nByteOffset > INT_MAX - nInc )
+        if( nInc < 0 ||
+            nByteOffset > INT_MAX - nInc )
         {
             CPLError(CE_Failure, CPLE_AppDefined, "Invalid return value");
             return CE_Failure;
@@ -282,37 +283,37 @@ HFAType::GetInstCount( const char * pszFieldPath,
                        GUInt32 /* nDataOffset */,
                        int nDataSize )
 {
-    /* int nArrayIndex = 0; */
+    // int nArrayIndex = 0;
     int nNameLen = 0;
-    /*const char *pszRemainder;*/
+    // const char *pszRemainder;
 
 /* -------------------------------------------------------------------- */
 /*      Parse end of field name, possible index value and               */
 /*      establish where the remaining fields (if any) would start.      */
 /* -------------------------------------------------------------------- */
-    if( strchr(pszFieldPath,'[') != NULL )
+    if( strchr(pszFieldPath, '[') != NULL )
     {
-        const char *pszEnd = strchr(pszFieldPath,'[');
+        const char *pszEnd = strchr(pszFieldPath, '[');
 
-        /* nArrayIndex = atoi(pszEnd+1); */
+        // nArrayIndex = atoi(pszEnd+1);
         nNameLen = static_cast<int>(pszEnd - pszFieldPath);
 
-        /*pszRemainder = strchr(pszFieldPath,'.');
-        if( pszRemainder != NULL )
-            pszRemainder++;*/
+        // pszRemainder = strchr(pszFieldPath, '.');
+        // if( pszRemainder != NULL )
+        //    pszRemainder++;
     }
-    else if( strchr(pszFieldPath,'.') != NULL )
+    else if( strchr(pszFieldPath, '.') != NULL )
     {
-        const char *pszEnd = strchr(pszFieldPath,'.');
+        const char *pszEnd = strchr(pszFieldPath, '.');
 
         nNameLen = static_cast<int>(pszEnd - pszFieldPath);
 
-        /*pszRemainder = pszEnd + 1;*/
+        // pszRemainder = pszEnd + 1;
     }
     else
     {
         nNameLen = static_cast<int>(strlen(pszFieldPath));
-        /*pszRemainder = NULL;*/
+        // pszRemainder = NULL;
     }
 
 /* -------------------------------------------------------------------- */
@@ -322,7 +323,7 @@ HFAType::GetInstCount( const char * pszFieldPath,
     int iField = 0;
     for( ; iField < nFields && nByteOffset < nDataSize; iField++ )
     {
-        if( EQUALN(pszFieldPath,papoFields[iField]->pszFieldName,nNameLen)
+        if( EQUALN(pszFieldPath, papoFields[iField]->pszFieldName,nNameLen)
             && papoFields[iField]->pszFieldName[nNameLen] == '\0' )
         {
             break;
@@ -332,7 +333,7 @@ HFAType::GetInstCount( const char * pszFieldPath,
             papoFields[iField]->GetInstBytes( pabyData+nByteOffset,
                                               nDataSize - nByteOffset );
 
-        if (nInc < 0 || nByteOffset > INT_MAX - nInc)
+        if( nInc < 0 || nByteOffset > INT_MAX - nInc )
         {
             CPLError(CE_Failure, CPLE_AppDefined, "Invalid return value");
             return -1;
@@ -369,7 +370,7 @@ HFAType::GetInstCount( const char * pszFieldPath,
 /*                                                the third abc struct. */
 /************************************************************************/
 
-int
+bool
 HFAType::ExtractInstValue( const char * pszFieldPath,
                            GByte *pabyData, GUInt32 nDataOffset, int nDataSize,
                            char chReqType, void *pReqReturn,
@@ -384,8 +385,8 @@ HFAType::ExtractInstValue( const char * pszFieldPath,
 /*      Parse end of field name, possible index value and               */
 /*      establish where the remaining fields (if any) would start.      */
 /* -------------------------------------------------------------------- */
-    const char *pszFirstArray = strchr(pszFieldPath,'[');
-    const char *pszFirstDot = strchr(pszFieldPath,'.');
+    const char *pszFirstArray = strchr(pszFieldPath, '[');
+    const char *pszFirstDot = strchr(pszFieldPath, '.');
 
     if( pszFirstArray != NULL
         && (pszFirstDot == NULL
@@ -396,7 +397,7 @@ HFAType::ExtractInstValue( const char * pszFieldPath,
         nArrayIndex = atoi(pszEnd+1);
         nNameLen = static_cast<int>(pszEnd - pszFieldPath);
 
-        pszRemainder = strchr(pszFieldPath,'.');
+        pszRemainder = strchr(pszFieldPath, '.');
         if( pszRemainder != NULL )
             pszRemainder++;
     }
@@ -421,7 +422,7 @@ HFAType::ExtractInstValue( const char * pszFieldPath,
     int iField = 0;
     for( ; iField < nFields && nByteOffset < nDataSize; iField++ )
     {
-        if( EQUALN(pszFieldPath,papoFields[iField]->pszFieldName,nNameLen)
+        if( EQUALN(pszFieldPath, papoFields[iField]->pszFieldName, nNameLen)
             && papoFields[iField]->pszFieldName[nNameLen] == '\0' )
         {
             break;
@@ -434,14 +435,14 @@ HFAType::ExtractInstValue( const char * pszFieldPath,
         if( nInc < 0 || nByteOffset > INT_MAX - nInc )
         {
             CPLError(CE_Failure, CPLE_AppDefined, "Invalid return value");
-            return FALSE;
+            return false;
         }
 
         nByteOffset += nInc;
     }
 
     if( iField == nFields || nByteOffset >= nDataSize )
-        return FALSE;
+        return false;
 
 /* -------------------------------------------------------------------- */
 /*      Extract this field value, and return.                           */
@@ -455,7 +456,6 @@ HFAType::ExtractInstValue( const char * pszFieldPath,
                           pnRemainingDataSize);
 }
 
-
 /************************************************************************/
 /*                           DumpInstValue()                            */
 /************************************************************************/
@@ -465,7 +465,7 @@ void HFAType::DumpInstValue( FILE * fpOut,
                              int nDataSize, const char * pszPrefix )
 
 {
-    for ( int iField = 0; iField < nFields && nDataSize > 0; iField++ )
+    for( int iField = 0; iField < nFields && nDataSize > 0; iField++ )
     {
         HFAField *poField = papoFields[iField];
 
@@ -473,7 +473,7 @@ void HFAType::DumpInstValue( FILE * fpOut,
                                 nDataSize, pszPrefix );
 
         const int nInstBytes = poField->GetInstBytes( pabyData, nDataSize );
-        if (nInstBytes < 0 || nDataOffset > UINT_MAX - nInstBytes)
+        if( nInstBytes < 0 || nDataOffset > UINT_MAX - nInstBytes )
         {
             CPLError(CE_Failure, CPLE_AppDefined, "Invalid return value");
             return;
@@ -505,7 +505,7 @@ int HFAType::GetInstBytes( GByte *pabyData, int nDataSize )
 
         const int nInstBytes = poField->GetInstBytes( pabyData,
                                                       nDataSize - nTotal );
-        if (nInstBytes < 0 || nTotal > INT_MAX - nInstBytes)
+        if( nInstBytes < 0 || nTotal > INT_MAX - nInstBytes )
         {
             CPLError(CE_Failure, CPLE_AppDefined, "Invalid return value");
             return -1;

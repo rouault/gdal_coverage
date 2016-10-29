@@ -28,7 +28,6 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-
 #include <string>
 #include "ogr_mysql.h"
 
@@ -360,6 +359,8 @@ int OGRMySQLDataSource::TestCapability( const char * pszCap )
         return TRUE;
     if( EQUAL(pszCap, ODsCDeleteLayer))
         return TRUE;
+    if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return TRUE;
     else
         return FALSE;
 }
@@ -376,7 +377,6 @@ OGRLayer *OGRMySQLDataSource::GetLayer( int iLayer )
     else
         return papoLayers[iLayer];
 }
-
 
 /************************************************************************/
 /*                      InitializeMetadataTables()                      */
@@ -526,8 +526,6 @@ OGRSpatialReference *OGRMySQLDataSource::FetchSRS( int nId )
 
     return poSRS;
 }
-
-
 
 /************************************************************************/
 /*                             FetchSRSId()                             */
@@ -773,7 +771,6 @@ void OGRMySQLDataSource::InterruptLongResult()
     }
 }
 
-
 /************************************************************************/
 /*                            DeleteLayer()                             */
 /************************************************************************/
@@ -816,7 +813,6 @@ OGRErr OGRMySQLDataSource::DeleteLayer( int iLayer)
         ReportError( osCommand );
         return OGRERR_FAILURE;
     }
-
 }
 
 /************************************************************************/
@@ -838,12 +834,10 @@ OGRMySQLDataSource::ICreateLayer( const char * pszLayerNameIn,
     char       *pszLayerName;
     // int        nDimension = 3; // MySQL only supports 2d currently
 
-
 /* -------------------------------------------------------------------- */
 /*      Make sure there isn't an active transaction already.            */
 /* -------------------------------------------------------------------- */
     InterruptLongResult();
-
 
     if( CPLFetchBool(papszOptions, "LAUNDER", true) )
         pszLayerName = LaunderName( pszLayerNameIn );

@@ -149,17 +149,17 @@ inline double round(double r) {
 /*---------------------------------------------------------------------
  * Set various constants used in generating the header block.
  *--------------------------------------------------------------------*/
-#define HDR_MAGIC_COOKIE        42424242
-#define HDR_VERSION_NUMBER      500
+static const GInt32 HDR_MAGIC_COOKIE = 42424242;
+static const GInt16 HDR_VERSION_NUMBER = 500;
 
-#define HDR_DEF_ORG_QUADRANT    1       // N-E Quadrant
-#define HDR_DEF_REFLECTXAXIS    0
+static const GByte HDR_DEF_ORG_QUADRANT = 1;  // N-E Quadrant
+static const GByte HDR_DEF_REFLECTXAXIS = 0;
 
 /*---------------------------------------------------------------------
  * The header block starts with an array of map object length constants.
  *--------------------------------------------------------------------*/
-#define HDR_OBJ_LEN_ARRAY_SIZE   73
-static const GByte  gabyObjLenArray[ HDR_OBJ_LEN_ARRAY_SIZE  ] = {
+static const GByte HDR_OBJ_LEN_ARRAY_SIZE = 73;
+static const GByte gabyObjLenArray[ HDR_OBJ_LEN_ARRAY_SIZE  ] = {
             0x00,0x0a,0x0e,0x15,0x0e,0x16,0x1b,0xa2,
             0xa6,0xab,0x1a,0x2a,0x2f,0xa5,0xa9,0xb5,
             0xa7,0xb5,0xd9,0x0f,0x17,0x23,0x13,0x1f,
@@ -171,12 +171,9 @@ static const GByte  gabyObjLenArray[ HDR_OBJ_LEN_ARRAY_SIZE  ] = {
             0xc7,0xcb,0xd0,0xd3,0xd7,0xfd,0xc2,0xc2,
             0xf9};
 
-
-
 /*=====================================================================
  *                      class TABMAPHeaderBlock
  *====================================================================*/
-
 
 /**********************************************************************
  *                   TABMAPHeaderBlock::TABMAPHeaderBlock()
@@ -269,7 +266,6 @@ void TABMAPHeaderBlock::InitMembersWithDefaultValues()
     m_sProj.dAffineParamE = 0.0;
     m_sProj.dAffineParamF = 0.0;
 }
-
 
 /**********************************************************************
  *                   TABMAPHeaderBlock::InitBlockFromData()
@@ -392,8 +388,10 @@ int     TABMAPHeaderBlock::InitBlockFromData(GByte *pabyBuf,
      */
     if (m_nMAPVersionNumber <= 100)
     {
-        m_XScale = m_YScale = pow(10.0, m_nCoordPrecision);
-        m_XDispl = m_YDispl = 0.0;
+        m_XScale = pow(10.0, m_nCoordPrecision);
+        m_YScale = m_XScale;
+        m_XDispl = 0.0;
+        m_YDispl = 0.0;
     }
 
     for( int i = 0; i < 6; i++ )
@@ -438,7 +436,6 @@ int     TABMAPHeaderBlock::InitBlockFromData(GByte *pabyBuf,
     return 0;
 }
 
-
 /**********************************************************************
  *                   TABMAPHeaderBlock::Int2Coordsys()
  *
@@ -450,8 +447,8 @@ int     TABMAPHeaderBlock::InitBlockFromData(GByte *pabyBuf,
  *
  * Returns 0 on success, -1 on error.
  **********************************************************************/
-int TABMAPHeaderBlock::Int2Coordsys(GInt32 nX, GInt32 nY,
-                                    double &dX, double &dY)
+int TABMAPHeaderBlock::Int2Coordsys( GInt32 nX, GInt32 nY,
+                                     double &dX, double &dY )
 {
     if (m_pabyBuf == NULL)
         return -1;
@@ -496,9 +493,9 @@ int TABMAPHeaderBlock::Int2Coordsys(GInt32 nX, GInt32 nY,
  *
  * Returns 0 on success, -1 on error.
  **********************************************************************/
-int TABMAPHeaderBlock::Coordsys2Int(double dX, double dY,
-                                    GInt32 &nX, GInt32 &nY,
-                                    GBool bIgnoreOverflow /*=FALSE*/)
+int TABMAPHeaderBlock::Coordsys2Int( double dX, double dY,
+                                     GInt32 &nX, GInt32 &nY,
+                                     GBool bIgnoreOverflow /*=FALSE*/ )
 {
     if (m_pabyBuf == NULL)
         return -1;
@@ -513,7 +510,8 @@ int TABMAPHeaderBlock::Coordsys2Int(double dX, double dY,
      * NOTE: double values must be used here, the limit of integer value
      * have been reached some times due to the very big numbers used here.
      *----------------------------------------------------------------*/
-    double dTempX, dTempY;
+    double dTempX = 0.0;
+    double dTempY = 0.0;
 
     if (m_nCoordOriginQuadrant==2 || m_nCoordOriginQuadrant==3 ||
         m_nCoordOriginQuadrant==0 )
@@ -584,16 +582,15 @@ int TABMAPHeaderBlock::Coordsys2Int(double dX, double dY,
  *
  * Returns 0 on success, -1 on error.
  **********************************************************************/
-int TABMAPHeaderBlock::ComprInt2Coordsys(GInt32 nCenterX, GInt32 nCenterY,
-                                         int nDeltaX, int nDeltaY,
-                                         double &dX, double &dY)
+int TABMAPHeaderBlock::ComprInt2Coordsys( GInt32 nCenterX, GInt32 nCenterY,
+                                          int nDeltaX, int nDeltaY,
+                                          double &dX, double &dY )
 {
     if (m_pabyBuf == NULL)
         return -1;
 
     return Int2Coordsys(nCenterX+nDeltaX, nCenterY+nDeltaY, dX, dY);
 }
-
 
 /**********************************************************************
  *                   TABMAPHeaderBlock::Int2CoordsysDist()
@@ -610,8 +607,8 @@ int TABMAPHeaderBlock::ComprInt2Coordsys(GInt32 nCenterX, GInt32 nCenterY,
  *
  * Returns 0 on success, -1 on error.
  **********************************************************************/
-int TABMAPHeaderBlock::Int2CoordsysDist(GInt32 nX, GInt32 nY,
-                                    double &dX, double &dY)
+int TABMAPHeaderBlock::Int2CoordsysDist( GInt32 nX, GInt32 nY,
+                                         double &dX, double &dY )
 {
     if (m_pabyBuf == NULL)
         return -1;
@@ -637,8 +634,8 @@ int TABMAPHeaderBlock::Int2CoordsysDist(GInt32 nX, GInt32 nY,
  *
  * Returns 0 on success, -1 on error.
  **********************************************************************/
-int TABMAPHeaderBlock::Coordsys2IntDist(double dX, double dY,
-                                        GInt32 &nX, GInt32 &nY)
+int TABMAPHeaderBlock::Coordsys2IntDist( double dX, double dY,
+                                         GInt32 &nX, GInt32 &nY )
 {
     if (m_pabyBuf == NULL)
         return -1;
@@ -648,7 +645,6 @@ int TABMAPHeaderBlock::Coordsys2IntDist(double dX, double dY,
 
     return 0;
 }
-
 
 /**********************************************************************
  *                   TABMAPHeaderBlock::SetCoordsysBounds()
@@ -661,8 +657,8 @@ int TABMAPHeaderBlock::Coordsys2IntDist(double dX, double dY,
  *
  * Returns 0 on success, -1 on error.
  **********************************************************************/
-int TABMAPHeaderBlock::SetCoordsysBounds(double dXMin, double dYMin,
-                                         double dXMax, double dYMax)
+int TABMAPHeaderBlock::SetCoordsysBounds( double dXMin, double dYMin,
+                                          double dXMax, double dYMax )
 {
 //printf("SetCoordsysBounds(%10g, %10g, %10g, %10g)\n", dXMin, dYMin, dXMax, dYMax);
     /*-----------------------------------------------------------------
@@ -728,7 +724,7 @@ int TABMAPHeaderBlock::GetMapObjectSize(int nObjType)
     }
 
     // Byte 0x80 is set for objects that have coordinates inside type 3 blocks
-    return (m_pabyBuf[nObjType] & 0x7f);
+    return m_pabyBuf[nObjType] & 0x7f;
 }
 
 /**********************************************************************
@@ -758,7 +754,6 @@ GBool TABMAPHeaderBlock::MapObjectUsesCoordBlock(int nObjType)
 
     return ((m_pabyBuf[nObjType] & 0x80) != 0) ? TRUE: FALSE;
 }
-
 
 /**********************************************************************
  *                   TABMAPHeaderBlock::GetProjInfo()
@@ -804,7 +799,6 @@ int  TABMAPHeaderBlock::SetProjInfo(TABProjInfo *psProjInfo)
 
     return 0;
 }
-
 
 /**********************************************************************
  *                   TABMAPHeaderBlock::CommitToFile()
@@ -1090,7 +1084,6 @@ void TABMAPHeaderBlock::Dump(FILE *fpOut /*=NULL*/)
                     fprintf(fpOut, "\n");
             }
         }
-
     }
 
     fflush(fpOut);

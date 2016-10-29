@@ -45,8 +45,7 @@ OGRSDTSLayer::OGRSDTSLayer( SDTSTransfer * poTransferIn, int iLayerIn,
     poTransfer(poTransferIn),
     iLayer(iLayerIn),
     poReader(poTransferIn->GetLayerIndexedReader( iLayerIn )),
-    poDS(poDSIn),
-    bPolygonsBuilt(FALSE)
+    poDS(poDSIn)
 {
 /* -------------------------------------------------------------------- */
 /*      Define the feature.                                             */
@@ -177,7 +176,6 @@ OGRSDTSLayer::OGRSDTSLayer( SDTSTransfer * poTransferIn, int iLayerIn,
             }
 
             CPLFree( pszFieldName );
-
         } /* next iSF (subfield) */
     } /* next iTable */
     CSLDestroy( papszATIDRefs );
@@ -404,7 +402,6 @@ OGRFeature * OGRSDTSLayer::GetNextUnfilteredFeature()
 
     return poFeature;
 }
-
 
 /************************************************************************/
 /*                           GetNextFeature()                           */

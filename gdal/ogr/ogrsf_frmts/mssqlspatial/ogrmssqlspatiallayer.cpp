@@ -315,7 +315,6 @@ CPLErr OGRMSSQLSpatialLayer::BuildFeatureDefn( const char *pszLayerName,
     return CE_None;
 }
 
-
 /************************************************************************/
 /*                            ResetReading()                            */
 /************************************************************************/
@@ -376,9 +375,10 @@ OGRFeature *OGRMSSQLSpatialLayer::GetNextRawFeature()
 /* -------------------------------------------------------------------- */
     OGRFeature *poFeature = new OGRFeature( poFeatureDefn );
 
-    if( pszFIDColumn != NULL && poStmt->GetColId(pszFIDColumn) > -1 )
-        poFeature->SetFID(
-            CPLAtoGIntBig(poStmt->GetColData(poStmt->GetColId(pszFIDColumn))) );
+    const char* pszFID;
+    if( pszFIDColumn != NULL && poStmt->GetColId(pszFIDColumn) > -1 &&
+        (pszFID = poStmt->GetColData(poStmt->GetColId(pszFIDColumn))) != NULL )
+        poFeature->SetFID( CPLAtoGIntBig(pszFID) );
     else
         poFeature->SetFID( iNextShapeId );
 

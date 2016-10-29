@@ -38,12 +38,11 @@ CPL_CVSID("$Id$");
 /*                Local helper functions                                */
 /************************************************************************/
 
-static double GetRadius(double bulge, double length)
+static double GetRadius( double bulge, double length )
 {
     const double h = (bulge * length) / 2;
     return (h / 2) + (length * length / (8 * h));
 }
-
 
 static double GetLength
 (
@@ -54,7 +53,6 @@ static double GetLength
     return sqrt(pow(end.x - start.x, 2) + pow(end.y - start.y, 2));
 }
 
-
 static double GetAngle
 (
     const DXFSmoothPolylineVertex& start,
@@ -64,14 +62,12 @@ static double GetAngle
     return atan2((start.y - end.y), (start.x - end.x)) * 180.0 / M_PI;
 }
 
-
 static double GetOGRangle(double angle)
 {
     return angle > 0.0
             ? -(angle - 180.0)
             : -(angle + 180.0);
 }
-
 
 // TODO: Spelling Tesselate -> Tessellate
 /************************************************************************/
@@ -81,7 +77,6 @@ static double GetOGRangle(double angle)
 OGRGeometry* DXFSmoothPolyline::Tesselate() const
 {
     assert(!m_vertices.empty());
-
 
 /* -------------------------------------------------------------------- */
 /*      If polyline is one vertex, convert it to a point                */
@@ -94,7 +89,6 @@ OGRGeometry* DXFSmoothPolyline::Tesselate() const
             poPt->flattenTo2D();
         return poPt;
     }
-
 
 /* -------------------------------------------------------------------- */
 /*      Otherwise, presume a line string                                */
@@ -135,14 +129,12 @@ OGRGeometry* DXFSmoothPolyline::Tesselate() const
         begin = end;
     }
 
-
 /* -------------------------------------------------------------------- */
 /*      Flatten to 2D if necessary                                      */
 /* -------------------------------------------------------------------- */
 
     if(bConstantZ && dfZ == 0.0 && m_dim == 2)
         poLS->flattenTo2D();
-
 
 /* -------------------------------------------------------------------- */
 /*      If polyline is closed, convert linestring to a linear ring      */
@@ -170,7 +162,6 @@ OGRGeometry* DXFSmoothPolyline::Tesselate() const
     return poLS;
 }
 
-
 /************************************************************************/
 /*                DXFSmoothPolyline::EmitArc()                        */
 /************************************************************************/
@@ -184,8 +175,8 @@ void DXFSmoothPolyline::EmitArc(
 {
     assert(poLS);
 
-    double  ogrArcRotation = 0.0,
-            ogrArcRadius = fabs(radius);
+    double ogrArcRotation = 0.0;
+    const double ogrArcRadius = fabs(radius);
 
 /* -------------------------------------------------------------------- */
 /*      Set arc's direction and keep bulge positive                     */
@@ -232,7 +223,6 @@ void DXFSmoothPolyline::EmitArc(
 
     const double linedir = end.y > start.y ? 1.0 : -1.0;
 
-
 /* -------------------------------------------------------------------- */
 /*      Get arc's starting angle.                                       */
 /* -------------------------------------------------------------------- */
@@ -268,7 +258,6 @@ void DXFSmoothPolyline::EmitArc(
     if(bClockwise && (linedir == 1.0))
         ogrArcRotation = linedir * 180.0;
 
-
 /* -------------------------------------------------------------------- */
 /*      Tessellate the arc segment and append to the linestring.        */
 /* -------------------------------------------------------------------- */
@@ -284,8 +273,6 @@ void DXFSmoothPolyline::EmitArc(
 
     delete poArcpoLS;
 }
-
-
 
 /************************************************************************/
 /*                DXFSmoothPolyline::EmitLine()                         */
@@ -311,7 +298,6 @@ void DXFSmoothPolyline::EmitLine(
         bConstantZ ? dfZ : end.z);
 }
 
-
 /************************************************************************/
 /*                DXFSmoothPolyline::Close()                            */
 /************************************************************************/
@@ -332,7 +318,6 @@ void DXFSmoothPolyline::Close()
         m_bClosed = true;
     }
 }
-
 
 /************************************************************************/
 /*                DXFSmoothPolyline::HasConstantZ()                     */

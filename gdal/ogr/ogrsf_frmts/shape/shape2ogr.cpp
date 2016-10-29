@@ -31,6 +31,8 @@
 #include "ogrshape.h"
 
 #include "cpl_conv.h"
+
+#include <algorithm>
 #include <limits>
 
 CPL_CVSID("$Id$");
@@ -91,7 +93,6 @@ static OGRLinearRing * CreateLinearRing(
 
     return poRing;
 }
-
 
 /************************************************************************/
 /*                          SHPReadOGRObject()                          */
@@ -1434,8 +1435,8 @@ OGRErr SHPWriteOGRFeature( SHPHandle hSHP, DBFHandle hDBF,
                            OGRFeatureDefn * poDefn,
                            OGRFeature * poFeature,
                            const char *pszSHPEncoding,
-                           int* pbTruncationWarningEmitted,
-                           int bRewind )
+                           bool* pbTruncationWarningEmitted,
+                           bool bRewind )
 
 {
 #if DEBUG_VERBOSE
@@ -1460,7 +1461,7 @@ OGRErr SHPWriteOGRFeature( SHPHandle hSHP, DBFHandle hDBF,
         const OGRErr eErr =
             SHPWriteOGRObject( hSHP, static_cast<int>(poFeature->GetFID()),
                                poFeature->GetGeometryRef(),
-                               CPL_TO_BOOL(bRewind),
+                               bRewind,
                                poDefn->GetGeomType() );
         if( eErr != OGRERR_NONE )
             return eErr;
@@ -1542,7 +1543,7 @@ OGRErr SHPWriteOGRFeature( SHPHandle hSHP, DBFHandle hDBF,
               {
                   if( !(*pbTruncationWarningEmitted) )
                   {
-                      *pbTruncationWarningEmitted = TRUE;
+                      *pbTruncationWarningEmitted = true;
                       CPLError(
                           CE_Warning, CPLE_AppDefined,
                           "Value '%s' of field %s has been truncated to %d "
@@ -1601,7 +1602,7 @@ OGRErr SHPWriteOGRFeature( SHPHandle hSHP, DBFHandle hDBF,
               int nFieldWidth = poFieldDefn->GetWidth();
               snprintf(szFormat, sizeof(szFormat),
                        "%%%d" CPL_FRMT_GB_WITHOUT_PREFIX "d",
-                       MIN(nFieldWidth, static_cast<int>(sizeof(szValue)) - 1));
+                       std::min(nFieldWidth, static_cast<int>(sizeof(szValue)) - 1));
               snprintf(szValue, sizeof(szValue), szFormat,
                        poFeature->GetFieldAsInteger64(iField));
 
@@ -1685,7 +1686,6 @@ OGRErr SHPWriteOGRFeature( SHPHandle hSHP, DBFHandle hDBF,
               break;
           }
         }
-
     }
 
     return OGRERR_NONE;

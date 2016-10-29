@@ -70,7 +70,6 @@ class SRTMHGTDataset : public GDALPamDataset
     static GDALDataset* CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
                                     int bStrict, char ** papszOptions,
                                     GDALProgressFunc pfnProgress, void * pProgressData );
-
 };
 
 /************************************************************************/
@@ -188,7 +187,6 @@ GDALColorInterp SRTMHGTRasterBand::GetColorInterpretation()
 /* ==================================================================== */
 /************************************************************************/
 
-
 /************************************************************************/
 /*                            SRTMHGTDataset()                              */
 /************************************************************************/
@@ -234,7 +232,7 @@ CPLErr SRTMHGTDataset::GetGeoTransform(double * padfTransform)
 const char *SRTMHGTDataset::GetProjectionRef()
 
 {
-    return( SRS_WKT_WGS84 );
+    return SRS_WKT_WGS84;
 }
 
 /************************************************************************/

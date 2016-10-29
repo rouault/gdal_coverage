@@ -175,7 +175,6 @@ int OGRNTFDataSource::GetLayerCount()
         return nLayers + 1;
 }
 
-
 /************************************************************************/
 /*                                Open()                                */
 /************************************************************************/
@@ -296,7 +295,6 @@ int OGRNTFDataSource::Open( const char * pszFilename, int bTestOpen,
 
             if( j == 80 || szHeader[j-1] != '%' )
                 continue;
-
         }
 
         NTFFileReader *poFR = new NTFFileReader( this );
@@ -391,9 +389,17 @@ void OGRNTFDataSource::ResetReading()
 /*                           GetNextFeature()                           */
 /************************************************************************/
 
-OGRFeature *OGRNTFDataSource::GetNextFeature()
+OGRFeature *OGRNTFDataSource::GetNextFeature( OGRLayer** ppoBelongingLayer,
+                                              double* pdfProgressPct,
+                                              GDALProgressFunc /* pfnProgress */,
+                                              void* /* pProgressData */ )
 
 {
+    if( pdfProgressPct != NULL )
+        *pdfProgressPct = 0.0;
+    if( ppoBelongingLayer != NULL )
+        *ppoBelongingLayer = NULL;
+
     OGRFeature  *poFeature = NULL;
 
 /* -------------------------------------------------------------------- */
@@ -447,7 +453,7 @@ OGRFeature *OGRNTFDataSource::GetNextFeature()
         nCurrentPos = -1;
         nCurrentFID = 1;
 
-        poFeature = GetNextFeature();
+        poFeature = GetNextFeature(NULL, NULL, NULL, NULL);
     }
     else
     {

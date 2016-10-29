@@ -27,6 +27,9 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+// ncsjpcbuffer.h needs the min and max macros.
+#undef NOMINMAX
+
 #include "gdal_ecw.h"
 #include "gdaljp2metadata.h"
 #include "ogr_spatialref.h"
@@ -718,11 +721,13 @@ CPLErr GDALECWCompressor::Initialize(
             bSigned = TRUE;
             break;
 
+#if ECWSDK_VERSION >= 40
         case GDT_Float64:
             psClient->eCellType = NCSCT_IEEE8;
             nBits = 64;
             bSigned = TRUE;
             break;
+#endif
 
         default:
             // We treat complex types as float.
@@ -1480,7 +1485,9 @@ ECWCreateCopyJPEG2000( const char * pszFilename, GDALDataset *poSrcDS,
         && eDataType != GDT_Int32
         && eDataType != GDT_UInt32
         && eDataType != GDT_Float32
+#if ECWSDK_VERSION >= 40
         && eDataType != GDT_Float64
+#endif
         && bStrict )
     {
         CPLError( CE_Failure, CPLE_NotSupported,
@@ -1799,7 +1806,6 @@ CPLErr ECWWriteDataset::SetProjection( const char *pszWKT )
     return CE_None;
 }
 
-
 /************************************************************************/
 /*                             Crystalize()                             */
 /************************************************************************/
@@ -1870,7 +1876,6 @@ CPLErr ECWWriteDataset::FlushLine()
         for( int i = 0; i < nBands; i++ )
             papOutputLine[i] =
                 (void *) (pabyBILBuffer + i * nWordSize * nRasterXSize);
-
 
         eErr =  oCompressor.ourWriteLineBIL( (UINT16) nBands, papOutputLine );
         CPLFree( papOutputLine );

@@ -42,6 +42,7 @@
   #endif
 #endif
 
+#include <algorithm>
 #include <map>
 #include <vector>
 #include <utility>
@@ -120,8 +121,6 @@ static int (*PyBuffer_FillInfo)(Py_buffer *view, PyObject *obj, void *buf,
                                 size_t len, int readonly, int infoflags) = NULL;
 static PyObject* (*PyMemoryView_FromBuffer)(Py_buffer *view) = NULL;
 
-
-
 static PyThreadState* gphThreadState = NULL;
 
 /************************************************************************/
@@ -187,7 +186,6 @@ static PyObject* GDALCreateNumpyArray(PyObject* pCreateArray,
     return poNumpyArray;
 }
 
-
 /* MinGW32 might define HAVE_DLFCN_H, so skip the unix implementation */
 #if defined(HAVE_DLFCN_H) && !defined(WIN32)
 
@@ -234,6 +232,10 @@ typedef HMODULE LibraryHandle;
 /*                          LoadPythonAPI()                             */
 /************************************************************************/
 
+#if defined(LOAD_NOCHECK_WITH_NAME) && defined(HAVE_DLFCN_H) && !defined(WIN32)
+static LibraryHandle libHandleStatic = NULL;
+#endif
+
 /** Load the subset of the Python C API that we need */
 static bool LoadPythonAPI()
 {
@@ -245,7 +247,7 @@ static bool LoadPythonAPI()
 
 #ifdef LOAD_NOCHECK_WITH_NAME
     // The static here is just to avoid Coverity warning about resource leak.
-    static LibraryHandle libHandle = NULL;
+    LibraryHandle libHandle = NULL;
 
     const char* pszPythonSO = CPLGetConfigOption("PYTHONSO", NULL);
 #if defined(HAVE_DLFCN_H) && !defined(WIN32)
@@ -253,6 +255,7 @@ static bool LoadPythonAPI()
     // First try in the current process in case the python symbols would
     // be already loaded
     libHandle = dlopen(NULL, RTLD_LAZY);
+    libHandleStatic = libHandle;
     if( libHandle != NULL &&
         dlsym(libHandle, "Py_SetProgramName") != NULL )
     {
@@ -307,7 +310,7 @@ static bool LoadPythonAPI()
 #endif
         CPLString osVersion;
         char* pszPath = getenv("PATH");
-        if( pszPath != NULL 
+        if( pszPath != NULL
 #ifdef DEBUG
            // For testing purposes
            && CPLTestBool( CPLGetConfigOption(
@@ -350,7 +353,8 @@ static bool LoadPythonAPI()
                                       nBufSize ) );
                         if (nBytes != -1)
                         {
-                            szPointerFilename[MIN(nBytes, nBufSize - 1)] = 0;
+                            szPointerFilename[std::min(nBytes,
+                                                       nBufSize - 1)] = 0;
                             CPLString osFilename(
                                             CPLGetFilename(szPointerFilename));
                             CPLDebug("VRT", "Which is an alias to: %s",
@@ -464,8 +468,10 @@ static bool LoadPythonAPI()
     EnumProcessModules(hProcess, ahModules, sizeof(ahModules),
                         &nSizeNeeded);
 
-    int nModules = MIN(100, nSizeNeeded / sizeof(HMODULE));
-    for(int i=0;i<nModules;i++)
+    const size_t nModules =
+        std::min(size_t(100),
+                 static_cast<size_t>(nSizeNeeded) / sizeof(HMODULE));
+    for( size_t i = 0; i < nModules; i++ )
     {
         if( GetProcAddress(ahModules[i], "Py_SetProgramName") )
         {
@@ -538,7 +544,7 @@ static bool LoadPythonAPI()
     {
         CPLString osDLLName;
         char* pszPath = getenv("PATH");
-        if( pszPath != NULL 
+        if( pszPath != NULL
 #ifdef DEBUG
            // For testing purposes
            && CPLTestBool( CPLGetConfigOption(
@@ -802,7 +808,6 @@ static CPLString GetPyExceptionString()
             poPyTraceback ? poPyGDALFormatException3 : poPyGDALFormatException2,
             pyArgs, NULL );
         Py_DecRef(pyArgs);
-
 
         if( PyErr_Occurred() )
         {
@@ -1525,13 +1530,12 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         return CE_Failure;
     }
 
-    int typesize = GDALGetDataTypeSizeBytes(eBufType);
-    if( GDALGetDataTypeSize(eBufType) % 8 > 0 ) typesize++;
+    const int nBufTypeSize = GDALGetDataTypeSizeBytes(eBufType);
     GDALDataType eSrcType = eSourceTransferType;
     if( eSrcType == GDT_Unknown || eSrcType >= GDT_TypeCount ) {
         eSrcType = eBufType;
     }
-    const int sourcesize = GDALGetDataTypeSizeBytes(eSrcType);
+    const int nSrcTypeSize = GDALGetDataTypeSizeBytes(eSrcType);
 
 /* -------------------------------------------------------------------- */
 /*      Initialize the buffer to some background value. Use the         */
@@ -1541,7 +1545,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
     {
         // Do nothing
     }
-    else if( nPixelSpace == typesize &&
+    else if( nPixelSpace == nBufTypeSize &&
         (!m_bNoDataValueSet || m_dfNoDataValue == 0) ) {
         memset( pData, 0,
                 static_cast<size_t>(nBufXSize * nBufYSize * nPixelSpace) );
@@ -1611,7 +1615,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         = reinterpret_cast<void **>( CPLMalloc(sizeof(void *) * nSources) );
     for( int iSource = 0; iSource < nSources; iSource++ ) {
         pBuffers[iSource] =
-            VSI_MALLOC_VERBOSE(sourcesize * nExtBufXSize * nExtBufYSize);
+            VSI_MALLOC3_VERBOSE(nSrcTypeSize, nExtBufXSize, nExtBufYSize);
         if( pBuffers[iSource] == NULL )
         {
             for (int i = 0; i < iSource; i++) {
@@ -1629,13 +1633,14 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         /* ------------------------------------------------------------ */
         if( !m_bNoDataValueSet || m_dfNoDataValue == 0 )
         {
-            memset( pBuffers[iSource], 0, sourcesize * nExtBufXSize * nExtBufYSize );
+            memset( pBuffers[iSource], 0, static_cast<size_t>(nSrcTypeSize) *
+                    nExtBufXSize * nExtBufYSize );
         }
         else
         {
             GDALCopyWords( &m_dfNoDataValue, GDT_Float64, 0,
                            reinterpret_cast<GByte *>( pBuffers[iSource] ),
-                           eSrcType, sourcesize,
+                           eSrcType, nSrcTypeSize,
                            nExtBufXSize * nExtBufYSize );
         }
     }
@@ -1696,13 +1701,13 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                         sExtraArg.dfYSize - nRasterYSize) / dfYRatio);
             sExtraArg.dfYSize = nRasterYSize - sExtraArg.dfYOff;
         }
-    
+
         nXOffExt = static_cast<int>(sExtraArg.dfXOff);
         nYOffExt = static_cast<int>(sExtraArg.dfYOff);
-        nXSizeExt = MIN(static_cast<int>(sExtraArg.dfXSize + 0.5),
-                        nRasterXSize - nXOffExt);
-        nYSizeExt = MIN(static_cast<int>(sExtraArg.dfYSize + 0.5),
-                        nRasterYSize - nYOffExt);
+        nXSizeExt = std::min(static_cast<int>(sExtraArg.dfXSize + 0.5),
+                             nRasterXSize - nXOffExt);
+        nYSizeExt = std::min(static_cast<int>(sExtraArg.dfYSize + 0.5),
+                             nRasterYSize - nYOffExt);
     }
 
     // Load values for sources into packed buffers.
@@ -1712,27 +1717,27 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         eErr = reinterpret_cast<VRTSource *>( papoSources[iSource] )->RasterIO(
             nXOffExt, nYOffExt, nXSizeExt, nYSizeExt,
             pabyBuffer + (nYShiftInBuffer * nExtBufXSize +
-                                            nXShiftInBuffer) * sourcesize,
+                                            nXShiftInBuffer) * nSrcTypeSize,
             nExtBufXSizeReq, nExtBufYSizeReq,
             eSrcType,
-            sourcesize,
-            sourcesize * nExtBufXSize,
+            nSrcTypeSize,
+            nSrcTypeSize * nExtBufXSize,
             &sExtraArg );
 
         // Extend first lines
         for( int iY = 0; iY < nYShiftInBuffer; iY++ )
         {
-            memcpy( pabyBuffer + iY * nExtBufXSize * sourcesize,
-                    pabyBuffer + nYShiftInBuffer * nExtBufXSize * sourcesize,
-                    nExtBufXSize * sourcesize );
+            memcpy( pabyBuffer + iY * nExtBufXSize * nSrcTypeSize,
+                    pabyBuffer + nYShiftInBuffer * nExtBufXSize * nSrcTypeSize,
+                    nExtBufXSize * nSrcTypeSize );
         }
         // Extend last lines
         for( int iY = nYShiftInBuffer + nExtBufYSizeReq; iY < nExtBufYSize; iY++ )
         {
-            memcpy( pabyBuffer + iY * nExtBufXSize * sourcesize,
+            memcpy( pabyBuffer + iY * nExtBufXSize * nSrcTypeSize,
                     pabyBuffer + (nYShiftInBuffer + nExtBufYSizeReq - 1) *
-                                                    nExtBufXSize * sourcesize,
-                    nExtBufXSize * sourcesize );
+                                                    nExtBufXSize * nSrcTypeSize,
+                    nExtBufXSize * nSrcTypeSize );
         }
         // Extend first cols
         if( nXShiftInBuffer )
@@ -1741,10 +1746,10 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
             {
                 for( int iX = 0; iX < nXShiftInBuffer; iX++ )
                 {
-                    memcpy( pabyBuffer + (iY * nExtBufXSize + iX) * sourcesize,
+                    memcpy( pabyBuffer + (iY * nExtBufXSize + iX) * nSrcTypeSize,
                             pabyBuffer + (iY * nExtBufXSize +
-                                                nXShiftInBuffer) * sourcesize,
-                            sourcesize );
+                                                nXShiftInBuffer) * nSrcTypeSize,
+                            nSrcTypeSize );
                 }
             }
         }
@@ -1756,10 +1761,10 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
                 for( int iX = nXShiftInBuffer + nExtBufXSizeReq;
                          iX < nExtBufXSize; iX++ )
                 {
-                    memcpy( pabyBuffer + (iY * nExtBufXSize + iX) * sourcesize,
+                    memcpy( pabyBuffer + (iY * nExtBufXSize + iX) * nSrcTypeSize,
                             pabyBuffer + (iY * nExtBufXSize + nXShiftInBuffer +
-                                            nExtBufXSizeReq - 1) * sourcesize,
-                            sourcesize );
+                                            nExtBufXSizeReq - 1) * nSrcTypeSize,
+                            nSrcTypeSize );
                 }
             }
         }
@@ -1787,11 +1792,20 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         if( !InitializePython() )
             goto end;
 
-        GByte* pabyTmpBuffer = reinterpret_cast<GByte*>(VSI_CALLOC_VERBOSE(
-                        static_cast<size_t>(nExtBufXSize) * nExtBufYSize,
-                        GDALGetDataTypeSizeBytes(eDataType)));
-        if( !pabyTmpBuffer )
-            goto end;
+        GByte* pabyTmpBuffer = NULL;
+        // Do we need a temporary buffer or can we use directly the output
+        // buffer ?
+        if( nBufferRadius != 0 ||
+            eDataType != eBufType ||
+            nPixelSpace != nBufTypeSize ||
+            nLineSpace != static_cast<GSpacing>(nBufTypeSize) * nBufXSize )
+        {
+            pabyTmpBuffer = reinterpret_cast<GByte*>(VSI_CALLOC_VERBOSE(
+                            static_cast<size_t>(nExtBufXSize) * nExtBufYSize,
+                            GDALGetDataTypeSizeBytes(eDataType)));
+            if( !pabyTmpBuffer )
+                goto end;
+        }
 
         {
         const bool bUseExclusiveLock = m_poPrivate->m_bExclusiveLock ||
@@ -1803,7 +1817,7 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         // Prepare target numpy array
         PyObject* poPyDstArray = GDALCreateNumpyArray(
                                     m_poPrivate->m_poGDALCreateNumpyArray,
-                                    pabyTmpBuffer,
+                                    pabyTmpBuffer ? pabyTmpBuffer : pData,
                                     eDataType,
                                     nExtBufYSize,
                                     nExtBufXSize);
@@ -1885,24 +1899,27 @@ CPLErr VRTDerivedRasterBand::IRasterIO( GDALRWFlag eRWFlag,
         }
         if( pRetValue )
             Py_DecRef(pRetValue);
-
         } // End of GIL section
 
-        // Copy numpy destination array to user buffer
-        for( int iY = 0; iY < nBufYSize; iY++ )
+        if( pabyTmpBuffer )
         {
-            size_t nSrcOffset = (static_cast<size_t>(iY + nBufferRadius) *
-                nExtBufXSize + nBufferRadius) *
-                GDALGetDataTypeSizeBytes(eDataType);
-            GDALCopyWords(pabyTmpBuffer + nSrcOffset,
-                          eDataType,
-                          GDALGetDataTypeSizeBytes(eDataType),
-                          reinterpret_cast<GByte*>(pData) + iY * nLineSpace,
-                          eBufType,
-                          static_cast<int>(nPixelSpace),
-                          nBufXSize);
+            // Copy numpy destination array to user buffer
+            for( int iY = 0; iY < nBufYSize; iY++ )
+            {
+                size_t nSrcOffset = (static_cast<size_t>(iY + nBufferRadius) *
+                    nExtBufXSize + nBufferRadius) *
+                    GDALGetDataTypeSizeBytes(eDataType);
+                GDALCopyWords(pabyTmpBuffer + nSrcOffset,
+                              eDataType,
+                              GDALGetDataTypeSizeBytes(eDataType),
+                              reinterpret_cast<GByte*>(pData) + iY * nLineSpace,
+                              eBufType,
+                              static_cast<int>(nPixelSpace),
+                              nBufXSize);
+            }
+
+            VSIFree(pabyTmpBuffer);
         }
-        VSIFree(pabyTmpBuffer);
     }
     else if( eErr == CE_None && pfnPixelFunc != NULL ) {
         eErr = pfnPixelFunc( reinterpret_cast<void **>( pBuffers ), nSources,

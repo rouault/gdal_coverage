@@ -44,6 +44,7 @@
 #include "gmlregistry.h"
 #include "gmlreaderp.h"
 
+#include <algorithm>
 #include <vector>
 
 CPL_CVSID("$Id$");
@@ -104,6 +105,7 @@ OGRGMLDataSource::OGRGMLDataSource() :
     bUseGlobalSRSName(false),
     m_bInvertAxisOrderIfLatLong(false),
     m_bConsiderEPSGAsURN(false),
+    m_eSwapCoordinates(GML_SWAP_AUTO),
     m_bGetSecondaryGeometryOption(false),
     eReadMode(STANDARD),
     poStoredGMLFeature(NULL),
@@ -559,6 +561,13 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
     else
         m_bConsiderEPSGAsURN = false;
 
+    const char* pszSwapCoordinates =
+        CSLFetchNameValueDef(poOpenInfo->papszOpenOptions,
+                             "SWAP_COORDINATES",
+            CPLGetConfigOption("GML_SWAP_COORDINATES", "AUTO"));
+    m_eSwapCoordinates = EQUAL(pszSwapCoordinates, "AUTO") ? GML_SWAP_AUTO:
+                         CPLTestBool(pszSwapCoordinates) ? GML_SWAP_YES: GML_SWAP_NO;
+
     m_bGetSecondaryGeometryOption = CPLTestBool(CPLGetConfigOption("GML_GET_SECONDARY_GEOM", "NO"));
 
     /* EXPAT is faster than Xerces, so when it is safe to use it, use it ! */
@@ -579,6 +588,7 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
     poReader = CreateGMLReader( bUseExpatParserPreferably,
                                 m_bInvertAxisOrderIfLatLong,
                                 m_bConsiderEPSGAsURN,
+                                m_eSwapCoordinates,
                                 m_bGetSecondaryGeometryOption );
     if( poReader == NULL )
     {
@@ -1054,7 +1064,6 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
                                 papszIter ++;
                             }
                         }
-
                     }
 
                     if (bAddClass)
@@ -1186,8 +1195,6 @@ bool OGRGMLDataSource::Open( GDALOpenInfo* poOpenInfo )
         papoLayers[nLayers] = TranslateGMLSchema(poReader->GetClass(nLayers));
         nLayers++;
     }
-
-
 
     return true;
 }
@@ -1677,7 +1684,6 @@ bool OGRGMLDataSource::Create( const char *pszFilename,
     return true;
 }
 
-
 /************************************************************************/
 /*                         WriteTopElements()                           */
 /************************************************************************/
@@ -1840,6 +1846,8 @@ int OGRGMLDataSource::TestCapability( const char * pszCap )
         return TRUE;
     else if( EQUAL(pszCap,ODsCCurveGeometries) )
         return bIsOutputGML3;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return TRUE;
     else
         return FALSE;
 }
@@ -2404,14 +2412,15 @@ void OGRGMLDataSource::InsertHeader()
 /*      header so we have room insert the schema.  Move in pretty       */
 /*      big chunks.                                                     */
 /* -------------------------------------------------------------------- */
-        int nChunkSize = MIN(nSchemaStart-nSchemaInsertLocation,250000);
+        int nChunkSize = std::min(nSchemaStart-nSchemaInsertLocation,250000);
         char *pszChunk = (char *) CPLMalloc(nChunkSize);
 
         for( int nEndOfUnmovedData = nSchemaStart;
              nEndOfUnmovedData > nSchemaInsertLocation; )
         {
-            int nBytesToMove =
-                MIN(nChunkSize, nEndOfUnmovedData - nSchemaInsertLocation );
+            const int nBytesToMove =
+                std::min(nChunkSize,
+                         nEndOfUnmovedData - nSchemaInsertLocation );
 
             VSIFSeekL( fpOutput, nEndOfUnmovedData - nBytesToMove, SEEK_SET );
             VSIFReadL( pszChunk, 1, nBytesToMove, fpOutput );
@@ -2440,9 +2449,10 @@ void OGRGMLDataSource::InsertHeader()
 /*      Close external schema files.                                    */
 /* -------------------------------------------------------------------- */
     else
+    {
         VSIFCloseL( fpSchema );
+    }
 }
-
 
 /************************************************************************/
 /*                            PrintLine()                               */
@@ -2465,7 +2475,6 @@ void OGRGMLDataSource::PrintLine(VSILFILE* fp, const char *fmt, ...)
 
     VSIFPrintfL(fp, "%s%s", osWork.c_str(), pszEOL);
 }
-
 
 /************************************************************************/
 /*                     OGRGMLSingleFeatureLayer                         */
@@ -2773,7 +2782,7 @@ bool OGRGMLDataSource::RemoveAppPrefix()
             papszCreateOptions, "STRIP_PREFIX", "FALSE")) )
         return true;
     const char* pszPrefix = GetAppPrefix();
-    return( pszPrefix[0] == '\0' );
+    return pszPrefix[0] == '\0';
 }
 
 /************************************************************************/

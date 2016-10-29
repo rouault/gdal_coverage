@@ -31,6 +31,8 @@
 #include "ogr_spatialref.h"
 #include "ogr_p.h"
 #include "cpl_conv.h"
+
+#include <cmath>
 #include <vector>
 
 extern int EPSGGetWGS84Transform( int nGeogCS, std::vector<CPLString>& asTransform );
@@ -332,7 +334,6 @@ static char **OSRProj4Tokenize( const char *pszFull )
     return papszTokens;
 }
 
-
 /************************************************************************/
 /*                         OSRImportFromProj4()                         */
 /************************************************************************/
@@ -477,6 +478,15 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
             pszCleanCopy[i] = ' ';
     }
 
+    const char* pszInitEpsgCleanCopy = strstr(pszCleanCopy, "init=epsg:");
+    bool bSetAuthorityCode = true;
+    // If there's an override, then drop the authority code
+    if( pszInitEpsgCleanCopy != NULL &&
+        strchr(pszInitEpsgCleanCopy, '+') != NULL )
+    {
+        bSetAuthorityCode = false;
+    }
+
 /* -------------------------------------------------------------------- */
 /*      Try to normalize the definition.  This should expand +init=     */
 /*      clauses and so forth.                                           */
@@ -504,17 +514,24 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
 /* -------------------------------------------------------------------- */
 /*      If we have an EPSG based init string, and no existing +proj     */
 /*      portion then try to normalize into into a PROJ.4 string.        */
+/*      This can happen if the proj.4 epsg dictionnary is missing.      */
 /* -------------------------------------------------------------------- */
-    if( strstr(pszNormalized,"init=epsg:") != NULL
+    const char* pszInitEpsg = strstr(pszNormalized,"init=epsg:");
+    if( pszInitEpsg != NULL
         && strstr(pszNormalized,"proj=") == NULL )
     {
-        const char *pszNumber = strstr(pszNormalized,"init=epsg:") + 10;
+        const char *pszNumber = pszInitEpsg + strlen("init=epsg:");
 
         OGRErr eErr = importFromEPSG( atoi(pszNumber) );
-        if( eErr == OGRERR_NONE )
+        if( eErr != OGRERR_NONE || strchr(pszNumber, '+') == NULL )
         {
             CPLFree( pszNormalized );
             return eErr;
+        }
+        int nIdx = GetRoot()->FindChild("AUTHORITY");
+        if( nIdx >= 0 )
+        {
+            GetRoot()->DestroyChild( nIdx );
         }
     }
 
@@ -679,7 +696,7 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
     }
 
     else if( EQUAL(pszProj,"stere")
-             && ABS(OSR_GDV( papszNV, "lat_0", 0.0 ) - 90) < 0.001 )
+             && std::abs(OSR_GDV( papszNV, "lat_0", 0.0 ) - 90) < 0.001 )
     {
         SetPS( OSR_GDV( papszNV, "lat_ts", 90.0 ),
                OSR_GDV( papszNV, "lon_0", 0.0 ),
@@ -689,7 +706,7 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
     }
 
     else if( EQUAL(pszProj,"stere")
-             && ABS(OSR_GDV( papszNV, "lat_0", 0.0 ) + 90) < 0.001 )
+             && std::abs(OSR_GDV( papszNV, "lat_0", 0.0 ) + 90) < 0.001 )
     {
         SetPS( OSR_GDV( papszNV, "lat_ts", -90.0 ),
                OSR_GDV( papszNV, "lon_0", 0.0 ),
@@ -1377,11 +1394,13 @@ OGRErr OGRSpatialReference::importFromProj4( const char * pszProj4 )
 /* -------------------------------------------------------------------- */
     const char *pszINIT = CSLFetchNameValue(papszNV,"init");
     const char *pszColumn = NULL;
-    if( pszINIT != NULL && (pszColumn = strchr(pszINIT, ':')) != NULL &&
+    if( bSetAuthorityCode &&
+        pszINIT != NULL && (pszColumn = strchr(pszINIT, ':')) != NULL &&
         GetRoot()->FindChild( "AUTHORITY" ) < 0 )
     {
         CPLString osAuthority;
         osAuthority.assign(pszINIT, pszColumn - pszINIT);
+        osAuthority.toupper();
         OGR_SRSNode* poAuthNode = new OGR_SRSNode( "AUTHORITY" );
         poAuthNode->AddChild( new OGR_SRSNode( osAuthority ) );
         poAuthNode->AddChild( new OGR_SRSNode( pszColumn + 1 ) );
@@ -2286,93 +2305,93 @@ OGRErr OGRSpatialReference::exportToProj4( char ** ppszProj4 ) const
     const char  *pszPROJ4Ellipse = NULL;
     const char  *pszDatum = GetAttrValue("DATUM");
 
-    if( ABS(dfSemiMajor-6378249.145) < 0.01
-        && ABS(dfInvFlattening-293.465) < 0.0001 )
+    if( std::abs(dfSemiMajor-6378249.145) < 0.01
+        && std::abs(dfInvFlattening-293.465) < 0.0001 )
     {
         pszPROJ4Ellipse = "clrk80";     /* Clark 1880 */
     }
-    else if( ABS(dfSemiMajor-6378245.0) < 0.01
-             && ABS(dfInvFlattening-298.3) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378245.0) < 0.01
+             && std::abs(dfInvFlattening-298.3) < 0.0001 )
     {
         pszPROJ4Ellipse = "krass";      /* Krassovsky */
     }
-    else if( ABS(dfSemiMajor-6378388.0) < 0.01
-             && ABS(dfInvFlattening-297.0) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378388.0) < 0.01
+             && std::abs(dfInvFlattening-297.0) < 0.0001 )
     {
         pszPROJ4Ellipse = "intl";       /* International 1924 */
     }
-    else if( ABS(dfSemiMajor-6378160.0) < 0.01
-             && ABS(dfInvFlattening-298.25) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378160.0) < 0.01
+             && std::abs(dfInvFlattening-298.25) < 0.0001 )
     {
         pszPROJ4Ellipse = "aust_SA";    /* Australian */
     }
-    else if( ABS(dfSemiMajor-6377397.155) < 0.01
-             && ABS(dfInvFlattening-299.1528128) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6377397.155) < 0.01
+             && std::abs(dfInvFlattening-299.1528128) < 0.0001 )
     {
         pszPROJ4Ellipse = "bessel";     /* Bessel 1841 */
     }
-    else if( ABS(dfSemiMajor-6377483.865) < 0.01
-             && ABS(dfInvFlattening-299.1528128) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6377483.865) < 0.01
+             && std::abs(dfInvFlattening-299.1528128) < 0.0001 )
     {
         pszPROJ4Ellipse = "bess_nam";   /* Bessel 1841 (Namibia / Schwarzeck)*/
     }
-    else if( ABS(dfSemiMajor-6378160.0) < 0.01
-             && ABS(dfInvFlattening-298.247167427) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378160.0) < 0.01
+             && std::abs(dfInvFlattening-298.247167427) < 0.0001 )
     {
         pszPROJ4Ellipse = "GRS67";      /* GRS 1967 */
     }
-    else if( ABS(dfSemiMajor-6378137) < 0.01
-             && ABS(dfInvFlattening-298.257222101) < 0.000001 )
+    else if( std::abs(dfSemiMajor-6378137) < 0.01
+             && std::abs(dfInvFlattening-298.257222101) < 0.000001 )
     {
         pszPROJ4Ellipse = "GRS80";      /* GRS 1980 */
     }
-    else if( ABS(dfSemiMajor-6378206.4) < 0.01
-             && ABS(dfInvFlattening-294.9786982) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378206.4) < 0.01
+             && std::abs(dfInvFlattening-294.9786982) < 0.0001 )
     {
         pszPROJ4Ellipse = "clrk66";     /* Clarke 1866 */
     }
-    else if( ABS(dfSemiMajor-6377340.189) < 0.01
-             && ABS(dfInvFlattening-299.3249646) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6377340.189) < 0.01
+             && std::abs(dfInvFlattening-299.3249646) < 0.0001 )
     {
         pszPROJ4Ellipse = "mod_airy";   /* Modified Airy */
     }
-    else if( ABS(dfSemiMajor-6377563.396) < 0.01
-             && ABS(dfInvFlattening-299.3249646) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6377563.396) < 0.01
+             && std::abs(dfInvFlattening-299.3249646) < 0.0001 )
     {
         pszPROJ4Ellipse = "airy";       /* Airy */
     }
-    else if( ABS(dfSemiMajor-6378200) < 0.01
-             && ABS(dfInvFlattening-298.3) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378200) < 0.01
+             && std::abs(dfInvFlattening-298.3) < 0.0001 )
     {
         pszPROJ4Ellipse = "helmert";    /* Helmert 1906 */
     }
-    else if( ABS(dfSemiMajor-6378155) < 0.01
-             && ABS(dfInvFlattening-298.3) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378155) < 0.01
+             && std::abs(dfInvFlattening-298.3) < 0.0001 )
     {
         pszPROJ4Ellipse = "fschr60m";   /* Modified Fischer 1960 */
     }
-    else if( ABS(dfSemiMajor-6377298.556) < 0.01
-             && ABS(dfInvFlattening-300.8017) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6377298.556) < 0.01
+             && std::abs(dfInvFlattening-300.8017) < 0.0001 )
     {
         pszPROJ4Ellipse = "evrstSS";    /* Everest (Sabah & Sarawak) */
     }
-    else if( ABS(dfSemiMajor-6378165.0) < 0.01
-             && ABS(dfInvFlattening-298.3) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378165.0) < 0.01
+             && std::abs(dfInvFlattening-298.3) < 0.0001 )
     {
         pszPROJ4Ellipse = "WGS60";
     }
-    else if( ABS(dfSemiMajor-6378145.0) < 0.01
-             && ABS(dfInvFlattening-298.25) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378145.0) < 0.01
+             && std::abs(dfInvFlattening-298.25) < 0.0001 )
     {
         pszPROJ4Ellipse = "WGS66";
     }
-    else if( ABS(dfSemiMajor-6378135.0) < 0.01
-             && ABS(dfInvFlattening-298.26) < 0.0001 )
+    else if( std::abs(dfSemiMajor-6378135.0) < 0.01
+             && std::abs(dfInvFlattening-298.26) < 0.0001 )
     {
         pszPROJ4Ellipse = "WGS72";
     }
-    else if( ABS(dfSemiMajor-6378137.0) < 0.01
-             && ABS(dfInvFlattening-298.257223563) < 0.000001 )
+    else if( std::abs(dfSemiMajor-6378137.0) < 0.01
+             && std::abs(dfInvFlattening-298.257223563) < 0.000001 )
     {
         pszPROJ4Ellipse = "WGS84";
     }

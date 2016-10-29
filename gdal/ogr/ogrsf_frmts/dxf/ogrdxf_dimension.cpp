@@ -143,7 +143,6 @@ OGRFeature *OGRDXFLayer::TranslateDIMENSION()
         |
         X (14,24) (Target1)
 
-
 Given:
   Locations Arrow1, Target1, and Target2 we need to compute Arrow2.
 
@@ -182,7 +181,8 @@ the approach is as above in all these cases.
     double dfL1B = 0.0;
     double dfL2M = 0.0;
     double dfL2B = 0.0;
-    double dfArrowX2, dfArrowY2;
+    double dfArrowX2 = 0.0;
+    double dfArrowY2 = 0.0;
 
     // special case if vec1 is vertical.
     if( dfVec1X == 0.0 )

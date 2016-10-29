@@ -175,7 +175,7 @@ OGRODSDataSource::OGRODSDataSource() :
     nRowsRepeated(0),
     nCurCol(0),
     nCellsRepeated(0),
-    bEndTableParsing(FALSE),
+    bEndTableParsing(false),
     poCurLayer(NULL),
     nStackDepth(0),
     nDepth(0)
@@ -216,10 +216,11 @@ int OGRODSDataSource::TestCapability( const char * pszCap )
         return bUpdatable;
     else if( EQUAL(pszCap,ODsCDeleteLayer) )
         return bUpdatable;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return bUpdatable;
     else
         return FALSE;
 }
-
 
 /************************************************************************/
 /*                              GetLayer()                              */
@@ -580,7 +581,7 @@ void OGRODSDataSource::startElementDefault(const char *pszNameIn,
         apoFirstLineValues.resize(0);
         apoFirstLineTypes.resize(0);
         PushState(STATE_TABLE);
-        bEndTableParsing = FALSE;
+        bEndTableParsing = false;
     }
 }
 
@@ -591,13 +592,13 @@ void OGRODSDataSource::startElementDefault(const char *pszNameIn,
 void OGRODSDataSource::startElementTable(const char *pszNameIn,
                                          const char **ppszAttr)
 {
-    if (strcmp(pszNameIn, "table:table-row") == 0 && !bEndTableParsing)
+    if( strcmp(pszNameIn, "table:table-row") == 0 && !bEndTableParsing )
     {
         nRowsRepeated = atoi(
             GetAttributeValue(ppszAttr, "table:number-rows-repeated", "1"));
         if (nRowsRepeated > 65536)
         {
-            bEndTableParsing = TRUE;
+            bEndTableParsing = true;
             return;
         }
 

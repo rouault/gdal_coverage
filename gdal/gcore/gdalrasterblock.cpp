@@ -109,7 +109,6 @@ void CPL_STDCALL GDALSetCacheMax( int nNewSizeInBytes )
     GDALSetCacheMax64(nNewSizeInBytes);
 }
 
-
 /************************************************************************/
 /*                        GDALSetCacheMax64()                           */
 /************************************************************************/
@@ -584,7 +583,8 @@ void GDALRasterBlock::RecycleFor( int nXOffIn, int nYOffIn )
     bDirty = false;
     nLockCount = 0;
 
-    poNext = poPrevious = NULL;
+    poNext = NULL;
+    poPrevious = NULL;
 
     nXOff = nXOffIn;
     nYOff = nYOffIn;
@@ -795,7 +795,6 @@ void GDALRasterBlock::Touch()
     Touch_unlocked();
 }
 
-
 void GDALRasterBlock::Touch_unlocked()
 
 {
@@ -1005,7 +1004,12 @@ CPLErr GDALRasterBlock::Internalize()
  * to disk before it can be flushed.
  */
 
-void GDALRasterBlock::MarkDirty() { bDirty = true; }
+void GDALRasterBlock::MarkDirty()
+{
+    bDirty = true;
+    if( poBand )
+        poBand->InitRWLock();
+}
 
 /************************************************************************/
 /*                             MarkClean()                              */

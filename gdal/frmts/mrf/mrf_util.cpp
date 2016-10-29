@@ -33,7 +33,6 @@
 * limitations under the License.
 */
 
-
 /**
  *
  *  Functions used by the driver, should have prototypes in the header file
@@ -250,7 +249,6 @@ CPLString getFname(CPLXMLNode *node, const char *token, const CPLString &in, con
     return in.substr(0, in.find_last_of("\\/")+1) + fn;
 }
 
-
 /**
  *\brief Extracts a numerical value from a XML node
  * It works like CPLGetXMLValue except for the default value being
@@ -322,18 +320,18 @@ GDALMRFRasterBand *newMRFRasterBand(GDALMRFDataset *pDS, const ILImage &image, i
 /**
  *\brief log in a given base
  */
-double logb(double val, double base) {
-    return log(val)/log(base);
+double logbase(double val, double base) {
+    return log(val) / log(base);
 }
 
 /**
- *\brief Is logb(val) an integer?
+ *\brief Is logbase(val, base) an integer?
  *
  */
 
 int IsPower(double value, double base) {
-    double v=logb(value, base);
-    return CPLIsEqual(v, int(v+0.5));
+    double v = logbase(value, base);
+    return CPLIsEqual(v, int(v + 0.5));
 }
 
 /************************************************************************/
@@ -620,6 +618,8 @@ void GDALRegister_mrf()
         "   <Option name='CACHEDSOURCE' type='string' description='The source raster, if this is a cache'/>\n"
         "   <Option name='UNIFORM_SCALE' type='int' description='Scale of overlays in MRF, usually 2'/>\n"
         "   <Option name='NOCOPY' type='boolean' description='Leave created MRF empty, default=no'/>\n"
+        "   <Option name='DATANAME' type='string' description='Data file name'/>\n"
+        "   <Option name='INDEXNAME' type='string' description='Index file name'/>\n"
         "   <Option name='PHOTOMETRIC' type='string-select' default='DEFAULT' description='Band interpretation, may affect block encoding'>\n"
         "       <Value>MULTISPECTRAL</Value>"
         "       <Value>RGB</Value>"

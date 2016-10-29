@@ -55,6 +55,8 @@
 #include "gdaljp2metadata.h"
 #include "vrt/vrtdataset.h"
 
+#include <algorithm>
+
 CPL_CVSID("$Id$");
 
 /************************************************************************/
@@ -138,6 +140,8 @@ static OPJ_SIZE_T JP2OpenJPEGDataset_Write(void* pBuffer, OPJ_SIZE_T nBytes,
 #ifdef DEBUG_IO
     CPLDebug("OPENJPEG", "JP2OpenJPEGDataset_Write(%d) = %d", (int)nBytes, nRet);
 #endif
+    if( static_cast<OPJ_SIZE_T>(nRet) != nBytes )
+        return static_cast<OPJ_SIZE_T>(-1);
     return nRet;
 }
 
@@ -298,7 +302,6 @@ class JP2OpenJPEGRasterBand : public GDALPamRasterBand
 
     virtual int HasArbitraryOverviews() { return poCT == NULL; }
 };
-
 
 /************************************************************************/
 /*                        JP2OpenJPEGRasterBand()                       */
@@ -556,7 +559,7 @@ int JP2OpenJPEGDataset::PreloadBlocks(JP2OpenJPEGRasterBand* poBand,
 
         if( nBlocksToLoad > 1 )
         {
-            int l_nThreads = MIN(nBlocksToLoad, nMaxThreads);
+            const int l_nThreads = std::min(nBlocksToLoad, nMaxThreads);
             CPLJoinableThread** pahThreads = (CPLJoinableThread**) VSI_CALLOC_VERBOSE( sizeof(CPLJoinableThread*), l_nThreads );
             if( pahThreads == NULL )
             {
@@ -718,8 +721,10 @@ CPLErr JP2OpenJPEGDataset::ReadBlock( int nBand, VSILFILE* fpIn,
     int nDataTypeSize = (GDALGetDataTypeSize(eDataType) / 8);
 
     int nTileNumber = nBlockXOff + nBlockYOff * poBand->nBlocksPerRow;
-    int nWidthToRead = MIN(nBlockXSize, nRasterXSize - nBlockXOff * nBlockXSize);
-    int nHeightToRead = MIN(nBlockYSize, nRasterYSize - nBlockYOff * nBlockYSize);
+    const int nWidthToRead =
+        std::min(nBlockXSize, nRasterXSize - nBlockXOff * nBlockXSize);
+    const int nHeightToRead =
+        std::min(nBlockYSize, nRasterYSize - nBlockYOff * nBlockYSize);
 
     pCodec = opj_create_decompress(OPJ_CODEC_J2K);
     if( pCodec == NULL )
@@ -966,7 +971,6 @@ end:
     return eErr;
 }
 
-
 /************************************************************************/
 /*                         GetOverviewCount()                           */
 /************************************************************************/
@@ -1066,10 +1070,15 @@ JP2OpenJPEGDataset::~JP2OpenJPEGDataset()
         if( bRewrite )
         {
             GDALJP2Box oBox( fp );
-            vsi_l_offset nOffsetJP2C = 0, nLengthJP2C = 0,
-                         nOffsetXML = 0, nOffsetASOC = 0, nOffsetUUID = 0,
-                         nOffsetIHDR = 0, nLengthIHDR = 0;
-            int bMSIBox = FALSE, bGMLData = FALSE;
+            vsi_l_offset nOffsetJP2C = 0;
+            vsi_l_offset nLengthJP2C = 0;
+            vsi_l_offset nOffsetXML = 0;
+            vsi_l_offset nOffsetASOC = 0;
+            vsi_l_offset nOffsetUUID = 0;
+            vsi_l_offset nOffsetIHDR = 0;
+            vsi_l_offset nLengthIHDR = 0;
+            int bMSIBox = FALSE;
+            int bGMLData = FALSE;
             int bUnsupportedConfiguration = FALSE;
             if( oBox.ReadFirst() )
             {
@@ -1503,7 +1512,6 @@ GDALDataset *JP2OpenJPEGDataset::Open( GDALOpenInfo * poOpenInfo )
 
     OPJ_CODEC_FORMAT eCodecFormat = (nCodeStreamStart == 0) ? OPJ_CODEC_J2K : OPJ_CODEC_JP2;
 
-
     opj_codec_t* pCodec = opj_create_decompress(OPJ_CODEC_J2K);
     if( pCodec == NULL )
         return NULL;
@@ -1665,7 +1673,6 @@ GDALDataset *JP2OpenJPEGDataset::Open( GDALOpenInfo * poOpenInfo )
             }
         }
     }
-
 
 /* -------------------------------------------------------------------- */
 /*      Create a corresponding GDALDataset.                             */
@@ -1987,7 +1994,6 @@ GDALDataset *JP2OpenJPEGDataset::Open( GDALOpenInfo * poOpenInfo )
         }
 
         poDS->papoOverviewDS[poDS->nOverviewCount ++] = poODS;
-
     }
 
     opj_destroy_codec(pCodec);
@@ -2043,7 +2049,7 @@ GDALDataset *JP2OpenJPEGDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
     //poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename );
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/
@@ -2309,7 +2315,7 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
                  "or QUALITY != 100 will likely lead to bad visual results");
     }
 
-    int nMaxTileDim = MAX(nBlockXSize, nBlockYSize);
+    const int nMaxTileDim = std::max(nBlockXSize, nBlockYSize);
     int nNumResolutions = 1;
     /* Pickup a reasonable value compatible with PROFILE_1 requirements */
     while( (nMaxTileDim >> (nNumResolutions-1)) > 128 )
@@ -2332,7 +2338,9 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
     int bSOP = CPLTestBool(CSLFetchNameValueDef(papszOptions, "SOP", "FALSE"));
     int bEPH = CPLTestBool(CSLFetchNameValueDef(papszOptions, "EPH", "FALSE"));
 
-    int nRedBandIndex = -1, nGreenBandIndex = -1, nBlueBandIndex = -1;
+    int nRedBandIndex = -1;
+    int nGreenBandIndex = -1;
+    int nBlueBandIndex = -1;
     int nAlphaBandIndex = -1;
     for(int i=0;i<nBands;i++)
     {
@@ -2980,7 +2988,7 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
         if (poCT != NULL)
         {
             pclrBox.SetType("pclr");
-            int nEntries = MIN(256, poCT->GetColorEntryCount());
+            const int nEntries = std::min(256, poCT->GetColorEntryCount());
             nCTComponentCount = atoi(CSLFetchNameValueDef(papszOptions, "CT_COMPONENTS", "0"));
             if( bInspireTG )
             {
@@ -3082,7 +3090,8 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
         }
 
         // Add res box if needed
-        double dfXRes = 0, dfYRes = 0;
+        double dfXRes = 0.0;
+        double dfYRes = 0.0;
         int nResUnit = 0;
         GDALJP2Box* poRes = NULL;
         if( poSrcDS->GetMetadataItem("TIFFTAG_XRESOLUTION") != NULL
@@ -3390,8 +3399,10 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
         {
             for(nBlockXOff=0;eErr == CE_None && nBlockXOff<nTilesX;nBlockXOff++)
             {
-                int nWidthToRead = MIN(nBlockXSize, nXSize - nBlockXOff * nBlockXSize);
-                int nHeightToRead = MIN(nBlockYSize, nYSize - nBlockYOff * nBlockYSize);
+                const int nWidthToRead =
+                    std::min(nBlockXSize, nXSize - nBlockXOff * nBlockXSize);
+                const int nHeightToRead =
+                    std::min(nBlockYSize, nYSize - nBlockYOff * nBlockYSize);
                 eErr = poSrcDS->RasterIO(GF_Read,
                                         nBlockXOff * nBlockXSize,
                                         nBlockYOff * nBlockYSize,

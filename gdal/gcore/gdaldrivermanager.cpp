@@ -33,6 +33,7 @@
 #include "gdal_alg_priv.h"
 #include "gdal_pam.h"
 #include "gdal_priv.h"
+#include "ogr_xerces.h"
 #include "ogr_srs_api.h"
 
 #ifdef _MSC_VER
@@ -234,6 +235,8 @@ GDALDriverManager::~GDALDriverManager()
 /*      related subsystem.                                              */
 /* -------------------------------------------------------------------- */
     OSRCleanup();
+
+    OGRCleanupXercesMutex();
 
 /* -------------------------------------------------------------------- */
 /*      Cleanup VSIFileManager.                                         */
@@ -491,7 +494,6 @@ int CPL_STDCALL GDALRegisterDriver( GDALDriverH hDriver )
         RegisterDriver( static_cast<GDALDriver *>( hDriver ) );
 }
 
-
 /************************************************************************/
 /*                          DeregisterDriver()                          */
 /************************************************************************/
@@ -548,7 +550,6 @@ void CPL_STDCALL GDALDeregisterDriver( GDALDriverH hDriver )
 
     GetGDALDriverManager()->DeregisterDriver( (GDALDriver *) hDriver );
 }
-
 
 /************************************************************************/
 /*                          GetDriverByName()                           */
@@ -754,7 +755,6 @@ void GDALDriverManager::AutoLoadDrivers()
                                      num2str(GDAL_VERSION_MAJOR) "."
                                      num2str(GDAL_VERSION_MINOR) "/PlugIns" );
    #endif
-
     }
 
 /* -------------------------------------------------------------------- */
@@ -845,7 +845,6 @@ void GDALDriverManager::AutoLoadDrivers()
     CSLDestroy( papszSearchPath );
 
 #endif  // GDAL_NO_AUTOLOAD
-
 }
 
 /************************************************************************/

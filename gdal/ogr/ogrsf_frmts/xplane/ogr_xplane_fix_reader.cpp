@@ -40,7 +40,6 @@ OGRXPlaneReader* OGRXPlaneCreateFixFileReader( OGRXPlaneDataSource* poDataSource
     return poReader;
 }
 
-
 /************************************************************************/
 /*                         OGRXPlaneFixReader()                         */
 /************************************************************************/
@@ -106,10 +105,10 @@ void OGRXPlaneFixReader::Read()
         {
             CSLDestroy(papszTokens);
             papszTokens = NULL;
-            bEOF = TRUE;
+            bEOF = true;
             return;
         }
-        else if (nTokens == 0 || assertMinCol(3) == FALSE)
+        else if( nTokens == 0 || !assertMinCol(3) )
         {
             CSLDestroy(papszTokens);
             papszTokens = NULL;
@@ -121,12 +120,12 @@ void OGRXPlaneFixReader::Read()
         CSLDestroy(papszTokens);
         papszTokens = NULL;
 
-        if (poInterestLayer && poInterestLayer->IsEmpty() == FALSE)
+        if( poInterestLayer && !poInterestLayer->IsEmpty() )
             return;
     }
 
     papszTokens = NULL;
-    bEOF = TRUE;
+    bEOF = true;
 }
 
 /************************************************************************/
@@ -135,7 +134,8 @@ void OGRXPlaneFixReader::Read()
 
 void    OGRXPlaneFixReader::ParseRecord()
 {
-    double dfLat, dfLon;
+    double dfLat = 0.0;
+    double dfLon = 0.0;
     CPLString osName;
 
     RET_IF_FAIL(readLatLon(&dfLat, &dfLon, 0));
@@ -144,7 +144,6 @@ void    OGRXPlaneFixReader::ParseRecord()
     if (poFIXLayer)
         poFIXLayer->AddFeature(osName, dfLat, dfLon);
 }
-
 
 /************************************************************************/
 /*                           OGRXPlaneFIXLayer()                        */

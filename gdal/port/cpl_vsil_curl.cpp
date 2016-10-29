@@ -61,7 +61,6 @@ int VSICurlInstallReadCbk ( VSILFILE* /* fp */,
     return FALSE;
 }
 
-
 /************************************************************************/
 /*                    VSICurlUninstallReadCbk()                         */
 /************************************************************************/
@@ -251,7 +250,6 @@ class VSICurlFilesystemHandler : public VSIFilesystemHandler
     /* Per-thread Curl connection cache */
     std::map<GIntBig, CachedConnection*> mapConnections;
 
-
     char**              ParseHTMLFileList(const char* pszFilename,
                                           int nMaxFiles,
                                           char* pszData,
@@ -292,7 +290,6 @@ public:
     virtual char   **ReadDirEx( const char *pszDirname, int nMaxFiles );
             char   **ReadDirInternal( const char *pszDirname, int nMaxFiles, bool* pbGotFileList );
             void     InvalidateDirContent( const char *pszDirname );
-
 
     const CachedRegion* GetRegion(const char*     pszURL,
                                   vsi_l_offset    nFileOffsetStart);
@@ -484,7 +481,6 @@ int VSICurlHandle::Seek( vsi_l_offset nOffset, int nWhence )
     bEOF = false;
     return 0;
 }
-
 
 /************************************************************************/
 /*                 VSICurlGetTimeStampFromRFC822DateTime()              */
@@ -693,58 +689,6 @@ vsi_l_offset VSICurlHandle::GetFileSize(bool bSetError)
         return fileSize;
 
     bHasComputedFileSize = true;
-
-    /* Consider that only the files whose extension ends up with one that is */
-    /* listed in CPL_VSIL_CURL_ALLOWED_EXTENSIONS exist on the server */
-    /* This can speeds up dramatically open experience, in case the server */
-    /* cannot return a file list */
-    /* {noext} can be used as a special token to mean file with no extension */
-    /* For example : */
-    /* gdalinfo --config CPL_VSIL_CURL_ALLOWED_EXTENSIONS ".tif" /vsicurl/http://igskmncngs506.cr.usgs.gov/gmted/Global_tiles_GMTED/075darcsec/bln/W030/30N030W_20101117_gmted_bln075.tif */
-    const char* pszAllowedExtensions =
-        CPLGetConfigOption("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", NULL);
-    if (pszAllowedExtensions)
-    {
-        char** papszExtensions = CSLTokenizeString2( pszAllowedExtensions, ", ", 0 );
-        const size_t nURLLen = strlen(pszURL);
-        bool bFound = false;
-        for(int i=0;papszExtensions[i] != NULL;i++)
-        {
-            const size_t nExtensionLen = strlen(papszExtensions[i]);
-            if( EQUAL(papszExtensions[i], "{noext}") )
-            {
-                const char* pszLastSlash = strrchr(pszURL, '/');
-                if( pszLastSlash != NULL && strchr(pszLastSlash, '.') == NULL )
-                {
-                    bFound = true;
-                    break;
-                }
-            }
-            else if (nURLLen > nExtensionLen &&
-                EQUAL(pszURL + nURLLen - nExtensionLen, papszExtensions[i]))
-            {
-                bFound = true;
-                break;
-            }
-        }
-
-        if (!bFound)
-        {
-            eExists = EXIST_NO;
-            fileSize = 0;
-
-            CachedFileProp* cachedFileProp = poFS->GetCachedFileProp(pszURL);
-            cachedFileProp->bHasComputedFileSize = true;
-            cachedFileProp->fileSize = fileSize;
-            cachedFileProp->eExists = eExists;
-
-            CSLDestroy(papszExtensions);
-
-            return 0;
-        }
-
-        CSLDestroy(papszExtensions);
-    }
 
 #if LIBCURL_VERSION_NUM < 0x070B00
     /* Curl 7.10.X doesn't manage to unset the CURLOPT_RANGE that would have been */
@@ -1353,7 +1297,6 @@ size_t VSICurlHandle::Read( void * const pBufferIn, size_t const  nSize, size_t 
     return ret;
 }
 
-
 /************************************************************************/
 /*                           ReadMultiRange()                           */
 /************************************************************************/
@@ -1725,7 +1668,6 @@ size_t VSICurlHandle::Write( const void * /* pBuffer */,
 /*                                 Eof()                                */
 /************************************************************************/
 
-
 int       VSICurlHandle::Eof()
 {
     return bEOF;
@@ -1748,9 +1690,6 @@ int       VSICurlHandle::Close()
 {
     return 0;
 }
-
-
-
 
 /************************************************************************/
 /*                   VSICurlFilesystemHandler()                         */
@@ -1852,7 +1791,6 @@ CURL* VSICurlFilesystemHandler::GetCurlHandleFor(CPLString osURL)
     }
 }
 
-
 /************************************************************************/
 /*                   GetRegionFromCacheDisk()                           */
 /************************************************************************/
@@ -1911,7 +1849,6 @@ VSICurlFilesystemHandler::GetRegionFromCacheDisk(const char* pszURL,
     return NULL;
 }
 
-
 /************************************************************************/
 /*                  AddRegionToCacheDisk()                                */
 /************************************************************************/
@@ -1964,7 +1901,6 @@ void VSICurlFilesystemHandler::AddRegionToCacheDisk(CachedRegion* psRegion)
     }
     return;
 }
-
 
 /************************************************************************/
 /*                          GetRegion()                                 */
@@ -2080,6 +2016,60 @@ VSICurlHandle* VSICurlFilesystemHandler::CreateFileHandle(const char* pszURL)
 }
 
 /************************************************************************/
+/*                        IsAllowedFilename()                           */
+/************************************************************************/
+
+static bool IsAllowedFilename( const char* pszFilename )
+{
+    const char* pszAllowedFilename =
+        CPLGetConfigOption("CPL_VSIL_CURL_ALLOWED_FILENAME", NULL);
+    if( pszAllowedFilename != NULL )
+    {
+        return strcmp( pszFilename, pszAllowedFilename ) == 0;
+    }
+
+    /* Consider that only the files whose extension ends up with one that is */
+    /* listed in CPL_VSIL_CURL_ALLOWED_EXTENSIONS exist on the server */
+    /* This can speeds up dramatically open experience, in case the server */
+    /* cannot return a file list */
+    /* {noext} can be used as a special token to mean file with no extension */
+    /* For example : */
+    /* gdalinfo --config CPL_VSIL_CURL_ALLOWED_EXTENSIONS ".tif" /vsicurl/http://igskmncngs506.cr.usgs.gov/gmted/Global_tiles_GMTED/075darcsec/bln/W030/30N030W_20101117_gmted_bln075.tif */
+    const char* pszAllowedExtensions =
+        CPLGetConfigOption("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", NULL);
+    if (pszAllowedExtensions)
+    {
+        char** papszExtensions = CSLTokenizeString2( pszAllowedExtensions, ", ", 0 );
+        const size_t nURLLen = strlen(pszFilename);
+        bool bFound = false;
+        for(int i=0;papszExtensions[i] != NULL;i++)
+        {
+            const size_t nExtensionLen = strlen(papszExtensions[i]);
+            if( EQUAL(papszExtensions[i], "{noext}") )
+            {
+                const char* pszLastSlash = strrchr(pszFilename, '/');
+                if( pszLastSlash != NULL && strchr(pszLastSlash, '.') == NULL )
+                {
+                    bFound = true;
+                    break;
+                }
+            }
+            else if (nURLLen > nExtensionLen &&
+                EQUAL(pszFilename + nURLLen - nExtensionLen, papszExtensions[i]))
+            {
+                bFound = true;
+                break;
+            }
+        }
+
+        CSLDestroy(papszExtensions);
+
+        return bFound;
+    }
+    return TRUE;
+}
+
+/************************************************************************/
 /*                                Open()                                */
 /************************************************************************/
 
@@ -2094,6 +2084,8 @@ VSIVirtualHandle* VSICurlFilesystemHandler::Open( const char *pszFilename,
                  "Only read-only mode is supported for /vsicurl");
         return NULL;
     }
+    if( !IsAllowedFilename( pszFilename ) )
+        return NULL;
 
     const char* pszOptionVal =
         CPLGetConfigOption( "GDAL_DISABLE_READDIR_ON_OPEN", "NO" );
@@ -2167,7 +2159,6 @@ static char *VSICurlParserFindEOL( char *pszData )
     else
         return pszData;
 }
-
 
 /************************************************************************/
 /*                   VSICurlParseHTMLDateTimeFileSize()                 */
@@ -2999,6 +2990,9 @@ int VSICurlFilesystemHandler::Stat( const char *pszFilename, VSIStatBufL *pStatB
 
     memset(pStatBuf, 0, sizeof(VSIStatBufL));
 
+    if( !IsAllowedFilename( pszFilename ) )
+        return -1;
+
     const char* pszOptionVal =
         CPLGetConfigOption( "GDAL_DISABLE_READDIR_ON_OPEN", "NO" );
     const bool bSkipReadDir =
@@ -3810,7 +3804,7 @@ VSIVirtualHandle* VSIS3FSHandler::Open( const char *pszFilename,
                                         const char *pszAccess,
                                         bool bSetError)
 {
-    if (strchr(pszAccess, 'w') != NULL )
+    if (strchr(pszAccess, 'w') != NULL || strchr(pszAccess, 'a') != NULL)
     {
         /*if( strchr(pszAccess, '+') != NULL)
         {
@@ -3975,7 +3969,6 @@ char** VSIS3FSHandler::GetFileList( const char *pszDirname,
         CPLDebug("S3", "GetFileList(%s)" , pszDirname);
     *pbGotFileList = false;
     CPLString osDirnameWithoutPrefix = pszDirname + GetFSPrefix().size();
-
 
     VSIS3HandleHelper* poS3HandleHelper =
             VSIS3HandleHelper::BuildFromURI(osDirnameWithoutPrefix, GetFSPrefix().c_str(), true);
@@ -4170,7 +4163,6 @@ void VSIS3Handle::ProcessGetFileSizeResult(const char* pszContent)
 
 } /* end of anoymous namespace */
 
-
 /************************************************************************/
 /*                      VSICurlInstallReadCbk()                         */
 /************************************************************************/
@@ -4184,7 +4176,6 @@ int VSICurlInstallReadCbk (VSILFILE* fp,
                                                 bStopOnInterruptUntilUninstall);
 }
 
-
 /************************************************************************/
 /*                    VSICurlUninstallReadCbk()                         */
 /************************************************************************/
@@ -4193,7 +4184,6 @@ int VSICurlUninstallReadCbk(VSILFILE* fp)
 {
     return ((VSICurlHandle*)fp)->UninstallReadCbk();
 }
-
 
 /************************************************************************/
 /*                       VSICurlSetOptions()                            */
@@ -4340,7 +4330,5 @@ void VSIInstallS3FileHandler(void)
 {
     VSIFileManager::InstallHandler( "/vsis3/", new VSIS3FSHandler );
 }
-
-
 
 #endif /* HAVE_CURL */

@@ -126,7 +126,6 @@ typedef struct
   unsigned int     histogramTableOffset;
 } NITFColormapRecord;
 
-
 typedef struct {
     NITFFile  *psFile;
     int        iSegment;
@@ -332,6 +331,10 @@ typedef struct  {
     double      SAMP_NUM_COEFF[20];
     double      SAMP_DEN_COEFF[20];
 } NITFRPC00BInfo;
+
+char* NITFFormatRPC00BFromMetadata( char** papszRPC, int* pbPrecisionLoss );
+int NITFDeserializeRPC00B( const GByte* pabyTRE, NITFRPC00BInfo *psRPC,
+                           int bIsRPC00A  );
 
 int CPL_DLL NITFReadRPC00B( NITFImage *psImage, NITFRPC00BInfo * );
 int CPL_DLL NITFRPCGeoToImage(NITFRPC00BInfo *, double, double, double,

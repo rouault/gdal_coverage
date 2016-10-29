@@ -408,7 +408,6 @@ OGRTABDataSource::ICreateLayer( const char * pszLayerName,
             poFile = poTABFile;
         }
 
-
         m_nLayerCount++;
         m_papoLayers = (IMapInfoFile **)
             CPLRealloc(m_papoLayers,sizeof(void*)*m_nLayerCount);
@@ -480,6 +479,8 @@ int OGRTABDataSource::TestCapability( const char * pszCap )
 {
     if( EQUAL(pszCap,ODsCCreateLayer) )
         return m_bUpdate && (!m_bSingleFile || !m_bSingleLayerAlreadyCreated);
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return m_bUpdate;
     else
         return FALSE;
 }

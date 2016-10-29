@@ -35,23 +35,17 @@
 #include "cpl_conv.h"
 #include <map>
 #include "cpl_multiproc.h"
+#include "ogr_geometry.h"
+
+#include <algorithm>
 
 CPL_CVSID("$Id$");
-
-#define SUPPORT_GEOMETRY
-
-#ifdef SUPPORT_GEOMETRY
-#  include "ogr_geometry.h"
-#endif
 
 /************************************************************************/
 /*                            ~IGMLReader()                             */
 /************************************************************************/
 
-IGMLReader::~IGMLReader()
-
-{
-}
+IGMLReader::~IGMLReader() {}
 
 /************************************************************************/
 /* ==================================================================== */
@@ -67,6 +61,7 @@ IGMLReader::~IGMLReader()
 IGMLReader *CreateGMLReader(bool /*bUseExpatParserPreferably*/,
                             bool /*bInvertAxisOrderIfLatLong*/,
                             bool /*bConsiderEPSGAsURN*/,
+                            GMLSwapCoordinatesEnum /* eSwapCoordinates */,
                             bool /*bGetSecondaryGeometryOption*/)
 {
     CPLError( CE_Failure, CPLE_AppDefined,
@@ -89,19 +84,19 @@ IGMLReader *CreateGMLReader(bool /*bUseExpatParserPreferably*/,
 IGMLReader *CreateGMLReader(bool bUseExpatParserPreferably,
                             bool bInvertAxisOrderIfLatLong,
                             bool bConsiderEPSGAsURN,
+                            GMLSwapCoordinatesEnum eSwapCoordinates,
                             bool bGetSecondaryGeometryOption)
 
 {
     return new GMLReader(bUseExpatParserPreferably,
                          bInvertAxisOrderIfLatLong,
                          bConsiderEPSGAsURN,
+                         eSwapCoordinates,
                          bGetSecondaryGeometryOption);
 }
 
 #endif
 
-OGRGMLXercesState GMLReader::m_eXercesInitState = OGRGML_XERCES_UNINITIALIZED;
-int GMLReader::m_nInstanceCount = 0;
 CPLMutex *GMLReader::hMutex = NULL;
 
 /************************************************************************/
@@ -115,6 +110,7 @@ CPL_UNUSED
                      bool bUseExpatParserPreferably,
                      bool bInvertAxisOrderIfLatLong,
                      bool bConsiderEPSGAsURN,
+                     GMLSwapCoordinatesEnum eSwapCoordinates,
                      bool bGetSecondaryGeometryOption ) :
     m_bClassListLocked(false),
     m_nClassCount(0),
@@ -131,7 +127,8 @@ CPL_UNUSED
     m_poSAXReader(NULL),
     m_poCompleteFeature(NULL),
     m_GMLInputSource(NULL),
-  m_bEOF(false),
+    m_bEOF(false),
+    m_bXercesInitialized(false),
 #endif
 #ifdef HAVE_EXPAT
     oParser(NULL),
@@ -151,6 +148,7 @@ CPL_UNUSED
         CPLGetConfigOption("GML_FETCH_ALL_GEOMETRIES", "NO"))),
     m_bInvertAxisOrderIfLatLong(bInvertAxisOrderIfLatLong),
     m_bConsiderEPSGAsURN(bConsiderEPSGAsURN),
+    m_eSwapCoordinates(eSwapCoordinates),
     m_bGetSecondaryGeometryOption(bGetSecondaryGeometryOption),
     m_pszGlobalSRSName(NULL),
     m_bCanUseGlobalSRSName(false),
@@ -197,15 +195,8 @@ GMLReader::~GMLReader()
     delete m_poRecycledState;
 
 #ifdef HAVE_XERCES
-    {
-    CPLMutexHolderD(&hMutex);
-    --m_nInstanceCount;
-    if( m_nInstanceCount == 0 && m_eXercesInitState == OGRGML_XERCES_INIT_SUCCESSFUL )
-    {
-        XMLPlatformUtils::Terminate();
-        m_eXercesInitState = OGRGML_XERCES_UNINITIALIZED;
-    }
-    }
+    if( m_bXercesInitialized )
+        OGRDeinitializeXerces();
 #endif
 #ifdef HAVE_EXPAT
     CPLFree(pabyBuf);
@@ -298,28 +289,11 @@ bool GMLReader::SetupParser()
 
 bool GMLReader::SetupParserXerces()
 {
+    if( !m_bXercesInitialized )
     {
-    CPLMutexHolderD(&hMutex);
-    m_nInstanceCount++;
-    if( m_eXercesInitState == OGRGML_XERCES_UNINITIALIZED )
-    {
-        try
-        {
-            XMLPlatformUtils::Initialize();
-        }
-
-        catch (const XMLException& toCatch)
-        {
-            CPLError( CE_Warning, CPLE_AppDefined,
-                      "Exception initializing Xerces based GML reader.\n%s",
-                      tr_strdup(toCatch.getMessage()) );
-            m_eXercesInitState = OGRGML_XERCES_INIT_FAILED;
+        if( !OGRInitializeXerces() )
             return false;
-        }
-        m_eXercesInitState = OGRGML_XERCES_INIT_SUCCESSFUL;
-    }
-    if( m_eXercesInitState != OGRGML_XERCES_INIT_SUCCESSFUL )
-        return false;
+        m_bXercesInitialized = true;
     }
 
     // Cleanup any old parser.
@@ -357,11 +331,7 @@ bool GMLReader::SetupParserXerces()
 #else
         m_poSAXReader->setFeature( XMLUni::fgSAX2CoreValidation, false);
 
-#if XERCES_VERSION_MAJOR >= 3
         m_poSAXReader->setFeature( XMLUni::fgXercesSchema, false);
-#else
-        m_poSAXReader->setFeature( XMLUni::fgSAX2CoreNameSpaces, false);
-#endif
 
 #endif
         XMLString::release( &xmlUriValid );
@@ -466,16 +436,13 @@ void GMLReader::CleanupParser()
 
 GMLBinInputStream::GMLBinInputStream(VSILFILE* fpIn) :
     fp(fpIn)
-#if XERCES_VERSION_MAJOR >= 3
     ,emptyString(0)
-#endif
 {}
 
 GMLBinInputStream::~ GMLBinInputStream()
 {
 }
 
-#if XERCES_VERSION_MAJOR >= 3
 XMLFilePos GMLBinInputStream::curPos() const
 {
     return (XMLFilePos)VSIFTellL(fp);
@@ -490,17 +457,6 @@ const XMLCh* GMLBinInputStream::getContentType() const
 {
     return &emptyString;
 }
-#else
-unsigned int GMLBinInputStream::curPos() const
-{
-    return (unsigned int)VSIFTellL(fp);
-}
-
-unsigned int GMLBinInputStream::readBytes(XMLByte* const toFill, const unsigned int maxToRead)
-{
-    return (unsigned int)VSIFReadL(toFill, 1, maxToRead, fp);
-}
-#endif
 
 GMLInputSource::GMLInputSource(VSILFILE* fp, MemoryManager* const manager) :
     InputSource(manager),
@@ -556,22 +512,21 @@ GMLFeature *GMLReader::NextFeatureXerces()
 
         poReturn = m_poCompleteFeature;
         m_poCompleteFeature = NULL;
-
     }
     catch (const XMLException& toCatch)
     {
-        char *pszErrorMessage = tr_strdup( toCatch.getMessage() );
+        CPLString osErrMsg;
+        transcode( toCatch.getMessage(), osErrMsg );
         CPLDebug( "GML",
                   "Error during NextFeature()! Message:\n%s",
-                  pszErrorMessage );
-        CPLFree(pszErrorMessage);
+                  osErrMsg.c_str() );
         m_bStopParsing = true;
     }
     catch (const SAXException& toCatch)
     {
-        char *pszErrorMessage = tr_strdup( toCatch.getMessage() );
-        CPLError(CE_Failure, CPLE_AppDefined, "%s", pszErrorMessage);
-        CPLFree(pszErrorMessage);
+        CPLString osErrMsg;
+        transcode( toCatch.getMessage(), osErrMsg );
+        CPLError(CE_Failure, CPLE_AppDefined, "%s", osErrMsg.c_str());
         m_bStopParsing = true;
     }
 
@@ -633,7 +588,6 @@ GMLFeature *GMLReader::NextFeatureExpat()
         }
         if (!m_bStopParsing)
             m_bStopParsing = ((GMLExpatHandler*)m_poGMLHandler)->HasStoppedParsing();
-
     } while (!nDone && !m_bStopParsing && nFeatureTabLength == 0);
 
     return (nFeatureTabLength) ? ppoFeatureTab[nFeatureTabIndex++] : NULL;
@@ -1387,17 +1341,21 @@ bool GMLReader::PrescanForSchema( bool bGetExtents,
                 poClass->AddGeometryProperty( new GMLGeometryPropertyDefn( "", "", wkbUnknown, -1, true ) );
         }
 
-#ifdef SUPPORT_GEOMETRY
         if( bGetExtents && papsGeometry != NULL )
         {
             OGRGeometry *poGeometry = GML_BuildOGRGeometryFromList(
                 papsGeometry, true, m_bInvertAxisOrderIfLatLong,
-                NULL, m_bConsiderEPSGAsURN, m_bGetSecondaryGeometryOption,
+                NULL, m_bConsiderEPSGAsURN,
+                m_eSwapCoordinates,
+                m_bGetSecondaryGeometryOption,
                 hCacheSRS, m_bFaceHoleNegative );
 
             if( poGeometry != NULL && poClass->GetGeometryPropertyCount() > 0 )
             {
-                double  dfXMin, dfXMax, dfYMin, dfYMax;
+                double dfXMin;
+                double dfXMax;
+                double dfYMin;
+                double dfYMax;
                 OGREnvelope sEnvelope;
 
                 OGRwkbGeometryType eGType = (OGRwkbGeometryType)
@@ -1427,10 +1385,10 @@ bool GMLReader::PrescanForSchema( bool bGetExtents,
                     poGeometry->getEnvelope( &sEnvelope );
                     if( poClass->GetExtents(&dfXMin, &dfXMax, &dfYMin, &dfYMax) )
                     {
-                        dfXMin = MIN(dfXMin,sEnvelope.MinX);
-                        dfXMax = MAX(dfXMax,sEnvelope.MaxX);
-                        dfYMin = MIN(dfYMin,sEnvelope.MinY);
-                        dfYMax = MAX(dfYMax,sEnvelope.MaxY);
+                        dfXMin = std::min(dfXMin, sEnvelope.MinX);
+                        dfXMax = std::max(dfXMax, sEnvelope.MaxX);
+                        dfYMin = std::min(dfYMin, sEnvelope.MinY);
+                        dfYMax = std::max(dfYMax, sEnvelope.MaxY);
                     }
                     else
                     {
@@ -1443,9 +1401,7 @@ bool GMLReader::PrescanForSchema( bool bGetExtents,
                     poClass->SetExtents( dfXMin, dfXMax, dfYMin, dfYMax );
                 }
                 delete poGeometry;
-
             }
-#endif /* def SUPPORT_GEOMETRY */
         }
 
         delete poFeature;
@@ -1483,7 +1439,10 @@ bool GMLReader::PrescanForSchema( bool bGetExtents,
             /* order */
             if (m_bCanUseGlobalSRSName)
             {
-                double  dfXMin, dfXMax, dfYMin, dfYMax;
+                double dfXMin = 0.0;
+                double dfXMax = 0.0;
+                double dfYMin = 0.0;
+                double dfYMax = 0.0;
                 if( poClass->GetExtents(&dfXMin, &dfXMax, &dfYMin, &dfYMax) )
                     poClass->SetExtents( dfYMin, dfYMax, dfXMin, dfXMax );
             }

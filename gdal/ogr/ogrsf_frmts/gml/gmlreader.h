@@ -34,6 +34,7 @@
 #include "cpl_port.h"
 #include "cpl_vsi.h"
 #include "cpl_minixml.h"
+#include "gmlutils.h"
 
 #include <vector>
 
@@ -305,7 +306,7 @@ class CPL_DLL IGMLReader
     virtual bool PrescanForSchema( bool bGetExtents = true,
                                   bool bAnalyzeSRSPerFeature = true,
                                   bool bOnlyDetectSRS = false ) = 0;
-    virtual bool PrescanForTemplate( void ) = 0;
+    virtual bool PrescanForTemplate() = 0;
 
     virtual bool HasStoppedParsing() = 0;
 
@@ -322,7 +323,7 @@ class CPL_DLL IGMLReader
 IGMLReader *CreateGMLReader(bool bUseExpatParserPreferably,
                             bool bInvertAxisOrderIfLatLong,
                             bool bConsiderEPSGAsURN,
+                            GMLSwapCoordinatesEnum eSwapCoordinates,
                             bool bGetSecondaryGeometryOption);
-
 
 #endif /* GMLREADER_H_INCLUDED */

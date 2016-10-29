@@ -327,7 +327,6 @@ bool netCDFLayer::Create(char** papszOptions,
 
             m_osCoordinatesValue += " ";
             m_osCoordinatesValue += pszZVarName;
-
         }
 
         const char* pszFeatureTypeVal = m_osProfileDimName.size() ? "profile" : "point";
@@ -471,7 +470,6 @@ void netCDFLayer::SetRecordDimID(int nRecordDimID)
     NCDF_ERR(status);
     m_osRecordDimName = szTemp;
 }
-
 
 /************************************************************************/
 /*                            GetFillValue()                            */
@@ -2248,7 +2246,6 @@ OGRErr netCDFLayer::CreateField(OGRFieldDefn* poFieldDefn, int /* bApproxOK */)
             return OGRERR_FAILURE;
     }
 
-
     FieldDesc fieldDesc;
     fieldDesc.uNoData = nodata;
     fieldDesc.nType = nType;
@@ -2351,6 +2348,6 @@ int netCDFLayer::TestCapability(const char* pszCap)
     if( EQUAL(pszCap, OLCCreateField) )
         return m_poDS->GetAccess() == GA_Update;
     if( EQUAL(pszCap, OLCFastFeatureCount) )
-        return( m_poFilterGeom == NULL && m_poAttrQuery == NULL );
+        return m_poFilterGeom == NULL && m_poAttrQuery == NULL;
     return FALSE;
 }

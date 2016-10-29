@@ -63,7 +63,7 @@ S57Writer::~S57Writer()
 /*      Close the current S-57 dataset.                                 */
 /************************************************************************/
 
-int S57Writer::Close()
+bool S57Writer::Close()
 
 {
     if( poModule != NULL )
@@ -72,7 +72,7 @@ int S57Writer::Close()
         delete poModule;
         poModule = NULL;
     }
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -82,7 +82,7 @@ int S57Writer::Close()
 /*      definitions.                                                    */
 /************************************************************************/
 
-int S57Writer::CreateS57File( const char *pszFilename )
+bool S57Writer::CreateS57File( const char *pszFilename )
 
 {
     // TODO: What was oModule for if it was unused?
@@ -421,23 +421,23 @@ int S57Writer::CreateS57File( const char *pszFilename )
     {
         delete poModule;
         poModule = NULL;
-        return FALSE;
+        return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
 /*                             WriteDSID()                              */
 /************************************************************************/
 
-int S57Writer::WriteDSID( int nEXPP /*1*/, int nINTU /*4*/,
-                          const char *pszDSNM, const char *pszEDTN,
-                          const char *pszUPDN, const char *pszUADT,
-                          const char *pszISDT, const char *pszSTED,
-                          int nAGEN, const char *pszCOMT,
-                          int nNOMR, int nNOGR, int nNOLR, int nNOIN,
-                          int nNOCN, int nNOED )
+bool S57Writer::WriteDSID( int nEXPP /*1*/, int nINTU /*4*/,
+                           const char *pszDSNM, const char *pszEDTN,
+                           const char *pszUPDN, const char *pszUADT,
+                           const char *pszISDT, const char *pszSTED,
+                           int nAGEN, const char *pszCOMT,
+                           int nNOMR, int nNOGR, int nNOLR, int nNOIN,
+                           int nNOCN, int nNOED )
 
 {
 /* -------------------------------------------------------------------- */
@@ -512,14 +512,14 @@ int S57Writer::WriteDSID( int nEXPP /*1*/, int nINTU /*4*/,
     poRec->Write();
     delete poRec;
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
 /*                             WriteDSPM()                              */
 /************************************************************************/
 
-int S57Writer::WriteDSPM( int nHDAT, int nVDAT, int nSDAT, int nCSCL )
+bool S57Writer::WriteDSPM( int nHDAT, int nVDAT, int nSDAT, int nCSCL )
 
 {
     if( nHDAT == 0 )
@@ -559,7 +559,7 @@ int S57Writer::WriteDSPM( int nHDAT, int nVDAT, int nSDAT, int nCSCL )
     poRec->Write();
     delete poRec;
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -590,8 +590,8 @@ DDFRecord *S57Writer::MakeRecord()
 /*                           WriteGeometry()                            */
 /************************************************************************/
 
-int S57Writer::WriteGeometry( DDFRecord *poRec, int nVertCount,
-                              double *padfX, double *padfY, double *padfZ )
+bool S57Writer::WriteGeometry( DDFRecord *poRec, int nVertCount,
+                               double *padfX, double *padfY, double *padfZ )
 
 {
     const char *pszFieldName = "SG2D";
@@ -631,9 +631,9 @@ int S57Writer::WriteGeometry( DDFRecord *poRec, int nVertCount,
         }
     }
 
-    int nSuccess = poRec->SetFieldRaw(
+    const bool nSuccess = CPL_TO_BOOL(poRec->SetFieldRaw(
         poField, 0,
-        reinterpret_cast<const char *>( pabyRawData ), nRawDataSize );
+        reinterpret_cast<const char *>( pabyRawData ), nRawDataSize ));
 
     CPLFree( pabyRawData );
 
@@ -644,7 +644,7 @@ int S57Writer::WriteGeometry( DDFRecord *poRec, int nVertCount,
 /*                           WritePrimitive()                           */
 /************************************************************************/
 
-int S57Writer::WritePrimitive( OGRFeature *poFeature )
+bool S57Writer::WritePrimitive( OGRFeature *poFeature )
 
 {
     DDFRecord *poRec = MakeRecord();
@@ -669,15 +669,14 @@ int S57Writer::WritePrimitive( OGRFeature *poFeature )
 /* -------------------------------------------------------------------- */
     if( poGeom != NULL && wkbFlatten(poGeom->getGeometryType()) == wkbPoint )
     {
-        double dfX, dfY, dfZ;
         OGRPoint *poPoint = (OGRPoint *) poGeom;
 
         CPLAssert( poFeature->GetFieldAsInteger( "RCNM") == RCNM_VI
                    || poFeature->GetFieldAsInteger( "RCNM") == RCNM_VC );
 
-        dfX = poPoint->getX();
-        dfY = poPoint->getY();
-        dfZ = poPoint->getZ();
+        double dfX = poPoint->getX();
+        double dfY = poPoint->getY();
+        double dfZ = poPoint->getZ();
 
         if( dfZ == 0.0 )
             WriteGeometry( poRec, 1, &dfX, &dfY, NULL );
@@ -692,17 +691,16 @@ int S57Writer::WritePrimitive( OGRFeature *poFeature )
              && wkbFlatten(poGeom->getGeometryType()) == wkbMultiPoint )
     {
         OGRMultiPoint *poMP = (OGRMultiPoint *) poGeom;
-        int i, nVCount = poMP->getNumGeometries();
-        double *padfX, *padfY, *padfZ;
+        const int nVCount = poMP->getNumGeometries();
 
         CPLAssert( poFeature->GetFieldAsInteger( "RCNM") == RCNM_VI
                    || poFeature->GetFieldAsInteger( "RCNM") == RCNM_VC );
 
-        padfX = (double *) CPLMalloc(sizeof(double) * nVCount);
-        padfY = (double *) CPLMalloc(sizeof(double) * nVCount);
-        padfZ = (double *) CPLMalloc(sizeof(double) * nVCount);
+        double *padfX = (double *) CPLMalloc(sizeof(double) * nVCount);
+        double *padfY = (double *) CPLMalloc(sizeof(double) * nVCount);
+        double *padfZ = (double *) CPLMalloc(sizeof(double) * nVCount);
 
-        for( i = 0; i < nVCount; i++ )
+        for( int i = 0; i < nVCount; i++ )
         {
             OGRPoint *poPoint = (OGRPoint *) poMP->getGeometryRef( i );
             padfX[i] = poPoint->getX();
@@ -724,15 +722,14 @@ int S57Writer::WritePrimitive( OGRFeature *poFeature )
              && wkbFlatten(poGeom->getGeometryType()) == wkbLineString )
     {
         OGRLineString *poLS = (OGRLineString *) poGeom;
-        int i, nVCount = poLS->getNumPoints();
-        double *padfX, *padfY;
+        const int nVCount = poLS->getNumPoints();
 
         CPLAssert( poFeature->GetFieldAsInteger( "RCNM") == RCNM_VE );
 
-        padfX = (double *) CPLMalloc(sizeof(double) * nVCount);
-        padfY = (double *) CPLMalloc(sizeof(double) * nVCount);
+        double *padfX = (double *) CPLMalloc(sizeof(double) * nVCount);
+        double *padfY = (double *) CPLMalloc(sizeof(double) * nVCount);
 
-        for( i = 0; i < nVCount; i++ )
+        for( int i = 0; i < nVCount; i++ )
         {
             padfX[i] = poLS->getX(i);
             padfY[i] = poLS->getY(i);
@@ -743,7 +740,6 @@ int S57Writer::WritePrimitive( OGRFeature *poFeature )
 
         CPLFree( padfX );
         CPLFree( padfY );
-
     }
 
 /* -------------------------------------------------------------------- */
@@ -801,7 +797,7 @@ int S57Writer::WritePrimitive( OGRFeature *poFeature )
     poRec->Write();
     delete poRec;
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -811,10 +807,10 @@ int S57Writer::WritePrimitive( OGRFeature *poFeature )
 static char GetHEXChar( const char *pszSrcHEXString )
 
 {
-    int nResult = 0;
-
     if( pszSrcHEXString[0] == '\0' || pszSrcHEXString[1] == '\0' )
         return (char) 0;
+
+    int nResult = 0;
 
     if( pszSrcHEXString[0] >= '0' && pszSrcHEXString[0] <= '9' )
         nResult += (pszSrcHEXString[0] - '0') * 16;
@@ -837,7 +833,7 @@ static char GetHEXChar( const char *pszSrcHEXString )
 /*                        WriteCompleteFeature()                        */
 /************************************************************************/
 
-int S57Writer::WriteCompleteFeature( OGRFeature *poFeature )
+bool S57Writer::WriteCompleteFeature( OGRFeature *poFeature )
 
 {
     OGRFeatureDefn *poFDefn = poFeature->GetDefnRef();
@@ -894,7 +890,7 @@ int S57Writer::WriteCompleteFeature( OGRFeature *poFeature )
         && !WriteATTF( poRec, poFeature ) )
     {
         delete poRec;
-        return FALSE;
+        return false;
     }
 
 /* -------------------------------------------------------------------- */
@@ -986,7 +982,7 @@ int S57Writer::WriteCompleteFeature( OGRFeature *poFeature )
     poRec->Write();
     delete poRec;
 
-    return TRUE;
+    return true;
 }
 
 /************************************************************************/
@@ -1005,7 +1001,7 @@ void S57Writer::SetClassBased( S57ClassRegistrar * poReg,
 /*                             WriteATTF()                              */
 /************************************************************************/
 
-int S57Writer::WriteATTF( DDFRecord *poRec, OGRFeature *poFeature )
+bool S57Writer::WriteATTF( DDFRecord *poRec, OGRFeature *poFeature )
 {
     CPLAssert( poRegistrar != NULL );
 
@@ -1051,7 +1047,7 @@ int S57Writer::WriteATTF( DDFRecord *poRec, OGRFeature *poFeature )
         {
             CPLError( CE_Failure, CPLE_AppDefined,
                       "Too much ATTF data for fixed buffer size." );
-            return FALSE;
+            return false;
         }
 
         // copy data into record buffer.
@@ -1066,12 +1062,12 @@ int S57Writer::WriteATTF( DDFRecord *poRec, OGRFeature *poFeature )
 /*      If we got no attributes, return without adding ATTF.            */
 /* -------------------------------------------------------------------- */
     if( nACount == 0 )
-        return TRUE;
+        return true;
 
 /* -------------------------------------------------------------------- */
 /*      Write the new field value.                                      */
 /* -------------------------------------------------------------------- */
     DDFField *poField = poRec->AddField( poModule->FindFieldDefn( "ATTF" ) );
 
-    return poRec->SetFieldRaw( poField, 0, achRawData, nRawSize );
+    return CPL_TO_BOOL(poRec->SetFieldRaw( poField, 0, achRawData, nRawSize ));
 }

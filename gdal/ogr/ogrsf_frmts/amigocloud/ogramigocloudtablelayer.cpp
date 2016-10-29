@@ -369,7 +369,7 @@ OGRErr OGRAmigoCloudTableLayer::CreateField( OGRFieldDefn *poFieldIn,
         osSQL.Printf( "ALTER TABLE %s ADD COLUMN %s %s",
                     OGRAMIGOCLOUDEscapeIdentifier(osTableName).c_str(),
                     OGRAMIGOCLOUDEscapeIdentifier(oField.GetNameRef()).c_str(),
-                    OGRPGCommonLayerGetType(oField, FALSE, TRUE).c_str() );
+                    OGRPGCommonLayerGetType(oField, false, true).c_str() );
         if( !oField.IsNullable() )
             osSQL += " NOT NULL";
         if( oField.GetDefault() != NULL && !oField.IsDefaultDriverSpecific() )
@@ -410,7 +410,6 @@ OGRErr OGRAmigoCloudTableLayer::ICreateFeature( OGRFeature *poFeature )
                  "Operation not available in read-only mode");
         return OGRERR_FAILURE;
     }
-
 
     std::stringstream record;
 
@@ -532,7 +531,6 @@ OGRErr OGRAmigoCloudTableLayer::ISetFeature( OGRFeature *poFeature )
         return OGRERR_FAILURE;
     }
 
-
     std::map<GIntBig, OGRAmigoCloudFID>::iterator it = mFIDs.find( poFeature->GetFID() );
     if(it!=mFIDs.end())
     {
@@ -604,18 +602,15 @@ OGRErr OGRAmigoCloudTableLayer::ISetFeature( OGRFeature *poFeature )
             }
         }
 
-
         osSQL += CPLSPrintf(" WHERE %s = '%s'",
                             OGRAMIGOCLOUDEscapeIdentifier(osFIDColName).c_str(),
                             aFID.osAmigoId.c_str());
-
 
         std::stringstream changeset;
         changeset << "{\"query\": \"" << json_encode(osSQL) << "\"}";
         std::stringstream url;
         url << std::string(poDS->GetAPIURL()) << "/users/0/projects/" + std::string(poDS->GetProjetcId()) + "/sql";
         json_object *poObj = poDS->RunPOST(url.str().c_str(), changeset.str().c_str());
-
 
         if(poObj != NULL)
         {

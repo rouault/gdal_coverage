@@ -96,7 +96,7 @@ class CPL_DLL GDALProxyDataset : public GDALDataset
         virtual CPLErr          CreateMaskBand( int nFlags );
 
   private:
-    CPL_DISALLOW_COPY_ASSIGN(GDALProxyDataset);
+    CPL_DISALLOW_COPY_ASSIGN(GDALProxyDataset)
 };
 
 /* ******************************************************************** */
@@ -195,9 +195,8 @@ class CPL_DLL GDALProxyRasterBand : public GDALRasterBand
                                                 GIntBig *pnLineSpace,
                                                 char **papszOptions );
   private:
-    CPL_DISALLOW_COPY_ASSIGN(GDALProxyRasterBand);
+    CPL_DISALLOW_COPY_ASSIGN(GDALProxyRasterBand)
 };
-
 
 /* ******************************************************************** */
 /*                     GDALProxyPoolDataset                             */
@@ -259,7 +258,7 @@ class CPL_DLL GDALProxyPoolDataset : public GDALProxyDataset
         virtual const char *GetGCPProjection();
         virtual const GDAL_GCP *GetGCPs();
   private:
-    CPL_DISALLOW_COPY_ASSIGN(GDALProxyPoolDataset);
+    CPL_DISALLOW_COPY_ASSIGN(GDALProxyPoolDataset)
 };
 
 /* ******************************************************************** */
@@ -314,7 +313,7 @@ class CPL_DLL GDALProxyPoolRasterBand : public GDALProxyRasterBand
         virtual GDALRasterBand *GetRasterSampleOverview( GUIntBig nDesiredSamples); // TODO
         virtual GDALRasterBand *GetMaskBand();
   private:
-    CPL_DISALLOW_COPY_ASSIGN(GDALProxyPoolRasterBand);
+    CPL_DISALLOW_COPY_ASSIGN(GDALProxyPoolRasterBand)
 };
 
 /* ******************************************************************** */
@@ -374,7 +373,6 @@ class GDALProxyPoolMaskBand : public GDALProxyPoolRasterBand
 /* ******************************************************************** */
 /*            C types and methods declarations                          */
 /* ******************************************************************** */
-
 
 CPL_C_START
 

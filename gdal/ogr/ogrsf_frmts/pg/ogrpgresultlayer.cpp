@@ -113,7 +113,6 @@ OGRPGResultLayer::OGRPGResultLayer( OGRPGDataSource *poDSIn,
         OGRPGClearResult( hResult );
     }
 
-#ifndef PG_PRE74
     /* Determine the table from which the geometry column is extracted */
     if (iGeomCol != -1)
     {
@@ -135,7 +134,6 @@ OGRPGResultLayer::OGRPGResultLayer( OGRPGDataSource *poDSIn,
             OGRPGClearResult( hTableNameResult );
         }
     }
-#endif
 }
 
 /************************************************************************/
@@ -149,7 +147,6 @@ OGRPGResultLayer::~OGRPGResultLayer()
     CPLFree( pszGeomTableName );
     CPLFree( pszGeomTableSchemaName );
 }
-
 
 /************************************************************************/
 /*                      BuildFullQueryStatement()                       */
@@ -213,7 +210,6 @@ GIntBig OGRPGResultLayer::GetFeatureCount( int bForce )
     return nCount;
 }
 
-
 /************************************************************************/
 /*                           TestCapability()                           */
 /************************************************************************/
@@ -261,7 +257,6 @@ int OGRPGResultLayer::TestCapability( const char * pszCap )
     else
         return FALSE;
 }
-
 
 /************************************************************************/
 /*                           GetNextFeature()                           */
@@ -354,7 +349,6 @@ void OGRPGResultLayer::SetSpatialFilter( int iGeomField, OGRGeometry * poGeomIn 
 
         ResetReading();
     }
-
 }
 
 /************************************************************************/

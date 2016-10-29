@@ -249,9 +249,9 @@ class OGRPGTableLayer : public OGRPGLayer
 {
     int                 bUpdateAccess;
 
-    void                BuildWhere(void);
-    CPLString           BuildFields(void);
-    void                BuildFullQueryStatement(void);
+    void                BuildWhere();
+    CPLString           BuildFields();
+    void                BuildFullQueryStatement();
 
     char               *pszTableName;
     char               *pszSchemaName;
@@ -402,7 +402,7 @@ public:
 
 class OGRPGResultLayer : public OGRPGLayer
 {
-    void                BuildFullQueryStatement(void);
+    void                BuildFullQueryStatement();
 
     char                *pszRawStatement;
 
@@ -502,6 +502,9 @@ class OGRPGDataSource : public OGRDataSource
     int                 bBinaryTimeFormatIsInt8;
     int                 bUseEscapeStringSyntax;
 
+    bool                m_bHasGeometryColumns;
+    bool                m_bHasSpatialRefSys;
+
     int                GetUndefinedSRID() const { return nUndefinedSRID; }
 
   public:
@@ -528,7 +531,7 @@ class OGRPGDataSource : public OGRDataSource
     OGRLayer            *GetLayer( int );
     OGRLayer            *GetLayerByName(const char * pszName);
 
-    virtual void        FlushCache(void);
+    virtual void        FlushCache();
 
     virtual OGRLayer    *ICreateLayer( const char *,
                                       OGRSpatialReference * = NULL,

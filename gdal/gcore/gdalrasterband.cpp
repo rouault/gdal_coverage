@@ -32,6 +32,7 @@
 #include "gdal_priv.h"
 #include "gdal_rat.h"
 
+#include <algorithm>
 #include <limits>
 
 CPL_CVSID("$Id$");
@@ -61,10 +62,12 @@ void GDALRasterBand::Init(int bForceCachedIOIn)
 {
     poDS = NULL;
     nBand = 0;
-    nRasterXSize = nRasterYSize = 0;
+    nRasterXSize = 0;
+    nRasterYSize = 0;
 
     eAccess = GA_ReadOnly;
-    nBlockXSize = nBlockYSize = -1;
+    nBlockXSize = -1;
+    nBlockYSize = -1;
     eDataType = GDT_Byte;
 
     nBlocksPerRow = 0;
@@ -507,7 +510,6 @@ GDALRasterIOEx( GDALRasterBandH hBand, GDALRWFlag eRWFlag,
 </pre>
  */
 
-
 CPLErr GDALRasterBand::ReadBlock( int nXBlockOff, int nYBlockOff,
                                    void * pImage )
 
@@ -588,7 +590,7 @@ CPLErr CPL_STDCALL GDALReadBlock( GDALRasterBandH hBand, int nXOff, int nYOff,
 /*                            IWriteBlock()                             */
 /************************************************************************/
 
-/** 
+/**
  * \fn GDALRasterBand::IWriteBlock(int, int, void*)
  * Write a block of data.
  *
@@ -733,20 +735,20 @@ CPLErr CPL_STDCALL GDALWriteBlock( GDALRasterBandH hBand, int nXOff, int nYOff,
 * Handles partial blocks at the edges of the raster and returns the true
 * number of pixels
 *
-* @param nXBlockOff the horizontal block offset for which to calculate the number of 
+* @param nXBlockOff the horizontal block offset for which to calculate the number of
 * valid pixels, with zero indicating the left most block, 1 the next block and so forth.
 *
 * @param nYBlockOff the vertical block offset, with zero indicating
 * the left most block, 1 the next block and so forth.
 *
-* @param pnXValid pointer to an integer in which the number of valid pixels in the x 
+* @param pnXValid pointer to an integer in which the number of valid pixels in the x
 * direction will be stored
 *
-* @param pnYValid pointer to an integer in which the number of valid pixels in the y 
+* @param pnYValid pointer to an integer in which the number of valid pixels in the y
 * direction will be stored
 *
 * @return CE_None if the input parameter are valid, CE_Failure otherwise
-* 
+*
 * @since GDAL 2.2
 */
 CPLErr GDALRasterBand::GetActualBlockSize(int nXBlockOff, int nYBlockOff,
@@ -813,7 +815,6 @@ CPLErr CPL_STDCALL GDALGetActualBlockSize( GDALRasterBandH hBand,
  *
  * @return the data type of pixels for this band.
  */
-
 
 GDALDataType GDALRasterBand::GetRasterDataType()
 
@@ -1041,7 +1042,6 @@ CPLErr CPL_STDCALL GDALFlushRasterCache( GDALRasterBandH hBand )
 
     return ((GDALRasterBand *) hBand)->FlushCache();
 }
-
 
 /************************************************************************/
 /*                        UnreferenceBlock()                            */
@@ -1306,19 +1306,21 @@ GDALRasterBlock * GDALRasterBand::GetLockedBlockRef( int nXBlockOff,
             return NULL;
         }
 
-        if( !bJustInitialize
-         && IReadBlock(nXBlockOff,nYBlockOff,poBlock->GetDataRef()) != CE_None)
-        {
-            poBlock->DropLock();
-            FlushBlock( nXBlockOff, nYBlockOff );
-            ReportError( CE_Failure, CPLE_AppDefined,
-                "IReadBlock failed at X offset %d, Y offset %d",
-                nXBlockOff, nYBlockOff );
-            return NULL;
-        }
-
         if( !bJustInitialize )
         {
+            int bCallLeaveReadWrite = EnterReadWrite(GF_Read);
+            eErr = IReadBlock(nXBlockOff,nYBlockOff,poBlock->GetDataRef());
+            if( bCallLeaveReadWrite) LeaveReadWrite();
+            if( eErr != CE_None )
+            {
+                poBlock->DropLock();
+                FlushBlock( nXBlockOff, nYBlockOff );
+                ReportError( CE_Failure, CPLE_AppDefined,
+                    "IReadBlock failed at X offset %d, Y offset %d",
+                    nXBlockOff, nYBlockOff );
+                return NULL;
+            }
+
             nBlockReads++;
             if( static_cast<GIntBig>(nBlockReads) ==
                 static_cast<GIntBig>(nBlocksPerRow) * nBlocksPerColumn + 1
@@ -1423,7 +1425,6 @@ CPLErr GDALRasterBand::Fill( double dfRealValue, double dfImaginaryValue ) {
 
     return CE_None;
 }
-
 
 /************************************************************************/
 /*                         GDALFillRaster()                             */
@@ -2194,7 +2195,6 @@ int CPL_STDCALL GDALGetOverviewCount( GDALRasterBandH hBand )
     GDALRasterBand *poBand = static_cast<GDALRasterBand*>(hBand);
     return poBand->GetOverviewCount();
 }
-
 
 /************************************************************************/
 /*                            GetOverview()                             */
@@ -3106,10 +3106,12 @@ CPLErr GDALRasterBand::GetHistogram( double dfMin, double dfMax,
         if ( bApproxOK )
         {
             nSampleRate = static_cast<int>(
-                MAX(1,sqrt((double) nBlocksPerRow * nBlocksPerColumn)) );
+                std::max(1.0,
+                         sqrt(static_cast<double>(nBlocksPerRow) *
+                              nBlocksPerColumn)));
             // We want to avoid probing only the first column of blocks for
             // a square shaped raster, because it is not unlikely that it may
-            // be padding only (#6378)
+            // be padding only (#6378).
             if( nSampleRate == nBlocksPerRow && nBlocksPerRow > 1 )
               nSampleRate += 1;
         }
@@ -3639,7 +3641,6 @@ CPLErr GDALRasterBand::AdviseRead(
 /*                        GDALRasterAdviseRead()                        */
 /************************************************************************/
 
-
 /**
  * \brief Advise driver of upcoming read requests.
  *
@@ -4147,7 +4148,6 @@ void ComputeStatisticsInternalGeneric<GByte>( int nXCheck,
     }
 }
 
-
 template<class T>
 static void ComputeStatisticsInternal( int nXCheck,
                                        int nBlockXSize,
@@ -4569,7 +4569,6 @@ void ComputeStatisticsInternal<GUInt16>( int nXCheck,
             nSumThis += static_cast<GUIntBig>(anSum[0]) + anSum[1] +
                     anSum[2] + anSum[3] + anSum[4] + anSum[5] +
                     anSum[6] + anSum[7];
-
         }
 
         if( bComputeMinMax )
@@ -4832,8 +4831,8 @@ GDALRasterBand::ComputeStatistics( int bApproxOK,
                 }
                 else
                 {
-                    dfMin = MIN(dfMin, dfValue);
-                    dfMax = MAX(dfMax, dfValue);
+                    dfMin = std::min(dfMin, dfValue);
+                    dfMax = std::max(dfMax, dfValue);
                 }
 
                 nSampleCount++;
@@ -4859,7 +4858,9 @@ GDALRasterBand::ComputeStatistics( int bApproxOK,
         if ( bApproxOK )
         {
             nSampleRate = static_cast<int>(
-                MAX( 1, sqrt((double)nBlocksPerRow * nBlocksPerColumn) ) );
+                std::max(1.0,
+                         sqrt(static_cast<double>(nBlocksPerRow) *
+                              nBlocksPerColumn)));
             // We want to avoid probing only the first column of blocks for
             // a square shaped raster, because it is not unlikely that it may
             // be padding only (#6378)
@@ -5098,8 +5099,8 @@ GDALRasterBand::ComputeStatistics( int bApproxOK,
                     }
                     else
                     {
-                        dfMin = MIN(dfMin,dfValue);
-                        dfMax = MAX(dfMax,dfValue);
+                        dfMin = std::min(dfMin, dfValue);
+                        dfMax = std::max(dfMax, dfValue);
                     }
 
                     nSampleCount++;
@@ -5280,7 +5281,6 @@ CPLErr CPL_STDCALL GDALSetRasterStatistics(
  * @return CE_None on success or CE_Failure on failure.
  */
 
-
 CPLErr GDALRasterBand::ComputeRasterMinMax( int bApproxOK,
                                             double* adfMinMax )
 {
@@ -5441,8 +5441,8 @@ CPLErr GDALRasterBand::ComputeRasterMinMax( int bApproxOK,
                 }
                 else
                 {
-                    dfMin = MIN(dfMin, dfValue);
-                    dfMax = MAX(dfMax, dfValue);
+                    dfMin = std::min(dfMin, dfValue);
+                    dfMax = std::max(dfMax, dfValue);
                 }
             }
         }
@@ -5464,10 +5464,12 @@ CPLErr GDALRasterBand::ComputeRasterMinMax( int bApproxOK,
         if ( bApproxOK )
         {
             nSampleRate = static_cast<int>(
-                MAX(1,sqrt((double) nBlocksPerRow * nBlocksPerColumn)) );
+                std::max(1.0,
+                         sqrt(static_cast<double>(nBlocksPerRow) *
+                              nBlocksPerColumn)));
             // We want to avoid probing only the first column of blocks for
             // a square shaped raster, because it is not unlikely that it may
-            // be padding only (#6378)
+            // be padding only (#6378).
             if( nSampleRate == nBlocksPerRow && nBlocksPerRow > 1 )
               nSampleRate += 1;
         }
@@ -5565,8 +5567,8 @@ CPLErr GDALRasterBand::ComputeRasterMinMax( int bApproxOK,
                     }
                     else
                     {
-                        dfMin = MIN(dfMin, dfValue);
-                        dfMax = MAX(dfMax, dfValue);
+                        dfMin = std::min(dfMin, dfValue);
+                        dfMax = std::max(dfMax, dfValue);
                     }
                 }
             }
@@ -6407,7 +6409,6 @@ void GDALRasterBand::ReportError( CPLErr eErrClass, CPLErrorNum err_no,
     va_end(args);
 }
 
-
 /************************************************************************/
 /*                           GetVirtualMemAuto()                        */
 /************************************************************************/
@@ -6853,4 +6854,53 @@ void GDALRasterBand::LeaveReadWrite()
     if( poDS != NULL )
         poDS->LeaveReadWrite();
 }
+
+/************************************************************************/
+/*                           InitRWLock()                               */
+/************************************************************************/
+
+void GDALRasterBand::InitRWLock()
+{
+    if( poDS != NULL )
+        poDS->InitRWLock();
+}
+
 //! @endcond
+
+/**
+ * \fn GDALRasterBand::SetMetadata( char ** papszMetadata, const char * pszDomain)
+ * \brief Set metadata.
+ *
+ * CAUTION: depending on the format, older values of the updated information might
+ * still be found in the file in a "ghost" state, even if no longer accessible
+ * through the GDAL API. This is for example the case of the GTiff format (this is
+ * not a exhaustive list)
+ *
+ * The C function GDALSetMetadata() does the same thing as this method.
+ *
+ * @param papszMetadata the metadata in name=value string list format to
+ * apply.
+ * @param pszDomain the domain of interest.  Use "" or NULL for the default
+ * domain.
+ * @return CE_None on success, CE_Failure on failure and CE_Warning if the
+ * metadata has been accepted, but is likely not maintained persistently
+ * by the underlying object between sessions.
+ */
+
+/**
+ * \fn GDALRasterBand::SetMetadataItem( const char * pszName, const char * pszValue, const char * pszDomain)
+ * \brief Set single metadata item.
+ *
+ * CAUTION: depending on the format, older values of the updated information might
+ * still be found in the file in a "ghost" state, even if no longer accessible
+ * through the GDAL API. This is for example the case of the GTiff format (this is
+ * not a exhaustive list)
+ *
+ * The C function GDALSetMetadataItem() does the same thing as this method.
+ *
+ * @param pszName the key for the metadata item to fetch.
+ * @param pszValue the value to assign to the key.
+ * @param pszDomain the domain to set within, use NULL for the default domain.
+ *
+ * @return CE_None on success, or an error code on failure.
+ */

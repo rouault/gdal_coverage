@@ -483,7 +483,6 @@ bool OWConnection::GetNextField( OCIParam* phTable,
     *pnScale     = (signed short) nOCIScale;
 
     return true;
-
 }
 
 bool OWConnection::StartTransaction()
@@ -589,7 +588,6 @@ bool OWStatement::Execute( int nRows )
     {
         return false;
     }
-
 
     if( nStatus == OCI_SUCCESS_WITH_INFO || nStatus == OCI_NO_DATA )
     {
@@ -747,7 +745,6 @@ void OWStatement::Bind( sdo_geometry** pphData )
     (dvoid**) 0,
         (ub4*) 0),
         hError );
-
 }
 
 void OWStatement::Bind( OCILobLocator** pphLocator )
@@ -804,7 +801,6 @@ void OWStatement::Bind( OCIArray** pphData, OCIType* type )
         (dvoid **)0,
         (ub4 *)0 ),
         hError);
-
 }
 
 void OWStatement::Bind( char* pszData, int nSize )
@@ -1319,7 +1315,7 @@ bool OWStatement::WriteBlob( OCILobLocator* phLocator,
         return false;
     }
 
-    return ( nAmont == (ub4) nSize );
+    return nAmont == (ub4) nSize;
 }
 
 char* OWStatement::ReadCLob( OCILobLocator* phLocator )
@@ -1751,7 +1747,6 @@ bool CheckError( sword nStatus, OCIError* hError )
             CPLError( CE_Failure, CPLE_AppDefined, "%.*s",
                 static_cast<int>(sizeof(szMsg)), szMsg );
             break;
-
     }
 
     return true;

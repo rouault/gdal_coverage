@@ -97,16 +97,16 @@ OGRPLScenesLayer::OGRPLScenesLayer( OGRPLScenesDataset* poDSIn,
     osBaseURL(pszBaseURL),
     poFeatureDefn(new OGRFeatureDefn(pszName)),
     poSRS(new OGRSpatialReference(SRS_WKT_WGS84)),
-    bEOF(FALSE),
+    bEOF(false),
     nNextFID(1),
     nFeatureCount(-1),
     poGeoJSONDS(NULL),
     poGeoJSONLayer(NULL),
     poMainFilter(NULL),
     nPageSize(atoi(CPLGetConfigOption("PLSCENES_PAGE_SIZE", "1000"))),
-    bStillInFirstPage(FALSE),
+    bStillInFirstPage(false),
     bAcquiredAscending(-1),
-    bFilterMustBeClientSideEvaluated(FALSE)
+    bFilterMustBeClientSideEvaluated(false)
 {
     SetDescription(pszName);
     poFeatureDefn->SetGeomType(wkbMultiPolygon);
@@ -126,7 +126,8 @@ OGRPLScenesLayer::OGRPLScenesLayer( OGRPLScenesDataset* poDSIn,
     {
         json_object* poCount = CPL_json_object_object_get(poObjCount10, "count");
         if( poCount != NULL )
-            nFeatureCount = MAX(0, json_object_get_int64(poCount));
+          nFeatureCount = std::max(static_cast<int64_t>(0),
+                                   json_object_get_int64(poCount));
 
         OGRGeoJSONDataSource* poTmpDS = new OGRGeoJSONDataSource();
         OGRGeoJSONReader oReader;
@@ -200,36 +201,70 @@ CPLString OGRPLScenesLayer::BuildFilter(swq_expr_node* poNode)
             OGRFieldDefn *poFieldDefn =
                 poFeatureDefn->GetFieldDefn(poNode->papoSubExpr[0]->field_index);
 
+            int nOperation = poNode->nOperation;
+
+            // image_quality supports only gte filters
+            // (https://www.planet.com/docs-v0/v0/scenes/planetscope/#metadata)
+            if( poNode->papoSubExpr[0]->field_index ==
+                    poFeatureDefn->GetFieldIndex("image_statistics.image_quality") &&
+                nOperation != SWQ_GE )
+            {
+                // == target can be safely turned as >= target
+                if( poNode->nOperation == SWQ_EQ &&
+                    poNode->papoSubExpr[1]->field_type == SWQ_STRING &&
+                    strcmp(poNode->papoSubExpr[1]->string_value, "target") == 0 )
+                {
+                    nOperation = SWQ_GE;
+                }
+                else
+                {
+                    if( !bFilterMustBeClientSideEvaluated )
+                    {
+                        bFilterMustBeClientSideEvaluated = true;
+                        CPLDebug("PLSCENES",
+                                 "Part or full filter will have to be "
+                                 "evaluated on client side.");
+                    }
+                    return "";
+                }
+            }
+
             CPLString osFilter(poFieldDefn->GetNameRef());
 
-            int bDateTimeParsed = FALSE;
-            int nYear = 0, nMonth = 0, nDay = 0, nHour = 0, nMinute = 0, nSecond = 0;
+            bool bDateTimeParsed = false;
+            int nYear = 0;
+            int nMonth = 0;
+            int nDay = 0;
+            int nHour = 0;
+            int nMinute = 0;
+            int nSecond = 0;
             if( poNode->papoSubExpr[1]->field_type == SWQ_TIMESTAMP )
             {
                 if( sscanf(poNode->papoSubExpr[1]->string_value,"%04d/%02d/%02d %02d:%02d:%02d",
                            &nYear, &nMonth, &nDay, &nHour, &nMinute, &nSecond) >= 3 ||
                     sscanf(poNode->papoSubExpr[1]->string_value,"%04d-%02d-%02dT%02d:%02d:%02d",
                            &nYear, &nMonth, &nDay, &nHour, &nMinute, &nSecond) >= 3 )
-                    bDateTimeParsed = TRUE;
+                    bDateTimeParsed = true;
             }
 
             osFilter += ".";
-            if( poNode->nOperation == SWQ_EQ )
+
+            if( nOperation == SWQ_EQ )
             {
                 if( bDateTimeParsed )
                     osFilter += "gte";
                 else
                     osFilter += "eq";
             }
-            else if( poNode->nOperation == SWQ_NE )
+            else if( nOperation == SWQ_NE )
                 osFilter += "neq";
-            else if( poNode->nOperation == SWQ_LT )
+            else if( nOperation == SWQ_LT )
                 osFilter += "lt";
-            else if( poNode->nOperation == SWQ_LE )
+            else if( nOperation == SWQ_LE )
                 osFilter += "lte";
-            else if( poNode->nOperation == SWQ_GT )
+            else if( nOperation == SWQ_GT )
                 osFilter += "gt";
-            else if( poNode->nOperation == SWQ_GE )
+            else if( nOperation == SWQ_GE )
                 osFilter += "gte";
             osFilter += "=";
 
@@ -245,7 +280,7 @@ CPLString OGRPLScenesLayer::BuildFilter(swq_expr_node* poNode)
                 {
                     osFilter += CPLSPrintf("%04d-%02d-%02dT%02d:%02d:%02d",
                                            nYear, nMonth, nDay, nHour, nMinute, nSecond);
-                    if( poNode->nOperation == SWQ_EQ )
+                    if( nOperation == SWQ_EQ )
                     {
                         osFilter += "&";
                         osFilter += poFieldDefn->GetNameRef();
@@ -266,7 +301,7 @@ CPLString OGRPLScenesLayer::BuildFilter(swq_expr_node* poNode)
     }
     if( !bFilterMustBeClientSideEvaluated )
     {
-        bFilterMustBeClientSideEvaluated = TRUE;
+        bFilterMustBeClientSideEvaluated = true;
         CPLDebug("PLSCENES",
                  "Part or full filter will have to be evaluated on client side.");
     }
@@ -279,13 +314,13 @@ CPLString OGRPLScenesLayer::BuildFilter(swq_expr_node* poNode)
 
 void OGRPLScenesLayer::ResetReading()
 {
-    bEOF = FALSE;
+    bEOF = false;
     if( poGeoJSONLayer && bStillInFirstPage )
         poGeoJSONLayer->ResetReading();
     else
         poGeoJSONLayer = NULL;
     nNextFID = 1;
-    bStillInFirstPage = TRUE;
+    bStillInFirstPage = true;
     osRequestURL = BuildURL(nPageSize);
 }
 
@@ -367,7 +402,7 @@ int OGRPLScenesLayer::GetNextPage()
 
     if( osRequestURL.size() == 0 )
     {
-        bEOF = TRUE;
+        bEOF = true;
         if( !bFilterMustBeClientSideEvaluated && nFeatureCount < 0 )
             nFeatureCount = 0;
         return FALSE;
@@ -378,7 +413,7 @@ int OGRPLScenesLayer::GetNextPage()
     json_object* poObj = poDS->RunRequest(osRequestURL, bQuiet404Error);
     if( poObj == NULL )
     {
-        bEOF = TRUE;
+        bEOF = true;
         if( !bFilterMustBeClientSideEvaluated && nFeatureCount < 0 )
             nFeatureCount = 0;
         return FALSE;
@@ -398,11 +433,12 @@ int OGRPLScenesLayer::GetNextPage()
             if( poCount == NULL )
             {
                 json_object_put(poObj);
-                bEOF = TRUE;
+                bEOF = true;
                 nFeatureCount = 0;
                 return FALSE;
             }
-            nFeatureCount = MAX(0, json_object_get_int64(poCount));
+            nFeatureCount = std::max(static_cast<int64_t>(0),
+                                     json_object_get_int64(poCount));
         }
     }
 
@@ -477,7 +513,7 @@ OGRErr OGRPLScenesLayer::SetAttributeFilter( const char *pszQuery )
     OGRErr eErr = OGRLayer::SetAttributeFilter(pszQuery);
 
     osFilterURLPart = "";
-    bFilterMustBeClientSideEvaluated = FALSE;
+    bFilterMustBeClientSideEvaluated = false;
     if( m_poAttrQuery != NULL )
     {
         swq_expr_node* poNode = (swq_expr_node*) m_poAttrQuery->GetSWQExpr();
@@ -544,7 +580,9 @@ OGRFeature *OGRPLScenesLayer::GetNextFeature()
 OGRFeature* OGRPLScenesLayer::GetNextRawFeature()
 {
     if( bEOF ||
-        (!bFilterMustBeClientSideEvaluated && nFeatureCount >= 0 && nNextFID > nFeatureCount) )
+        (!bFilterMustBeClientSideEvaluated &&
+         nFeatureCount >= 0 &&
+         nNextFID > nFeatureCount) )
         return NULL;
 
     if( poGeoJSONLayer == NULL )
@@ -557,7 +595,7 @@ OGRFeature* OGRPLScenesLayer::GetNextRawFeature()
     if( CPLTestBool(CPLGetConfigOption("OGR_LIMIT_TOO_MANY_FEATURES", "FALSE")) &&
         nFeatureCount > nPageSize )
     {
-        bEOF = TRUE;
+        bEOF = true;
         OGRFeature* poFeature = new OGRFeature(poFeatureDefn);
         const char* pszWKT = "MULTIPOLYGON(((-180 90,180 90,180 -90,-180 -90,-180 90)))";
         OGRGeometry* poGeom = NULL;
@@ -571,13 +609,13 @@ OGRFeature* OGRPLScenesLayer::GetNextRawFeature()
     if( poGeoJSONFeature == NULL )
     {
         osRequestURL = osNextURL;
-        bStillInFirstPage = FALSE;
+        bStillInFirstPage = false;
         if( !GetNextPage() )
             return NULL;
         poGeoJSONFeature = poGeoJSONLayer->GetNextFeature();
         if( poGeoJSONFeature == NULL )
         {
-            bEOF = TRUE;
+            bEOF = true;
             return NULL;
         }
     }
@@ -648,7 +686,8 @@ GIntBig OGRPLScenesLayer::GetFeatureCount(int bForce)
             {
                 json_object* poCount = CPL_json_object_object_get(poObj, "count");
                 if( poCount != NULL )
-                    nFeatureCount = MAX(0, json_object_get_int64(poCount));
+                    nFeatureCount = std::max(static_cast<int64_t>(0),
+                                             json_object_get_int64(poCount));
 
                 // Small optimization, if the feature count is actually 1
                 // then we can fetch it as the full layer
@@ -692,8 +731,8 @@ OGRErr OGRPLScenesLayer::GetExtent( OGREnvelope *psExtent, int bForce )
 /*                              SetMainFilterRect()                     */
 /************************************************************************/
 
-void OGRPLScenesLayer::SetMainFilterRect(double dfMinX, double dfMinY,
-                                        double dfMaxX, double dfMaxY)
+void OGRPLScenesLayer::SetMainFilterRect( double dfMinX, double dfMinY,
+                                          double dfMaxX, double dfMaxY )
 {
     delete poMainFilter;
     if( dfMinX == dfMaxX && dfMinY == dfMaxY )

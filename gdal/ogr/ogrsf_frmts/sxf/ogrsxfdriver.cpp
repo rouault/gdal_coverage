@@ -34,7 +34,6 @@
 
 CPL_CVSID("$Id$");
 
-
 extern "C" void RegisterOGRSXF();
 
 /************************************************************************/
@@ -122,8 +121,8 @@ int OGRSXFDriver::TestCapability( const char * pszCap )
 {
     if (EQUAL(pszCap, ODrCDeleteDataSource))
         return TRUE;
-    else
-        return FALSE;
+
+    return FALSE;
 }
 
 /************************************************************************/

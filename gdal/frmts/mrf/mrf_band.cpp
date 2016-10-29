@@ -33,7 +33,6 @@
 * limitations under the License.
 */
 
-
 /******************************************************************************
 *
 * Project:  Meta Raster File Format Driver Implementation, RasterBand
@@ -407,7 +406,6 @@ CPLErr GDALMRFRasterBand::RB(int xblk, int yblk, buf_mgr /*src*/, void *buffer) 
     return CE_None;
 }
 
-
 /**
 *\brief Fetch a block from the backing store dataset and keep a copy in the cache
 *
@@ -543,7 +541,6 @@ CPLErr GDALMRFRasterBand::FetchBlock(int xblk, int yblk, void *buffer)
     return RB(xblk, yblk, filesrc, buffer);
 }
 
-
 /**
 *\brief Fetch for a cloned MRF
 *
@@ -637,7 +634,6 @@ CPLErr GDALMRFRasterBand::FetchClonedBlock(int xblk, int yblk, void *buffer)
     return IReadBlock(xblk, yblk, buffer);
 }
 
-
 /**
 *\brief read a block in the provided buffer
 *
@@ -691,12 +687,15 @@ CPLErr GDALMRFRasterBand::IReadBlock(int xblk, int yblk, void *buffer)
     // valgrind gdalinfo -checksum out.mrf
     // Invalid read of size 4
     // at BitStuffer::read(unsigned char**, std::vector<unsigned int, std::allocator<unsigned int> >&) const (BitStuffer.cpp:153)
-    if( tinfo.size <= 0 || tinfo.size > INT_MAX - 3 )
+
+    // No stored tile should be larger than twice the raw size.
+    if( tinfo.size <= 0 || tinfo.size > poDS->pbsize * 2 )
     {
         CPLError(CE_Failure, CPLE_OutOfMemory,
-                 "Too big tile size: " CPL_FRMT_GIB, tinfo.size);
+                 "Stored tile is too large: " CPL_FRMT_GIB, tinfo.size);
         return CE_Failure;
     }
+
     void *data = VSIMalloc(static_cast<size_t>(tinfo.size + 3));
     if( data == NULL )
     {
@@ -785,7 +784,6 @@ CPLErr GDALMRFRasterBand::IReadBlock(int xblk, int yblk, void *buffer)
     // De-interleave page and return
     return RB(xblk, yblk, dst, buffer);
 }
-
 
 /**
 *\brief Write a block from the provided buffer
@@ -890,7 +888,6 @@ CPLErr GDALMRFRasterBand::IWriteBlock(int xblk, int yblk, void *buffer)
         // Just the right mix of templates and macros make this real tidy
 #define CpySO(T) cpy_stride_out<T> (((T *)tbuffer)+iBand, pabyThisImage,\
                 blockSizeBytes()/sizeof(T), cstride)
-
 
         // Build the page in tbuffer
         switch (GDALGetDataTypeSize(eDataType)/8)

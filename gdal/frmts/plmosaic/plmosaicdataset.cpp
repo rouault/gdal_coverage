@@ -167,7 +167,6 @@ class PLMosaicRasterBand : public GDALRasterBand
     virtual GDALRasterBand* GetOverview(int iOvrLevel);
 };
 
-
 /************************************************************************/
 /*                        PLMosaicRasterBand()                          */
 /************************************************************************/
@@ -273,7 +272,6 @@ const char* PLMosaicRasterBand::GetMetadataItem( const char* pszName,
 
     return GDALRasterBand::GetMetadataItem(pszName, pszDomain);
 }
-
 
 /************************************************************************/
 /*                         GetOverviewCount()                           */
@@ -666,7 +664,7 @@ GDALDataset *PLMosaicDataset::Open( GDALOpenInfo * poOpenInfo )
     if( poDS )
         poDS->SetPamFlags(0);
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/
@@ -950,7 +948,6 @@ int PLMosaicDataset::OpenMosaic()
     {
         SetMetadataItem("TITLE", json_object_get_string(poTitle));
     }
-
 
     json_object_put(poObj);
     return TRUE;

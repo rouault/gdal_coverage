@@ -49,7 +49,7 @@ class BLXDataset : public GDALPamDataset
     blxcontext_t *blxcontext;
 
     int nOverviewCount;
-    int bIsOverview;
+    bool bIsOverview;
     BLXDataset *papoOverviewDS[BLX_OVERVIEWLEVELS];
 
   public:
@@ -128,7 +128,7 @@ GDALDataset *BLXDataset::Open( GDALOpenInfo * poOpenInfo )
     for(int i=0; i < poDS->nOverviewCount; i++) {
         poDS->papoOverviewDS[i] = new BLXDataset();
         poDS->papoOverviewDS[i]->blxcontext = poDS->blxcontext;
-        poDS->papoOverviewDS[i]->bIsOverview = TRUE;
+        poDS->papoOverviewDS[i]->bIsOverview = true;
         poDS->papoOverviewDS[i]->nRasterXSize = poDS->nRasterXSize >> (i+1);
         poDS->papoOverviewDS[i]->nRasterYSize = poDS->nRasterYSize >> (i+1);
         poDS->nBands = 1;
@@ -153,20 +153,22 @@ GDALDataset *BLXDataset::Open( GDALOpenInfo * poOpenInfo )
     poDS->SetDescription( poOpenInfo->pszFilename );
     poDS->TryLoadXML();
 
-    return( poDS );
+    return poDS;
 }
 
 BLXDataset::BLXDataset() :
     blxcontext(NULL),
     nOverviewCount(0),
-    bIsOverview(FALSE)
+    bIsOverview(false)
 {
     for( int i = 0; i < BLX_OVERVIEWLEVELS; i++ )
         papoOverviewDS[i] = NULL;
 }
 
-BLXDataset::~BLXDataset() {
-    if(!bIsOverview) {
+BLXDataset::~BLXDataset()
+{
+    if( !bIsOverview )
+    {
         if(blxcontext) {
             blxclose(blxcontext);
             blx_free_context(blxcontext);
@@ -416,7 +418,6 @@ BLXCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 
     return NULL;
 }
-
 
 void GDALRegister_BLX()
 

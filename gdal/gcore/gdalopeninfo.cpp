@@ -35,6 +35,7 @@
 #include <unistd.h>
 #endif
 
+#include <algorithm>
 #include <vector>
 
 CPL_CVSID("$Id$");
@@ -69,7 +70,8 @@ GDALOpenInfo::GDALOpenInfo( const char * pszFilenameIn, int nOpenFlagsIn,
     bIsDirectory(FALSE),
     fpL(NULL),
     nHeaderBytes(0),
-    pabyHeader(NULL)
+    pabyHeader(NULL),
+    papszAllowedDrivers(NULL)
 {
 
 /* -------------------------------------------------------------------- */
@@ -196,7 +198,7 @@ retry:  // TODO(schwehr): Stop using goto.
                 readlink( pszFilename, szPointerFilename, nBufSize ) );
             if (nBytes != -1)
             {
-                szPointerFilename[MIN(nBytes, nBufSize - 1)] = 0;
+                szPointerFilename[std::min(nBytes, nBufSize - 1)] = 0;
                 CPLFree(pszFilename);
                 pszFilename = CPLStrdup(szPointerFilename);
                 papszSiblingsIn = NULL;

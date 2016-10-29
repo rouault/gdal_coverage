@@ -78,7 +78,6 @@ class OGRXPlaneLayer : public OGRLayer
     virtual int               TestCapability( const char * pszCap );
 };
 
-
 /************************************************************************/
 /*                           OGRXPlaneDataSource                        */
 /************************************************************************/
@@ -91,8 +90,8 @@ class OGRXPlaneDataSource : public OGRDataSource
     int                 nLayers;
 
     OGRXPlaneReader*    poReader;
-    int                 bReadWholeFile;
-    int                 bWholeFiledReadingDone;
+    bool                bReadWholeFile;
+    bool                bWholeFiledReadingDone;
 
     void                Reset();
 
@@ -126,6 +125,5 @@ class OGRXPlaneDriver : public OGRSFDriver
 
     virtual int         TestCapability( const char * pszCap );
 };
-
 
 #endif /* ndef OGR_XPLANE_H_INCLUDED */

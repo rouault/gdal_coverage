@@ -49,12 +49,10 @@ typedef struct {
         double y;                       /* coordinate y-value */
 } Eprj_Coordinate;
 
-
 typedef struct {
         double width;                   /* pixelsize width */
         double height;                  /* pixelsize height */
 } Eprj_Size;
-
 
 typedef struct {
         char * proName;             /* projection name */
@@ -165,7 +163,8 @@ int CPL_DLL HFACreateOverview( HFAHandle hHFA, int nBand, int nOverviewLevel,
 
 const Eprj_MapInfo CPL_DLL *HFAGetMapInfo( HFAHandle );
 int CPL_DLL HFAGetGeoTransform( HFAHandle, double* );
-CPLErr CPL_DLL HFASetGeoTransform( HFAHandle, const char*, const char*,double*);
+CPLErr CPL_DLL HFASetGeoTransform( HFAHandle, const char*,
+                                   const char*, double *);
 CPLErr CPL_DLL HFASetMapInfo( HFAHandle, const Eprj_MapInfo * );
 const Eprj_Datum CPL_DLL *HFAGetDatum( HFAHandle );
 CPLErr CPL_DLL HFASetDatum( HFAHandle, const Eprj_Datum * );
@@ -193,14 +192,14 @@ CPLErr CPL_DLL HFAGetRasterBlockEx( HFAHandle hHFA, int nBand, int nXBlock,
 CPLErr CPL_DLL HFAGetOverviewRasterBlock( HFAHandle hHFA, int nBand,
                                           int iOverview,
                                    int nXBlock, int nYBlock, void * pData );
-CPLErr CPL_DLL HFAGetOverviewRasterBlockEx( HFAHandle hHFA, int nBand,
-                                          int iOverview,
-                                   int nXBlock, int nYBlock, void * pData, int nDataSize );
+CPLErr CPL_DLL HFAGetOverviewRasterBlockEx(
+                   HFAHandle hHFA, int nBand, int iOverview,
+                   int nXBlock, int nYBlock, void * pData, int nDataSize );
 CPLErr CPL_DLL HFASetRasterBlock( HFAHandle hHFA, int nBand,
                                   int nXBlock, int nYBlock,
                                   void * pData );
 CPLErr CPL_DLL HFASetOverviewRasterBlock(
-    HFAHandle hHFA, int nBand, int iOverview,int nXBlock, int nYBlock,
+    HFAHandle hHFA, int nBand, int iOverview, int nXBlock, int nYBlock,
     void * pData );
 const char * HFAGetBandName( HFAHandle hHFA, int nBand );
 void HFASetBandName( HFAHandle hHFA, int nBand, const char *pszName );
@@ -231,7 +230,6 @@ HFAEvaluateXFormStack( int nStepCount, int bForward,
                        double *pdfX, double *pdfY );
 
 char CPL_DLL **HFAReadCameraModel( HFAHandle psInfo );
-
 
 /* -------------------------------------------------------------------- */
 /*      Projection codes.                                               */

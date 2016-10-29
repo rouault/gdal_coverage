@@ -84,6 +84,8 @@ int OGRAmigoCloudDataSource::TestCapability( const char * pszCap )
         return TRUE;
     else if( bReadWrite && EQUAL(pszCap, ODsCDeleteLayer) )
         return TRUE;
+    else if( EQUAL(pszCap,ODsCRandomLayerWrite) )
+        return bReadWrite;
     else
         return FALSE;
 }
@@ -289,7 +291,8 @@ OGRLayer   *OGRAmigoCloudDataSource::ICreateLayer( const char *pszNameIn,
     CPLString osName(pszNameIn);
 
     OGRAmigoCloudTableLayer* poLayer = new OGRAmigoCloudTableLayer(this, osName);
-    int bGeomNullable = CPLFetchBool(papszOptions, "GEOMETRY_NULLABLE", true);
+    const bool bGeomNullable =
+        CPLFetchBool(papszOptions, "GEOMETRY_NULLABLE", true);
     poLayer->SetDeferredCreation(eGType, poSpatialRef, bGeomNullable);
     papoLayers = (OGRAmigoCloudTableLayer**) CPLRealloc(
                     papoLayers, (nLayers + 1) * sizeof(OGRAmigoCloudTableLayer*));
@@ -827,7 +830,6 @@ OGRLayer * OGRAmigoCloudDataSource::ExecuteSQLInternal(
     /* Skip leading spaces */
     while(*pszSQLCommand == ' ')
         pszSQLCommand ++;
-
 
     if( !EQUALN(pszSQLCommand, "SELECT", strlen("SELECT")) &&
         !EQUALN(pszSQLCommand, "EXPLAIN", strlen("EXPLAIN")) &&

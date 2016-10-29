@@ -84,7 +84,6 @@ OGROpenAirLayer::~OGROpenAirLayer()
     VSIFCloseL( fpOpenAir );
 }
 
-
 /************************************************************************/
 /*                            ResetReading()                            */
 /************************************************************************/
@@ -97,7 +96,6 @@ void OGROpenAirLayer::ResetReading()
     bHasLastLine = false;
     VSIFSeekL( fpOpenAir, 0, SEEK_SET );
 }
-
 
 /************************************************************************/
 /*                           GetNextFeature()                           */
@@ -137,10 +135,12 @@ OGRFeature *OGROpenAirLayer::GetNextRawFeature()
     CPLString osFLOOR;
     CPLString osCEILING;
     OGRLinearRing oLR;
-    /* double dfLastLat = 0, dfLastLon = 0; */
+    // double dfLastLat = 0.0;
+    // double dfLastLon = 0.0;
     bool bFirst = true;
     bool bClockWise = true;
-    double dfCenterLat = 0, dfCenterLon = 0;
+    double dfCenterLat = 0.0;
+    double dfCenterLon = 0.0;
     bool bHasCenter = false;
     OpenAirStyle sStyle;
     sStyle.penStyle = -1;
@@ -336,7 +336,7 @@ OGRFeature *OGROpenAirLayer::GetNextRawFeature()
                 OGROpenAirGetLatLon(papszTokens[0], dfFirstLat, dfFirstLon) &&
                 OGROpenAirGetLatLon(papszTokens[1], dfSecondLat, dfSecondLon))
             {
-                const double dfStartDistance =OGRXPlane_Distance(dfCenterLat,
+                const double dfStartDistance = OGRXPlane_Distance(dfCenterLat,
                         dfCenterLon, dfFirstLat, dfFirstLon);
                 const double dfEndDistance = OGRXPlane_Distance(dfCenterLat,
                         dfCenterLon, dfSecondLat, dfSecondLon);

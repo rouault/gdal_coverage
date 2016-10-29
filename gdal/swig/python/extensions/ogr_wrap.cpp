@@ -4387,6 +4387,8 @@ SWIGINTERN void OGRFeatureShadow_SetFieldString(OGRFeatureShadow *self,int id,ch
             case wkbCurvePolygon:
             case wkbMultiCurve:
             case wkbMultiSurface:
+            case wkbCurve:
+            case wkbSurface:
             case wkbNone:
             /*case wkbLinearRing:*/
             case wkbCircularStringZ:
@@ -4394,6 +4396,8 @@ SWIGINTERN void OGRFeatureShadow_SetFieldString(OGRFeatureShadow *self,int id,ch
             case wkbCurvePolygonZ:
             case wkbMultiCurveZ:
             case wkbMultiSurfaceZ:
+            case wkbCurveZ:
+            case wkbSurfaceZ:
             case wkbPoint25D:
             case wkbLineString25D:
             case wkbPolygon25D:
@@ -4413,6 +4417,8 @@ SWIGINTERN void OGRFeatureShadow_SetFieldString(OGRFeatureShadow *self,int id,ch
             case wkbCurvePolygonM:
             case wkbMultiCurveM:
             case wkbMultiSurfaceM:
+            case wkbCurveM:
+            case wkbSurfaceM:
             case wkbPointZM:
             case wkbLineStringZM:
             case wkbPolygonZM:
@@ -4425,6 +4431,8 @@ SWIGINTERN void OGRFeatureShadow_SetFieldString(OGRFeatureShadow *self,int id,ch
             case wkbCurvePolygonZM:
             case wkbMultiCurveZM:
             case wkbMultiSurfaceZM:
+            case wkbCurveZM:
+            case wkbSurfaceZM:
                 return TRUE;
             default:
                 CPLError(CE_Failure, CPLE_IllegalArg, "Illegal geometry type value");
@@ -33949,6 +33957,8 @@ SWIG_init(void) {
   SWIG_Python_SetConstant(d, "ODsCTransactions",SWIG_FromCharPtr("Transactions"));
   SWIG_Python_SetConstant(d, "ODsCEmulatedTransactions",SWIG_FromCharPtr("EmulatedTransactions"));
   SWIG_Python_SetConstant(d, "ODsCMeasuredGeometries",SWIG_FromCharPtr("MeasuredGeometries"));
+  SWIG_Python_SetConstant(d, "ODsCRandomLayerRead",SWIG_FromCharPtr("RandomLayerRead"));
+  SWIG_Python_SetConstant(d, "ODsCRandomLayerWrite",SWIG_FromCharPtr("RandomLayerWrite"));
   SWIG_Python_SetConstant(d, "ODrCCreateDataSource",SWIG_FromCharPtr("CreateDataSource"));
   SWIG_Python_SetConstant(d, "ODrCDeleteDataSource",SWIG_FromCharPtr("DeleteDataSource"));
   SWIG_Python_SetConstant(d, "OLMD_FID64",SWIG_FromCharPtr("OLMD_FID64"));

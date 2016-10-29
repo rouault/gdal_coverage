@@ -147,8 +147,8 @@ class RMFDataset : public GDALDataset
 
     char            *pszUnitType;
 
-    int             bBigEndian;
-    int             bHeaderDirty;
+    bool            bBigEndian;
+    bool            bHeaderDirty;
 
     const char      *pszFilename;
     VSILFILE        *fp;
@@ -156,7 +156,7 @@ class RMFDataset : public GDALDataset
     CPLErr          WriteHeader();
     static int      LZWDecompress( const GByte*, GUInt32, GByte*, GUInt32 );
     static int      DEMDecompress( const GByte*, GUInt32, GByte*, GUInt32 );
-   int             (*Decompress)( const GByte*, GUInt32, GByte*, GUInt32 );
+    int             (*Decompress)( const GByte*, GUInt32, GByte*, GUInt32 );
 
   public:
                 RMFDataset();
@@ -166,7 +166,7 @@ class RMFDataset : public GDALDataset
     static GDALDataset  *Open( GDALOpenInfo * );
     static GDALDataset  *Create( const char *, int, int, int,
                                  GDALDataType, char ** );
-    virtual void        FlushCache( void );
+    virtual void        FlushCache();
 
     virtual CPLErr      GetGeoTransform( double * padfTransform );
     virtual CPLErr      SetGeoTransform( double * );
@@ -188,8 +188,10 @@ class RMFRasterBand : public GDALRasterBand
   private:
 
     GUInt32     nBytesPerPixel;
-    GUInt32     nBlockSize, nBlockBytes;
-    GUInt32     nLastTileWidth, nLastTileHeight;
+    GUInt32     nBlockSize;
+    GUInt32     nBlockBytes;
+    GUInt32     nLastTileWidth;
+    GUInt32     nLastTileHeight;
     GUInt32     nDataSize;
 
     CPLErr   ReadBuffer( GByte *, GUInt32 ) const;
@@ -205,6 +207,6 @@ class RMFRasterBand : public GDALRasterBand
     virtual const char      *GetUnitType();
     virtual GDALColorInterp GetColorInterpretation();
     virtual GDALColorTable  *GetColorTable();
-    virtual CPLErr          SetUnitType(const char *);
+    virtual CPLErr          SetUnitType( const char * );
     virtual CPLErr          SetColorTable( GDALColorTable * );
 };

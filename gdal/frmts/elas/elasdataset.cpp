@@ -30,6 +30,7 @@
 #include "gdal_frmts.h"
 #include "gdal_pam.h"
 
+#include <cmath>
 #include <algorithm>
 
 using std::fill;
@@ -163,7 +164,6 @@ class ELASRasterBand : public GDALPamRasterBand
     virtual CPLErr IWriteBlock( int, int, void * );
 };
 
-
 /************************************************************************/
 /*                           ELASRasterBand()                            */
 /************************************************************************/
@@ -247,7 +247,6 @@ CPLErr ELASRasterBand::IWriteBlock( CPL_UNUSED int nBlockXOff,
 /*      ELASDataset                                                     */
 /* ==================================================================== */
 /************************************************************************/
-
 
 /************************************************************************/
 /*                            ELASDataset()                             */
@@ -446,7 +445,7 @@ GDALDataset *ELASDataset::Open( GDALOpenInfo * poOpenInfo )
         poDS->adfGeoTransform[3] =
             (GInt32) CPL_MSBWORD32(poDS->sHeader.YOffset);
         poDS->adfGeoTransform[4] = 0.0;
-        poDS->adfGeoTransform[5] = -1.0 * ABS(poDS->sHeader.YPixSize);
+        poDS->adfGeoTransform[5] = -1.0 * std::abs(poDS->sHeader.YPixSize);
 
         CPL_MSBPTR32(&(poDS->sHeader.XPixSize));
         CPL_MSBPTR32(&(poDS->sHeader.YPixSize));
@@ -475,7 +474,7 @@ GDALDataset *ELASDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
     poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename, poOpenInfo->GetSiblingFiles() );
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/
@@ -610,7 +609,7 @@ CPLErr ELASDataset::GetGeoTransform( double * padfTransform )
 {
     memcpy( padfTransform, adfGeoTransform, sizeof(double)*6 );
 
-    return( CE_None );
+    return CE_None;
 }
 
 /************************************************************************/
@@ -647,8 +646,8 @@ CPLErr ELASDataset::SetGeoTransform( double * padfTransform )
     sHeader.XOffset = CPL_MSBWORD32(nXOff);
     sHeader.YOffset = CPL_MSBWORD32(nYOff);
 
-    sHeader.XPixSize = (float) ABS(adfGeoTransform[1]);
-    sHeader.YPixSize = (float) ABS(adfGeoTransform[5]);
+    sHeader.XPixSize = static_cast<float>(std::abs(adfGeoTransform[1]));
+    sHeader.YPixSize = static_cast<float>(std::abs(adfGeoTransform[5]));
 
     CPL_MSBPTR32(&(sHeader.XPixSize));
     CPL_MSBPTR32(&(sHeader.YPixSize));
@@ -666,9 +665,8 @@ CPLErr ELASDataset::SetGeoTransform( double * padfTransform )
     CPL_MSBPTR32(&(sHeader.Matrix[2]));
     CPL_MSBPTR32(&(sHeader.Matrix[3]));
 
-    return( CE_None );
+    return CE_None;
 }
-
 
 /************************************************************************/
 /*                          GDALRegister_ELAS()                         */

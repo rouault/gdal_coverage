@@ -47,14 +47,14 @@ OGRElasticDataSource::OGRElasticDataSource() :
     m_pszName(NULL),
     m_papoLayers(NULL),
     m_nLayers(0),
-    m_bOverwrite(FALSE),
+    m_bOverwrite(false),
     m_nBulkUpload(0),
     m_pszWriteMap(NULL),
     m_pszMapping(NULL),
     m_nBatchSize(100),
     m_nFeatureCountToEstablishFeatureDefn(100),
-    m_bJSonField(FALSE),
-    m_bFlattenNestedAttributes(TRUE)
+    m_bJSonField(false),
+    m_bFlattenNestedAttributes(true)
 {
     const char* pszWriteMapIn = CPLGetConfigOption("ES_WRITEMAP", NULL);
     if (pszWriteMapIn != NULL) {
@@ -84,8 +84,8 @@ int OGRElasticDataSource::TestCapability(const char * pszCap) {
         EQUAL(pszCap, ODsCDeleteLayer) ||
         EQUAL(pszCap, ODsCCreateGeomFieldAfterCreateLayer) )
         return TRUE;
-    else
-        return FALSE;
+
+    return FALSE;
 }
 
 /************************************************************************/
@@ -173,20 +173,21 @@ OGRLayer * OGRElasticDataSource::ICreateLayer(const char * pszLayerName,
     CPLString osLastErrorMsg = CPLGetLastErrorMsg();
 
     // Check if the index exists
-    int bIndexExists = FALSE;
+    bool bIndexExists = false;
     CPLPushErrorHandler(CPLQuietErrorHandler);
     CPLHTTPResult* psResult = CPLHTTPFetch(CPLSPrintf("%s/%s",
                                            GetURL(), osLaunderedName.c_str()), NULL);
     CPLPopErrorHandler();
-    if (psResult) {
-        bIndexExists = (psResult->pszErrBuf == NULL);
+    if( psResult )
+      {
+        bIndexExists = psResult->pszErrBuf == NULL;
         CPLHTTPDestroyResult(psResult);
     }
 
     const char* m_pszMappingName = CSLFetchNameValueDef(papszOptions,
                                         "MAPPING_NAME", "FeatureCollection");
 
-    int bMappingExists = FALSE;
+    bool bMappingExists = false;
     if( bIndexExists )
     {
         CPLPushErrorHandler(CPLQuietErrorHandler);
@@ -260,7 +261,7 @@ OGRLayer * OGRElasticDataSource::ICreateLayer(const char * pszLayerName,
     m_papoLayers = (OGRElasticLayer **) CPLRealloc(m_papoLayers, m_nLayers * sizeof (OGRElasticLayer*));
     m_papoLayers[m_nLayers - 1] = poLayer;
 
-    poLayer->FinalizeFeatureDefn(FALSE);
+    poLayer->FinalizeFeatureDefn(false);
 
     if( eGType != wkbNone )
     {
@@ -470,7 +471,6 @@ int OGRElasticDataSource::Open(GDALOpenInfo* poOpenInfo)
     return TRUE;
 }
 
-
 /************************************************************************/
 /*                             Delete()                                 */
 /************************************************************************/
@@ -489,8 +489,10 @@ void OGRElasticDataSource::Delete(const CPLString &url) {
 /*                            UploadFile()                              */
 /************************************************************************/
 
-int OGRElasticDataSource::UploadFile(const CPLString &url, const CPLString &data) {
-    int bRet = TRUE;
+bool OGRElasticDataSource::UploadFile( const CPLString &url,
+                                       const CPLString &data )
+{
+    bool bRet = true;
     char** papszOptions = NULL;
     papszOptions = CSLAddNameValue(papszOptions, "POSTFIELDS", data.c_str());
     papszOptions = CSLAddNameValue(papszOptions, "HEADERS",
@@ -498,15 +500,16 @@ int OGRElasticDataSource::UploadFile(const CPLString &url, const CPLString &data
 
     CPLHTTPResult* psResult = CPLHTTPFetch(url, papszOptions);
     CSLDestroy(papszOptions);
-    if (psResult) {
+    if( psResult )
+    {
         if( psResult->pszErrBuf != NULL ||
             (psResult->pabyData && STARTS_WITH((const char*) psResult->pabyData, "{\"error\":")) ||
             (psResult->pabyData && strstr((const char*) psResult->pabyData, "\"errors\":true,") != NULL) )
         {
-            bRet = FALSE;
+            bRet = false;
             CPLError(CE_Failure, CPLE_AppDefined, "%s",
-                        psResult->pabyData ? (const char*) psResult->pabyData :
-                        psResult->pszErrBuf);
+                     psResult->pabyData ? (const char*) psResult->pabyData :
+                     psResult->pszErrBuf);
         }
         CPLHTTPDestroyResult(psResult);
     }

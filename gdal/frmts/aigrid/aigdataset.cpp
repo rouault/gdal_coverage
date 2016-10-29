@@ -40,8 +40,7 @@
 CPL_CVSID("$Id$");
 
 static CPLString OSR_GDS( char **papszNV, const char * pszField,
-                           const char *pszDefaultValue );
-
+                          const char *pszDefaultValue );
 
 /************************************************************************/
 /* ==================================================================== */
@@ -61,7 +60,7 @@ class CPL_DLL AIGDataset : public GDALPamDataset
     char        *pszProjection;
 
     GDALColorTable *poCT;
-    int         bHasReadRat;
+    bool        bHasReadRat;
 
     void        TranslateColorTable( const char * );
 
@@ -211,7 +210,7 @@ GDALRasterAttributeTable *AIGRasterBand::GetDefaultRAT()
     if (!poODS->bHasReadRat)
     {
         poODS->ReadRAT();
-        poODS->bHasReadRat = TRUE;
+        poODS->bHasReadRat = true;
     }
 
     if( poODS->poRAT )
@@ -308,7 +307,6 @@ GDALColorTable *AIGRasterBand::GetColorTable()
 /* ==================================================================== */
 /************************************************************************/
 
-
 /************************************************************************/
 /*                            AIGDataset()                            */
 /************************************************************************/
@@ -318,7 +316,7 @@ AIGDataset::AIGDataset() :
     papszPrj(NULL),
     pszProjection(CPLStrdup("")),
     poCT(NULL),
-    bHasReadRat(FALSE),
+    bHasReadRat(false),
     poRAT(NULL)
 {}
 
@@ -768,7 +766,7 @@ GDALDataset *AIGDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
     poDS->oOvManager.Initialize( poDS, psInfo->pszCoverName );
 
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/
@@ -786,7 +784,7 @@ CPLErr AIGDataset::GetGeoTransform( double * padfTransform )
     padfTransform[4] = 0;
     padfTransform[5] = -psInfo->dfCellSizeY;
 
-    return( CE_None );
+    return CE_None;
 }
 
 /************************************************************************/

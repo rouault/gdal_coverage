@@ -31,18 +31,18 @@
 
 CPL_CVSID("$Id$");
 
-#define RAD2METER            ((180./M_PI)*60.*1852.)
-#define METER2RAD            (1/RAD2METER)
+static const double RAD2METER = (180.0 / M_PI) * 60.0 * 1852.0;
+static const double METER2RAD = 1.0 / RAD2METER;
 
-#define DEG2RAD              (M_PI/180.)
-#define RAD2DEG              (1/DEG2RAD)
+static const double DEG2RAD = M_PI / 180.0;
+static const double RAD2DEG = 1.0 / DEG2RAD;
 
 static
-double OGRXPlane_Safe_acos(double x)
+double OGRXPlane_Safe_acos( double x )
 {
-    if (x > 1)
+    if( x > 1 )
         x = 1;
-    else if (x < -1)
+    else if( x < -1 )
         x = -1;
     return acos(x);
 }
@@ -117,34 +117,30 @@ int OGRXPlane_ExtendPosition(double dfLatA_deg, double dfLonA_deg,
                              double dfDistance, double dfHeading,
                              double* pdfLatB_deg, double* pdfLonB_deg)
 {
-    double dfHeadingRad, cos_Heading, sin_Heading;
-    double dfDistanceRad, cos_Distance, sin_Distance;
-    double dfLatA_rad, cos_complement_LatA, sin_complement_LatA;
-    double cos_complement_latB, complement_latB;
-    double Cos_dG, dG_deg;
+    const double dfHeadingRad = dfHeading * DEG2RAD;
+    const double cos_Heading = cos (dfHeadingRad);
+    const double sin_Heading = sin (dfHeadingRad);
 
-    dfHeadingRad = dfHeading * DEG2RAD;
-    cos_Heading = cos (dfHeadingRad);
-    sin_Heading = sin (dfHeadingRad);
+    const double dfDistanceRad = dfDistance * METER2RAD;
+    const double cos_Distance = cos (dfDistanceRad);
+    const double sin_Distance = sin (dfDistanceRad);
 
-    dfDistanceRad = dfDistance * METER2RAD;
-    cos_Distance = cos (dfDistanceRad);
-    sin_Distance = sin (dfDistanceRad);
+    const double dfLatA_rad = dfLatA_deg * DEG2RAD;
+    const double cos_complement_LatA = sin(dfLatA_rad);
+    const double sin_complement_LatA = cos(dfLatA_rad);
 
-    dfLatA_rad = dfLatA_deg * DEG2RAD;
-    cos_complement_LatA = sin(dfLatA_rad);
-    sin_complement_LatA = cos(dfLatA_rad);
+    const double cos_complement_latB =
+        cos_Distance * cos_complement_LatA +
+        sin_Distance * sin_complement_LatA * cos_Heading;
 
-    cos_complement_latB = cos_Distance * cos_complement_LatA +
-                          sin_Distance * sin_complement_LatA * cos_Heading;
+    const double complement_latB  = OGRXPlane_Safe_acos(cos_complement_latB);
 
-    complement_latB  = OGRXPlane_Safe_acos(cos_complement_latB);
-
-    Cos_dG = (cos_Distance - cos_complement_latB * cos_complement_LatA) /
-                    (sin(complement_latB) * sin_complement_LatA);
+    const double Cos_dG =
+        (cos_Distance - cos_complement_latB * cos_complement_LatA) /
+        (sin(complement_latB) * sin_complement_LatA);
     *pdfLatB_deg = 90 - complement_latB * RAD2DEG;
 
-    dG_deg  = OGRXPlane_Safe_acos(Cos_dG) * RAD2DEG;
+    const double dG_deg  = OGRXPlane_Safe_acos(Cos_dG) * RAD2DEG;
 
     if (sin_Heading < 0)
         *pdfLonB_deg = dfLonA_deg - dG_deg;

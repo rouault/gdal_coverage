@@ -32,6 +32,7 @@
 #include "gdal_pam.h"
 #include "ogr_spatialref.h"
 
+#include <cstdlib>
 #include <algorithm>
 
 CPL_CVSID("$Id$");
@@ -91,7 +92,6 @@ class DTEDRasterBand : public GDALPamRasterBand
 
     virtual const char* GetUnitType() { return "m"; }
 };
-
 
 /************************************************************************/
 /*                           DTEDRasterBand()                            */
@@ -328,7 +328,7 @@ GDALDataset *DTEDDataset::Open( GDALOpenInfo * poOpenInfo )
                          (poOpenInfo->eAccess == GA_Update) ? "rb+" : "rb", TRUE );
 
     if( psDTED == NULL )
-        return( NULL );
+        return NULL;
 
 /* -------------------------------------------------------------------- */
 /*      Create a corresponding GDALDataset.                             */
@@ -494,7 +494,7 @@ GDALDataset *DTEDDataset::Open( GDALOpenInfo * poOpenInfo )
 /* -------------------------------------------------------------------- */
     poDS->oOvManager.Initialize( poDS, poOpenInfo->pszFilename,
                                  poOpenInfo->GetSiblingFiles() );
-    return( poDS );
+    return poDS;
 }
 
 /************************************************************************/
@@ -511,7 +511,7 @@ CPLErr DTEDDataset::GetGeoTransform( double * padfTransform )
     padfTransform[4] = 0.0;
     padfTransform[5] = psDTED->dfPixelSizeY * -1;
 
-    return( CE_None );
+    return CE_None;
 }
 
 /************************************************************************/
@@ -532,7 +532,11 @@ const char *DTEDDataset::GetProjectionRef()
     pszPrj = GetMetadataItem( "DTED_HorizontalDatum");
     if (EQUAL(pszPrj, "WGS84"))
     {
-        return( "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],AUTHORITY[\"EPSG\",\"4326\"]]" );
+        return
+            "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\","
+            "SPHEROID[\"WGS 84\",6378137,298.257223563]],"
+            "PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],"
+            "AUTHORITY[\"EPSG\",\"4326\"]]";
     }
     else if (EQUAL(pszPrj, "WGS72"))
     {
@@ -561,7 +565,11 @@ const char *DTEDDataset::GetProjectionRef()
                       "The DTED driver is going to consider it as WGS84.\n"
                       "No more warnings will be issued in this session about this operation.", GetFileName(), pszPrj );
         }
-        return( "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],AUTHORITY[\"EPSG\",\"4326\"]]" );
+        return
+            "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\","
+            "SPHEROID[\"WGS 84\",6378137,298.257223563]],"
+            "PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],"
+            "AUTHORITY[\"EPSG\",\"4326\"]]";
     }
 }
 
@@ -660,13 +668,13 @@ DTEDCreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /*     Check horizontal source size.                                    */
 /* -------------------------------------------------------------------- */
     int expectedXSize;
-    if( ABS(nLLOriginLat) >= 80 )
+    if( std::abs(nLLOriginLat) >= 80 )
         expectedXSize = (poSrcDS->GetRasterYSize() - 1) / 6 + 1;
-    else if( ABS(nLLOriginLat) >= 75 )
+    else if( std::abs(nLLOriginLat) >= 75 )
         expectedXSize = (poSrcDS->GetRasterYSize() - 1) / 4 + 1;
-    else if( ABS(nLLOriginLat) >= 70 )
+    else if( std::abs(nLLOriginLat) >= 70 )
         expectedXSize = (poSrcDS->GetRasterYSize() - 1) / 3 + 1;
-    else if( ABS(nLLOriginLat) >= 50 )
+    else if( std::abs(nLLOriginLat) >= 50 )
         expectedXSize = (poSrcDS->GetRasterYSize() - 1) / 2 + 1;
     else
         expectedXSize = poSrcDS->GetRasterYSize();
