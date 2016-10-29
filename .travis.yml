@@ -2,32 +2,45 @@
 # with Travis-ci.org on a Mac-OSX machine
 
 language: objective-c
+osx_image: xcode8
 
 # We use clang, --without-libtool and --with-debug for faster build
 compiler:
   - clang
 
+# Could probably drop the osx check.
+before_install:
+  - brew update
+  - brew uninstall gdal
+  - brew install sqlite3
+
 install:
 # build proj
-  - sudo brew uninstall gdal
-  - curl http://download.osgeo.org/proj/proj-4.8.0.tar.gz > proj-4.8.0.tar.gz
-  - tar xvzf proj-4.8.0.tar.gz
-  - cd proj-4.8.0/nad
+  - brew list --versions
+  - curl http://download.osgeo.org/proj/proj-4.9.3.tar.gz > proj-4.9.3.tar.gz
+  - tar xvzf proj-4.9.3.tar.gz
+  - cd proj-4.9.3/nad
   - curl http://download.osgeo.org/proj/proj-datumgrid-1.5.tar.gz > proj-datumgrid-1.5.tar.gz
   - tar xvzf proj-datumgrid-1.5.tar.gz
   - cd ..
-  - ./configure --prefix=/usr
+  - ./configure --prefix=$HOME/install-proj
   - make -j3
-  - sudo make install
+  - make install
   - cd ..
 # build GDAL
   - cd gdal
-  - ./configure --prefix=/usr --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal
+  - ./configure --prefix=$HOME/install-gdal --enable-debug --with-jpeg12 --with-python --with-geotiff=internal --with-png=internal --with-static-proj4=$HOME/install-proj --with-sqlite3=/usr/local/opt/sqlite
   - make USER_DEFS="-Wextra -Werror" -j3
   - cd apps
   - make USER_DEFS="-Wextra -Werror" test_ogrsf
+  - echo "Show which shared libs got used:"
+  - otool -L .libs/ogrinfo
   - cd ..
-  - sudo make install
+  - make install
+  - export PATH=$HOME/install-gdal/bin:$PWD/apps/.libs:$PATH
+  - export DYLD_LIBRARY_PATH=$HOME/install-gdal/lib
+  - export GDAL_DATA=$HOME/install-gdal/share/gdal
+  - export PYTHONPATH=$PWD/swig/python/build/lib.macosx-10.11-x86_64-2.7
   - cd ../autotest/cpp
   - echo $PATH
 #  - sudo rm -rf /usr/local/Cellar/gdal/1.10.1_1/*
@@ -36,9 +49,10 @@ install:
 #  - sudo ln -s /usr/include /usr/local/Cellar/gdal/1.10.1_1
 #  - sudo mkdir /usr/local/Cellar/gdal/1.10.1_1/share
 #  - sudo ln -s /usr/share/gdal /usr/local/Cellar/gdal/1.10.1_1/share
-  - PATH=/usr/bin:$PATH gdal-config --version
-  - PATH=/usr/bin:$PATH gdal-config --cflags
-  - PATH=/usr/bin:$PATH make -j3
+  - gdal-config --version
+  - gdal-config --cflags
+  - gdal-config --libs
+  - make -j3
   - cd ../../gdal
 
 script:
