@@ -10,7 +10,7 @@ SUBDIRS-yes	:= \
 
 SUBDIRS-$(HAVE_DODS)	+= dods
 SUBDIRS-$(HAVE_DWGDIRECT) += dxfdwg
-SUBDIRS-$(CXX11_SUPPORT)	+= cad
+SUBDIRS-$(HAVE_CAD)	+= cad
 SUBDIRS-$(HAVE_FME)	+= fme
 SUBDIRS-$(HAVE_GRASS)	+= grass
 SUBDIRS-$(HAVE_IDB)	+= idb
