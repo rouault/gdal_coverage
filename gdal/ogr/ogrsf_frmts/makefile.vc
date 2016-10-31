@@ -16,7 +16,7 @@ DIRLIST		=	generic geojson shape ntf sdts tiger s57 dgn mitab gml \
 			$(LIBKMLDIR) $(WFSDIR) $(SOSIDIR) $(GFTDIR) \
 			$(COUCHDBDIR) $(CLOUDANTDIR) $(FGDB_DIR) $(XLSDIR) $(ODSDIR) $(XLSXDIR) \
 			$(INGRESDIR) $(ELASTICDIR) $(OSMDIR) $(VFKDIR) $(CARTODIR) $(AMIGOCLOUD_DIR) \
-			$(PLSCENESDIR) $(CSWDIR) $(MONGODBDIR) $(GMLAS_DIR)
+			$(PLSCENESDIR) $(CSWDIR) $(MONGODBDIR) $(GMLAS_DIR) $(CAD_DIR)
 
 PLUGINDIRLIST	=	$(PLUGIN_ARCOBJECTS_DIR) \
 			$(PLUGIN_DWG_DIR) \
@@ -239,6 +239,11 @@ MONGODBOBJ = mongodb\*.obj
 !ELSE
 PLUGIN_MONGODBDIR = mongodb
 !ENDIF
+!ENDIF
+
+!IF $(MSVC_VER) >= 1800
+CAD_DIR = cad
+CAD_OBJ = cad\*.obj cad\libopencad\*.obj cad\libopencad\dwg\*.obj
 !ENDIF
 
 !ELSE
