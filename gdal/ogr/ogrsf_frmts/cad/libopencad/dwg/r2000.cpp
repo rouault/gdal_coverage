@@ -774,14 +774,14 @@ CADObject * DWGFileR2000::GetObject( long dHandle, bool bHandlesOnly )
 
     // And read whole data chunk into memory for future parsing.
     // + nBitOffsetFromStart/8 + 2 is because dObjectSize doesn't cover CRC and itself.
-    size_t             nSectionSize = dObjectSize + nBitOffsetFromStart / 8 + 2;
-    unique_ptr<char[]> sectionContentPtr( new char[nSectionSize + 4] );
+    size_t nSectionSize = dObjectSize + nBitOffsetFromStart / 8 + 2;
+    unique_ptr<char[]> sectionContentPtr( new char[nSectionSize + 64] ); // 64 is extra buffer size
     char * pabySectionContent = sectionContentPtr.get();
     pFileIO->Seek( mapObjects[dHandle], CADFileIO::SeekOrigin::BEG );
     pFileIO->Read( pabySectionContent, nSectionSize );
 
     nBitOffsetFromStart = 0;
-    dObjectSize         = ReadMSHORT( pabySectionContent, nBitOffsetFromStart );
+    dObjectSize = ReadMSHORT( pabySectionContent, nBitOffsetFromStart );
     short dObjectType = ReadBITSHORT( pabySectionContent, nBitOffsetFromStart );
 
     if( dObjectType >= 500 )
@@ -3630,15 +3630,18 @@ CADXRecordObject * DWGFileR2000::getXRecord( long dObjectSize, const char * paby
         {
             ReadCHAR( pabyInput, nBitOffsetFromStart );
         }
-    } else if( dIndicatorNumber == 70 )
+    }
+    else if( dIndicatorNumber == 70 )
     {
         ReadRAWSHORT( pabyInput, nBitOffsetFromStart );
-    } else if( dIndicatorNumber == 10 )
+    }
+    else if( dIndicatorNumber == 10 )
     {
         ReadRAWDOUBLE( pabyInput, nBitOffsetFromStart );
         ReadRAWDOUBLE( pabyInput, nBitOffsetFromStart );
         ReadRAWDOUBLE( pabyInput, nBitOffsetFromStart );
-    } else if( dIndicatorNumber == 40 )
+    }
+    else if( dIndicatorNumber == 40 )
     {
         ReadRAWDOUBLE( pabyInput, nBitOffsetFromStart );
     }
