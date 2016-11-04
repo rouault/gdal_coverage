@@ -39,7 +39,7 @@ import ogrtest
 from osgeo import ogr
 
 ###############################################################################
-# Check driver existance, and that driver properly opens simple file, reads correct feature (ellipse).
+# Check driver existance.
 def ogr_cad_1():
 
     gdaltest.cad_ds = None
@@ -50,6 +50,14 @@ def ogr_cad_1():
         if gdaltest.cad_dr is None:
             return 'skip'
     except:
+        return 'skip'
+
+    return 'success'
+
+###############################################################################
+# Check driver properly opens simple file, reads correct feature (ellipse).
+def ogr_cad_2():
+    if gdaltest.cad_dr is None:
         return 'skip'
 
     gdaltest.cad_ds = ogr.Open( 'data/cad/ellipse_r2000.dwg' )
@@ -82,6 +90,10 @@ def ogr_cad_1():
 
     feat = gdaltest.cad_layer.GetNextFeature()
 
+    if feat is None:
+        gdaltest.post_reason( 'cad feature 0 get failed.' )
+        return 'fail'
+
     if feat.cadgeom_type != 'CADEllipse':
         gdaltest.post_reason( 'cad geometry type is wrong. Expected CADEllipse, got: %s'
                               % feat.cadgeom_type )
@@ -102,11 +114,15 @@ def ogr_cad_1():
 
     expected_style = 'PEN(c:#FFFFFFFF,w:5px)'
     if feat.GetStyleString() != expected_style:
-        gdaltest.post_reason( 'Got unexpected style string on feture 0:\n%s\ninstead of:\n%s.'
+        gdaltest.post_reason( 'got unexpected style string on feture 0:\n%s\ninstead of:\n%s.'
                               % ( feat.GetStyleString(), expected_style ) )
         return 'fail'
 
     geom = feat.GetGeometryRef()
+    if geom is None:
+        gdaltest.post_reason( 'cad geometry is None.' )
+        return 'fail'
+
     if geom.GetGeometryType() != ogr.wkbLineString25D:
         gdaltest.post_reason( 'did not get expected geometry type.' )
         return 'fail'
@@ -116,7 +132,7 @@ def ogr_cad_1():
 
 ###############################################################################
 # Check proper read of 3 layers (one circle on each) with different parameters.
-def ogr_cad_2():
+def ogr_cad_3():
     if gdaltest.cad_dr is None:
         return 'skip'
 
@@ -277,7 +293,7 @@ def ogr_cad_2():
 
 ###############################################################################
 # Check reading of a single point.
-def ogr_cad_3():
+def ogr_cad_4():
     if gdaltest.cad_dr is None:
         return 'skip'
 
@@ -304,7 +320,7 @@ def ogr_cad_3():
 
 ###############################################################################
 # Check reading of a simple line.
-def ogr_cad_4():
+def ogr_cad_5():
     if gdaltest.cad_dr is None:
         return 'skip'
 
@@ -332,7 +348,7 @@ def ogr_cad_4():
 ###############################################################################
 # Check reading of a text (point with attached 'text' attribute, and setted up
 # OGR feature style string to LABEL.
-def ogr_cad_5():
+def ogr_cad_6():
     if gdaltest.cad_dr is None:
         return 'skip'
 
@@ -364,7 +380,7 @@ def ogr_cad_5():
 
 ###############################################################################
 # Check MTEXT as TEXT geometry.
-def ogr_cad_6():
+def ogr_cad_7():
     if gdaltest.cad_dr is None:
         return 'skip'
 
@@ -383,7 +399,7 @@ def ogr_cad_6():
 
 ###############################################################################
 # Check ATTDEF as TEXT geometry.
-def ogr_cad_7():
+def ogr_cad_8():
     if gdaltest.cad_dr is None:
         return 'skip'
 
@@ -416,6 +432,7 @@ gdaltest_list = [
     ogr_cad_5,
     ogr_cad_6,
     ogr_cad_7,
+    ogr_cad_8,
     ogr_cad_cleanup ]
 
 if __name__ == '__main__':
