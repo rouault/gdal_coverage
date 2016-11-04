@@ -3754,13 +3754,15 @@ CADDictionary DWGFileR2000::GetNOD()
     CADDictionary stNOD;
 
     unique_ptr<CADDictionaryObject> spoNamedDictObj(
-            ( CADDictionaryObject * ) GetObject( oTables.GetTableHandle( CADTables::NamedObjectsDict ).getAsLong() ) );
+            static_cast<CADDictionaryObject*>( GetObject( oTables.GetTableHandle(
+                CADTables::NamedObjectsDict ).getAsLong() ) ) );
     if( spoNamedDictObj == nullptr )
         return stNOD;
 
     for( size_t i = 0; i < spoNamedDictObj->sItemNames.size(); ++i )
     {
-        CADObject* spoDictRecord = GetObject( spoNamedDictObj->hItemHandles[i].getAsLong() );
+        unique_ptr<CADObject> spoDictRecord (
+                    GetObject( spoNamedDictObj->hItemHandles[i].getAsLong() ) );
 
         if( spoDictRecord == nullptr )
             continue; // skip unreaded objects
@@ -3768,27 +3770,19 @@ CADDictionary DWGFileR2000::GetNOD()
         if( spoDictRecord->getType() == CADObject::DICTIONARY )
         {
             // TODO: add implementation of DICTIONARY reading
-            CADDictionaryObject * poDictionary = static_cast<CADDictionaryObject*>(spoDictRecord);
-            delete poDictionary;
         }
         else if( spoDictRecord->getType() == CADObject::XRECORD )
         {
             CADXRecord * cadxRecord = new CADXRecord();
             CADXRecordObject * cadxRecordObject =
-                static_cast<CADXRecordObject*>(spoDictRecord);
+                static_cast<CADXRecordObject*>(spoDictRecord.get());
 
-            string xRecordData( cadxRecordObject->abyDataBytes.begin(), 
+            string xRecordData( cadxRecordObject->abyDataBytes.begin(),
                                 cadxRecordObject->abyDataBytes.end() );
             cadxRecord->setRecordData( xRecordData );
 
             stNOD.addRecord( make_pair( spoNamedDictObj->sItemNames[i],
                 static_cast<CADDictionaryRecord*>(cadxRecord) ) );
-
-            delete cadxRecordObject;
-        }
-        else
-        {
-            delete spoDictRecord;
         }
     }
 
