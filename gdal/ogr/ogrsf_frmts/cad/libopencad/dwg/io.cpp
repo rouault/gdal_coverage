@@ -71,13 +71,13 @@ unsigned short CalculateCRC8( unsigned short initialVal, const char * ptr, int n
     unsigned char al;
     while( num-- > 0 )
     {
-        al         = static_cast<unsigned char>( ( * ptr ) ^ ( ( char ) ( initialVal & 0xFF ) ) );
+        al = static_cast<unsigned char>( ( * ptr ) ^ ( static_cast<char> ( initialVal & 0xFF ) ) );
         initialVal = ( initialVal >> 8 ) & 0xFF;
-        initialVal = initialVal ^ DWGCRC8Table[al & 0xFF];
+        initialVal = static_cast<unsigned short>( initialVal ^ DWGCRC8Table[al & 0xFF] );
         ptr++;
     }
 
-    return static_cast<unsigned short>( initialVal );
+    return initialVal;
 }
 
 unsigned char Read2B( const char * pabyInput, size_t& nBitOffsetFromStart )
@@ -389,17 +389,17 @@ std::string ReadTV( const char * pabyInput, size_t& nBitOffsetFromStart )
 long ReadUMCHAR( const char * pabyInput, size_t& nBitOffsetFromStart )
 {
     // TODO: bit offset is calculated, but function has nothing to do with it.
-    long long result      = 0;
+    long result = 0;
     /*bool   negative = false;*/
-    size_t    nByteOffset = nBitOffsetFromStart / 8;
+    size_t nByteOffset = nBitOffsetFromStart / 8;
     /*size_t nBitOffsetInByte = nBitOffsetFromStart % 8;*/
 
     const char * pMCharFirstByte = pabyInput + nByteOffset;
     unsigned char aMCharBytes[8]; // 8 bytes is maximum.
     memcpy( aMCharBytes, pMCharFirstByte, 8 );
 
-    size_t      MCharBytesCount = 0;
-    for( size_t i               = 0; i < 8; ++i )
+    size_t MCharBytesCount = 0;
+    for( size_t i = 0; i < 8; ++i )
     {
         aMCharBytes[i] = ReadCHAR( pabyInput, nBitOffsetFromStart );
         ++MCharBytesCount;
@@ -457,7 +457,7 @@ long ReadUMCHAR( const char * pabyInput, size_t& nBitOffsetFromStart )
 
     SwapEndianness( aMCharBytes, MCharBytesCount ); // MSB to LSB
 
-    memcpy( & result, aMCharBytes, MCharBytesCount );
+    memcpy( &result, aMCharBytes, MCharBytesCount );
 
     return result;
 }
@@ -475,8 +475,8 @@ long ReadMCHAR( const char * pabyInput, size_t& nBitOffsetFromStart )
     unsigned char aMCharBytes[8]; // 8 bytes is maximum.
     memcpy( aMCharBytes, pMCharFirstByte, 8 );
 
-    size_t      MCharBytesCount = 0;
-    for( size_t i               = 0; i < 8; ++i )
+    size_t MCharBytesCount = 0;
+    for( size_t i = 0; i < 8; ++i )
     {
         aMCharBytes[i] = ReadCHAR( pabyInput, nBitOffsetFromStart );
         ++MCharBytesCount;
@@ -540,9 +540,10 @@ long ReadMCHAR( const char * pabyInput, size_t& nBitOffsetFromStart )
 
     SwapEndianness( aMCharBytes, MCharBytesCount ); // MSB to LSB
 
-    memcpy( & result, aMCharBytes, MCharBytesCount );
+    memcpy( &result, aMCharBytes, MCharBytesCount );
 
-    if( negative ) result *= -1;
+    if( negative )
+        result *= -1;
 
     return result;
 }
@@ -719,9 +720,9 @@ double ReadBITDOUBLEWD( const char * pabyInput, size_t& nBitOffsetFromStart, dou
 
 CADHandle ReadHANDLE( const char * pabyInput, size_t& nBitOffsetFromStart )
 {
-    CADHandle          result( Read4B( pabyInput, nBitOffsetFromStart ) );
-    unsigned char      counter = Read4B( pabyInput, nBitOffsetFromStart );
-    for( unsigned char i       = 0; i < counter; ++i )
+    CADHandle result( Read4B( pabyInput, nBitOffsetFromStart ) );
+    unsigned char counter = Read4B( pabyInput, nBitOffsetFromStart );
+    for( unsigned char i = 0; i < counter; ++i )
     {
         result.addOffset( ReadCHAR( pabyInput, nBitOffsetFromStart ) );
     }
