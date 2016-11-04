@@ -53,7 +53,8 @@
 
 CPL_CVSID("$Id$")
 
-#define ProjLinearUnitsInterpCorrectGeoKey 3059
+static const geokey_t ProjLinearUnitsInterpCorrectGeoKey =
+    static_cast<geokey_t>(3059);
 
 #ifndef CT_HotineObliqueMercatorAzimuthCenter
 #  define CT_HotineObliqueMercatorAzimuthCenter 9815
@@ -512,7 +513,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
 /* -------------------------------------------------------------------- */
     short bLinearUnitsMarkedCorrect = FALSE;
 
-    GDALGTIFKeyGetSHORT(hGTIF, (geokey_t) ProjLinearUnitsInterpCorrectGeoKey,
+    GDALGTIFKeyGetSHORT(hGTIF, ProjLinearUnitsInterpCorrectGeoKey,
                &bLinearUnitsMarkedCorrect, 0, 1);
 
     if( EQUAL(pszLinearUnits,"BROKEN")
@@ -719,7 +720,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
                                                 psDefn->SemiMinor );
 
         /* Take official inverse flattening definition in the WGS84 case */
-        if (fabs(dfSemiMajor-SRS_WGS84_SEMIMAJOR) < 1e-10 &&
+        if (fabs(dfSemiMajor - SRS_WGS84_SEMIMAJOR) < 1e-10 &&
             fabs(dfInvFlattening - SRS_WGS84_INVFLATTENING) < 1e-10)
             dfInvFlattening = SRS_WGS84_INVFLATTENING;
     }
@@ -1120,7 +1121,7 @@ char *GTIFGetOGISDefn( GTIF *hGTIF, GTIFDefn * psDefn )
         if( (verticalCSType >= 5001 && verticalCSType <= 5033)
             && verticalDatum == -1 )
         {
-            verticalDatum = verticalCSType+1000;
+            verticalDatum = verticalCSType + 1000;
             verticalCSType = -1;
         }
 
@@ -1479,14 +1480,14 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
         nUOMLengthCode = atoi(poSRS->GetAuthorityCode("PROJCS|UNIT"));
     else if( (pszLinearUOMName != NULL
          && EQUAL(pszLinearUOMName,SRS_UL_FOOT))
-        || fabs(dfLinearUOM-GTIFAtof(SRS_UL_FOOT_CONV)) < 0.0000001 )
+        || fabs(dfLinearUOM - GTIFAtof(SRS_UL_FOOT_CONV)) < 0.0000001 )
         nUOMLengthCode = 9002;  // International foot.
     else if( (pszLinearUOMName != NULL
               && EQUAL(pszLinearUOMName,SRS_UL_US_FOOT)) ||
-             std::abs(dfLinearUOM-GTIFAtof(SRS_UL_US_FOOT_CONV)) <
+             std::abs(dfLinearUOM - GTIFAtof(SRS_UL_US_FOOT_CONV)) <
              0.0000001 )
         nUOMLengthCode = 9003;  // US survey foot.
-    else if( fabs(dfLinearUOM-1.0) > 0.00000001 )
+    else if( fabs(dfLinearUOM - 1.0) > 0.00000001 )
         nUOMLengthCode = KvUserDefined;
 
 /* -------------------------------------------------------------------- */
@@ -2338,7 +2339,7 @@ int GTIFSetFromOGISDefnEx( GTIF * psGTIF, const char *pszOGCWKT,
         && nUOMLengthCode != 9001 )
     {
         GTIFKeySet(
-            psGTIF, static_cast<geokey_t>(ProjLinearUnitsInterpCorrectGeoKey),
+            psGTIF, ProjLinearUnitsInterpCorrectGeoKey,
             TYPE_SHORT, 1, static_cast<short>(1));
     }
 
@@ -2725,7 +2726,7 @@ CPLErr GTIFWktFromMemBufEx( int nSize, unsigned char *pabyBuffer,
             char szID[32] = {};
             GDAL_GCP *psGCP = *ppasGCPList + iGCP;
 
-            snprintf( szID, sizeof(szID), "%d", iGCP+1 );
+            snprintf( szID, sizeof(szID), "%d", iGCP + 1 );
             psGCP->pszId = CPLStrdup( szID );
             psGCP->pszInfo = CPLStrdup("");
             psGCP->dfGCPPixel = padfTiePoints[iGCP*6+0];
