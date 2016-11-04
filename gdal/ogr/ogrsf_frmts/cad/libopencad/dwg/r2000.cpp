@@ -3773,13 +3773,16 @@ CADDictionary DWGFileR2000::GetNOD()
         }
         else if( spoDictRecord->getType() == CADObject::XRECORD )
         {
-            CADXRecord       * cadxRecord       = new CADXRecord();
-            CADXRecordObject * cadxRecordObject = static_cast<CADXRecordObject*>(spoDictRecord);
+            CADXRecord * cadxRecord = new CADXRecord();
+            CADXRecordObject * cadxRecordObject =
+                static_cast<CADXRecordObject*>(spoDictRecord);
 
-            string xRecordData( cadxRecordObject->abyDataBytes.begin(), cadxRecordObject->abyDataBytes.end() );
+            string xRecordData( cadxRecordObject->abyDataBytes.begin(), 
+                                cadxRecordObject->abyDataBytes.end() );
             cadxRecord->setRecordData( xRecordData );
 
-            stNOD.addRecord( make_pair( spoNamedDictObj->sItemNames[i], ( CADDictionaryRecord * ) cadxRecord ) );
+            stNOD.addRecord( make_pair( spoNamedDictObj->sItemNames[i],
+                static_cast<CADDictionaryRecord*>(cadxRecord) ) );
 
             delete cadxRecordObject;
         }
