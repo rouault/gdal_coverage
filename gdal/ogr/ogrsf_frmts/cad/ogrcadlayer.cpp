@@ -51,6 +51,8 @@ OGRCADLayer::OGRCADLayer( CADLayer &poCADLayer_, OGRSpatialReference *poSR,
 {
     nNextFID = 0;
 
+    if( poSpatialRef )
+        poSpatialRef->Reference();
     poFeatureDefn = new OGRFeatureDefn( CADRecode( poCADLayer_.getName(), nDWGEncoding ) );
 
     // Setting up layer geometry type
@@ -151,7 +153,7 @@ OGRCADLayer::OGRCADLayer( CADLayer &poCADLayer_, OGRSpatialReference *poSR,
     }
 
     // Applying spatial ref info
-    poFeatureDefn->GetGeomFieldDefn(0)->SetSpatialRef( poSR );
+    poFeatureDefn->GetGeomFieldDefn(0)->SetSpatialRef( poSpatialRef );
 
     SetDescription( poFeatureDefn->GetName() );
     poFeatureDefn->Reference();
@@ -167,6 +169,8 @@ GIntBig OGRCADLayer::GetFeatureCount( int bForce )
 
 OGRCADLayer::~OGRCADLayer()
 {
+    if( poSpatialRef )
+        poSpatialRef->Release();
     poFeatureDefn->Release();
 }
 
