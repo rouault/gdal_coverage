@@ -28,17 +28,29 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "ogr_spatialref.h"
+#include "cpl_port.h"
+#include "ogr_srs_api.h"
+
+#include <cctype>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+
 #include "cpl_conv.h"
 #include "cpl_csv.h"
+#include "cpl_error.h"
+#include "cpl_string.h"
+#include "cpl_vsi.h"
+#include "ogr_core.h"
 #include "ogr_p.h"
+#include "ogr_spatialref.h"
 
 CPL_CVSID("$Id$");
 
 typedef struct
 {
-    const char  *pszPCIDatum;
-    int         nEPSGCode;
+    const char *pszPCIDatum;
+    int        nEPSGCode;
 } PCIDatums;
 
 static const PCIDatums asDatums[] =
@@ -1050,17 +1062,25 @@ OGRErr OGRSpatialReference::exportToPCI( char **ppszProj, char **ppszUnits,
 /* -------------------------------------------------------------------- */
 /*      Is this a well known datum?                                     */
 /* -------------------------------------------------------------------- */
-    const char  *pszDatum = GetAttrValue( "DATUM" );
+    const char *pszDatum = GetAttrValue( "DATUM" );
     char szEarthModel[5] = {};
 
     if( pszDatum == NULL || strlen(pszDatum) == 0 )
-        /* do nothing */;
+    {
+        // Do nothing.
+    }
     else if( EQUAL( pszDatum, SRS_DN_NAD27 ) )
+    {
         CPLPrintStringFill( szEarthModel, "D-01", 4 );
+    }
     else if( EQUAL( pszDatum, SRS_DN_NAD83 ) )
+    {
         CPLPrintStringFill( szEarthModel, "D-02", 4 );
+    }
     else if( EQUAL( pszDatum, SRS_DN_WGS84 ) )
+    {
         CPLPrintStringFill( szEarthModel, "D000", 4 );
+    }
 
 /* -------------------------------------------------------------------- */
 /*      If not a very well known datum, try for an EPSG based           */
@@ -1164,12 +1184,10 @@ OGRErr OGRSpatialReference::exportToPCI( char **ppszProj, char **ppszUnits,
         && pszDatum != NULL )
     {
         const char *pszDatumCSV = CSVFilename( "pci_datum.txt" );
-        VSILFILE *fp = NULL;
-        double adfTOWGS84[7];
+        double adfTOWGS84[7] = {};
         const bool bHaveTOWGS84 = GetTOWGS84(adfTOWGS84, 7) == OGRERR_NONE;
 
-        if( pszDatumCSV )
-            fp = VSIFOpenL( pszDatumCSV, "r" );
+        VSILFILE *fp = pszDatumCSV ? VSIFOpenL( pszDatumCSV, "r" ) : NULL;
 
         if( fp != NULL )
         {
@@ -1246,7 +1264,7 @@ OGRErr OGRSpatialReference::exportToPCI( char **ppszProj, char **ppszUnits,
 
     CPLPrintStringFill( szProj + 12, szEarthModel, 4 );
 
-    CPLDebug( "OSR_PCI", "Translated as '%s'", szProj  );
+    CPLDebug( "OSR_PCI", "Translated as '%s'", szProj );
 
 /* -------------------------------------------------------------------- */
 /*      Translate the linear units.                                     */

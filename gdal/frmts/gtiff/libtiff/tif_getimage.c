@@ -1,4 +1,4 @@
-/* $Id: tif_getimage.c,v 1.96 2016-09-04 21:32:56 erouault Exp $ */
+/* $Id: tif_getimage.c,v 1.98 2016-11-18 02:47:45 bfriesen Exp $ */
 
 /*
  * Copyright (c) 1991-1997 Sam Leffler
@@ -95,6 +95,10 @@ TIFFRGBAImageOK(TIFF* tif, char emsg[1024])
 			    td->td_bitspersample);
 			return (0);
 	}
+        if (td->td_sampleformat == SAMPLEFORMAT_IEEEFP) {
+                sprintf(emsg, "Sorry, can not handle images with IEEE floating-point samples");
+                return (0);
+        }
 	colorchannels = td->td_samplesperpixel - td->td_extrasamples;
 	if (!TIFFGetField(tif, TIFFTAG_PHOTOMETRIC, &photometric)) {
 		switch (colorchannels) {
@@ -182,27 +186,25 @@ TIFFRGBAImageOK(TIFF* tif, char emsg[1024])
 				    "Planarconfiguration", td->td_planarconfig);
 				return (0);
 			}
-			if( td->td_samplesperpixel != 3 || colorchannels != 3 )
-            {
-                sprintf(emsg,
-                        "Sorry, can not handle image with %s=%d, %s=%d",
-                        "Samples/pixel", td->td_samplesperpixel,
-                        "colorchannels", colorchannels);
-                return 0;
-            }
+			if ( td->td_samplesperpixel != 3 || colorchannels != 3 ) {
+                                sprintf(emsg,
+                                        "Sorry, can not handle image with %s=%d, %s=%d",
+                                        "Samples/pixel", td->td_samplesperpixel,
+                                        "colorchannels", colorchannels);
+                                return 0;
+                        }
 			break;
 		case PHOTOMETRIC_CIELAB:
-            if( td->td_samplesperpixel != 3 || colorchannels != 3 || td->td_bitspersample != 8 )
-            {
-                sprintf(emsg,
-                        "Sorry, can not handle image with %s=%d, %s=%d and %s=%d",
-                        "Samples/pixel", td->td_samplesperpixel,
-                        "colorchannels", colorchannels,
-                        "Bits/sample", td->td_bitspersample);
-                return 0;
-            }
+                        if ( td->td_samplesperpixel != 3 || colorchannels != 3 || td->td_bitspersample != 8 ) {
+                                sprintf(emsg,
+                                        "Sorry, can not handle image with %s=%d, %s=%d and %s=%d",
+                                        "Samples/pixel", td->td_samplesperpixel,
+                                        "colorchannels", colorchannels,
+                                        "Bits/sample", td->td_bitspersample);
+                                return 0;
+                        }
 			break;
-		default:
+                default:
 			sprintf(emsg, "Sorry, can not handle image with %s=%d",
 			    photoTag, photometric);
 			return (0);
@@ -1438,7 +1440,7 @@ DECLAREContigPutFunc(putRGBUAcontig8bittile)
 		uint8* m;
 		for (x = w; x-- > 0;) {
 			a = pp[3];
-			m = img->UaToAa+(a<<8);
+			m = img->UaToAa+((size_t) a<<8);
 			r = m[pp[0]];
 			g = m[pp[1]];
 			b = m[pp[2]];
@@ -1509,7 +1511,7 @@ DECLAREContigPutFunc(putRGBUAcontig16bittile)
 		uint8* m;
 		for (x = w; x-- > 0;) {
 			a = img->Bitdepth16To8[wp[3]];
-			m = img->UaToAa+(a<<8);
+			m = img->UaToAa+((size_t) a<<8);
 			r = m[img->Bitdepth16To8[wp[0]]];
 			g = m[img->Bitdepth16To8[wp[1]]];
 			b = m[img->Bitdepth16To8[wp[2]]];
@@ -1640,7 +1642,7 @@ DECLARESepPutFunc(putRGBUAseparate8bittile)
 		uint8* m;
 		for (x = w; x-- > 0;) {
 			av = *a++;
-			m = img->UaToAa+(av<<8);
+			m = img->UaToAa+((size_t) av<<8);
 			rv = m[*r++];
 			gv = m[*g++];
 			bv = m[*b++];
@@ -1706,7 +1708,7 @@ DECLARESepPutFunc(putRGBUAseparate16bittile)
 		uint8* m;
 		for (x = w; x-- > 0;) {
 			a2 = img->Bitdepth16To8[*wa++];
-			m = img->UaToAa+(a2<<8);
+			m = img->UaToAa+((size_t) a2<<8);
 			r2 = m[img->Bitdepth16To8[*wr++]];
 			g2 = m[img->Bitdepth16To8[*wg++]];
 			b2 = m[img->Bitdepth16To8[*wb++]];

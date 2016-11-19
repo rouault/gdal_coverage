@@ -1713,8 +1713,18 @@ GDALDataset *JP2OpenJPEGDataset::Open( GDALOpenInfo * poOpenInfo )
     }
     else if (poDS->bUseSetDecodeArea)
     {
-        if (nTileW > 1024) nTileW = 1024;
-        if (nTileH > 1024) nTileH = 1024;
+        // Arbitrary threshold... ~4 million at least needed for the GRIB2
+        // images mentionned below.
+        if( nTileH == 1 && nTileW < 20 * 1024 * 1024 )
+        {
+            // Some GRIB2 JPEG2000 compressed images are a 2D image organized
+            // as a single line image...
+        }
+        else
+        {
+            if (nTileW > 1024) nTileW = 1024;
+            if (nTileH > 1024) nTileH = 1024;
+        }
     }
 
     GDALColorTable* poCT = NULL;
@@ -2894,11 +2904,15 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
 
         GDALJP2Box ftypBox(fp);
         ftypBox.SetType("ftyp");
-        ftypBox.AppendWritableData(4, "jp2 "); /* Branding */
+        // http://docs.opengeospatial.org/is/08-085r5/08-085r5.html Req 19
+        const bool bJPXOption = CPLFetchBool( papszOptions, "JPX", true );
+        if( nGMLJP2Version == 2 && bJPXOption )
+            ftypBox.AppendWritableData(4, "jpx "); /* Branding */
+        else
+            ftypBox.AppendWritableData(4, "jp2 "); /* Branding */
         ftypBox.AppendUInt32(0); /* minimum version */
         ftypBox.AppendWritableData(4, "jp2 "); /* Compatibility list: first value */
 
-        const bool bJPXOption = CPLFetchBool( papszOptions, "JPX", true );
         if( bInspireTG && poGMLJP2Box != NULL && !bJPXOption )
         {
             CPLError(CE_Warning, CPLE_AppDefined,
@@ -3277,7 +3291,7 @@ GDALDataset * JP2OpenJPEGDataset::CreateCopy( const char * pszFilename,
         /* coverity[tainted_data] */
         while( nRead < nCodeStreamLength )
         {
-            int nToRead = ( nCodeStreamLength-nRead > 4096 ) ? 4049 :
+            int nToRead = ( nCodeStreamLength-nRead > 4096 ) ? 4096 :
                                         (int)(nCodeStreamLength-nRead);
             if( (int)VSIFReadL(abyBuffer, 1, nToRead, fpSrc) != nToRead )
             {
@@ -3703,7 +3717,7 @@ void GDALRegister_JP2OpenJPEG()
 "       <Value>PROFILE_1</Value>"
 "   </Option>"
 "   <Option name='INSPIRE_TG' type='boolean' description='Whether to use features that comply with Inspire Orthoimagery Technical Guidelines' default='NO'/>"
-"   <Option name='JPX' type='boolean' description='Whether to advertize JPX features when a GMLJP2 box is written' default='YES'/>"
+"   <Option name='JPX' type='boolean' description='Whether to advertize JPX features when a GMLJP2 box is written (or use JPX branding if GMLJP2 v2)' default='YES'/>"
 "   <Option name='GEOBOXES_AFTER_JP2C' type='boolean' description='Whether to place GeoJP2/GMLJP2 boxes after the code-stream' default='NO'/>"
 "   <Option name='PRECINCTS' type='string' description='Precincts size as a string of the form {w,h},{w,h},... with power-of-two values'/>"
 "   <Option name='TILEPARTS' type='string-select' description='Whether to generate tile-parts and according to which criterion' default='DISABLED'>"
