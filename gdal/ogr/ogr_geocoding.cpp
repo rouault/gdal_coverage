@@ -26,13 +26,25 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
+#include "cpl_port.h"
+#include "ogr_geocoding.h"
+
+#include <cstddef>
+#include <cstring>
+#include <string>
+
 #include "cpl_conv.h"
+#include "cpl_error.h"
 #include "cpl_http.h"
 #include "cpl_minixml.h"
 #include "cpl_multiproc.h"
-#include "ogr_geocoding.h"
+#include "cpl_string.h"
+#include "ogr_core.h"
+#include "ogr_feature.h"
+#include "ogr_geometry.h"
 #include "ogr_mem.h"
 #include "ogrsf_frmts.h"
+
 
 // Emulation of gettimeofday() for Windows.
 #ifdef WIN32
@@ -44,8 +56,8 @@
 #if !(defined(__GNUC__) && defined(_TIMEZONE_DEFINED))
 struct timezone
 {
-  int  tz_minuteswest; // Minutes W of Greenwich.
-  int  tz_dsttime;     // Type of DST correction.
+    int tz_minuteswest; // Minutes W of Greenwich.
+    int tz_dsttime;     // Type of DST correction.
 };
 #endif
 
@@ -220,9 +232,10 @@ bool OGRGeocodeHasStringValidFormat(const char* pszQueryTemplate)
  *       SERVICE=OSM_NOMINATIM, MAPQUEST_NOMINATIM, YAHOO, GEONAMES or BING,
  *       the URL template is hard-coded.
  * <li> "REVERSE_QUERY_TEMPLATE": URL template for GET requests for reverse
- *       geocoding. Must contain one and only one occurrence of {lon} and {lat} in it.
- *       If not specified, for SERVICE=OSM_NOMINATIM, MAPQUEST_NOMINATIM, YAHOO,
- *       GEONAMES or BING, the URL template is hard-coded.
+ *       geocoding. Must contain one and only one occurrence of {lon} and {lat}
+ *       in it.  If not specified, for SERVICE=OSM_NOMINATIM,
+ *       MAPQUEST_NOMINATIM, YAHOO, GEONAMES or BING, the URL template is
+ *       hard-coded.
  * </ul>
  *
  * All the above options can also be set by defining the configuration option
@@ -376,7 +389,7 @@ OGRGeocodingSessionH OGRGeocodeCreateSession( char** papszOptions )
  *
  * @since GDAL 1.10
  */
-void OGRGeocodeDestroySession(OGRGeocodingSessionH hSession)
+void OGRGeocodeDestroySession( OGRGeocodingSessionH hSession )
 {
     if( hSession == NULL )
         return;
@@ -390,7 +403,7 @@ void OGRGeocodeDestroySession(OGRGeocodingSessionH hSession)
     CPLFree(hSession->pszQueryTemplate);
     CPLFree(hSession->pszReverseQueryTemplate);
     if( hSession->poDS )
-        OGRReleaseDataSource((OGRDataSourceH) hSession->poDS);
+        OGRReleaseDataSource(reinterpret_cast<OGRDataSourceH>(hSession->poDS));
     CPLFree(hSession);
 }
 
@@ -466,7 +479,7 @@ static OGRLayer* OGRGeocodeGetCacheLayer( OGRGeocodingSessionH hSession,
                         CPLSPrintf("/vsimem/%s.%s",
                                    CACHE_LAYER_NAME, osExt.c_str()));
                     CPLDebug("OGR", "Switch geocode cache file to %s",
-                         hSession->pszCacheFilename);
+                             hSession->pszCacheFilename);
                     poDS = (OGRDataSource*) OGR_Dr_CreateDataSource(
                             hDriver, hSession->pszCacheFilename, papszOptions);
                 }
@@ -620,8 +633,8 @@ static OGRLayerH OGRGeocodeBuildLayerNominatim(
     while( psPlace != NULL )
     {
         if( psPlace->eType == CXT_Element &&
-            (strcmp(psPlace->pszValue, "place") == 0 || /* Nominatim */
-             strcmp(psPlace->pszValue, "geoname") == 0 /* Geonames */) )
+            (strcmp(psPlace->pszValue, "place") == 0 ||  // Nominatim.
+             strcmp(psPlace->pszValue, "geoname") == 0) )
         {
             CPLXMLNode* psChild = psPlace->psChild;
             while( psChild != NULL )
@@ -641,8 +654,8 @@ static OGRLayerH OGRGeocodeBuildLayerNominatim(
                     {
                         oFieldDefn.SetType(OFTReal);
                     }
-                    else if( strcmp(pszName, "lon") == 0 ||  /* Nominatim */
-                            strcmp(pszName, "lng") == 0 /* Geonames */ )
+                    else if( strcmp(pszName, "lon") == 0 ||  // Nominatim.
+                             strcmp(pszName, "lng") == 0 )  // Geonames.
                     {
                         oFieldDefn.SetType(OFTReal);
                     }
@@ -664,8 +677,8 @@ static OGRLayerH OGRGeocodeBuildLayerNominatim(
     while( psPlace != NULL )
     {
         if( psPlace->eType == CXT_Element &&
-            (strcmp(psPlace->pszValue, "place") == 0 || /* Nominatim */
-             strcmp(psPlace->pszValue, "geoname") == 0 /* Geonames */) )
+            (strcmp(psPlace->pszValue, "place") == 0 ||  // Nominatim.
+             strcmp(psPlace->pszValue, "geoname") == 0 ) )  // Geonames.
         {
             bool bFoundLat = false;
             bool bFoundLon = false;
@@ -683,7 +696,7 @@ static OGRLayerH OGRGeocodeBuildLayerNominatim(
                 if( !(psChild->eType == CXT_Element ||
                       psChild->eType == CXT_Attribute) )
                 {
-                    // do nothing
+                    // Do nothing.
                 }
                 else if( (nIdx = poFDefn->GetFieldIndex(pszName)) >= 0 )
                 {
@@ -695,8 +708,8 @@ static OGRLayerH OGRGeocodeBuildLayerNominatim(
                             bFoundLat = true;
                             dfLat = CPLAtofM(pszVal);
                         }
-                        else if( strcmp(pszName, "lon") == 0 ||  /* Nominatim */
-                                 strcmp(pszName, "lng") == 0 /* Geonames */ )
+                        else if( strcmp(pszName, "lon") == 0 ||  // Nominatim.
+                                 strcmp(pszName, "lng") == 0 )  // Geonames.
                         {
                             bFoundLon = true;
                             dfLon = CPLAtofM(pszVal);
@@ -832,7 +845,8 @@ static OGRLayerH OGRGeocodeReverseBuildLayerNominatim(
         int nIdx = 0;
         const char* pszName = psChild->pszValue;
         const char* pszVal = CPLGetXMLValue(psChild, NULL, NULL);
-        if( (psChild->eType == CXT_Element || psChild->eType == CXT_Attribute) &&
+        if( (psChild->eType == CXT_Element ||
+             psChild->eType == CXT_Attribute) &&
             (nIdx = poFDefn->GetFieldIndex(pszName)) >= 0 )
         {
             if( pszVal != NULL )
@@ -851,7 +865,8 @@ static OGRLayerH OGRGeocodeReverseBuildLayerNominatim(
         int nIdx = 0;
         const char* pszName = psChild->pszValue;
         pszVal = CPLGetXMLValue(psChild, NULL, NULL);
-        if( (psChild->eType == CXT_Element || psChild->eType == CXT_Attribute) &&
+        if( (psChild->eType == CXT_Element ||
+             psChild->eType == CXT_Attribute) &&
             (nIdx = poFDefn->GetFieldIndex(pszName)) >= 0 )
         {
             if( pszVal != NULL )
@@ -880,9 +895,9 @@ static OGRLayerH OGRGeocodeReverseBuildLayerNominatim(
 /*                   OGRGeocodeBuildLayerYahoo()                        */
 /************************************************************************/
 
-static OGRLayerH OGRGeocodeBuildLayerYahoo(CPLXMLNode* psResultSet,
-                                           const char* /* pszContent */,
-                                           bool bAddRawFeature)
+static OGRLayerH OGRGeocodeBuildLayerYahoo( CPLXMLNode* psResultSet,
+                                            const char* /* pszContent */,
+                                            bool bAddRawFeature )
 {
     OGRMemLayer* poLayer = new OGRMemLayer( "place", NULL, wkbPoint );
     OGRFeatureDefn* poFDefn = poLayer->GetLayerDefn();
@@ -951,7 +966,7 @@ static OGRLayerH OGRGeocodeBuildLayerYahoo(CPLXMLNode* psResultSet,
                 if( !(psChild->eType == CXT_Element ||
                       psChild->eType == CXT_Attribute) )
                 {
-                    // do nothing
+                    // Do nothing.
                 }
                 else if( (nIdx = poFDefn->GetFieldIndex(pszName)) >= 0 )
                 {
@@ -982,7 +997,7 @@ static OGRLayerH OGRGeocodeBuildLayerYahoo(CPLXMLNode* psResultSet,
                     break;
                 if( poFeature->IsFieldSet(nIdx) )
                 {
-                    if( osDisplayName.size() )
+                    if( !osDisplayName.empty() )
                         osDisplayName += ", ";
                     osDisplayName += poFeature->GetFieldAsString(nIdx);
                 }
@@ -1110,7 +1125,7 @@ static OGRLayerH OGRGeocodeBuildLayerBing( CPLXMLNode* psResponse,
                 if( !(psChild->eType == CXT_Element ||
                       psChild->eType == CXT_Attribute) )
                 {
-                    // do nothing
+                    // Do nothing.
                 }
                 else if( (nIdx = poFDefn->GetFieldIndex(pszName)) >= 0 )
                 {
@@ -1172,7 +1187,8 @@ static OGRLayerH OGRGeocodeBuildLayerBing( CPLXMLNode* psResponse,
         }
         psPlace = psPlace->psNext;
     }
-    return (OGRLayerH) poLayer;
+
+    return reinterpret_cast<OGRLayerH>(poLayer);
 }
 
 /************************************************************************/
@@ -1313,14 +1329,14 @@ static OGRLayerH OGRGeocodeCommon( OGRGeocodingSessionH hSession,
                          dfCurrentTime);
             }
 
-            psResult = CPLHTTPFetch( osURLWithEmail,  papszHTTPOptions );
+            psResult = CPLHTTPFetch( osURLWithEmail, papszHTTPOptions );
 
             gettimeofday(&tv, NULL);
             *pdfLastQueryTime = tv.tv_sec + tv.tv_usec / 1e6;
         }
         else
         {
-            psResult = CPLHTTPFetch( osURLWithEmail,  papszHTTPOptions );
+            psResult = CPLHTTPFetch( osURLWithEmail, papszHTTPOptions );
         }
 
         CSLDestroy(papszHTTPOptions);
@@ -1388,8 +1404,8 @@ static OGRLayerH OGRGeocodeCommon( OGRGeocodingSessionH hSession,
  *     country (or a list of countries). The codes must fellow ISO 3166-1, i.e.
  *     gb for United Kingdom, de for Germany, etc.. (Known to work with OSM and
  *     MapQuest Nominatim)
- * <li>LIMIT=number: the number of records to return. Unlimited if not specified.
- *     (Known to work with OSM and MapQuest Nominatim)
+ * <li>LIMIT=number: the number of records to return. Unlimited if not
+ *     specified.  (Known to work with OSM and MapQuest Nominatim)
  * <li>RAW_FEATURE=YES: to specify that a 'raw' field must be added to the
  *     returned feature with the raw XML content.
  * <li>EXTRA_QUERY_PARAMETERS=params: additional parameters for the GET
@@ -1478,7 +1494,7 @@ static CPLString OGRGeocodeReverseSubstitute( CPLString osURL,
     if( iPos != std::string::npos )
     {
         const CPLString osEnd(osURL.substr(iPos + 5));
-        osURL = osURL.substr(0,iPos);
+        osURL = osURL.substr(0, iPos);
         osURL += CPLSPrintf("%.8f", dfLon);
         osURL += osEnd;
     }
@@ -1487,7 +1503,7 @@ static CPLString OGRGeocodeReverseSubstitute( CPLString osURL,
     if( iPos != std::string::npos )
     {
         const CPLString osEnd(osURL.substr(iPos + 5));
-        osURL = osURL.substr(0,iPos);
+        osURL = osURL.substr(0, iPos);
         osURL += CPLSPrintf("%.8f", dfLat);
         osURL += osEnd;
     }
@@ -1557,7 +1573,8 @@ OGRLayerH OGRGeocodeReverse( OGRGeocodingSessionH hSession,
 
     if( EQUAL(hSession->pszGeocodingService, "OSM_NOMINATIM") )
     {
-        const char* pszZoomLevel = OGRGeocodeGetParameter(papszOptions, "ZOOM", NULL);
+        const char* pszZoomLevel =
+            OGRGeocodeGetParameter(papszOptions, "ZOOM", NULL);
         if( pszZoomLevel != NULL )
         {
             osURL = osURL + "&zoom=" + pszZoomLevel;
