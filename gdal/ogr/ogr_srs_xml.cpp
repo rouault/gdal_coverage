@@ -415,7 +415,7 @@ static CPLXMLNode *exportGeogCSToXML( const OGRSpatialReference *poSRS )
 /* -------------------------------------------------------------------- */
 /*      Establish initial infrastructure.                               */
 /* -------------------------------------------------------------------- */
-    CPLXMLNode  *psGCS_XML =
+    CPLXMLNode *psGCS_XML =
         CPLCreateXMLNode( NULL, CXT_Element, "gml:GeographicCRS" );
     addGMLId( psGCS_XML );
 
@@ -441,7 +441,7 @@ static CPLXMLNode *exportGeogCSToXML( const OGRSpatialReference *poSRS )
             CPLCreateXMLNode( psGCS_XML, CXT_Element, "gml:usesEllipsoidalCS" ),
             CXT_Element, "gml:EllipsoidalCS" );
 
-    addGMLId( psECS  );
+    addGMLId( psECS );
 
     CPLCreateXMLElementAndValue( psECS, "gml:csName", "ellipsoidal" );
 
@@ -1168,11 +1168,10 @@ static OGRErr importProjCSFromXML( OGRSpatialReference *poSRS,
 /*      Try to set the GEOGCS info.                                     */
 /* -------------------------------------------------------------------- */
 
-    OGRErr eErr = OGRERR_NONE;
     CPLXMLNode *psSubXML = CPLGetXMLNode( psCRS, "baseCRS.GeographicCRS" );
     if( psSubXML != NULL )
     {
-        eErr = importGeogCSFromXML( poSRS, psSubXML );
+        const OGRErr eErr = importGeogCSFromXML( poSRS, psSubXML );
         if( eErr != OGRERR_NONE )
             return eErr;
     }
