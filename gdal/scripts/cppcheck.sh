@@ -2,7 +2,10 @@ LOG_FILE=/tmp/cppcheck_gdal.txt
 cppcheck --inline-suppr --template='{file}:{line},{severity},{id},{message}' \
     --enable=all --inconclusive --std=posix -UAFL_FRIENDLY -UANDROID \
     -UCOMPAT_WITH_ICC_CONVERSION_CHECK -DDEBUG -UDEBUG_BOOL -DHAVE_CXX11=1 \
-    -DGBool=int alg port gcore ogr frmts gnm -j 8 >${LOG_FILE} 2>&1
+    -DGBool=int -DHAVE_GEOS -DHAVE_XERCES \
+    -DVSIRealloc=realloc \
+    alg port gcore ogr frmts gnm \
+    -j 8 >${LOG_FILE} 2>&1
 if [[ $? -ne 0 ]] ; then
     echo "cppcheck failed"
     exit 1
@@ -29,6 +32,38 @@ fi
 grep "uninitMemberVar" ${LOG_FILE}
 if [[ $? -eq 0 ]] ; then
     echo "uninitMemberVar check failed"
+    exit 1
+fi
+
+grep "useInitializationList" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "uninitMemberVar check failed"
+    exit 1
+fi
+
+grep "clarifyCalculation" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "clarifyCalculation check failed"
+    exit 1
+fi
+
+grep "invalidPrintfArgType_uint" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "invalidPrintfArgType_uint check failed"
+    exit 1
+fi
+
+grep "catchExceptionByValue" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "catchExceptionByValue check failed"
+    exit 1
+fi
+
+grep "memleakOnRealloc" ${LOG_FILE} | grep frmts/hdf4/hdf-eos > /dev/null && echo "memleakOnRealloc issues in frmts/hdf4/hdf-eos ignored"
+grep "memleakOnRealloc" ${LOG_FILE} | grep frmts/grib/degrib18 > /dev/null && echo "memleakOnRealloc issues in frmts/grib/degrib18 ignored"
+grep "memleakOnRealloc" ${LOG_FILE} | grep -v frmts/hdf4/hdf-eos | grep -v frmts/grib/degrib18
+if [[ $? -eq 0 ]] ; then
+    echo "memleakOnRealloc check failed"
     exit 1
 fi
 
