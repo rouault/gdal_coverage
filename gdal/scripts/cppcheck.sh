@@ -188,6 +188,48 @@ if [[ $? -eq 0 ]] ; then
     exit 1
 fi
 
+grep "selfAssignment" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "selfAssignment check failed"
+    exit 1
+fi
+
+grep "invalidPrintfArgType_sint" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "invalidPrintfArgType_sint check failed"
+    exit 1
+fi
+
+grep "redundantAssignInSwitch" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "redundantAssignInSwitch check failed"
+    exit 1
+fi
+
+grep "publicAllocationError" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "publicAllocationError check failed"
+    exit 1
+fi
+
+grep "invalidScanfArgType_int" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "invalidScanfArgType_int check failed"
+    exit 1
+fi
+
+grep "invalidscanf," ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "invalidscanf check failed"
+    exit 1
+fi
+
+grep "moduloAlwaysTrueFalse" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "moduloAlwaysTrueFalse check failed"
+    exit 1
+fi
+
 echo "cppcheck succeeded"
 
 
