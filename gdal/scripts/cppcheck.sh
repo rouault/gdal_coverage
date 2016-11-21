@@ -4,7 +4,7 @@
 
 LOG_FILE=/tmp/cppcheck_gdal.txt
 echo "" > ${LOG_FILE}
-for dirname in alg port gcore ogr frmts gnm; do
+for dirname in alg port gcore ogr frmts gnm apps; do
     echo "Running cppcheck on $dirname... (can be long)"
     cppcheck --inline-suppr --template='{file}:{line},{severity},{id},{message}' \
         --enable=all --inconclusive --std=posix -UAFL_FRIENDLY -UANDROID \
@@ -19,6 +19,7 @@ for dirname in alg port gcore ogr frmts gnm; do
         --include=port/cpl_config.h \
         --include=port/cpl_port.h \
         -I port -I gcore -I ogr -I ogr/ogrsf_frmts \
+        -i ogrdissolve.cpp \
         $dirname \
         -j 8 >>${LOG_FILE} 2>&1
     if [[ $? -ne 0 ]] ; then
@@ -248,6 +249,30 @@ fi
 grep "charLiteralWithCharPtrCompare" ${LOG_FILE}
 if [[ $? -eq 0 ]] ; then
     echo "charLiteralWithCharPtrCompare check failed"
+    exit 1
+fi
+
+grep "noConstructor" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "noConstructor check failed"
+    exit 1
+fi
+
+grep "noExplicitConstructor" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "noExplicitConstructor check failed"
+    exit 1
+fi
+
+grep "noCopyConstructor" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "noCopyConstructor check failed"
+    exit 1
+fi
+
+grep "passedByValue" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "passedByValue check failed"
     exit 1
 fi
 
