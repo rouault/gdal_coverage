@@ -11,6 +11,7 @@ for dirname in alg port gcore ogr frmts gnm; do
         -Dva_copy=va_start \
         -D__cplusplus \
         -DVSIRealloc=realloc \
+        -DCPPCHECK \
         -I port -I gcore -I ogr -I ogr/ogrsf_frmts \
         $dirname \
         -j 8 >>${LOG_FILE} 2>&1
@@ -148,7 +149,29 @@ if [[ $? -eq 0 ]] ; then
     exit 1
 fi
 
+grep "duplInheritedMember" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "duplInheritedMember check failed"
+    exit 1
+fi
 
+grep "terminateStrncpy" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "terminateStrncpy check failed"
+    exit 1
+fi
+
+grep "operatorEqVarError" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "operatorEqVarError check failed"
+    exit 1
+fi
+
+grep "uselessAssignmentPtrArg" ${LOG_FILE} | grep -v swq_parser.cpp | grep -v osr_cs_wkt_parser.c | grep -v ods_formula_parser.cpp
+if [[ $? -eq 0 ]] ; then
+    echo "uselessAssignmentPtrArg check failed"
+    exit 1
+fi
 
 echo "cppcheck succeeded"
 
