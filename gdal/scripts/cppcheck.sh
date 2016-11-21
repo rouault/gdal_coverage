@@ -276,6 +276,24 @@ if [[ $? -eq 0 ]] ; then
     exit 1
 fi
 
+grep "postfixOperator" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "postfixOperator check failed"
+    exit 1
+fi
+
+grep "redundantCopy" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "redundantCopy check failed"
+    exit 1
+fi
+
+grep "stlIfStrFind" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "stlIfStrFind check failed"
+    exit 1
+fi
+
 # Check any remaining errors
 grep "error," ${LOG_FILE} | grep -v "uninitvar" | \
     grep -v "memleak," | grep -v "memleakOnRealloc" | \
