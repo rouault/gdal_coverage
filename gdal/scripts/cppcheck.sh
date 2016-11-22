@@ -345,6 +345,72 @@ if [[ $? -eq 0 ]] ; then
     exit 1
 fi
 
+grep "duplicateExpression" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "duplicateExpression check failed"
+    exit 1
+fi
+
+grep "operatorEq" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "operatorEq check failed"
+    exit 1
+fi
+
+grep "truncLongCastAssignment" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "truncLongCastAssignment check failed"
+    exit 1
+fi
+
+grep "exceptRethrowCopy" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "exceptRethrowCopy check failed"
+    exit 1
+fi
+
+grep "unusedVariable" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unusedVariable check failed"
+    exit 1
+fi
+
+grep "unsafeClassCanLeak" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unsafeClassCanLeak check failed"
+    exit 1
+fi
+
+grep "unsignedLessThanZero" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unsignedLessThanZero check failed"
+    exit 1
+fi
+
+grep "unpreciseMathCall" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unpreciseMathCall check failed"
+    exit 1
+fi
+
+grep "unreachableCode" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unreachableCode check failed"
+    exit 1
+fi
+
+grep "clarifyCondition" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "clarifyCondition check failed"
+    exit 1
+fi
+
+grep "redundantIfRemove" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "redundantIfRemove check failed"
+    exit 1
+fi
+
 # Check any remaining errors
 grep "error," ${LOG_FILE} | grep -v "uninitvar" | \
     grep -v "memleak," | grep -v "memleakOnRealloc" | \
