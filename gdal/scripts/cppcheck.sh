@@ -4,16 +4,17 @@
 
 LOG_FILE=/tmp/cppcheck_gdal.txt
 echo "" > ${LOG_FILE}
-    for dirname in alg port gcore ogr frmts gnm apps; do
+for dirname in alg port gcore ogr frmts gnm apps; do
     echo "Running cppcheck on $dirname... (can be long)"
     cppcheck --inline-suppr --template='{file}:{line},{severity},{id},{message}' \
         --enable=all --inconclusive --std=posix -UAFL_FRIENDLY -UANDROID \
         -UCOMPAT_WITH_ICC_CONVERSION_CHECK -DDEBUG -UDEBUG_BOOL -DHAVE_CXX11=1 \
         -DGBool=int -DHAVE_GEOS -DHAVE_EXPAT -DHAVE_XERCES -DCOMPILATION_ALLOWED \
         -DHAVE_SPATIALITE -DSPATIALITE_412_OR_LATER \
-        -DHAVE_SQLITE -DSQLITE_VERSION_NUMBER=3006000 \
+        -DHAVE_SQLITE -DSQLITE_VERSION_NUMBER=3006000 -DHAVE_SQLITE_VFS \
         -DPTHREAD_MUTEX_RECURSIVE -DCPU_LITTLE_ENDIAN -DCPL_IS_LSB=1 \
         -DKDU_MAJOR_VERSION=7 -DKDU_MINOR_VERSION=5 \
+        -DHAVE_JASPER_UUID \
         -DODBCVER=0x0300 \
         -DNETCDF_HAS_NC4 \
         -UGDAL_NO_AUTOLOAD \
@@ -23,6 +24,7 @@ echo "" > ${LOG_FILE}
         -DVSIRealloc=realloc \
         -DCPPCHECK \
         -DDEBUG_MUTEX \
+        -DDEBUG_PROXY_POOL \
         --include=port/cpl_config.h \
         --include=port/cpl_port.h \
         -I port -I gcore -I ogr -I ogr/ogrsf_frmts \
@@ -304,6 +306,114 @@ fi
 grep "functionStatic" ${LOG_FILE}
 if [[ $? -eq 0 ]] ; then
     echo "functionStatic check failed"
+    exit 1
+fi
+
+grep "knownConditionTrueFalse" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "knownConditionTrueFalse check failed"
+    exit 1
+fi
+
+grep "arrayIndexThenCheck" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "arrayIndexThenCheck check failed"
+    exit 1
+fi
+
+grep "unusedPrivateFunction" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unusedPrivateFunction check failed"
+    exit 1
+fi
+
+grep "redundantCondition" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "redundantCondition check failed"
+    exit 1
+fi
+
+grep "unusedStructMember" ${LOG_FILE} | grep -v frmts/jpeg/libjpeg | grep -v frmts/gtiff/libtiff | grep -v frmts/zlib
+if [[ $? -eq 0 ]] ; then
+    echo "unusedStructMember check failed"
+    exit 1
+fi
+
+grep "multiCondition" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "multiCondition check failed"
+    exit 1
+fi
+
+grep "duplicateExpression" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "duplicateExpression check failed"
+    exit 1
+fi
+
+grep "operatorEq" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "operatorEq check failed"
+    exit 1
+fi
+
+grep "truncLongCastAssignment" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "truncLongCastAssignment check failed"
+    exit 1
+fi
+
+grep "exceptRethrowCopy" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "exceptRethrowCopy check failed"
+    exit 1
+fi
+
+grep "unusedVariable" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unusedVariable check failed"
+    exit 1
+fi
+
+grep "unsafeClassCanLeak" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unsafeClassCanLeak check failed"
+    exit 1
+fi
+
+grep "unsignedLessThanZero" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unsignedLessThanZero check failed"
+    exit 1
+fi
+
+grep "unpreciseMathCall" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unpreciseMathCall check failed"
+    exit 1
+fi
+
+grep "unreachableCode" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "unreachableCode check failed"
+    exit 1
+fi
+
+grep "clarifyCondition" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "clarifyCondition check failed"
+    exit 1
+fi
+
+grep "redundantIfRemove" ${LOG_FILE}
+if [[ $? -eq 0 ]] ; then
+    echo "redundantIfRemove check failed"
+    exit 1
+fi
+
+grep "unassignedVariable" ${LOG_FILE} | grep -v frmts/png/libpng
+if [[ $? -eq 0 ]] ; then
+    echo "unassignedVariable check failed"
     exit 1
 fi
 
