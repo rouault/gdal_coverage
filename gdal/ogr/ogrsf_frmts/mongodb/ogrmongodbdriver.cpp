@@ -2041,7 +2041,7 @@ OGRLayer *OGRMongoDBDataSource::GetLayerByName(const char* pszLayerName)
         try
         {
             std::list<std::string> l = m_poConn->getCollectionNames( osDatabase );
-            for ( std::list<std::string>::iterator oIter = l.begin(); oIter != l.end(); oIter++ )
+            for ( std::list<std::string>::iterator oIter = l.begin(); oIter != l.end(); ++oIter )
             {
                 const std::string& osCollection(*oIter);
                 if( EQUAL(osCollection.c_str(),pszLayerName) )
@@ -2367,7 +2367,7 @@ int OGRMongoDBDataSource::Open(const char* pszFilename,
         try
         {
             std::list<std::string> l = m_poConn->getDatabaseNames();
-            for ( std::list<std::string>::iterator i = l.begin(); i != l.end(); i++ )
+            for ( std::list<std::string>::iterator i = l.begin(); i != l.end(); ++i )
             {
                 bRet &= ListLayers((*i).c_str());
             }
@@ -2575,7 +2575,7 @@ class OGRMongoDBSingleFeatureLayer: public OGRLayer
     CPLString           osVal;
     int                 iNextShapeId;
     public:
-        OGRMongoDBSingleFeatureLayer( const char *pszVal );
+       explicit OGRMongoDBSingleFeatureLayer( const char *pszVal );
        ~OGRMongoDBSingleFeatureLayer() { m_poFeatureDefn->Release(); }
        void             ResetReading() { iNextShapeId = 0; }
        OGRFeature      *GetNextFeature();
