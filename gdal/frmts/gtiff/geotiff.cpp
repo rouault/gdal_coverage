@@ -194,6 +194,9 @@ typedef enum
     VIRTUAL_MEM_IO_IF_ENOUGH_RAM
 } VirtualMemIOEnum;
 
+#if !defined(__MINGW32__)
+namespace {
+#endif
 typedef struct
 {
     GTiffDataset *poDS;
@@ -209,6 +212,9 @@ typedef struct
     int           nCompressedBufferSize;
     bool          bReady;
 } GTiffCompressionJob;
+#if !defined(__MINGW32__)
+}
+#endif
 
 class GTiffDataset CPL_FINAL : public GDALPamDataset
 {
@@ -10951,6 +10957,7 @@ int GTiffDataset::Identify( GDALOpenInfo *poOpenInfo )
 /*                            GTIFFErrorHandler()                       */
 /************************************************************************/
 
+namespace {
 class GTIFFErrorStruct CPL_FINAL
 {
   public:
@@ -10962,6 +10969,7 @@ class GTIFFErrorStruct CPL_FINAL
     GTIFFErrorStruct(CPLErr eErrIn, CPLErrorNum noIn, const char* msgIn) :
         type(eErrIn), no(noIn), msg(msgIn) {}
 };
+}
 
 static void CPL_STDCALL GTIFFErrorHandler( CPLErr eErr, CPLErrorNum no,
                                            const char* msg )
