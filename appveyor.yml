@@ -44,6 +44,9 @@ test_script:
   - SET GDAL_DATA=%CD%\gdal\data
   - cd autotest
   - cd cpp
+# The ca-bundle.crt file which we could point to is invalid in the current SDK
+# See https://github.com/gisinternals/buildsystem/issues/104
+  - SET GDAL_HTTP_UNSAFESSL=YES
   - nmake /f makefile.vc check MSVC_VER=1900 %WIN64_ARG%
   - cd ..
   - python run_all.py
