@@ -69,10 +69,21 @@ content = open(sys.argv[1], 'rb').read()
 pos = 0
 modified = False
 while True:
-    pos = content.find('.size()', pos)
-    if pos < 0:
+    pos1 = content.find('.size()', pos)
+    pos2 = content.find('->size()', pos)
+    if pos1 < 0 and pos2 < 0:
         break
-    pos_after = pos + len('.size()')
+    separator = ''
+    if pos1 >= 0 and (pos1 < pos2 or pos2 < 0): 
+        pos = pos1
+        pos_after = pos + len('.size()')
+        separator = '.'
+    else:
+        pos = pos2
+        dot_variant = False
+        pos_after = pos + len('->size()')
+        separator = '->'
+
     if content[pos_after] == ' ':
         pos_after += 1
     extra_space = ''
@@ -110,10 +121,15 @@ while True:
             extra_space = ' '
         pos_cur = find_start_identifier_pos(content, pos - 1)
         pos_cur -= 1
-        while content[pos_cur] == ' ':
+        while content[pos_cur] == ' ' or content[pos_cur] == '\n' or \
+              content[pos_cur] == '\t':
             pos_cur -= 1
         pos_cur += 1
-        if content[pos_cur-3:pos_cur] == 'if(':
+        if (content[pos_after:].startswith(' ?') or \
+            content[pos_after:].startswith('?')) and \
+           (content[pos_cur-1] == '(' or content[pos_cur-1] == ',') :
+            non_empty = True
+        elif content[pos_cur-3:pos_cur] == 'if(':
             non_empty = True
         elif content[pos_cur-4:pos_cur] == 'if (':
             non_empty = True
@@ -125,12 +141,12 @@ while True:
 
     if empty:
         modified = True
-        content = content[0:pos] + '.empty()' + content[pos_after:]
+        content = content[0:pos] + separator + 'empty()' + content[pos_after:]
     elif non_empty:
         modified = True
         pos_start_identifier = find_start_identifier_pos(content, pos - 1)
         content = content[0:pos_start_identifier] + '!' + \
-                  content[pos_start_identifier:pos] + '.empty()' + \
+                  content[pos_start_identifier:pos] + separator + 'empty()' + \
                   extra_space + content[pos_after:]
 
     pos += 1
