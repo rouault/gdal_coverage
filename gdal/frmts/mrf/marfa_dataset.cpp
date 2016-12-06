@@ -459,8 +459,8 @@ int GDALMRFDataset::Identify(GDALOpenInfo *poOpenInfo)
         return TRUE;
 
 #if defined(LERC) // Could be single LERC tile
-//    if (LERC_Band::IsLerc(fn))
-//        return TRUE;
+    if (LERC_Band::IsLerc(fn))
+        return TRUE;
 #endif
 
     return FALSE;
@@ -527,6 +527,9 @@ static int getnum(const vector<string> &theStringVector, const char prefix, int 
 GDALDataset *GDALMRFDataset::Open(GDALOpenInfo *poOpenInfo)
 
 {
+    if( !Identify(poOpenInfo) )
+        return NULL;
+
     CPLXMLNode *config = NULL;
     CPLErr ret = CE_None;
     const char* pszFileName = poOpenInfo->pszFilename;
