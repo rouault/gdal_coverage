@@ -221,9 +221,9 @@ int VSIBufferedReaderHandle::SeekBaseTo( vsi_l_offset nTargetOffset )
 
     while( true )
     {
-        const vsi_l_offset nToRead =
-            std::min(nMaxOffset, nTargetOffset - nCurOffset);
-        const vsi_l_offset nRead = m_poBaseHandle->Read(pabyTemp, 1, nToRead);
+        const size_t nToRead = static_cast<size_t>(
+            std::min(nMaxOffset, nTargetOffset - nCurOffset));
+        const size_t nRead = m_poBaseHandle->Read(pabyTemp, 1, nToRead);
 
         nCurOffset += nRead;
 
@@ -325,7 +325,7 @@ size_t VSIBufferedReaderHandle::Read( void *pBuffer, size_t nSize,
             std::min(nReadInFile, static_cast<size_t>(MAX_BUFFER_SIZE)));
         nBufferOffset = nCurOffset + nReadInFile - nBufferSize;
         memcpy(pabyBuffer,
-               (GByte*)pBuffer + nReadInFile - nBufferSize,
+               static_cast<GByte *>(pBuffer) + nReadInFile - nBufferSize,
                nBufferSize);
 
         nCurOffset += nReadInFile;
