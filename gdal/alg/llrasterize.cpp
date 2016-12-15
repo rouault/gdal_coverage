@@ -425,9 +425,9 @@ GDALdllImageLineAllTouched( int nRasterXSize, int nRasterYSize,
             }
 
             // Skip segments that are off the target region.
-            if( (dfY < 0 && dfYEnd < 0)
+            if( (dfY < 0.0 && dfYEnd < 0.0)
                 || (dfY > nRasterYSize && dfYEnd > nRasterYSize)
-                || (dfX < 0 && dfXEnd < 0)
+                || (dfX < 0.0 && dfXEnd < 0.0)
                 || (dfX > nRasterXSize && dfXEnd > nRasterXSize) )
                 continue;
 
@@ -547,8 +547,11 @@ GDALdllImageLineAllTouched( int nRasterXSize, int nRasterYSize,
                 }
                 if( dfYEnd >= nRasterYSize )
                 {
-                    dfXEnd += ( dfYEnd - (double)nRasterYSize ) / dfSlope;
-                    dfYEnd = nRasterXSize;
+                    dfXEnd +=
+                        (dfYEnd - static_cast<double>(nRasterYSize)) / dfSlope;
+                    // dfYEnd is no longer used afterwards, but for
+                    // consistency it should be:
+                    // dfYEnd = nRasterXSize;
                 }
             }
             else
@@ -563,7 +566,9 @@ GDALdllImageLineAllTouched( int nRasterXSize, int nRasterYSize,
                 if( dfYEnd < 0.0 )
                 {
                     dfXEnd -= ( dfYEnd - 0 ) / dfSlope;
-                    dfYEnd = 0.0;
+                    // dfYEnd is no longer used afterwards, but for
+                    // consistency it should be:
+                    // dfYEnd = 0.0;
                 }
             }
 
