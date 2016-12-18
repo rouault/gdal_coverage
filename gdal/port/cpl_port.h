@@ -184,7 +184,7 @@
 #    define HAVE_CXX11 1
 #  endif
 /* TODO(schwehr): What are the correct tests for C++ 14 and 17? */
-#endif  /* __cpluscplus */
+#endif  /* __cplusplus */
 
 /*---------------------------------------------------------------------
  *        types for 16 and 32 bits integers, etc...
@@ -793,6 +793,8 @@ template<> struct CPLStaticAssert<true>
     _pabyDataT[1] = byTemp;                                       \
 }
 
+#if defined(MAKE_SANITIZE_HAPPY) || !(defined(__i386__) || defined(__x86_64__) || defined(_M_IX86) || defined(_M_X64))
+
 /** Byte-swap a 32 bit pointer */
 #define CPL_SWAP32PTR(x) \
 {                                                                 \
@@ -826,6 +828,26 @@ template<> struct CPLStaticAssert<true>
     _pabyDataT[3] = _pabyDataT[4];                                \
     _pabyDataT[4] = byTemp;                                       \
 }
+
+#else
+
+/** Byte-swap a 32 bit pointer */
+#define CPL_SWAP32PTR(x) \
+{                                                                           \
+    GUInt32 *_pn32ptr = (GUInt32 *) (x);                                    \
+    CPL_STATIC_ASSERT_IF_AVAILABLE(sizeof(*(x)) == 1 || sizeof(*(x)) == 4); \
+    *_pn32ptr = CPL_SWAP32(*_pn32ptr);                                      \
+}
+
+/** Byte-swap a 64 bit pointer */
+#define CPL_SWAP64PTR(x) \
+{                                                                           \
+    GUInt64 *_pn64ptr = (GUInt64 *) (x);                                    \
+    CPL_STATIC_ASSERT_IF_AVAILABLE(sizeof(*(x)) == 1 || sizeof(*(x)) == 8); \
+    *_pn64ptr = CPL_SWAP64(*_pn64ptr);                                      \
+}
+
+#endif
 
 /** Byte-swap a 64 bit pointer */
 #define CPL_SWAPDOUBLE(p) CPL_SWAP64PTR(p)
@@ -864,10 +886,14 @@ template<> struct CPLStaticAssert<true>
 #  define CPL_MSBPTR64(x)       CPL_SWAP64PTR(x)
 #endif
 
-/** Return a Int16 from the 2 bytes ordered in LSB order at address x */
+/** Return a Int16 from the 2 bytes ordered in LSB order at address x.
+ * @deprecated Use rather CPL_LSBSINT16PTR or CPL_LSBUINT16PTR for explicit
+ * signedness. */
 #define CPL_LSBINT16PTR(x)    ((*(GByte*)(x)) | (*(((GByte*)(x))+1) << 8))
 
-/** Return a Int32 from the 4 bytes ordered in LSB order at address x */
+/** Return a Int32 from the 4 bytes ordered in LSB order at address x.
+ * @deprecated Use rather CPL_LSBSINT32PTR or CPL_LSBUINT32PTR for explicit
+ * signedness. */
 #define CPL_LSBINT32PTR(x)    ((*(GByte*)(x)) | (*(((GByte*)(x))+1) << 8) | \
                               (*(((GByte*)(x))+2) << 16) | (*(((GByte*)(x))+3) << 24))
 
