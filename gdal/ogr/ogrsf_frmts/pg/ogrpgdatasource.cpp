@@ -375,7 +375,7 @@ int OGRPGDataSource::Open( const char * pszNewName, int bUpdate,
         const char* pszVal = CSLFetchNameValue(papszOpenOptions, apszOpenOptions[i]);
         if( pszVal )
         {
-            if( osConnectionName[osConnectionName.size()-1] != ':' )
+            if( osConnectionName.back() != ':' )
                 osConnectionName += " ";
             osConnectionName += apszOpenOptions[i];
             osConnectionName += "=";
@@ -1576,7 +1576,7 @@ OGRPGDataSource::ICreateLayer( const char * pszLayerName,
 
     CPLString osSQLLayerName;
     if (pszSchemaName == NULL ||
-        ( strlen(osCurrentSchema) > 0 &&
+        ( !osCurrentSchema.empty() &&
           EQUAL(pszSchemaName, osCurrentSchema.c_str() ) ) )
         osSQLLayerName = pszTableName;
     else
