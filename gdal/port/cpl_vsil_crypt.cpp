@@ -417,6 +417,7 @@ static bool VSICryptReadError()
 /*                       VSICryptGenerateSectorIV()                     */
 /************************************************************************/
 
+// TODO(rouault): This function really needs a comment saying what it does.
 static std::string VSICryptGenerateSectorIV( const std::string& osIV,
                                              vsi_l_offset nOffset )
 {
@@ -424,6 +425,7 @@ static std::string VSICryptGenerateSectorIV( const std::string& osIV,
     const size_t nLength = std::min(sizeof(vsi_l_offset), osSectorIV.size());
     for( size_t i = 0; i < nLength; i++ )
     {
+        // TODO(rouault): Explain what this block is trying to do?
         osSectorIV[i] = static_cast<char>((osSectorIV[i] ^ nOffset) & 0xff);
         nOffset >>= 8;
     }
@@ -1289,6 +1291,7 @@ VSICryptFileHandle::Write( const void *pBuffer, size_t nSize, size_t nMemb )
 /*                             Truncate()                               */
 /************************************************************************/
 
+// Returns 0 on success.  Returns -1 on error.
 int VSICryptFileHandle::Truncate( vsi_l_offset nNewSize )
 {
 #ifdef VERBOSE_VSICRYPT
@@ -1299,8 +1302,10 @@ int VSICryptFileHandle::Truncate( vsi_l_offset nNewSize )
 
     if( !FlushDirty() )
         return -1;
-    if( poBaseHandle->Truncate( poHeader->nHeaderSize +
-            ((nNewSize + poHeader->nSectorSize - 1) / poHeader->nSectorSize) * poHeader->nSectorSize ) != 0 )
+    if( poBaseHandle->Truncate(
+            poHeader->nHeaderSize +
+            ((nNewSize + poHeader->nSectorSize - 1) / poHeader->nSectorSize) *
+            poHeader->nSectorSize ) != 0 )
         return -1;
     bUpdateHeader = true;
     poHeader->nPayloadFileSize = nNewSize;
