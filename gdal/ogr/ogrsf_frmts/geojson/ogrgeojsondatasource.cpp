@@ -31,6 +31,7 @@
 #include "ogrgeojsonutils.h"
 #include "ogrgeojsonreader.h"
 #include "gdal_utils.h"
+#include "cpl_vsi_error.h"
 #include <cpl_http.h>
 #include <json.h> // JSON-C
 #include "ogrgeojsonwriter.h"
@@ -447,12 +448,12 @@ int OGRGeoJSONDataSource::Create( const char* pszName,
 /* -------------------------------------------------------------------- */
 /*      Create the output file.                                         */
 /* -------------------------------------------------------------------- */
-    fpOut_ = VSIFOpenL( pszName, "w" );
+    fpOut_ = VSIFOpenExL( pszName, "w", true );
     if( NULL == fpOut_)
     {
         CPLError( CE_Failure, CPLE_OpenFailed,
-                  "Failed to create GeoJSON datasource: %s.",
-                  pszName );
+                  "Failed to create GeoJSON datasource: %s: %s",
+                  pszName, VSIGetLastErrorMsg() );
         return FALSE;
     }
 
@@ -798,15 +799,6 @@ void OGRGeoJSONDataSource::FlushCache()
         {
             papoLayers_[i]->SetUpdated(false);
 
-            CPLString osBackup(pszName_);
-            osBackup += ".bak";
-            if( VSIRename(pszName_, osBackup) < 0 )
-            {
-                CPLError(CE_Failure, CPLE_AppDefined,
-                         "Cannot create backup copy");
-                return;
-            }
-
             bool bOK = false;
 
             // Disable all filters.
@@ -856,8 +848,10 @@ void OGRGeoJSONDataSource::FlushCache()
                     GDALVectorTranslateOptionsNew(papszOptions, NULL);
                 CSLDestroy(papszOptions);
                 GDALDatasetH hSrcDS = this;
+                CPLString osNewFilename(pszName_);
+                osNewFilename += ".tmp";
                 GDALDatasetH hOutDS =
-                    GDALVectorTranslate(pszName_, NULL, 1, &hSrcDS,
+                    GDALVectorTranslate(osNewFilename, NULL, 1, &hSrcDS,
                                         psOptions, NULL);
                 GDALVectorTranslateOptionsFree(psOptions);
 
@@ -867,20 +861,31 @@ void OGRGeoJSONDataSource::FlushCache()
                     GDALClose(hOutDS);
                     bOK = (CPLGetLastErrorType() == CE_None);
                 }
+                if( bOK )
+                {
+                    CPLString osBackup(pszName_);
+                    osBackup += ".bak";
+                    if( VSIRename(pszName_, osBackup) < 0 )
+                    {
+                        CPLError(CE_Failure, CPLE_AppDefined,
+                                "Cannot create backup copy");
+                    }
+                    else if( VSIRename(osNewFilename, pszName_) < 0 )
+                    {
+                        CPLError(CE_Failure, CPLE_AppDefined,
+                                "Cannot rename %s to %s",
+                                osNewFilename.c_str(), pszName_);
+                    }
+                    else
+                    {
+                        VSIUnlink(osBackup);
+                    }
+                }
             }
 
             // Restore filters.
             papoLayers_[i]->m_poAttrQuery = poAttrQueryBak;
             papoLayers_[i]->m_poFilterGeom = poFilterGeomBak;
-
-            if( bOK )
-            {
-                VSIUnlink(osBackup);
-            }
-            else
-            {
-                VSIRename(osBackup, pszName_);
-            }
         }
     }
 }
