@@ -322,6 +322,7 @@ OGRFeature *OGRGMLLayer::GetNextFeature()
         else if (papsGeometry[0] != NULL)
         {
             const char* pszSRSName = poDS->GetGlobalSRSName();
+            CPLPushErrorHandler(CPLQuietErrorHandler);
             poGeom = GML_BuildOGRGeometryFromList(papsGeometry, true,
                                                   poDS->GetInvertAxisOrderIfLatLong(),
                                                   pszSRSName,
@@ -330,6 +331,7 @@ OGRFeature *OGRGMLLayer::GetNextFeature()
                                                   poDS->GetSecondaryGeometryOption(),
                                                   hCacheSRS,
                                                   bFaceHoleNegative );
+            CPLPopErrorHandler();
 
             /* Do geometry type changes if needed to match layer geometry type */
             if (poGeom != NULL)
@@ -337,10 +339,24 @@ OGRFeature *OGRGMLLayer::GetNextFeature()
                 poGeom = OGRGeometryFactory::forceTo(poGeom, GetGeomType());
             }
             else
-            // We assume the createFromGML() function would have already
-            // reported the error.
             {
+                CPLString osLastErrorMsg(CPLGetLastErrorMsg());
+               
+                const bool bGoOn =CPLTestBool(
+                    CPLGetConfigOption("GML_SKIP_CORRUPTED_FEATURES", "NO"));
+
+                CPLError(bGoOn ? CE_Warning : CE_Failure, CPLE_AppDefined,
+                         "Geometry of feature " CPL_FRMT_GIB
+                         " %scannot be parsed: %s%s",
+                         nFID, pszGML_FID ? CPLSPrintf("%s ", pszGML_FID) : "",
+                         osLastErrorMsg.c_str(),
+                         bGoOn ? ". Skipping to next feature.":
+                         ". You may set the GML_SKIP_CORRUPTED_FEATURES "
+                         "configuration option to YES to skip to the next "
+                         "feature");
                 delete poGMLFeature;
+                if( bGoOn )
+                    continue;
                 return NULL;
             }
 
