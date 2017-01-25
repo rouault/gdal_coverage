@@ -1,36 +1,3 @@
-env:
-  global:
-     - secure: "pKo155GCdudC6XB1VxnH1GqQtmux3rt1FAtCBAKMpKpw1MhJaazi2V2oc07o\ni3oChZ2YCrTGwSuPHSLb/6MjPmkXcbe7BRcSJlfVZLwQcFw/4DjgvtOzUIDU\nZWlloy/x1sJdAxlnKzdCMICjORDuA3InIAlqJm3PmtBKChFoBv0="
-     - secure: "A99lzR/ATznrYU13SpYHwr4VbXStoR7vkQZITAXtL5j61+HEWwWh+TkK1Qch\nCI5HIV79rTp9r4iMB0H60e0+9qIOg600rPk18cgVAuyiZQ5979VgOBPrzzSl\nkvcWfXL/uJi3WgfrTaFr3bMSWwNZFKaXWt4096WQ1wWJraxpnz8="
-     - secure: "qMv73raW+OwAarMABOsVTSwBJ2RbPAaFAmVZaqSlRSZs/HurCTQY1J3RZnxL\nbeWvM6pjlzyvbrCKIqifyfbrw1yTCvcEqG63Mv2QlF8+u0wFNFHgh8f40zv1\nQDN/TtEoUE1LGd71UiNK/OQBPImlbKLsBpK4uTE23HwzsbdAeB0="
-     - secure: "SavvUxWGWzFj92NT80Dtr+SdRmg4o+0dkhWuM2p+oKXNlCHw0TGvjYsnPhGv\nH8JnX7/TaxhAe5CzvgUD/upCmba5hrD9m5Hsa6laq4V8JSnkop/HBs53nfVf\nSDggnsZ8P/lPL2ue6VkilQA6PgjRNOC07HS+YQRQVbfM+wOMFdk="
-     - secure: "iXrquUpfLEdwfpzRWzlvn+RJKKN3kK38dDCUrP6U9PwXzDesuBVu/Hod5Qc3\ndWC/vl4Y7nuos5/R6jtOUsQ6+7eLLMTvd1UjgYlS6UI4WcgTp8pqPQPZwKWB\nOJw7rSDBE23R0cYzuf7WbMKFM7KyG55eB072ijcLtndP4H+DGrY="
-     - secure: "EktJ8MEgn2fFH0xkBjfZEQSs+ghQWHjdhRpEwa63af0J3Edk8V9x+7Wzq8+1\nyKWtd7sQ3f1xdnE8qgRAs1Vb9F4F+K8pTA/8XKVp45q+0eoWBzl4bX9SiVBY\nF1V972cs3qnnmw7Htflon2msm1uOjUDUW3zHPWI8QbxS9lpqRVo="
-     - secure: "o+KFyDN5zNt4nkWwyjlAcLk5Uh0467joqXc7ZEFzp0EVTfNoAoU+XezzGqA5\n7AYuNmhGrSt8K2034RgwiHiJ0p4bgr3C4b3+RdOxvYFuWlAPDYtjBhcuaYKG\nQw26JvRwdcCnTVMHkioJ754mEE3LLxtpVojcKWrHI/reDTmBW1Q="
-     - secure: "mhl6sV/zZ2cpQnFcaCcDktGV2JcnQolkiwI8Xs+AyZRQVfczuOZLSMjllKY8\nyv/SyBKC+H6im56kTFtw24QXdi7E25MXe6X0eC8pK8SMP3BZkK4juJ3yG3ji\nafIX9NW4QHp1A2Ji9HPufoZGEpB5by2HodjGMsqzKl7rLfytB4c="
-     - secure: "A1gt4D24uFQw7dfmPajc+jtCy1rKvrPpmvApDlDfuxHJNj69q6KSzEhJgJmA\necXPK0KEWpXOjPIhilBP1KEx2kdPiH7eCtKg5fgrAz3m/N7Ddz/R+rH0vMfs\nfQCDF9o6Yw7J2YEF0clz7cQYg//Z4VQ1bCJDhhXwsVORb2k1rEQ="
-     - secure: "ecwrmNPHoemp7QKJvU/KA/MBwQ4upgdmuReHOTpmuPtfGf6Sf8mo9pE52psI\nJLvNzw9W5uS0OAa6nE2RwJWtwyLfJfal0tEVNJCPs30ODgqk/mLl2ssgYLdK\nvzAd/v0eptIIrs+QnNcJf1KI5CvecFiIXADtCfEfyx+ohi04aU0="
-     - secure: "g0FeahxTIzeheh+bIqKbteuiuTF8R3IuJirgOAySnpHFAsR7dHP9yptxqYLa\najd14pZbdePtUZdVyQR+C9Tf93h2zVLLXdnKP02wF5STNII+Elc4y1/uCYHy\nwFzn+n6r07QwXY8dzWNwFuy0iBsp8yQX2TOIecxjYS5uvgTtSi0="
-     - secure: "PRGaN4eGUyNP6ov1DJeUrbZHjwbmMhDb7GMOeG3MDEawjDnokfBnfgj0bFBu\nTRyUDplocsuF4opgI/J8BTZ6KNJ2fbqdT1NtWR4cZ2lJPI516zN4nrHtPAXD\naq9bZ6XfKoA/00u3fWgQxKAotkegcKg0zHRLtEvc9CfYEkIyT64="
-     - secure: "Wt934SJOgCahBdqsC6uS4jF+kFTejxtklADnVxYpHLNsTRdiV0hHQ1eLi/Er\nU0tTy54dC0hDqDM0Onm1rhGXKmri4BEJOY6+YTpR15exfldGrAGA+Dtp+bN4\nk1aN9npWw1n3yjf5jGid24nSSog4ZyfCCUJkyL4wc97RsmRWLg8="
-     - secure: "Na/tdryFC2nNBac11kcSv1/IEErqs2BwStiotfr1MHhW4Uv6OTlEVHXLKgRS\nbcF+hXpj7XXo7V/hWTZDhylog1OW0+HAGaogywehhr7qJiMFxWuQMiCqQ+fk\n0ABkAFUBQr0KQlfMANF41H/6jrnQ9n3DEVhTnhu9Ndj2jlKRCHY="
-     - secure: "V+wB+Pe1TMO6grQ3t2LzJxUk/8SJmyYE8ITVtCQgfWH/cqItlH/D9YQfrGCP\n3e3E5tApdNRO8K6mwj6/2zXd6yOSEQ5n4bUCZtXiLxQXYgW/4keULHDOqnZ1\nX12zFn6B//h98hTLqwePRZG8hJjgFPK3XD1j4rWyNLELESX+Sas="
-     - secure: "o0+4uYGJ0PBSnaJvRli3FdmqZKPi1TMGedVXAbDtw/NdHpfyLrxQa6emHP/J\nw3AkO43pHsXlhT5Yy+2xLBL/WAjYtoetNFhYFGNkUSwI10fY9V2n9rYrLr6L\n9GDR4xOqdU94BImkv3g++mCcIvDzYFT6rGHqW0MZzQeIucuGlGg="
-     - secure: "HA7s6JCFCwv9D3ggSKsbuvPT2DkK+hSLcvWd69QJifObA/71EtmW2jG7G75s\nxzXmfQ6NaJ3xUhZtdZXmi1v9NK9j2X0nqeitLBZgsQkB/hnd+ZJn1SPHtgFw\nzAJcrSYMnPBqjAIyien7Gs7VnSFMxXOTdd8s7p5wRNXD98p5ZYw="
-     - secure: "k4mfU4wN83qLqJf9cUVogHsJjsx3/OWVXbkiy29nx+oBmgt1R+puS8kz7bsJ\nC0/1kWQe2lIeqVPqLH9vFmXfsIf6enDGs/dqhn7S5E0/F0+C8D7Y+7B4CFVz\nP/aRdbuMPmWS8KndoAPPq7nHMpL10G1SpeMYADi5bkWFEacL1EE="
-     - secure: "j3y3/fSgj/izOSuh+THcT+JUFKqzY6C95wPqt96u58qXGgIC51aROZBJAEPA\ngUmgzYsoCrl2rcGbYLfY8fMwLp3gLcyktE73TqIz7Stz+qOBqikrWmGk0bXt\nt0PpEmU6wfLFK0DuV14XgSPL+nBvA0H9tUQxyVsHJ990bKgAQXU="
-     - secure: "pFUGPNQYowejfcSzbLLrdmvBRyJNwTTaxda4RlcxZDxzud90GiEZK52WSZzg\ng+Z/bGEm0RnLA8yISPC08Ly0BGlE91OF6w2lobQx+iTDdvQ+hoZhh8773f9X\nxOQ9og7U5IYeoDOc3HKHbukFRbaxijqpRNirZsILNT1EPwOse9c="
-     - secure: "T0yh9odLC1bjRE3pm0Od/FlKHu1fME21gfUlS4TaX3XxZlIr0nfw9U68g0Pd\nNMFGbFUyDZ1VSxWLHU3QJAGbVeU3YC9lFM8MI3C/Tdf5rTowZrV8F907RUkh\n56k3VbZr20vlh1D/C3tXT4AnkjgytaSGAZJa/DowcT5ymCkw+oI="
-     - secure: "ZsnBq62z/hlduTrhkN3vQadRVSyLfSY6gbGwVw0r+Gg9lcOvzz69jgY9AwKC\nFpC2UFHzfYUPcEzAL1AC9H8DjzD9ehYFfWC7mBEm9ungl3CAEM+5dfs6g7cM\n8/0HoWQs61qv1GsUhzEzQ3Lu3Y+xDCtlqxNcAVnP0UgdLumHpTM="
-     - secure: "eSN2IZKu+V2Naar/xQK8bnge+kfIbB6Qp6rDd6E95wyA3Jkn+Ty1EQsXHDy5\nCZIxTUAJ87g5wSlasBFblpD1eqi1iIvSEkAIqYyFvVF8tQb05ZunMg+CPii9\nD7/sbgsLF6X6R9QsmSVHrSoW+QIV+3mQehU7rjv5f3kjl2G5EFU="
-     - secure: "ZwllGspe+QCl0KXAXL5y3/xyox5h62MT4UaTmMbg4YnajCufSd0e2RPW5kfO\nF2rCTZ/OGwriLgnvjWjXbdTbDkz/y8eJcKk5wHGamfsjl5Ka9BB0hpfsV8b9\nD+ww1io0rlAc/vG83fvXuLKh03BkgcY01RIraa0e1n+Ho2Ye8Eo="
-     - secure: "NWJvIdNLAqAGlrynrMRxD8ySwYtPX97LhktjsT+dpx2OjLrzPQWcG3K9xSiF\n7vvwWUJev5RmZi1T/WOiKHObROVu9wGHL2ZgwBN0V0O/SH1BAO7fLQtXi/hV\nAWIjsEaSuEYXswu5apDruMsp6llmqb4d1gTXdfbfYk/t3zc+FtI="
-     - secure: "SVJnTsVPRZHMsWrT5i+rbJErHB4EzwQcZhLAucsM4JVurrX80J8Pe6JplqZd\n/K3l97/zvCGSRE1187vSskRGlhjzWLzG/8arB/dvIsBtrK3K6DHHMDQoW+p+\nDo3Ankl/cHjoCazYlsqfIpKc8ts/dqZP7IhTgxI6XzILh7ROm6Q="
-     - secure: "GmwheOEK/zUViqHiDTfoxGMsHkahZ2riZLTvhJZgkrHKArug5WWMGdIacMmn\nIcDg3mzCTnGJZwECwUIdfKZzPWx4YBn1UD4rHJNPc8lleRlRLHb5yXT2mheO\nD0zE9OUG42CiIzI18T7uITa7Wakygg8JnIPOVBJjC+Sxq6oRTFE="
-     - secure: "jisEtyI4usR/vM57wiJW/azOH8pCOyn8FZu0doSB0WzQsRH47tKTTBN3Zhq3\noR9dxqzHTceOvn45zd3Zqp6u/qImq1KSdVnn+WTemvsuiLKlO+Pxs5ImrS92\nRjHtXOLoVx4HtcCihUw0vP+oWzhATMzPFQCap6XGhYWGXxJOXyk="
-     - secure: "YoqaPxLhJkf8ewrXPcfFHRxR3OJK63VHhoOTMyEvRA71fRtSJ1iTmUK7J82y\ncjNlWDB1anVDLgh7/HlLnNz4oW2y78Ym70jNHWKEMeUInOZ60DzMj4GIJLKX\n/T3t3mDQIUOosTLDVqDonQ+00ky/nHK7O+uoSnuGyYxyuewlWfw="
-     - secure: "ccNLg5jNh0Y3qfRfZTGzL1LdRGZFkqZz3V8KMeoftu9t7s0l7b7w46+A721+\nE+98/XqN6OVJ5YlZX3IFJqL0pkFklLfP+TE+yajrGwtfThLJ7ZBeAshY/Je8\nlP5uCynzsNx/pLswF2mjGQZddcK04mCbEABXfsquutr3FV4PkOc="
-
 matrix:
   include:
     - os: linux
@@ -40,7 +7,8 @@ matrix:
 
 before_install:
   - sudo echo "test"
-
+  - openssl aes-256-cbc -K $encrypted_380b91a86902_key -iv $encrypted_380b91a86902_iv -in id_rsa-gdalautotest-coverage-results.enc -out ~/.ssh/id_rsa-gdalautotest-coverage-results -d
+ 
 install:
   - echo "install"
 
