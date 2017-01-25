@@ -4,7 +4,7 @@
 matrix:
   include:
     - os: linux
-      compiler: clang
+      compiler: gcc
       language: cpp
       sudo: required
 
