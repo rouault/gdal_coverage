@@ -39,7 +39,7 @@ env:
 matrix:
   include:
     - os: linux
-      compiler: gcc
+      compiler: clang
       language: cpp
       sudo: required
 
