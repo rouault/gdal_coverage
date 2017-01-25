@@ -10,9 +10,7 @@ patch -p0 < genhtml.patch
 
 ./genhtml -o ./coverage_html --num-spaces 2 gdal_filtered.info 
 
-# This is a bashism !
-echo -n $id_rsa_{00..30} >> ~/.ssh/id_rsa-gdalautotest-coverage-results_base64
-base64 --decode --ignore-garbage ~/.ssh/id_rsa-gdalautotest-coverage-results_base64 > ~/.ssh/id_rsa-gdalautotest-coverage-results
+openssl aes-256-cbc -K $encrypted_380b91a86902_key -iv $encrypted_380b91a86902_iv -in ../id_rsa-gdalautotest-coverage-results.enc -out ~/.ssh/id_rsa-gdalautotest-coverage-results -d
 chmod 600 ~/.ssh/id_rsa-gdalautotest-coverage-results
 
 echo "Host foo.github.com" >> ~/.ssh/config
