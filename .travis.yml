@@ -1,8 +1,6 @@
 # This is the config file for building GDAL and running its autotest suite
 # with Travis-ci.org
 
-sudo: required
-
 env:
   global:
 #    - secure: "qSk1Cw+eGPKj4z4O9Fk+kjKM8nmEraKH659Sd2mIJMCj/YaZ2cX4lcojESc9\nFHE1qsLklwUmrzrIWkAirYY2HRGoxiltUda6lJBGcmApL3EM+Y9dl+CFwGM/\nV9G9xvffrWo1/f16GOP0AwzZFPAKQcM0nWCqzlsBr9DIFaH0Thg="
@@ -37,11 +35,13 @@ env:
      - secure: "YoqaPxLhJkf8ewrXPcfFHRxR3OJK63VHhoOTMyEvRA71fRtSJ1iTmUK7J82y\ncjNlWDB1anVDLgh7/HlLnNz4oW2y78Ym70jNHWKEMeUInOZ60DzMj4GIJLKX\n/T3t3mDQIUOosTLDVqDonQ+00ky/nHK7O+uoSnuGyYxyuewlWfw="
      - secure: "ccNLg5jNh0Y3qfRfZTGzL1LdRGZFkqZz3V8KMeoftu9t7s0l7b7w46+A721+\nE+98/XqN6OVJ5YlZX3IFJqL0pkFklLfP+TE+yajrGwtfThLJ7ZBeAshY/Je8\nlP5uCynzsNx/pLswF2mjGQZddcK04mCbEABXfsquutr3FV4PkOc="
 
-language: cpp
 
-# We use --without-libtool and --with-debug for faster build
-compiler:
-  - gcc
+matrix:
+  include:
+    - os: linux
+      compiler: gcc
+      language: cpp
+      sudo: required
 
 before_install:
   - sudo mv /etc/apt/sources.list.d/pgdg* /tmp || /bin/true
