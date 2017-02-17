@@ -565,8 +565,12 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
         return FALSE;
 
     OGRErr eErr;
-    m_nApplicationId = SQLGetInteger(hDB, "PRAGMA application_id", &eErr);
-    m_nUserVersion = SQLGetInteger(hDB, "PRAGMA user_version", &eErr);
+    int nTmp = SQLGetInteger(hDB, "PRAGMA application_id", &eErr);
+    if( eErr == OGRERR_NONE )
+        m_nApplicationId = nTmp;
+    nTmp = SQLGetInteger(hDB, "PRAGMA user_version", &eErr);
+    if( eErr == OGRERR_NONE )
+        m_nUserVersion = nTmp;
 
     /* Requirement 6: The SQLite PRAGMA integrity_check SQL command SHALL return “ok” */
     /* http://opengis.github.io/geopackage/#_file_integrity */
@@ -3373,7 +3377,7 @@ bool GDALGeoPackageDataset::CreateTileGriddedTable(char** papszOptions)
     char* pszSQL = sqlite3_mprintf(
         "INSERT INTO gpkg_extensions "
         "(table_name, column_name, extension_name, definition, scope) "
-        "VALUES ('%q', NULL, "
+        "VALUES ('%q', 'tile_data', "
         "'gpkg_elevation_tiles', "
         "'http://www.geopackage.org/spec/#extension_tiled_gridded_elevation_data', "
         "'read-write')", m_osRasterTable.c_str());
@@ -5081,6 +5085,8 @@ void GPKG_GDAL_GetMimeType(sqlite3_context* pContext,
             pszRes = "image/jpeg";
         else if( EQUAL(poDriver->GetDescription(), "WEBP") )
             pszRes = "image/x-webp";
+        else if( EQUAL(poDriver->GetDescription(), "GTIFF") )
+            pszRes = "image/tiff";
         else
             pszRes = CPLSPrintf("gdal/%s", poDriver->GetDescription());
         sqlite3_result_text( pContext, pszRes, -1, SQLITE_TRANSIENT );
