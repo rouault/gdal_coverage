@@ -93,8 +93,7 @@ OGRErr OGRGeoPackageTableLayer::SaveTimestamp()
         pszSQL = sqlite3_mprintf(
                     "UPDATE gpkg_contents SET "
                     "last_change = '%q'"
-                    "WHERE table_name = '%q' AND "
-                    "Lower(data_type) IN ('features', 'gdal_aspatial')",
+                    "WHERE table_name = '%q'",
                     m_pszTableName, pszCurrentDate);
     }
     else
@@ -102,8 +101,7 @@ OGRErr OGRGeoPackageTableLayer::SaveTimestamp()
         pszSQL = sqlite3_mprintf(
                     "UPDATE gpkg_contents SET "
                     "last_change = strftime('%%Y-%%m-%%dT%%H:%%M:%%fZ','now')"
-                    "WHERE table_name = '%q' AND "
-                    "Lower(data_type) IN ('features', 'gdal_aspatial')",
+                    "WHERE table_name = '%q'",
                     m_pszTableName);
     }
 
@@ -1710,7 +1708,7 @@ OGRErr OGRGeoPackageTableLayer::RollbackTransaction()
 /*                        GetFeatureCount()                             */
 /************************************************************************/
 
-GIntBig OGRGeoPackageTableLayer::GetFeatureCount( CPL_UNUSED int bForce )
+GIntBig OGRGeoPackageTableLayer::GetFeatureCount( int /*bForce*/ )
 {
     if( m_poFilterGeom != NULL && !m_bFilterIsEnvelope )
         return OGRGeoPackageLayer::GetFeatureCount();
@@ -1721,13 +1719,40 @@ GIntBig OGRGeoPackageTableLayer::GetFeatureCount( CPL_UNUSED int bForce )
     /* Ignore bForce, because we always do a full count on the database */
     OGRErr err;
     CPLString soSQL;
-    if ( m_soFilter.length() > 0 )
-        soSQL.Printf("SELECT Count(*) FROM \"%s\" WHERE %s",
-                     SQLEscapeDoubleQuote(m_pszTableName).c_str(),
-                     m_soFilter.c_str());
-    else
-        soSQL.Printf("SELECT Count(*) FROM \"%s\" ",
-                     SQLEscapeDoubleQuote(m_pszTableName).c_str());
+    if ( m_poFilterGeom != NULL && m_pszAttrQueryString == NULL &&
+        HasSpatialIndex() )
+    {
+        const char* pszT = m_pszTableName;
+        const char* pszC = m_poFeatureDefn->
+                        GetGeomFieldDefn(m_iGeomFieldFilter)->GetNameRef();
+
+        OGREnvelope  sEnvelope;
+
+        m_poFilterGeom->getEnvelope( &sEnvelope );
+
+        if( !CPLIsInf(sEnvelope.MinX) && !CPLIsInf(sEnvelope.MinY) &&
+            !CPLIsInf(sEnvelope.MaxX) && !CPLIsInf(sEnvelope.MaxY) )
+        {
+            soSQL.Printf("SELECT COUNT(*) FROM \"rtree_%s_%s\" WHERE "
+                         "maxx >= %.12f AND minx <= %.12f AND "
+                         "maxy >= %.12f AND miny <= %.12f",
+                         SQLEscapeDoubleQuote(pszT).c_str(),
+                         SQLEscapeDoubleQuote(pszC).c_str(),
+                         sEnvelope.MinX - 1e-11, sEnvelope.MaxX + 1e-11,
+                         sEnvelope.MinY - 1e-11, sEnvelope.MaxY + 1e-11);
+        }
+    }
+
+    if( soSQL.empty() )
+    {
+        if ( !m_soFilter.empty() )
+            soSQL.Printf("SELECT Count(*) FROM \"%s\" WHERE %s",
+                         SQLEscapeDoubleQuote(m_pszTableName).c_str(),
+                         m_soFilter.c_str());
+        else
+            soSQL.Printf("SELECT Count(*) FROM \"%s\"",
+                         SQLEscapeDoubleQuote(m_pszTableName).c_str());
+    }
 
     /* Just run the query directly and get back integer */
     GIntBig iFeatureCount = SQLGetInteger64(m_poDS->GetDB(), soSQL.c_str(), &err);
