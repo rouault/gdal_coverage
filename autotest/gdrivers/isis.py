@@ -602,7 +602,7 @@ def isis_18():
                                 options = ['LATITUDE_TYPE=Planetocentric',
                                            'LONGITUDE_DIRECTION=PositiveWest',
                                            'LONGITUDE_DOMAIN=360',
-                                           'BOUNDING_DEGREES=1.2,2.3,3.4,4.5'])
+                                           'BOUNDING_DEGREES=1.5,2.5,3.5,4.5'])
     ds.SetProjection(sr.ExportToWkt())
     ds.SetGeoTransform( [1000,1,0,2000,0,-1] )
     ds = None
@@ -620,11 +620,11 @@ def isis_18():
         gdaltest.post_reason('fail')
         print(lbl)
         return 'fail'
-    if lbl.find('"MinimumLatitude":2.3') < 0:
+    if lbl.find('"MinimumLatitude":2.5') < 0:
         gdaltest.post_reason('fail')
         print(lbl)
         return 'fail'
-    if lbl.find('"MinimumLongitude":1.2') < 0:
+    if lbl.find('"MinimumLongitude":1.5') < 0:
         gdaltest.post_reason('fail')
         print(lbl)
         return 'fail'
@@ -632,7 +632,7 @@ def isis_18():
         gdaltest.post_reason('fail')
         print(lbl)
         return 'fail'
-    if lbl.find('"MaximumLongitude":3.4') < 0:
+    if lbl.find('"MaximumLongitude":3.5') < 0:
         gdaltest.post_reason('fail')
         print(lbl)
         return 'fail'
@@ -780,8 +780,9 @@ def isis_23():
     mem_ds = gdal.Translate('', 'data/byte.tif', format = 'MEM')
     mem_ds.SetProjection('')
     mem_ds.SetGeoTransform([0,1,0,0,0,1])
+    mem_ds.GetRasterBand(1).SetNoDataValue(74)
     ref_data = mem_ds.GetRasterBand(1).ReadRaster()
-    gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds, noData = 74,
+    gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds,
                    format = 'ISIS3')
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     if ref_data == ds.GetRasterBand(1).ReadRaster():
@@ -790,8 +791,8 @@ def isis_23():
     ds = None
     gdal.GetDriverByName('ISIS3').Delete('/vsimem/isis_tmp.lbl')
 
-    gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds, noData = 74,
-                   format = 'ISIS3', options = [ 'DATA_LOCATION=GeoTIFF'] )
+    gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds,
+                   format = 'ISIS3', creationOptions = [ 'DATA_LOCATION=GeoTIFF'] )
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     if ref_data == ds.GetRasterBand(1).ReadRaster():
         gdaltest.post_reason('fail')
@@ -799,8 +800,8 @@ def isis_23():
     ds = None
     gdal.GetDriverByName('ISIS3').Delete('/vsimem/isis_tmp.lbl')
 
-    gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds, noData = 74,
-                   format = 'ISIS3', options = [ 'TILED=YES'] )
+    gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds,
+                   format = 'ISIS3', creationOptions = [ 'TILED=YES'] )
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     if ref_data == ds.GetRasterBand(1).ReadRaster():
         gdaltest.post_reason('fail')
@@ -813,8 +814,9 @@ def isis_23():
         mem_ds = gdal.Translate('', 'data/byte.tif', format = 'MEM', outputType = dt)
         mem_ds.SetProjection('')
         mem_ds.SetGeoTransform([0,1,0,0,0,1])
+        mem_ds.GetRasterBand(1).SetNoDataValue(74)
         ref_data = mem_ds.GetRasterBand(1).ReadRaster()
-        gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds, noData = 74,
+        gdal.Translate('/vsimem/isis_tmp.lbl', mem_ds,
                     format = 'ISIS3')
         ds = gdal.Open('/vsimem/isis_tmp.lbl')
         if ref_data == ds.GetRasterBand(1).ReadRaster():
