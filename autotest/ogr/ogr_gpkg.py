@@ -697,6 +697,9 @@ def ogr_gpkg_14():
     sr.ImportFromEPSG(32631)
 
     lyr = gdaltest.gpkg_ds.CreateLayer('point_no_spi-but-with-dashes', geom_type = ogr.wkbPoint, options = ['SPATIAL_INDEX=NO'], srs = sr )
+    if lyr.TestCapability(ogr.OLCFastSpatialFilter) != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
     feat = ogr.Feature(lyr.GetLayerDefn())
     feat.SetGeometry(ogr.CreateGeometryFromWkt('POINT(1000 30000000)'))
     lyr.CreateFeature(feat)
@@ -710,7 +713,17 @@ def ogr_gpkg_14():
     feat.SetGeometry(ogr.CreateGeometryFromWkt('POINT(-1000 -30000000)'))
     lyr.CreateFeature(feat)
 
+    sql_lyr = gdaltest.gpkg_ds.ExecuteSQL('SELECT * FROM "point_no_spi-but-with-dashes"')
+    res = sql_lyr.TestCapability(ogr.OLCFastSpatialFilter)
+    gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
+    if res != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
     lyr = gdaltest.gpkg_ds.CreateLayer('point-with-spi-and-dashes', geom_type = ogr.wkbPoint )
+    if lyr.TestCapability(ogr.OLCFastSpatialFilter) != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
     feat = ogr.Feature(lyr.GetLayerDefn())
     feat.SetGeometry(ogr.CreateGeometryFromWkt('POINT(1000 30000000)'))
     lyr.CreateFeature(feat)
@@ -723,6 +736,13 @@ def ogr_gpkg_14():
     feat = ogr.Feature(lyr.GetLayerDefn())
     feat.SetGeometry(ogr.CreateGeometryFromWkt('POINT(-1000 -30000000)'))
     lyr.CreateFeature(feat)
+
+    sql_lyr = gdaltest.gpkg_ds.ExecuteSQL('SELECT * FROM "point-with-spi-and-dashes"')
+    res = sql_lyr.TestCapability(ogr.OLCFastSpatialFilter)
+    gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
+    if res != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
 
     return 'success'
 
@@ -2978,6 +2998,9 @@ def ogr_gpkg_42():
     if not foo_has_trigger(ds):
         gdaltest.post_reason('fail')
         return 'fail'
+    if lyr.TestCapability(ogr.OLCFastFeatureCount) == 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
     ds = None
 
     ds = ogr.Open('/vsimem/ogr_gpkg_42.gpkg', update = 1)
@@ -3077,6 +3100,9 @@ def ogr_gpkg_42():
         return 'fail'
 
     lyr = ds.GetLayer(0)
+    if lyr.TestCapability(ogr.OLCFastFeatureCount) != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
     fc = lyr.GetFeatureCount()
     if fc != 5:
         gdaltest.post_reason('fail')
