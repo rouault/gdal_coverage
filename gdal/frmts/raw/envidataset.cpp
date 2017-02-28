@@ -29,6 +29,7 @@
  ****************************************************************************/
 
 #include "cpl_port.h"
+#include "envidataset.h"
 #include "rawdataset.h"
 
 #include <climits>
@@ -53,7 +54,6 @@
 #include "ogr_core.h"
 #include "ogr_spatialref.h"
 #include "ogr_srs_api.h"
-#include <cmath>
 
 CPL_CVSID("$Id$");
 
@@ -236,104 +236,6 @@ static int ITTVISToUSGSZone( int nITTVISZone )
 }
 
 /************************************************************************/
-/* ==================================================================== */
-/*                              ENVIDataset                             */
-/* ==================================================================== */
-/************************************************************************/
-
-class ENVIRasterBand;
-
-class ENVIDataset : public RawDataset
-{
-    friend class ENVIRasterBand;
-
-    VSILFILE   *fpImage;  // Image data file.
-    VSILFILE   *fp;  // Header file
-    char       *pszHDRFilename;
-
-    bool        bFoundMapinfo;
-    bool        bHeaderDirty;
-    bool        bFillFile;
-
-    double      adfGeoTransform[6];
-
-    char       *pszProjection;
-
-    char        **papszHeader;
-
-    CPLString   osStaFilename;
-
-    bool        ReadHeader( VSILFILE * );
-    bool        ProcessMapinfo( const char * );
-    void        ProcessRPCinfo( const char *, int, int);
-    void        ProcessStatsFile();
-    static int         byteSwapInt(int);
-    static float       byteSwapFloat(float);
-    static double      byteSwapDouble(double);
-    static void        SetENVIDatum( OGRSpatialReference *, const char * );
-    static void        SetENVIEllipse( OGRSpatialReference *, char ** );
-    void        WriteProjectionInfo();
-    bool        ParseRpcCoeffsMetaDataString( const char *psName,
-                                              char *papszVal[], int& idx );
-    bool        WriteRpcInfo();
-    bool        WritePseudoGcpInfo();
-
-    void        SetFillFile() { bFillFile = true; }
-
-    char        **SplitList( const char * );
-
-    enum Interleave { BSQ, BIL, BIP } interleave;
-    static int GetEnviType(GDALDataType eType);
-
-  public:
-            ENVIDataset();
-    virtual ~ENVIDataset();
-
-    virtual void    FlushCache() override;
-    virtual CPLErr  GetGeoTransform( double *padfTransform ) override;
-    virtual CPLErr  SetGeoTransform( double * ) override;
-    virtual const char *GetProjectionRef(void) override;
-    virtual CPLErr  SetProjection( const char * ) override;
-    virtual char  **GetFileList(void) override;
-
-    virtual void        SetDescription( const char * ) override;
-
-    virtual CPLErr      SetMetadata( char **papszMetadata,
-                                     const char *pszDomain = "" ) override;
-    virtual CPLErr      SetMetadataItem( const char *pszName,
-                                         const char *pszValue,
-                                         const char *pszDomain = "" ) override;
-    virtual CPLErr SetGCPs( int nGCPCount, const GDAL_GCP *pasGCPList,
-                            const char *pszGCPProjection ) override;
-
-    static GDALDataset *Open( GDALOpenInfo * );
-    static GDALDataset *Create( const char *pszFilename,
-                                int nXSize, int nYSize, int nBands,
-                                GDALDataType eType, char ** papszOptions );
-};
-
-/************************************************************************/
-/* ==================================================================== */
-/*                            ENVIRasterBand                            */
-/* ==================================================================== */
-/************************************************************************/
-
-class ENVIRasterBand : public RawRasterBand
-{
-    public:
-                ENVIRasterBand( GDALDataset *poDS, int nBand, void *fpRaw,
-                                vsi_l_offset nImgOffset, int nPixelOffset,
-                                int nLineOffset,
-                                GDALDataType eDataType, int bNativeOrder,
-                                int bIsVSIL = FALSE, int bOwnsFP = FALSE );
-    virtual ~ENVIRasterBand() {}
-
-    virtual void        SetDescription( const char * ) override;
-
-    virtual CPLErr SetCategoryNames( char ** ) override;
-};
-
-/************************************************************************/
 /*                            ENVIDataset()                             */
 /************************************************************************/
 
@@ -510,7 +412,8 @@ void ENVIDataset::FlushCache()
                 bOK &= VSIFPrintfL(fp, "class names = {\n%s", *catNames) >= 0;
                 catNames++;
                 int i = 0;
-                while (*catNames) {
+                while (*catNames)
+                {
                     bOK &= VSIFPrintfL(fp, ",") >= 0;
                     if (0 == (++i) % 5)
                         bOK &= VSIFPrintfL(fp, "\n") >= 0;
@@ -703,32 +606,32 @@ void ENVIDataset::WriteProjectionInfo()
     CPLString osLocation;
     CPLString osRotation;
 
-    double dfPixelXSize = sqrt( adfGeoTransform[1] * adfGeoTransform[1] +
-                                adfGeoTransform[2] * adfGeoTransform[2] );
-    double dfPixelYSize = sqrt( adfGeoTransform[4] * adfGeoTransform[4] +
-                                adfGeoTransform[5] * adfGeoTransform[5] );
+    const double dfPixelXSize = sqrt(adfGeoTransform[1] * adfGeoTransform[1] +
+                                     adfGeoTransform[2] * adfGeoTransform[2]);
+    const double dfPixelYSize = sqrt(adfGeoTransform[4] * adfGeoTransform[4] +
+                                     adfGeoTransform[5] * adfGeoTransform[5]);
     const bool bHasNonDefaultGT =
-          ( adfGeoTransform[0] != 0.0 || adfGeoTransform[1] != 1.0 ||
-            adfGeoTransform[2] != 0.0 || adfGeoTransform[3] != 0.0 ||
-            adfGeoTransform[4] != 0.0 || adfGeoTransform[5] != 1.0 );
+        adfGeoTransform[0] != 0.0 || adfGeoTransform[1] != 1.0 ||
+        adfGeoTransform[2] != 0.0 || adfGeoTransform[3] != 0.0 ||
+        adfGeoTransform[4] != 0.0 || adfGeoTransform[5] != 1.0;
     if( bHasNonDefaultGT )
     {
-        double dfRotation1 = -atan2( -adfGeoTransform[2], adfGeoTransform[1] )
-                                    / M_PI * 180;
-        double dfRotation2 = -atan2( -adfGeoTransform[4], -adfGeoTransform[5] )
-                                    / M_PI * 180;
-        double dfRotation = (dfRotation1 + dfRotation2) / 2;
+        const double dfRotation1 =
+            -atan2(-adfGeoTransform[2], adfGeoTransform[1]) / M_PI * 180.0;
+        const double dfRotation2 =
+            -atan2(-adfGeoTransform[4], -adfGeoTransform[5]) / M_PI * 180.0;
+        const double dfRotation = (dfRotation1 + dfRotation2) / 2.0;
 
         if( fabs(dfRotation1 - dfRotation2) > 1e-5 )
         {
             CPLDebug("ENVI", "rot1 = %.15g, rot2 = %.15g",
-                    dfRotation1, dfRotation2);
+                     dfRotation1, dfRotation2);
             CPLError(CE_Warning, CPLE_AppDefined,
-                    "Geotransform matrix has non rotational terms");
+                     "Geotransform matrix has non rotational terms");
         }
         if( fabs(dfRotation) > 1e-5 )
         {
-            osRotation.Printf( ", rotation=%.15g", dfRotation );
+            osRotation.Printf(", rotation=%.15g", dfRotation);
         }
     }
 
@@ -748,7 +651,7 @@ void ENVIDataset::WriteProjectionInfo()
             const char *pszHemisphere = "North";
             if( VSIFPrintfL(fp, "map info = {Arbitrary, %s, %d, %s%s}\n",
                             osLocation.c_str(), 0, pszHemisphere,
-                            osRotation.c_str()) < 0 )
+                            osRotation.c_str()) < 0)
                 return;
         }
         return;
@@ -1477,7 +1380,7 @@ bool ENVIDataset::ProcessMapinfo( const char *pszMapinfo )
     }
 
     // Retrieve named values
-    for (int i=0; i<nCount; ++i)
+    for (int i = 0; i < nCount; ++i)
     {
         if ( STARTS_WITH(papszFields[i], "units=") )
         {
@@ -1485,8 +1388,8 @@ bool ENVIDataset::ProcessMapinfo( const char *pszMapinfo )
         }
         else if ( STARTS_WITH(papszFields[i], "rotation=") )
         {
-            dfRotation = CPLAtof(papszFields[i] + strlen("rotation=")) *
-                            (M_PI/180) * -1;
+            dfRotation = CPLAtof(papszFields[i] + strlen("rotation=")) * M_PI /
+                         180.0 * -1;
         }
     }
 
@@ -1878,7 +1781,7 @@ void ENVIDataset::ProcessStatsFile()
 
     // TODO(schwehr): What are 1, 4, 8, and 40?
     int lOffset = 0;
-    if( VSIFSeekL(fpStaFile, 40+(nb+1)*4, SEEK_SET) == 0 &&
+    if( VSIFSeekL(fpStaFile, 40 + (nb + 1) * 4, SEEK_SET) == 0 &&
         VSIFReadL(&lOffset, sizeof(int), 1, fpStaFile) == 1 &&
         VSIFSeekL(fpStaFile, 40 + (nb + 1) * 8 + byteSwapInt(lOffset) + nb,
                   SEEK_SET) == 0)
@@ -1887,8 +1790,8 @@ void ENVIDataset::ProcessStatsFile()
         if (isFloat)
         {
             float *fStats = static_cast<float *>(CPLCalloc( nb * 4, 4 ));
-            if ( static_cast<int>(VSIFReadL(fStats, 4, nb * 4, fpStaFile))
-                == nb * 4)
+            if ( static_cast<int>(VSIFReadL(fStats, 4, nb * 4, fpStaFile)) ==
+                 nb * 4)
             {
                 for( int i = 0; i < nb; i++ )
                 {
@@ -1904,8 +1807,8 @@ void ENVIDataset::ProcessStatsFile()
         else
         {
             double *dStats = static_cast<double *>(CPLCalloc(nb * 4, 8));
-            if ( static_cast<int>(VSIFReadL(dStats, 8, nb * 4, fpStaFile))
-                     == nb * 4)
+            if ( static_cast<int>(VSIFReadL(dStats, 8, nb * 4, fpStaFile)) ==
+                 nb * 4)
             {
                 for( int i = 0; i < nb; i++ )
                 {
@@ -2253,9 +2156,7 @@ GDALDataset *ENVIDataset::Open( GDALOpenInfo *poOpenInfo )
         }
     }
 
-/* -------------------------------------------------------------------- */
-/*      Translate the byte order.                                       */
-/* -------------------------------------------------------------------- */
+    // Translate the byte order.
     bool bNativeOrder = true;
 
     if( CSLFetchNameValue(poDS->papszHeader, "byte_order") != NULL )
