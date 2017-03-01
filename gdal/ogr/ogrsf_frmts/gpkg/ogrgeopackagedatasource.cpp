@@ -721,7 +721,13 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
                     "AND name NOT IN ('st_spatial_ref_sys', 'spatial_ref_sys', 'st_geometry_columns') "
                     "AND name NOT IN (SELECT table_name FROM gpkg_contents)";
         }
-        osSQL += " LIMIT 1000";
+        const int nTableLimit =
+                    atoi(CPLGetConfigOption("OGR_TABLE_LIMIT", "10000"));
+        if( nTableLimit > 0 )
+        {
+            osSQL += " LIMIT ";
+            osSQL += CPLSPrintf("%d", 1 + nTableLimit);
+        }
 
         SQLResult oResult;
         OGRErr err = SQLQuery(hDB, osSQL.c_str(), &oResult);
@@ -731,11 +737,14 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
             return FALSE;
         }
 
-        if( oResult.nRowCount == 1000 )
+        if( nTableLimit > 0 && oResult.nRowCount > nTableLimit )
         {
             CPLError(CE_Warning, CPLE_AppDefined,
-                        "File has more than 1000 vector tables. "
-                        "Limiting to first 1000");
+                     "File has more than %d vector tables. "
+                     "Limiting to first %d (can be overriden with "
+                     "OGR_TABLE_LIMIT config option)",
+                     nTableLimit, nTableLimit);
+            oResult.nRowCount = nTableLimit;
         }
 
         if ( oResult.nRowCount > 0 )
@@ -1885,14 +1894,10 @@ CPLErr GDALGeoPackageDataset::IBuildOverviews(
                 "ON x.id = y.tpudt_id AND y.tpudt_name = '%q' AND "
                 "x.zoom_level < %d)",
                 m_osRasterTable.c_str(), m_osRasterTable.c_str(), m_nZoomLevel);
-            char* pszErrMsg = NULL;
-            int ret = sqlite3_exec(hDB, pszSQL, NULL, NULL, &pszErrMsg);
+            OGRErr eErr = SQLCommand(hDB, pszSQL);
             sqlite3_free(pszSQL);
-            if( ret != SQLITE_OK )
+            if( eErr != OGRERR_NONE )
             {
-                CPLError(CE_Failure, CPLE_AppDefined, "Failure: %s",
-                        pszErrMsg ? pszErrMsg : "");
-                sqlite3_free(pszErrMsg);
                 SoftRollbackTransaction();
                 return CE_Failure;
             }
@@ -1901,14 +1906,10 @@ CPLErr GDALGeoPackageDataset::IBuildOverviews(
         char* pszSQL = sqlite3_mprintf("DELETE FROM \"%w\" WHERE zoom_level < %d",
                                        m_osRasterTable.c_str(),
                                        m_nZoomLevel);
-        char* pszErrMsg = NULL;
-        int ret = sqlite3_exec(hDB, pszSQL, NULL, NULL, &pszErrMsg);
+        OGRErr eErr = SQLCommand(hDB, pszSQL);
         sqlite3_free(pszSQL);
-        if( ret != SQLITE_OK )
+        if( eErr != OGRERR_NONE )
         {
-            CPLError(CE_Failure, CPLE_AppDefined, "Failure: %s",
-                     pszErrMsg ? pszErrMsg : "");
-            sqlite3_free(pszErrMsg);
             SoftRollbackTransaction();
             return CE_Failure;
         }
@@ -2911,7 +2912,7 @@ int GDALGeoPackageDataset::Create( const char * pszFilename,
     if( !bFileExists &&
         CPLGetConfigOption("OGR_SQLITE_SYNCHRONOUS", NULL) == NULL )
     {
-        sqlite3_exec( hDB, "PRAGMA synchronous = OFF", NULL, NULL, NULL );
+        SQLCommand( hDB, "PRAGMA synchronous = OFF" );
     }
 
     /* OGR UTF-8 support. If we set the UTF-8 Pragma early on, it */
@@ -3415,7 +3416,7 @@ int GDALGeoPackageDataset::Create( const char * pszFilename,
     if( !bFileExists &&
         CPLGetConfigOption("OGR_SQLITE_SYNCHRONOUS", NULL) == NULL )
     {
-        sqlite3_exec( hDB, "PRAGMA synchronous = OFF", NULL, NULL, NULL );
+        SQLCommand( hDB, "PRAGMA synchronous = OFF" );
     }
 
     return TRUE;
@@ -5319,6 +5320,8 @@ bool GDALGeoPackageDataset::OpenOrCreateDB(int flags)
     // Enable SpatiaLite 4.3 "amphibious" mode, i.e. that SpatiaLite functions
     // that take geometries will accept GPKG encoded geometries without
     // explicit conversion.
+    // Use sqlite3_exec() instead of SQLCommand() since we don't want verbose
+    // error.
     sqlite3_exec(hDB, "SELECT EnableGpkgAmphibiousMode()", NULL, NULL, NULL);
 #endif
 
