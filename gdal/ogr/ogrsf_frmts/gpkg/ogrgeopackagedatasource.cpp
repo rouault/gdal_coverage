@@ -949,18 +949,27 @@ bool GDALGeoPackageDataset::InitRaster( GDALGeoPackageDataset* poParentDS,
 /*                      ComputeTileAndPixelShifts()                     */
 /************************************************************************/
 
-void GDALGeoPackageDataset::ComputeTileAndPixelShifts()
+bool GDALGeoPackageDataset::ComputeTileAndPixelShifts()
 {
     int nTileWidth, nTileHeight;
     GetRasterBand(1)->GetBlockSize(&nTileWidth, &nTileHeight);
 
     // Compute shift between GDAL origin and TileMatrixSet origin
-    int nShiftXPixels = (int)floor(0.5 + (m_adfGeoTransform[0] - m_dfTMSMinX) /  m_adfGeoTransform[1]);
-    m_nShiftXTiles = (int)floor(1.0 * nShiftXPixels / nTileWidth);
+    double dfShiftXPixels = (m_adfGeoTransform[0] - m_dfTMSMinX) / 
+                                                        m_adfGeoTransform[1];
+    if( dfShiftXPixels < INT_MIN || dfShiftXPixels + 0.5 > INT_MAX )
+        return false;
+    int nShiftXPixels = static_cast<int>(floor(0.5 + dfShiftXPixels));
+    m_nShiftXTiles = static_cast<int>(floor(1.0 * nShiftXPixels / nTileWidth));
     m_nShiftXPixelsMod = ((nShiftXPixels % nTileWidth) + nTileWidth) % nTileWidth;
-    int nShiftYPixels = (int)floor(0.5 + (m_adfGeoTransform[3] - m_dfTMSMaxY) /  m_adfGeoTransform[5]);
-    m_nShiftYTiles = (int)floor(1.0 * nShiftYPixels / nTileHeight);
+    double dfShiftYPixels = (m_adfGeoTransform[3] - m_dfTMSMaxY) /
+                                                        m_adfGeoTransform[5];
+    if( dfShiftYPixels < INT_MIN || dfShiftYPixels + 0.5 > INT_MAX )
+        return false;
+    int nShiftYPixels = static_cast<int>(floor(0.5 + dfShiftYPixels));
+    m_nShiftYTiles = static_cast<int>(floor(1.0 * nShiftYPixels / nTileHeight));
     m_nShiftYPixelsMod = ((nShiftYPixels % nTileHeight) + nTileHeight) % nTileHeight;
+    return true;
 }
 
 /************************************************************************/
@@ -1005,8 +1014,8 @@ bool GDALGeoPackageDataset::InitRaster( GDALGeoPackageDataset* poParentDS,
                  dfRasterXSize, dfRasterYSize);
         return false;
     }
-    nRasterXSize = (int)dfRasterXSize;
-    nRasterYSize = (int)dfRasterYSize;
+    nRasterXSize = std::max(1, static_cast<int>(dfRasterXSize));
+    nRasterYSize = std::max(1, static_cast<int>(dfRasterYSize));
 
     if( poParentDS )
     {
@@ -1045,7 +1054,12 @@ bool GDALGeoPackageDataset::InitRaster( GDALGeoPackageDataset* poParentDS,
         SetBand( i, poNewBand );
     }
 
-    ComputeTileAndPixelShifts();
+    if( !ComputeTileAndPixelShifts() )
+    {
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "Overflow occured in ComputeTileAndPixelShifts()");
+        return false;
+    }
 
     GDALPamDataset::SetMetadataItem("INTERLEAVE", "PIXEL", "IMAGE_STRUCTURE");
     GDALPamDataset::SetMetadataItem("ZOOM_LEVEL", CPLSPrintf("%d", m_nZoomLevel));
@@ -1652,7 +1666,12 @@ CPLErr GDALGeoPackageDataset::FinalizeRasterRegistration()
     m_nTileMatrixWidth = nTileXCountZoomLevel0 * (1 << m_nZoomLevel);
     m_nTileMatrixHeight = nTileYCountZoomLevel0 * (1 << m_nZoomLevel);
 
-    ComputeTileAndPixelShifts();
+    if( !ComputeTileAndPixelShifts() )
+    {
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "Overflow occured in ComputeTileAndPixelShifts()");
+        return CE_Failure;
+    };
 
     double dfGDALMinX = m_adfGeoTransform[0];
     double dfGDALMinY = m_adfGeoTransform[3] + nRasterYSize * m_adfGeoTransform[5];
@@ -2231,7 +2250,8 @@ char **GDALGeoPackageDataset::GetMetadata( const char *pszDomain )
             "SELECT md.metadata, md.md_standard_uri, md.mime_type, mdr.reference_scope FROM gpkg_metadata md "
             "JOIN gpkg_metadata_reference mdr ON (md.id = mdr.md_file_id ) "
             "WHERE mdr.reference_scope = 'geopackage' OR "
-            "(mdr.reference_scope = 'table' AND mdr.table_name = '%q') ORDER BY md.id",
+            "(mdr.reference_scope = 'table' AND mdr.table_name = '%q') ORDER BY md.id "
+            "LIMIT 1000", // to avoid denial of service
             m_osRasterTable.c_str());
     }
     else
@@ -2239,7 +2259,9 @@ char **GDALGeoPackageDataset::GetMetadata( const char *pszDomain )
         pszSQL = sqlite3_mprintf(
             "SELECT md.metadata, md.md_standard_uri, md.mime_type, mdr.reference_scope FROM gpkg_metadata md "
             "JOIN gpkg_metadata_reference mdr ON (md.id = mdr.md_file_id ) "
-            "WHERE mdr.reference_scope = 'geopackage' ORDER BY md.id");
+            "WHERE mdr.reference_scope = 'geopackage' ORDER BY md.id "
+            "LIMIT 1000" // to avoid denial of service
+        );
     }
 
     SQLResult oResult;
