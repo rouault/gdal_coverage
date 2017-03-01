@@ -721,6 +721,7 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
                     "AND name NOT IN ('st_spatial_ref_sys', 'spatial_ref_sys', 'st_geometry_columns') "
                     "AND name NOT IN (SELECT table_name FROM gpkg_contents)";
         }
+        osSQL += " LIMIT 1000";
 
         SQLResult oResult;
         OGRErr err = SQLQuery(hDB, osSQL.c_str(), &oResult);
@@ -728,6 +729,13 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
         {
             SQLResultFree(&oResult);
             return FALSE;
+        }
+
+        if( oResult.nRowCount == 1000 )
+        {
+            CPLError(CE_Warning, CPLE_AppDefined,
+                        "File has more than 1000 vector tables. "
+                        "Limiting to first 1000");
         }
 
         if ( oResult.nRowCount > 0 )
@@ -785,6 +793,7 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
             sqlite3_free(pszTmp);
             SetPhysicalFilename( osFilename.c_str() );
         }
+        osSQL += " LIMIT 1000";
 
         const OGRErr err = SQLQuery(hDB, osSQL.c_str(), &oResult);
         if  ( err != OGRERR_NONE )
@@ -828,6 +837,13 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
         else if( oResult.nRowCount >= 1 )
         {
             bRet = TRUE;
+
+            if( oResult.nRowCount == 1000 )
+            {
+                CPLError(CE_Warning, CPLE_AppDefined,
+                         "File has more than 1000 raster tables. "
+                         "Limiting to first 1000");
+            }
 
             int nSDSCount = 0;
             for ( int i = 0; i < oResult.nRowCount; i++ )
@@ -1180,7 +1196,7 @@ bool GDALGeoPackageDataset::OpenRaster( const char* pszTableName,
                         pszTableName);
                 }
                 sqlite3_stmt* hSQLStmt = NULL;
-                int rc = sqlite3_prepare( hDB, pszSQL, -1,
+                int rc = sqlite3_prepare_v2( hDB, pszSQL, -1,
                                           &hSQLStmt, NULL );
 
                 if( rc == SQLITE_OK )
@@ -1257,6 +1273,8 @@ bool GDALGeoPackageDataset::OpenRaster( const char* pszTableName,
                             osQuotedTableName.c_str());
     }
     osSQL += " ORDER BY zoom_level DESC";
+    // To avoid denial of service.
+    osSQL += " LIMIT 100";
 
     err = SQLQuery(hDB, osSQL.c_str(), &oResult);
     if( err != OGRERR_NONE || oResult.nRowCount == 0 )
@@ -4507,14 +4525,14 @@ OGRLayer * GDALGeoPackageDataset::ExecuteSQL( const char *pszSQLCommand,
         }
     }
 
-    int rc = sqlite3_prepare( hDB, osSQLCommand.c_str(),
+    int rc = sqlite3_prepare_v2( hDB, osSQLCommand.c_str(),
                               static_cast<int>(osSQLCommand.size()),
                               &hSQLStmt, NULL );
 
     if( rc != SQLITE_OK )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
-                "In ExecuteSQL(): sqlite3_prepare(%s):\n  %s",
+                "In ExecuteSQL(): sqlite3_prepare_v2(%s):\n  %s",
                 pszSQLCommand, sqlite3_errmsg(hDB) );
 
         if( hSQLStmt != NULL )
