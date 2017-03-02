@@ -234,7 +234,8 @@ OGRSpatialReference* GDALGeoPackageDataset::GetSpatialRef(int iSrsId)
 
     CPLString oSQL;
     oSQL.Printf( "SELECT definition, organization, organization_coordsys_id "
-                 "FROM gpkg_spatial_ref_sys WHERE srs_id = %d", iSrsId );
+                 "FROM gpkg_spatial_ref_sys WHERE srs_id = %d LIMIT 2",
+                 iSrsId );
 
     SQLResult oResult;
     OGRErr err = SQLQuery(hDB, oSQL.c_str(), &oResult);
@@ -346,7 +347,7 @@ int GDALGeoPackageDataset::GetSrsId(const OGRSpatialReference * cpoSRS)
         pszSQL = sqlite3_mprintf(
                          "SELECT srs_id FROM gpkg_spatial_ref_sys WHERE "
                          "upper(organization) = upper('%q') AND "
-                         "organization_coordsys_id = %d",
+                         "organization_coordsys_id = %d LIMIT 2",
                          pszAuthorityName, nAuthorityCode );
 
         nSRSId = SQLGetInteger(hDB, pszSQL, &err);
@@ -1265,10 +1266,12 @@ bool GDALGeoPackageDataset::OpenRaster( const char* pszTableName,
             "tile_height, matrix_width, matrix_height "
             "FROM gpkg_tile_matrix tm "
             "WHERE table_name = %s "
-            "AND zoom_level >= 0 AND zoom_level <= 2147483647 "
+            // INT_MAX would be the theoretical maximum value to avoid
+            // overflows, but that's already a insane value.
+            "AND zoom_level >= 0 AND zoom_level <= 65536 "
             "AND pixel_x_size > 0 AND pixel_y_size > 0 "
-            "AND tile_width > 0 AND tile_width <= 2147483647 "
-            "AND tile_height > 0 AND tile_height <= 2147483647 "
+            "AND tile_width > 0 AND tile_width <= 65536 "
+            "AND tile_height > 0 AND tile_height <= 65536 "
             "AND matrix_width > 0 AND matrix_height > 0",
             osQuotedTableName.c_str());
     CPLString osSQL(pszSQL);
@@ -3550,7 +3553,7 @@ bool GDALGeoPackageDataset::CreateTileGriddedTable(char** papszOptions)
 
     // Requirement 108
     eErr = SQLQuery(hDB,
-        "SELECT * FROM gpkg_spatial_ref_sys WHERE srs_id = 4979"
+        "SELECT * FROM gpkg_spatial_ref_sys WHERE srs_id = 4979 LIMIT 2"
         , &oResultTable);
     bool bHasEPSG4979 = ( eErr == OGRERR_NONE && oResultTable.nRowCount == 1 );
     SQLResultFree(&oResultTable);
@@ -4107,7 +4110,8 @@ OGRLayer* GDALGeoPackageDataset::ICreateLayer( const char * pszLayerName,
         // In case there would be table in gpkg_contents not listed as a
         // vector layer
         char* pszSQL = sqlite3_mprintf(
-            "SELECT table_name FROM gpkg_contents WHERE identifier = '%q'",
+            "SELECT table_name FROM gpkg_contents WHERE identifier = '%q' "
+            "LIMIT 2",
             pszIdentifier);
         SQLResult oResult;
         OGRErr eErr = SQLQuery (hDB, pszSQL, &oResult);
@@ -4708,7 +4712,7 @@ bool GDALGeoPackageDataset::HasExtensionsTable()
     SQLResult oResultTable;
     OGRErr err = SQLQuery(hDB,
         "SELECT * FROM sqlite_master WHERE name = 'gpkg_extensions' "
-        "AND type IN ('table', 'view')", &oResultTable);
+        "AND type IN ('table', 'view') LIMIT 2", &oResultTable);
     bool bHasExtensionsTable = ( err == OGRERR_NONE && oResultTable.nRowCount == 1 );
     SQLResultFree(&oResultTable);
     return bHasExtensionsTable;
@@ -4726,17 +4730,19 @@ void GDALGeoPackageDataset::CheckUnknownExtensions(bool bCheckRasterTable)
     char* pszSQL = NULL;
     if( !bCheckRasterTable)
         pszSQL = sqlite3_mprintf(
-            "SELECT extension_name, definition, scope FROM gpkg_extensions WHERE (table_name IS NULL AND extension_name != 'gdal_aspatial' AND extension_name != 'gpkg_elevation_tiles')"
+            "SELECT extension_name, definition, scope FROM gpkg_extensions WHERE (table_name IS NULL AND extension_name != 'gdal_aspatial' AND extension_name != 'gpkg_elevation_tiles') "
 #ifdef WORKAROUND_SQLITE3_BUGS
-            " OR 0"
+            "OR 0 "
 #endif
+            "LIMIT 1000"
         );
     else
         pszSQL = sqlite3_mprintf(
-            "SELECT extension_name, definition, scope FROM gpkg_extensions WHERE (table_name = '%q' AND extension_name != 'gpkg_elevation_tiles')"
+            "SELECT extension_name, definition, scope FROM gpkg_extensions WHERE (table_name = '%q' AND extension_name != 'gpkg_elevation_tiles') "
 #ifdef WORKAROUND_SQLITE3_BUGS
-            " OR 0"
+            "OR 0 "
 #endif
+            "LIMIT 1000"
             ,
             m_osRasterTable.c_str());
 
