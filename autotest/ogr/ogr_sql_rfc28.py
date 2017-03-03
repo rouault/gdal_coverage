@@ -1313,7 +1313,7 @@ def ogr_rfc28_46():
     return 'success'
 
 ###############################################################################
-# Test 
+# Test LIMIT and OFFSET
 
 def ogr_rfc28_47():
 
@@ -1333,6 +1333,32 @@ def ogr_rfc28_47():
     if not tr:
         gdaltest.post_reason('fail')
         return 'fail'
+
+    lyr = gdaltest.ds.ExecuteSQL( "SELECT * FROM POLY ORDER BY EAS_ID LIMIT 1" )
+    if lyr.GetFeatureCount() != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    tr = ogrtest.check_features_against_list( lyr, 'EAS_ID', [158] )
+    gdaltest.ds.ReleaseResultSet( lyr )
+    if not tr:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    lyr = gdaltest.ds.ExecuteSQL( "SELECT * FROM POLY ORDER BY PRFEDEA LIMIT 1" )
+    if lyr.GetFeatureCount() != 1:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    tr = ogrtest.check_features_against_list( lyr, 'PRFEDEA', ['35043369'] )
+    gdaltest.ds.ReleaseResultSet( lyr )
+    if not tr:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    lyr = gdaltest.ds.ExecuteSQL( "SELECT * FROM POLY WHERE 0 ORDER BY EAS_ID LIMIT 1" )
+    if lyr.GetNextFeature() is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    gdaltest.ds.ReleaseResultSet( lyr )
 
     lyr = gdaltest.ds.ExecuteSQL( "SELECT * FROM POLY WHERE EAS_ID = 168 LIMIT 11" )
     if lyr.GetFeatureCount() != 1:
