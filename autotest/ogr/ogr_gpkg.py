@@ -593,7 +593,9 @@ def ogr_gpkg_12():
         'CAST(fld_integer AS INTEGER) AS FLD_INTEGER, '
         'CAST(fld_integer AS INTEGER) AS FLD_INTEGER, '
         'CAST(fld_string AS TEXT) AS FLD_STRING, '
-        'CAST(fld_real AS REAL) AS FLD_REAL '
+        'CAST(fld_real AS REAL) AS FLD_REAL, '
+        'CAST(fld_binary as BLOB) as FLD_BINARY, '
+        'CAST(fld_integer64 AS INTEGER) AS FLD_INTEGER64 '
         'FROM tbl_linestring_renamed')
     if sql_lyr.GetFIDColumn() != 'FID':
         gdaltest.post_reason('fail')
@@ -603,7 +605,7 @@ def ogr_gpkg_12():
         gdaltest.post_reason('fail')
         print(sql_lyr.GetGeometryColumn())
         return 'fail'
-    if sql_lyr.GetLayerDefn().GetFieldCount() != 3:
+    if sql_lyr.GetLayerDefn().GetFieldCount() != 5:
         gdaltest.post_reason('fail')
         print(sql_lyr.GetLayerDefn().GetFieldCount())
         return 'fail'
@@ -623,6 +625,18 @@ def ogr_gpkg_12():
         gdaltest.post_reason('fail')
         return 'fail'
     if sql_lyr.GetLayerDefn().GetFieldDefn(2).GetType() != ogr.OFTReal:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if sql_lyr.GetLayerDefn().GetFieldDefn(3).GetName() != 'FLD_BINARY':
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if sql_lyr.GetLayerDefn().GetFieldDefn(3).GetType() != ogr.OFTBinary:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if sql_lyr.GetLayerDefn().GetFieldDefn(4).GetName() != 'FLD_INTEGER64':
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if sql_lyr.GetLayerDefn().GetFieldDefn(4).GetType() != ogr.OFTInteger64:
         gdaltest.post_reason('fail')
         return 'fail'
     gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
@@ -995,13 +1009,19 @@ def ogr_gpkg_15():
     feat = None
     gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
 
-    has_spatialite = False
+    has_spatialite_4_3_or_later = False
     with gdaltest.error_handler():
         sql_lyr = gdaltest.gpkg_ds.ExecuteSQL("SELECT spatialite_version()")
         if sql_lyr:
-            has_spatialite = True
+            f = sql_lyr.GetNextFeature()
+            version = f.GetField(0)
+            version = '.'.join(version.split('.')[0:2])
+            version = float(version)
+            if version >= 4.3:
+                has_spatialite_4_3_or_later = True
+                #print('Spatialite 4.3 or later found')
     gdaltest.gpkg_ds.ReleaseResultSet(sql_lyr)
-    if has_spatialite:
+    if has_spatialite_4_3_or_later:
         sql_lyr = gdaltest.gpkg_ds.ExecuteSQL(
             "SELECT ST_Buffer(geom, 0) FROM tbl_linestring_renamed")
         if sql_lyr.GetGeomType() != ogr.wkbPolygon:
