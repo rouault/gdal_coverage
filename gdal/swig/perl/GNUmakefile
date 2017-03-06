@@ -6,7 +6,7 @@ BINDING = perl
 
 SWIGDEFINES = -DPERL_CPAN_NAMESPACE
 
-SWIG_INCLUDES = ../include/perl/callback.i ../include/perl/confess.i ../include/perl/destroy.i ../include/perl/init.i
+SWIG_INCLUDES = ../include/perl/callback.i ../include/perl/confess.i ../include/perl/destroy.i ../include/perl/init.i ../include/perl/band.i
 
 include ../SWIGmake.base
 
