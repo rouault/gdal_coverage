@@ -40,6 +40,8 @@
 %include confess.i
 %include cpl_exceptions.i
 
+%include band.i
+
 %rename (GetMetadata) GetMetadata_Dict;
 %ignore GetMetadata_List;
 
@@ -1490,8 +1492,7 @@ sub WriteTile {
     my($self, $data, $xoff, $yoff) = @_;
     $xoff //= 0;
     $yoff //= 0;
-    error('usage: $band->WriteTile($arrayref, $xoff, $yoff)') 
-        unless ref $data eq 'ARRAY' && ref $data->[0] eq 'ARRAY';
+    error('The data must be in a two-dimensional array') unless ref $data eq 'ARRAY' && ref $data->[0] eq 'ARRAY';
     my $xsize = @{$data->[0]};
     if ($xsize > $self->{XSize} - $xoff) {
         warn "Buffer XSize too large ($xsize) for this raster band (width = $self->{XSize}, offset = $xoff).";
@@ -2308,26 +2309,3 @@ sub serialize {
 }
 
 %}
-
-%{
-typedef void OGRLayerShadow;
-%}
-%extend GDALRasterBandShadow {
-    %apply (int nList, double* pList) {(int nFixedLevelCount, double *padfFixedLevels)};
-    %apply (int defined, double value) {(int bUseNoData, double dfNoDataValue)};
-    CPLErr ContourGenerate(double dfContourInterval, double dfContourBase,
-                           int nFixedLevelCount, double *padfFixedLevels,
-                           int bUseNoData, double dfNoDataValue,
-                           OGRLayerShadow *hLayer, int iIDField, int iElevField,
-                           GDALProgressFunc progress = NULL,
-                           void* progress_data = NULL) {
-        return GDALContourGenerate( self, dfContourInterval, dfContourBase,
-                                    nFixedLevelCount, padfFixedLevels,
-                                    bUseNoData, dfNoDataValue,
-                                    hLayer, iIDField, iElevField,
-                                    progress,
-                                    progress_data );
-    }
-    %clear (int nFixedLevelCount, double *padfFixedLevels);
-    %clear (int bUseNoData, double dfNoDataValue);
-}
