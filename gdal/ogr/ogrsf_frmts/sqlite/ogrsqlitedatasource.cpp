@@ -605,7 +605,8 @@ int OGRSQLiteBaseDataSource::SetCacheSize()
         int nRowCount = 0;
         int nColCount = 0;
         int iSqlitePageSize = -1;
-        const int iSqliteCacheBytes = atoi( pszSqliteCacheMB ) * 1024 * 1024;
+        const GIntBig iSqliteCacheBytes = 
+            static_cast<GIntBig>(atoi( pszSqliteCacheMB )) * 1024 * 1024;
 
         /* querying the current PageSize */
         int rc =
@@ -632,7 +633,8 @@ int OGRSQLiteBaseDataSource::SetCacheSize()
         /* computing the CacheSize as #Pages */
         if( iSqlitePageSize == 0 )
             return TRUE;
-        const int iSqliteCachePages = iSqliteCacheBytes / iSqlitePageSize;
+        const int iSqliteCachePages =
+                static_cast<int>(iSqliteCacheBytes / iSqlitePageSize);
         if( iSqliteCachePages <= 0)
             return TRUE;
 
@@ -760,7 +762,9 @@ int OGRSQLiteBaseDataSource::OpenOrCreateDB(int flagsIn, int bRegisterOGR2SQLite
     if( bRegisterOGR2SQLiteExtensions )
         OGR2SQLITE_Register();
 
-    int flags = flagsIn;
+    // No mutex since OGR objects are not supposed to be used concurrently
+    // from multiple threads.
+    int flags = flagsIn | SQLITE_OPEN_NOMUTEX;
 #ifdef SQLITE_OPEN_URI
     // This code enables support for named memory databases in SQLite.
     // SQLITE_USE_URI is checked only to enable backward compatibility, in
