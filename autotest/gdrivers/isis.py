@@ -154,8 +154,40 @@ def isis_4():
         gdaltest.post_reason('fail')
         print(lbl)
         return 'fail'
+    if lbl.find('Planetographic') < 0:
+        gdaltest.post_reason('fail')
+        print(lbl)
+        return 'fail'
     ds = None
     gdal.GetDriverByName('ISIS3').Delete('/vsimem/isis_tmp.lbl')
+
+    # Preserve source Mapping group, but with a few overrides
+    tst = gdaltest.GDALTest( 'ISIS3', 'isis3_detached.lbl', 1, 9978,
+                            options = ['USE_SRC_MAPPING=YES',
+                                       'LONGITUDE_DIRECTION=PositiveEast',
+                                       'LATITUDE_TYPE=Planetocentric',
+                                       'TARGET_NAME=my_label'] )
+    ret = tst.testCreateCopy( new_filename = '/vsimem/isis_tmp.lbl',
+                             delete_copy = 0 )
+    if ret != 'success':
+        return ret
+    ds = gdal.Open('/vsimem/isis_tmp.lbl')
+    lbl = ds.GetMetadata_List('json:ISIS3')[0]
+    if lbl.find('PositiveEast') < 0:
+        gdaltest.post_reason('fail')
+        print(lbl)
+        return 'fail'
+    if lbl.find('Planetocentric') < 0:
+        gdaltest.post_reason('fail')
+        print(lbl)
+        return 'fail'
+    if lbl.find('my_label') < 0:
+        gdaltest.post_reason('fail')
+        print(lbl)
+        return 'fail'
+    ds = None
+    gdal.GetDriverByName('ISIS3').Delete('/vsimem/isis_tmp.lbl')
+
     return 'success'
 
 # Label+image creation + WRITE_BOUNDING_DEGREES=NO option
@@ -571,7 +603,7 @@ def isis_18():
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     wkt = ds.GetProjectionRef()
     ds = None
-    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["Mercator DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME",123456,200.0000000000004]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Mercator_1SP"],PARAMETER["latitude_of_origin",1],PARAMETER["central_meridian",2],PARAMETER["scale_factor",0.9],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
+    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["Mercator DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME",123456,0]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Mercator_1SP"],PARAMETER["latitude_of_origin",1],PARAMETER["central_meridian",2],PARAMETER["scale_factor",0.9],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
         gdaltest.post_reason('fail')
         print(wkt)
         return 'fail'
@@ -585,7 +617,7 @@ def isis_18():
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     wkt = ds.GetProjectionRef()
     ds = None
-    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["PolarStereographic DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME",123456,200.0000000000004]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Polar_Stereographic"],PARAMETER["latitude_of_origin",1],PARAMETER["central_meridian",2],PARAMETER["scale_factor",0.9],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
+    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["PolarStereographic DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME_polarRadius",122838.72,0]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Polar_Stereographic"],PARAMETER["latitude_of_origin",1],PARAMETER["central_meridian",2],PARAMETER["scale_factor",0.9],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
         gdaltest.post_reason('fail')
         print(wkt)
         return 'fail'
@@ -599,7 +631,7 @@ def isis_18():
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     wkt = ds.GetProjectionRef()
     ds = None
-    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["TransverseMercator DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME",123456,200.0000000000004]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",1],PARAMETER["central_meridian",2],PARAMETER["scale_factor",0.9],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
+    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["TransverseMercator DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME",123456,0]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Transverse_Mercator"],PARAMETER["latitude_of_origin",1],PARAMETER["central_meridian",2],PARAMETER["scale_factor",0.9],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
         gdaltest.post_reason('fail')
         print(wkt)
         return 'fail'
@@ -613,7 +645,7 @@ def isis_18():
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     wkt = ds.GetProjectionRef()
     ds = None
-    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["LambertConformal DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME",123456,200.0000000000004]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",1],PARAMETER["standard_parallel_2",2],PARAMETER["latitude_of_origin",3],PARAMETER["central_meridian",4],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
+    if not osr.SpatialReference(wkt).IsSame(osr.SpatialReference('PROJCS["LambertConformal DATUM_NAME",GEOGCS["GCS_DATUM_NAME",DATUM["D_DATUM_NAME",SPHEROID["DATUM_NAME",123456,0]],PRIMEM["Reference_Meridian",0],UNIT["degree",0.0174532925199433]],PROJECTION["Lambert_Conformal_Conic_2SP"],PARAMETER["standard_parallel_1",1],PARAMETER["standard_parallel_2",2],PARAMETER["latitude_of_origin",3],PARAMETER["central_meridian",4],PARAMETER["false_easting",0],PARAMETER["false_northing",0]]')):
         gdaltest.post_reason('fail')
         print(wkt)
         return 'fail'
@@ -624,14 +656,19 @@ def isis_18():
     sr.SetEquirectangular2(0,1,2,0,0)
     sr.SetGeogCS( "GEOG_NAME", "D_DATUM_NAME", "", 123456, 200 )
     ds = gdal.GetDriverByName('ISIS3').Create('/vsimem/isis_tmp.lbl', 1, 1,
-                                options = ['LATITUDE_TYPE=Planetocentric',
+                                options = ['LATITUDE_TYPE=Planetographic',
+                                           'TARGET_NAME=my_target',
                                            'BOUNDING_DEGREES=1.5,2.5,3.5,4.5'])
     ds.SetProjection(sr.ExportToWkt())
     ds.SetGeoTransform( [1000,1,0,2000,0,-1] )
     ds = None
     ds = gdal.Open('/vsimem/isis_tmp.lbl')
     lbl = ds.GetMetadata_List('json:ISIS3')[0]
-    if lbl.find('"LatitudeType":"Planetocentric"') < 0:
+    if lbl.find('"TargetName":"my_target"') < 0:
+        gdaltest.post_reason('fail')
+        print(lbl)
+        return 'fail'
+    if lbl.find('"LatitudeType":"Planetographic"') < 0:
         gdaltest.post_reason('fail')
         print(lbl)
         return 'fail'
