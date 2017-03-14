@@ -577,6 +577,7 @@ class ISIS3Dataset : public RawDataset
     CPLString   m_osComment;
     CPLString   m_osLatitudeType;
     CPLString   m_osLongitudeDirection;
+    CPLString   m_osTargetName;
     bool        m_bForce360;
     bool        m_bWriteBoundingDegrees;
     CPLString   m_osBoundingDegrees;
@@ -2797,7 +2798,18 @@ void ISIS3Dataset::BuildLabel()
     if( !m_bUseSrcMapping && oIsisCube.has("Mapping") )
         oIsisCube["Mapping"].clear();
 
-    if( !m_bUseSrcMapping && !m_osProjection.empty() )
+    if( m_bUseSrcMapping && oIsisCube.has("Mapping") &&
+        oIsisCube["Mapping"].getType() == CPLJsonObject::OBJECT)
+    {
+        CPLJsonObject& oMapping = oIsisCube["Mapping"];
+        if( !m_osTargetName.empty() )
+            oMapping["TargetName"] = m_osTargetName;
+        if( !m_osLatitudeType.empty() )
+            oMapping["LatitudeType"] = m_osLatitudeType;
+        if( !m_osLongitudeDirection.empty() )
+            oMapping["LongitudeDirection"] = m_osLongitudeDirection;
+    }
+    else if( !m_bUseSrcMapping && !m_osProjection.empty() )
     {
         CPLJsonObject& oMapping = oIsisCube["Mapping"];
         oMapping["_type"] = "group";
@@ -2806,14 +2818,17 @@ void ISIS3Dataset::BuildLabel()
         if( oSRS.IsProjected() || oSRS.IsGeographic() )
         {
             const char* pszDatum = oSRS.GetAttrValue("DATUM");
-            CPLString osTargetName;
-            if( pszDatum && STARTS_WITH(pszDatum, "D_") )
+            CPLString osTargetName( m_osTargetName );
+            if( osTargetName.empty() )
             {
-                osTargetName = pszDatum + 2;
-            }
-            else if( pszDatum )
-            {
-                osTargetName = pszDatum;
+                if( pszDatum && STARTS_WITH(pszDatum, "D_") )
+                {
+                    osTargetName = pszDatum + 2;
+                }
+                else if( pszDatum )
+                {
+                    osTargetName = pszDatum;
+                }
             }
             if( !osTargetName.empty() )
                 oMapping["TargetName"] = osTargetName;
@@ -2826,7 +2841,7 @@ void ISIS3Dataset::BuildLabel()
             if( !m_osLatitudeType.empty() )
                 oMapping["LatitudeType"] = m_osLatitudeType;
             else
-                oMapping["LatitudeType"] = "Planetographic";
+                oMapping["LatitudeType"] = "Planetocentric";
 
             if( !m_osLongitudeDirection.empty() )
                 oMapping["LongitudeDirection"] = m_osLongitudeDirection;
@@ -3281,61 +3296,7 @@ void ISIS3Dataset::BuildLabel()
 
 void ISIS3Dataset::BuildHistory()
 {
-    CPLString osHistory(m_osGDALHistory);
-
-    if( m_bAddGDALHistory && m_osGDALHistory.empty() )
-    {
-        CPLJsonObject oHistoryObj;
-        char szFullFilename[2048] = { 0 };
-        if( !CPLGetExecPath(szFullFilename, sizeof(szFullFilename) - 1) )
-            strcpy(szFullFilename, "unknown_program");
-        const CPLString osProgram(CPLGetBasename(szFullFilename));
-        const CPLString osPath(CPLGetPath(szFullFilename));
-        CPLJsonObject& oObj = oHistoryObj[osProgram];
-        oObj["_type"] = "object";
-        oObj["GdalVersion"] = GDALVersionInfo("RELEASE_NAME");
-        if( osPath != "." )
-            oObj["ProgramPath"] = osPath;
-        time_t nCurTime = time(NULL);
-        if( nCurTime != -1 )
-        {
-            struct tm mytm;
-            CPLUnixTimeToYMDHMS(nCurTime, &mytm);
-            oObj["ExecutionDateTime"] =
-                CPLSPrintf("%04d-%02d-%02dT%02d:%02d:%02d",
-                            mytm.tm_year + 1900,
-                            mytm.tm_mon + 1,
-                            mytm.tm_mday,
-                            mytm.tm_hour,
-                            mytm.tm_min,
-                            mytm.tm_sec);
-        }
-        char szHostname[256] = { 0 };
-        if( gethostname(szHostname, sizeof(szHostname)-1) == 0 )
-        {
-            oObj["HostName"] = szHostname;
-        }
-        const char* pszUsername = CPLGetConfigOption("USERNAME", NULL);
-        if( pszUsername == NULL )
-            pszUsername = CPLGetConfigOption("USER", NULL);
-        if( pszUsername != NULL )
-        {
-            oObj["UserName"] = pszUsername;
-        }
-        oObj["Description"] = "GDAL conversion";
-
-        CPLJsonObject& oUserParameters = oObj["UserParameters"];
-        oUserParameters["_type"] = "group";
-        if( !m_osFromFilename.empty() )
-            oUserParameters["FROM"] = CPLGetFilename( m_osFromFilename );
-        oUserParameters["TO"] = CPLGetFilename( GetDescription() );
-        if( m_bForce360 )
-            oUserParameters["Force_360"] = "true";
-
-        json_object* poObj = oHistoryObj.asLibJsonObj();
-        osHistory = SerializeAsPDL( poObj );
-        json_object_put(poObj);
-    }
+    CPLString osHistory;
 
     if( m_poSrcJSonLabel != NULL && m_bUseSrcHistory )
     {
@@ -3408,11 +3369,8 @@ void ISIS3Dataset::BuildHistory()
             if( fpHistory != NULL )
             {
                 VSIFSeekL(fpHistory, nHistoryOffset, SEEK_SET);
-                if( !osHistory.empty() )
-                    osHistory += "\n";
-                const size_t nOrigSize = osHistory.size();
-                osHistory.resize( nOrigSize + nHistorySize );
-                if( VSIFReadL( &osHistory[nOrigSize], nHistorySize, 1,
+                osHistory.resize( nHistorySize );
+                if( VSIFReadL( &osHistory[0], nHistorySize, 1,
                               fpHistory ) != 1 )
                 {
                     CPLError(CE_Warning, CPLE_FileIO,
@@ -3420,7 +3378,7 @@ void ISIS3Dataset::BuildHistory()
                              "of %s: history will not be preserved",
                              nHistorySize, nHistoryOffset,
                              osHistoryFilename.c_str());
-                    osHistory.resize( nOrigSize );
+                    osHistory.clear();
                 }
                 VSIFCloseL(fpHistory);
             }
@@ -3431,6 +3389,69 @@ void ISIS3Dataset::BuildHistory()
                          osHistoryFilename.c_str());
             }
         }
+    }
+
+    if( m_bAddGDALHistory && !m_osGDALHistory.empty() )
+    {
+        if( !osHistory.empty() )
+            osHistory += "\n";
+        osHistory += m_osGDALHistory;
+    }
+    else if( m_bAddGDALHistory )
+    {
+        if( !osHistory.empty() )
+            osHistory += "\n";
+
+        CPLJsonObject oHistoryObj;
+        char szFullFilename[2048] = { 0 };
+        if( !CPLGetExecPath(szFullFilename, sizeof(szFullFilename) - 1) )
+            strcpy(szFullFilename, "unknown_program");
+        const CPLString osProgram(CPLGetBasename(szFullFilename));
+        const CPLString osPath(CPLGetPath(szFullFilename));
+        CPLJsonObject& oObj = oHistoryObj[osProgram];
+        oObj["_type"] = "object";
+        oObj["GdalVersion"] = GDALVersionInfo("RELEASE_NAME");
+        if( osPath != "." )
+            oObj["ProgramPath"] = osPath;
+        time_t nCurTime = time(NULL);
+        if( nCurTime != -1 )
+        {
+            struct tm mytm;
+            CPLUnixTimeToYMDHMS(nCurTime, &mytm);
+            oObj["ExecutionDateTime"] =
+                CPLSPrintf("%04d-%02d-%02dT%02d:%02d:%02d",
+                            mytm.tm_year + 1900,
+                            mytm.tm_mon + 1,
+                            mytm.tm_mday,
+                            mytm.tm_hour,
+                            mytm.tm_min,
+                            mytm.tm_sec);
+        }
+        char szHostname[256] = { 0 };
+        if( gethostname(szHostname, sizeof(szHostname)-1) == 0 )
+        {
+            oObj["HostName"] = szHostname;
+        }
+        const char* pszUsername = CPLGetConfigOption("USERNAME", NULL);
+        if( pszUsername == NULL )
+            pszUsername = CPLGetConfigOption("USER", NULL);
+        if( pszUsername != NULL )
+        {
+            oObj["UserName"] = pszUsername;
+        }
+        oObj["Description"] = "GDAL conversion";
+
+        CPLJsonObject& oUserParameters = oObj["UserParameters"];
+        oUserParameters["_type"] = "group";
+        if( !m_osFromFilename.empty() )
+            oUserParameters["FROM"] = CPLGetFilename( m_osFromFilename );
+        oUserParameters["TO"] = CPLGetFilename( GetDescription() );
+        if( m_bForce360 )
+            oUserParameters["Force_360"] = "true";
+
+        json_object* poObj = oHistoryObj.asLibJsonObj();
+        osHistory += SerializeAsPDL( poObj );
+        json_object_put(poObj);
     }
 
     if( osHistory.empty() )
@@ -4210,6 +4231,8 @@ GDALDataset *ISIS3Dataset::Create(const char* pszFilename,
                                                   "LATITUDE_TYPE", "");
     poDS->m_osLongitudeDirection = CSLFetchNameValueDef(papszOptions,
                                                   "LONGITUDE_DIRECTION", "");
+    poDS->m_osTargetName = CSLFetchNameValueDef(papszOptions,
+                                                  "TARGET_NAME", "");
     poDS->m_bForce360 = CPLFetchBool(papszOptions, "FORCE_360", false);
     poDS->m_bWriteBoundingDegrees = CPLFetchBool(papszOptions,
                                                  "WRITE_BOUNDING_DEGREES",
@@ -4446,14 +4469,19 @@ void GDALRegister_ISIS3()
                             "description='Tile height' default='256'/>"
 "  <Option name='COMMENT' type='string' "
     "description='Comment to add into the label'/>"
-"  <Option name='LATITUDE_TYPE' type='string' "
-    "description='Value of Mapping.LatitudeType' default='Planetographic'/>"
+"  <Option name='LATITUDE_TYPE' type='string-select' "
+    "description='Value of Mapping.LatitudeType' default='Planetocentric'>"
+"     <Value>Planetocentric</Value>"
+"     <Value>Planetographic</Value>"
+"  </Option>"
 "  <Option name='LONGITUDE_DIRECTION' type='string-select' "
     "description='Value of Mapping.LongitudeDirection' "
     "default='PositiveEast'>"
 "     <Value>PositiveEast</Value>"
 "     <Value>PositiveWest</Value>"
 "  </Option>"
+"  <Option name='TARGET_NAME' type='string' description='Value of "
+    "Mapping.TargetName'/>"
 "  <Option name='FORCE_360' type='boolean' "
     "description='Whether to force longitudes in [0,360] range' default='NO'/>"
 "  <Option name='WRITE_BOUNDING_DEGREES' type='boolean'"
