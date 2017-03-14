@@ -577,6 +577,7 @@ class ISIS3Dataset : public RawDataset
     CPLString   m_osComment;
     CPLString   m_osLatitudeType;
     CPLString   m_osLongitudeDirection;
+    CPLString   m_osTargetName;
     bool        m_bForce360;
     bool        m_bWriteBoundingDegrees;
     CPLString   m_osBoundingDegrees;
@@ -2797,7 +2798,18 @@ void ISIS3Dataset::BuildLabel()
     if( !m_bUseSrcMapping && oIsisCube.has("Mapping") )
         oIsisCube["Mapping"].clear();
 
-    if( !m_bUseSrcMapping && !m_osProjection.empty() )
+    if( m_bUseSrcMapping && oIsisCube.has("Mapping") &&
+        oIsisCube["Mapping"].getType() == CPLJsonObject::OBJECT)
+    {
+        CPLJsonObject& oMapping = oIsisCube["Mapping"];
+        if( !m_osTargetName.empty() )
+            oMapping["TargetName"] = m_osTargetName;
+        if( !m_osLatitudeType.empty() )
+            oMapping["LatitudeType"] = m_osLatitudeType;
+        if( !m_osLongitudeDirection.empty() )
+            oMapping["LongitudeDirection"] = m_osLongitudeDirection;
+    }
+    else if( !m_bUseSrcMapping && !m_osProjection.empty() )
     {
         CPLJsonObject& oMapping = oIsisCube["Mapping"];
         oMapping["_type"] = "group";
@@ -2806,14 +2818,17 @@ void ISIS3Dataset::BuildLabel()
         if( oSRS.IsProjected() || oSRS.IsGeographic() )
         {
             const char* pszDatum = oSRS.GetAttrValue("DATUM");
-            CPLString osTargetName;
-            if( pszDatum && STARTS_WITH(pszDatum, "D_") )
+            CPLString osTargetName( m_osTargetName );
+            if( osTargetName.empty() )
             {
-                osTargetName = pszDatum + 2;
-            }
-            else if( pszDatum )
-            {
-                osTargetName = pszDatum;
+                if( pszDatum && STARTS_WITH(pszDatum, "D_") )
+                {
+                    osTargetName = pszDatum + 2;
+                }
+                else if( pszDatum )
+                {
+                    osTargetName = pszDatum;
+                }
             }
             if( !osTargetName.empty() )
                 oMapping["TargetName"] = osTargetName;
@@ -2826,7 +2841,7 @@ void ISIS3Dataset::BuildLabel()
             if( !m_osLatitudeType.empty() )
                 oMapping["LatitudeType"] = m_osLatitudeType;
             else
-                oMapping["LatitudeType"] = "Planetographic";
+                oMapping["LatitudeType"] = "Planetocentric";
 
             if( !m_osLongitudeDirection.empty() )
                 oMapping["LongitudeDirection"] = m_osLongitudeDirection;
@@ -4216,6 +4231,8 @@ GDALDataset *ISIS3Dataset::Create(const char* pszFilename,
                                                   "LATITUDE_TYPE", "");
     poDS->m_osLongitudeDirection = CSLFetchNameValueDef(papszOptions,
                                                   "LONGITUDE_DIRECTION", "");
+    poDS->m_osTargetName = CSLFetchNameValueDef(papszOptions,
+                                                  "TARGET_NAME", "");
     poDS->m_bForce360 = CPLFetchBool(papszOptions, "FORCE_360", false);
     poDS->m_bWriteBoundingDegrees = CPLFetchBool(papszOptions,
                                                  "WRITE_BOUNDING_DEGREES",
@@ -4452,14 +4469,19 @@ void GDALRegister_ISIS3()
                             "description='Tile height' default='256'/>"
 "  <Option name='COMMENT' type='string' "
     "description='Comment to add into the label'/>"
-"  <Option name='LATITUDE_TYPE' type='string' "
-    "description='Value of Mapping.LatitudeType' default='Planetographic'/>"
+"  <Option name='LATITUDE_TYPE' type='string-select' "
+    "description='Value of Mapping.LatitudeType' default='Planetocentric'>"
+"     <Value>Planetocentric</Value>"
+"     <Value>Planetographic</Value>"
+"  </Option>"
 "  <Option name='LONGITUDE_DIRECTION' type='string-select' "
     "description='Value of Mapping.LongitudeDirection' "
     "default='PositiveEast'>"
 "     <Value>PositiveEast</Value>"
 "     <Value>PositiveWest</Value>"
 "  </Option>"
+"  <Option name='TARGET_NAME' type='string' description='Value of "
+    "Mapping.TargetName'/>"
 "  <Option name='FORCE_360' type='boolean' "
     "description='Whether to force longitudes in [0,360] range' default='NO'/>"
 "  <Option name='WRITE_BOUNDING_DEGREES' type='boolean'"
