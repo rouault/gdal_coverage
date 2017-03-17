@@ -334,6 +334,7 @@ class OGRGeoPackageLayer : public OGRLayer, public IOGRSQLiteGetSpatialWhere
 class OGRGeoPackageTableLayer CPL_FINAL : public OGRGeoPackageLayer
 {
     char*                       m_pszTableName;
+    bool                        m_bIsView;
     int                         m_iSrs;
     OGREnvelope*                m_poExtent;
 #ifdef ENABLE_GPKG_OGR_CONTENTS
@@ -345,6 +346,8 @@ class OGRGeoPackageTableLayer CPL_FINAL : public OGRGeoPackageLayer
     CPLString                   m_soColumns;
     CPLString                   m_soFilter;
     CPLString                   osQuery;
+    CPLString                   m_osRTreeName;
+    CPLString                   m_osFIDForRTree;
     bool                        m_bExtentChanged;
     bool                        m_bContentChanged;
     sqlite3_stmt*               m_poUpdateStatement;
@@ -416,6 +419,7 @@ class OGRGeoPackageTableLayer CPL_FINAL : public OGRGeoPackageLayer
     virtual OGRErr      GetExtent(int iGeomField, OGREnvelope *psExtent, int bForce) override
                 { return OGRGeoPackageLayer::GetExtent(iGeomField, psExtent, bForce); }
 
+    void                PostInit();
     void                RecomputeExtent();
 
     OGRErr              ReadTableDefinition(bool bIsSpatial, bool bIsGpkgTable);
