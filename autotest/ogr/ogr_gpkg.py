@@ -2059,8 +2059,21 @@ def ogr_gpkg_24():
     lyr.CreateFeature(f)
     f = None
 
+    # Test adding columns after "crystallization"
+    field_defn = ogr.FieldDefn( 'field_datetime5', ogr.OFTDateTime )
+    field_defn.SetDefault("'2016/06/30 12:34:56.123'")
+    lyr.CreateField(field_defn)
+
+    field_defn = ogr.FieldDefn( 'field_datetime6', ogr.OFTDateTime )
+    field_defn.SetDefault("'2016/06/30 12:34:56'")
+    lyr.CreateField(field_defn)
+
+    field_defn = ogr.FieldDefn( 'field_string2', ogr.OFTString )
+    field_defn.SetDefault("'X'")
+    lyr.CreateField(field_defn)
+
     # Doesn't work currently. Would require rewriting the whole table
-    #field_defn = ogr.FieldDefn( 'field_datetime4', ogr.OFTDateTime )
+    #field_defn = ogr.FieldDefn( 'field_datetimeX', ogr.OFTDateTime )
     #field_defn.SetDefault("CURRENT_TIMESTAMP")
     #lyr.CreateField(field_defn)
 
@@ -2109,7 +2122,10 @@ def ogr_gpkg_24():
        f.GetField('field_datetime2') != '2015/06/30 12:34:56+00' or \
        f.GetField('field_datetime4') != '2015/06/30 12:34:56.123+00' or \
        not f.IsFieldSet('field_datetime3') or \
-       not f.IsFieldSet('field_date'):
+       not f.IsFieldSet('field_date') or \
+       f.GetField('field_datetime5') != '2016/06/30 12:34:56.123+00' or \
+       f.GetField('field_datetime6') != '2016/06/30 12:34:56+00' or \
+       f.GetField('field_string2') != 'X' :
         gdaltest.post_reason('fail')
         f.DumpReadable()
         return 'fail'
@@ -3727,6 +3743,9 @@ def ogr_gpkg_45():
     ds = ogr.Open('/vsimem/ogr_gpkg_45.gpkg')
     lyr = ds.GetLayer(0)
     if lyr.GetFIDColumn() != '':
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if lyr.GetLayerDefn().GetFieldCount() != 2:
         gdaltest.post_reason('fail')
         return 'fail'
     ds = None
