@@ -667,26 +667,13 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
         std::string osSQL =
             "SELECT c.table_name, c.identifier, 1 as is_spatial, c.min_x, c.min_y, c.max_x, c.max_y, 1 AS is_gpkg_table "
             "  FROM gpkg_geometry_columns g JOIN gpkg_contents c ON (g.table_name = c.table_name)"
-            "  WHERE c.data_type = 'features' ";
-
-        if (HasGDALAspatialExtension())
-        {
-            // Was the only method available in OGR 2.0 and 2.1
-            osSQL +=
-                "UNION ALL "
-                "SELECT table_name, identifier, 0 as is_spatial, 0 AS xmin, 0 AS ymin, 0 AS xmax, 0 AS ymax, 1 AS is_gpkg_table "
-                "  FROM gpkg_contents"
-                "  WHERE data_type = 'aspatial' ";
-        }
-        else
-        {
-            // GPKG 1.2 or later
-            osSQL +=
-                "UNION ALL "
-                "SELECT table_name, identifier, 0 as is_spatial, 0 AS xmin, 0 AS ymin, 0 AS xmax, 0 AS ymax, 1 AS is_gpkg_table "
-                "  FROM gpkg_contents"
-                "  WHERE data_type = 'attributes' ";
-        }
+            "  WHERE c.table_name IS NOT NULL AND c.data_type = 'features' "
+            // aspatial: Was the only method available in OGR 2.0 and 2.1
+            // attributes: GPKG 1.2 or later
+            "UNION ALL "
+            "SELECT table_name, identifier, 0 as is_spatial, 0 AS xmin, 0 AS ymin, 0 AS xmax, 0 AS ymax, 1 AS is_gpkg_table "
+            "  FROM gpkg_contents"
+            "  WHERE table_name IS NOT NULL AND data_type IN ('aspatial', 'attributes') ";
 
         const char* pszListAllTables = CSLFetchNameValueDef(poOpenInfo->papszOpenOptions, "LIST_ALL_TABLES", "AUTO");
         bool bHasASpatialOrAttributes = HasGDALAspatialExtension();
@@ -707,7 +694,8 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
             // vgpkg_ is Spatialite virtual table
             osSQL += "UNION ALL "
                     "SELECT name, name, 0 as is_spatial, 0 AS xmin, 0 AS ymin, 0 AS xmax, 0 AS ymax, 0 AS is_gpkg_table "
-                    "FROM sqlite_master WHERE type IN ('table', 'view') AND name NOT LIKE 'gpkg_%' "
+                    "FROM sqlite_master WHERE type IN ('table', 'view') "
+                    "AND name IS NOT NULL AND name NOT LIKE 'gpkg_%' "
                     "AND name NOT LIKE 'vgpkg_%' "
                     "AND name NOT LIKE 'rtree_%' AND name NOT LIKE 'sqlite_%' "
                     // Avoid reading those views from simple_sewer_features.gpkg
@@ -747,11 +735,6 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
             for ( int i = 0; i < oResult.nRowCount; i++ )
             {
                 const char *pszTableName = SQLResultGetValue(&oResult, 0, i);
-                if ( ! pszTableName )
-                {
-                    CPLError(CE_Warning, CPLE_AppDefined, "unable to read table name for layer(%d)", i);
-                    continue;
-                }
                 bool bIsSpatial = CPL_TO_BOOL(SQLResultGetValueAsInteger(&oResult, 2, i));
                 bool bIsGpkgTable = CPL_TO_BOOL(SQLResultGetValueAsInteger(&oResult, 7, i));
                 OGRGeoPackageTableLayer *poLayer = new OGRGeoPackageTableLayer(this, pszTableName);
@@ -787,9 +770,17 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
     {
         SQLResult oResult;
         std::string osSQL =
-            "SELECT c.table_name, c.identifier, c.description, c.srs_id, c.min_x, c.min_y, c.max_x, c.max_y, "
-            "tms.min_x, tms.min_y, tms.max_x, tms.max_y, c.data_type FROM gpkg_contents c JOIN gpkg_tile_matrix_set tms ON "
-            "c.table_name = tms.table_name WHERE data_type IN ('tiles', '2d-gridded-coverage')";
+            "SELECT c.table_name, c.identifier, c.description, c.srs_id, "
+            "c.min_x, c.min_y, c.max_x, c.max_y, "
+            "tms.min_x, tms.min_y, tms.max_x, tms.max_y, c.data_type "
+            "FROM gpkg_contents c JOIN gpkg_tile_matrix_set tms ON "
+            "c.table_name = tms.table_name WHERE "
+            "c.table_name IS NOT NULL AND "
+            "tms.min_x IS NOT NULL AND "
+            "tms.min_y IS NOT NULL AND "
+            "tms.max_x IS NOT NULL AND "
+            "tms.max_y IS NOT NULL AND "
+            "data_type IN ('tiles', '2d-gridded-coverage')";
         if( CSLFetchNameValue( poOpenInfo->papszOpenOptions, "TABLE") )
             osSubdatasetTableName = CSLFetchNameValue( poOpenInfo->papszOpenOptions, "TABLE");
         if( !osSubdatasetTableName.empty() )
@@ -828,17 +819,14 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
             const char* pszTMSMaxX = SQLResultGetValue(&oResult, 10, 0);
             const char* pszTMSMaxY = SQLResultGetValue(&oResult, 11, 0);
             const char* pszDataType = SQLResultGetValue(&oResult, 12, 0);
-            if( pszTableName != NULL && pszTMSMinX != NULL && pszTMSMinY != NULL &&
-                pszTMSMaxX != NULL && pszTMSMaxY != NULL )
-            {
-                bRet = OpenRaster( pszTableName, pszIdentifier, pszDescription,
-                                   pszSRSId ? atoi(pszSRSId) : 0,
-                                   CPLAtof(pszTMSMinX), CPLAtof(pszTMSMinY),
-                                   CPLAtof(pszTMSMaxX), CPLAtof(pszTMSMaxY),
-                                   pszMinX, pszMinY, pszMaxX, pszMaxY,
-                                   EQUAL(pszDataType, "tiles"),
-                                   poOpenInfo->papszOpenOptions );
-            }
+
+            bRet = OpenRaster( pszTableName, pszIdentifier, pszDescription,
+                                pszSRSId ? atoi(pszSRSId) : 0,
+                                CPLAtof(pszTMSMinX), CPLAtof(pszTMSMinY),
+                                CPLAtof(pszTMSMaxX), CPLAtof(pszTMSMaxY),
+                                pszMinX, pszMinY, pszMaxX, pszMaxY,
+                                EQUAL(pszDataType, "tiles"),
+                                poOpenInfo->papszOpenOptions );
         }
         else if( oResult.nRowCount >= 1 )
         {
@@ -856,20 +844,19 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
             {
                 const char *pszTableName = SQLResultGetValue(&oResult, 0, i);
                 const char *pszIdentifier = SQLResultGetValue(&oResult, 1, i);
-                if( pszTableName != NULL )
-                {
+
+                m_papszSubDatasets = CSLSetNameValue( m_papszSubDatasets,
+                                                    CPLSPrintf("SUBDATASET_%d_NAME", nSDSCount+1),
+                                                    CPLSPrintf("GPKG:%s:%s", m_pszFilename, pszTableName) );
+                if( pszIdentifier )
                     m_papszSubDatasets = CSLSetNameValue( m_papszSubDatasets,
-                                                        CPLSPrintf("SUBDATASET_%d_NAME", nSDSCount+1),
-                                                        CPLSPrintf("GPKG:%s:%s", m_pszFilename, pszTableName) );
-                    if( pszIdentifier )
-                        m_papszSubDatasets = CSLSetNameValue( m_papszSubDatasets,
-                                                              CPLSPrintf("SUBDATASET_%d_DESC", nSDSCount+1),
-                                                              CPLSPrintf("%s - %s", pszTableName, pszIdentifier) );
-                    else
-                        m_papszSubDatasets = CSLSetNameValue( m_papszSubDatasets,
-                                                              CPLSPrintf("SUBDATASET_%d_DESC", nSDSCount+1),
-                                                              pszTableName );
-                }
+                                                            CPLSPrintf("SUBDATASET_%d_DESC", nSDSCount+1),
+                                                            CPLSPrintf("%s - %s", pszTableName, pszIdentifier) );
+                else
+                    m_papszSubDatasets = CSLSetNameValue( m_papszSubDatasets,
+                                                            CPLSPrintf("SUBDATASET_%d_DESC", nSDSCount+1),
+                                                            pszTableName );
+
                 nSDSCount ++;
             }
         }
@@ -2253,19 +2240,27 @@ char **GDALGeoPackageDataset::GetMetadata( const char *pszDomain )
     if( !m_osRasterTable.empty() )
     {
         pszSQL = sqlite3_mprintf(
-            "SELECT md.metadata, md.md_standard_uri, md.mime_type, mdr.reference_scope FROM gpkg_metadata md "
+            "SELECT md.metadata, md.md_standard_uri, md.mime_type, "
+            "mdr.reference_scope FROM gpkg_metadata md "
             "JOIN gpkg_metadata_reference mdr ON (md.id = mdr.md_file_id ) "
-            "WHERE mdr.reference_scope = 'geopackage' OR "
-            "(mdr.reference_scope = 'table' AND mdr.table_name = '%q') ORDER BY md.id "
+            "WHERE md.metadata IS NOT NULL AND "
+            "md.md_standard_uri IS NOT NULL AND "
+            "md.mime_type IS NOT NULL AND "
+            "(mdr.reference_scope = 'geopackage' OR "
+            "(mdr.reference_scope = 'table' AND mdr.table_name = '%q')) ORDER BY md.id "
             "LIMIT 1000", // to avoid denial of service
             m_osRasterTable.c_str());
     }
     else
     {
         pszSQL = sqlite3_mprintf(
-            "SELECT md.metadata, md.md_standard_uri, md.mime_type, mdr.reference_scope FROM gpkg_metadata md "
+            "SELECT md.metadata, md.md_standard_uri, md.mime_type, "
+            "mdr.reference_scope FROM gpkg_metadata md "
             "JOIN gpkg_metadata_reference mdr ON (md.id = mdr.md_file_id ) "
-            "WHERE mdr.reference_scope = 'geopackage' ORDER BY md.id "
+            "WHERE md.metadata IS NOT NULL AND "
+            "md.md_standard_uri IS NOT NULL AND "
+            "md.mime_type IS NOT NULL AND "
+            "mdr.reference_scope = 'geopackage' ORDER BY md.id "
             "LIMIT 1000" // to avoid denial of service
         );
     }
@@ -2289,10 +2284,8 @@ char **GDALGeoPackageDataset::GetMetadata( const char *pszDomain )
         const char* pszMimeType = SQLResultGetValue(&oResult, 2, i);
         const char* pszReferenceScope = SQLResultGetValue(&oResult, 3, i);
         int bIsGPKGScope = EQUAL(pszReferenceScope, "geopackage");
-        if( pszMetadata == NULL )
-            continue;
-        if( pszMDStandardURI != NULL && EQUAL(pszMDStandardURI, "http://gdal.org") &&
-            pszMimeType != NULL && EQUAL(pszMimeType, "text/xml") )
+        if( EQUAL(pszMDStandardURI, "http://gdal.org") &&
+            EQUAL(pszMimeType, "text/xml") )
         {
             CPLXMLNode* psXMLNode = CPLParseXMLString(pszMetadata);
             if( psXMLNode )
@@ -2334,10 +2327,8 @@ char **GDALGeoPackageDataset::GetMetadata( const char *pszDomain )
         const char* pszMimeType = SQLResultGetValue(&oResult, 2, i);
         const char* pszReferenceScope = SQLResultGetValue(&oResult, 3, i);
         int bIsGPKGScope = EQUAL(pszReferenceScope, "geopackage");
-        if( pszMetadata == NULL )
-            continue;
-        if( pszMDStandardURI != NULL && EQUAL(pszMDStandardURI, "http://gdal.org") &&
-            pszMimeType != NULL && EQUAL(pszMimeType, "text/xml") )
+        if( EQUAL(pszMDStandardURI, "http://gdal.org") &&
+            EQUAL(pszMimeType, "text/xml") )
             continue;
 
         if( !m_osRasterTable.empty() && bIsGPKGScope )
@@ -2481,7 +2472,7 @@ bool GDALGeoPackageDataset::CreateMetadataTables()
         CPLTestBool(CPLGetConfigOption("CREATE_TRIGGERS", "YES"));
 
     /* From C.10. gpkg_metadata Table 35. gpkg_metadata Table Definition SQL  */
-    const char* pszMetadata =
+    CPLString osSQL =
         "CREATE TABLE gpkg_metadata ("
         "id INTEGER CONSTRAINT m_pk PRIMARY KEY ASC NOT NULL UNIQUE,"
         "md_scope TEXT NOT NULL DEFAULT 'dataset',"
@@ -2489,9 +2480,6 @@ bool GDALGeoPackageDataset::CreateMetadataTables()
         "mime_type TEXT NOT NULL DEFAULT 'text/xml',"
         "metadata TEXT NOT NULL"
         ")";
-
-    if ( OGRERR_NONE != SQLCommand(hDB, pszMetadata) )
-        return false;
 
     /* From D.2. metadata Table 40. metadata Trigger Definition SQL  */
     const char* pszMetadataTriggers =
@@ -2525,11 +2513,14 @@ bool GDALGeoPackageDataset::CreateMetadataTables()
     "'catalogue','schema','taxonomy','software','service', "
     "'collectionHardware','nonGeographicDataset','dimensionGroup')); "
     "END";
-    if ( bCreateTriggers && OGRERR_NONE != SQLCommand(hDB, pszMetadataTriggers) )
-        return false;
+    if ( bCreateTriggers )
+    {
+        osSQL += ";";
+        osSQL += pszMetadataTriggers;
+    }
 
     /* From C.11. gpkg_metadata_reference Table 36. gpkg_metadata_reference Table Definition SQL */
-    const char* pszMetadataReference =
+    osSQL += ";"
         "CREATE TABLE gpkg_metadata_reference ("
         "reference_scope TEXT NOT NULL,"
         "table_name TEXT,"
@@ -2541,9 +2532,6 @@ bool GDALGeoPackageDataset::CreateMetadataTables()
         "CONSTRAINT crmr_mfi_fk FOREIGN KEY (md_file_id) REFERENCES gpkg_metadata(id),"
         "CONSTRAINT crmr_mpi_fk FOREIGN KEY (md_parent_id) REFERENCES gpkg_metadata(id)"
         ")";
-
-    if ( OGRERR_NONE != SQLCommand(hDB, pszMetadataReference) )
-        return false;
 
     /* From D.3. metadata_reference Table 41. gpkg_metadata_reference Trigger Definition SQL   */
     const char* pszMetadataReferenceTriggers =
@@ -2637,10 +2625,13 @@ bool GDALGeoPackageDataset::CreateMetadataTables()
         "'[1-2][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]T[0-2][0-9]:[0-5][0-9]:[0-5][0-9].[0-9][0-9][0-9]Z' "
         "AND strftime('%s',NEW.timestamp) NOT NULL); "
         "END";
-    if ( bCreateTriggers && OGRERR_NONE != SQLCommand(hDB, pszMetadataReferenceTriggers) )
-        return false;
+    if ( bCreateTriggers )
+    {
+        osSQL += ";";
+        osSQL += pszMetadataReferenceTriggers;
+    }
 
-    return true;
+    return SQLCommand(hDB, osSQL) == OGRERR_NONE;
 }
 
 /************************************************************************/
@@ -3423,7 +3414,7 @@ bool GDALGeoPackageDataset::CreateTileGriddedTable(char** papszOptions)
     // Check if gpkg_2d_gridded_coverage_ancillary has been created
     SQLResult oResultTable;
     OGRErr eErr = SQLQuery(hDB,
-        "SELECT * FROM sqlite_master WHERE type = 'table' AND "
+        "SELECT * FROM sqlite_master WHERE type IN ('table', 'view') AND "
         "name = 'gpkg_2d_gridded_coverage_ancillary'"
         , &oResultTable);
     bool bHasTable = ( eErr == OGRERR_NONE && oResultTable.nRowCount == 1 );
