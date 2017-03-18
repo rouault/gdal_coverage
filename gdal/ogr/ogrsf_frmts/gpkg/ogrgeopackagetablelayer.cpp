@@ -1136,19 +1136,17 @@ void OGRGeoPackageTableLayer::PostInit()
 }
 
 /************************************************************************/
-/*                      CreateField()                                   */
+/*                      CheckUpdatableTable()                           */
 /************************************************************************/
 
-OGRErr OGRGeoPackageTableLayer::CreateField( OGRFieldDefn *poField,
-                                             CPL_UNUSED int bApproxOK )
+bool OGRGeoPackageTableLayer::CheckUpdatableTable(const char* pszOperation)
 {
-    OGRFieldDefn oFieldDefn(poField);
     if( !m_poDS->GetUpdate() )
     {
         CPLError( CE_Failure, CPLE_NotSupported,
                   UNSUPPORTED_OP_READ_ONLY,
-                  "CreateField");
-        return OGRERR_FAILURE;
+                  pszOperation);
+        return false;
     }
 /* -------------------------------------------------------------------- */
 /*      Check that is a table and not a view                            */
@@ -1158,9 +1156,22 @@ OGRErr OGRGeoPackageTableLayer::CreateField( OGRFieldDefn *poField,
         CPLError(CE_Failure, CPLE_AppDefined,
                  "Layer %s is not a table",
                  m_pszTableName);
-        return OGRERR_FAILURE;
+        return false;
     }
+    return true;
+}
 
+/************************************************************************/
+/*                      CreateField()                                   */
+/************************************************************************/
+
+OGRErr OGRGeoPackageTableLayer::CreateField( OGRFieldDefn *poField,
+                                             CPL_UNUSED int bApproxOK )
+{
+    if( !CheckUpdatableTable("CreateField") )
+        return OGRERR_FAILURE;
+
+    OGRFieldDefn oFieldDefn(poField);
     int nMaxWidth = 0;
     if( m_bPreservePrecision && poField->GetType() == OFTString )
         nMaxWidth = poField->GetWidth();
@@ -1252,8 +1263,11 @@ OGRErr OGRGeoPackageTableLayer::CreateField( OGRFieldDefn *poField,
 /************************************************************************/
 
 OGRErr OGRGeoPackageTableLayer::CreateGeomField( OGRGeomFieldDefn *poGeomFieldIn,
-                                                 CPL_UNUSED int bApproxOK )
+                                                 int /* bApproxOK */ )
 {
+    if( !CheckUpdatableTable("CreateGeomField") )
+        return OGRERR_FAILURE;
+
     if( m_poFeatureDefn->GetGeomFieldCount() == 1 )
     {
         CPLError(CE_Failure, CPLE_AppDefined,
@@ -1442,12 +1456,10 @@ OGRErr OGRGeoPackageTableLayer::ICreateFeature( OGRFeature *poFeature )
 {
     if( !m_poDS->GetUpdate() )
     {
-    {
         CPLError( CE_Failure, CPLE_NotSupported,
                   UNSUPPORTED_OP_READ_ONLY,
                   "CreateFeature");
         return OGRERR_FAILURE;
-    }
     }
 
     if( m_bDeferredCreation && RunDeferredCreationIfNecessary() != OGRERR_NONE )
@@ -2299,7 +2311,7 @@ bool OGRGeoPackageTableLayer::CreateSpatialIndex(const char* pszTableName)
 {
     OGRErr err;
 
-    if( !m_bIsTable )
+    if( !CheckUpdatableTable("CreateSpatialIndex") )
         return false;
 
     if( m_bDeferredCreation && RunDeferredCreationIfNecessary() != OGRERR_NONE )
@@ -2772,11 +2784,10 @@ bool OGRGeoPackageTableLayer::CreateGeometryExtensionIfNecessary(OGRwkbGeometryT
         "SELECT 1 FROM gpkg_extensions WHERE table_name = '%q' AND "
         "column_name = '%q' AND extension_name = 'gpkg_geom_%s'",
          pszT, pszC, pszGeometryType);
-    OGRErr err = OGRERR_NONE;
-    SQLGetInteger(m_poDS->GetDB(), pszSQL, &err);
+    const bool bExists = SQLGetInteger(m_poDS->GetDB(), pszSQL, NULL) == 1;
     sqlite3_free(pszSQL);
 
-    if( err != OGRERR_NONE )
+    if( !bExists )
     {
         if( eGType == wkbPolyhedralSurface ||
             eGType == wkbTIN || eGType == wkbTriangle )
@@ -2792,7 +2803,7 @@ bool OGRGeoPackageTableLayer::CreateGeometryExtensionIfNecessary(OGRwkbGeometryT
                     "(table_name,column_name,extension_name,definition,scope) "
                     "VALUES ('%q', '%q', 'gpkg_geom_%s', 'GeoPackage 1.0 Specification Annex J', 'read-write')",
                     pszT, pszC, pszGeometryType);
-        err = SQLCommand(m_poDS->GetDB(), pszSQL);
+        OGRErr err = SQLCommand(m_poDS->GetDB(), pszSQL);
         sqlite3_free(pszSQL);
         if ( err != OGRERR_NONE )
             return false;
@@ -2812,7 +2823,8 @@ bool OGRGeoPackageTableLayer::HasSpatialIndex()
         return CPL_TO_BOOL(m_bHasSpatialIndex);
     m_bHasSpatialIndex = false;
 
-    if( m_poFeatureDefn->GetGeomFieldCount() == 0 ||
+    if( m_pszFidColumn == NULL ||
+        m_poFeatureDefn->GetGeomFieldCount() == 0 ||
         !m_poDS->HasExtensionsTable() )
         return false;
 
@@ -2851,7 +2863,7 @@ bool OGRGeoPackageTableLayer::HasSpatialIndex()
 
 bool OGRGeoPackageTableLayer::DropSpatialIndex(bool bCalledFromSQLFunction)
 {
-    if( !m_bIsTable )
+    if( !CheckUpdatableTable("DropSpatialIndex") )
         return false;
 
     if( !HasSpatialIndex() )
@@ -2927,16 +2939,13 @@ void OGRGeoPackageTableLayer::RenameTo(const char* pszDstTableName)
     ResetReading();
     SyncToDisk();
 
-    SQLResult oResultTable;
     char* pszSQL = sqlite3_mprintf(
-        "SELECT * FROM sqlite_master WHERE name = '%q' "
+        "SELECT 1 FROM sqlite_master WHERE name = '%q' "
         "AND type IN ('table', 'view')",
          pszDstTableName);
-    OGRErr err = SQLQuery(m_poDS->GetDB(), pszSQL, &oResultTable);
+    const bool bAlreadyExists =
+            SQLGetInteger(m_poDS->GetDB(), pszSQL, NULL) == 1;
     sqlite3_free(pszSQL);
-    const bool bAlreadyExists = ( err == OGRERR_NONE &&
-                                  oResultTable.nRowCount == 1 );
-    SQLResultFree(&oResultTable);
     if( bAlreadyExists )
     {
         CPLError(CE_Failure, CPLE_AppDefined,
@@ -3506,7 +3515,7 @@ char **OGRGeoPackageTableLayer::GetMetadata( const char *pszDomain )
                                         m_pszFidColumn,
                                         m_pszTableName);
 
-            nMaxId = SQLGetInteger64( m_poDS->GetDB(), pszSQL, &err);
+            nMaxId = SQLGetInteger64( m_poDS->GetDB(), pszSQL, NULL);
             sqlite3_free(pszSQL);
         }
         if( nMaxId > INT_MAX )
@@ -3806,13 +3815,8 @@ CPLString OGRGeoPackageTableLayer::BuildSelectFieldList(const std::vector<OGRFie
 
 OGRErr OGRGeoPackageTableLayer::DeleteField( int iFieldToDelete )
 {
-    if ( !m_poDS->GetUpdate() )
-    {
-        CPLError( CE_Failure, CPLE_NotSupported,
-                  UNSUPPORTED_OP_READ_ONLY,
-                  "DeleteField");
+    if( !CheckUpdatableTable("DeleteField") )
         return OGRERR_FAILURE;
-    }
 
     if (iFieldToDelete < 0 || iFieldToDelete >= m_poFeatureDefn->GetFieldCount())
     {
@@ -3824,17 +3828,6 @@ OGRErr OGRGeoPackageTableLayer::DeleteField( int iFieldToDelete )
     ResetReading();
     RunDeferredCreationIfNecessary();
     CreateSpatialIndexIfNecessary();
-
-/* -------------------------------------------------------------------- */
-/*      Check that is a table and not a view                            */
-/* -------------------------------------------------------------------- */
-    if( !m_bIsTable )
-    {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "Layer %s is not a table",
-                 m_pszTableName);
-        return OGRERR_FAILURE;
-    }
 
 /* -------------------------------------------------------------------- */
 /*      Build list of old fields, and the list of new fields.           */
@@ -3930,13 +3923,8 @@ OGRErr OGRGeoPackageTableLayer::AlterFieldDefn( int iFieldToAlter,
                                                 OGRFieldDefn* poNewFieldDefn,
                                                 int nFlagsIn )
 {
-    if ( !m_poDS->GetUpdate() )
-    {
-        CPLError( CE_Failure, CPLE_NotSupported,
-                  UNSUPPORTED_OP_READ_ONLY,
-                  "AlterFieldDefn");
+    if( !CheckUpdatableTable("AlterFieldDefn") )
         return OGRERR_FAILURE;
-    }
 
     if (iFieldToAlter < 0 || iFieldToAlter >= m_poFeatureDefn->GetFieldCount())
     {
@@ -3951,17 +3939,6 @@ OGRErr OGRGeoPackageTableLayer::AlterFieldDefn( int iFieldToAlter,
     ResetReading();
     RunDeferredCreationIfNecessary();
     CreateSpatialIndexIfNecessary();
-
-/* -------------------------------------------------------------------- */
-/*      Check that is a table and not a view                            */
-/* -------------------------------------------------------------------- */
-    if( !m_bIsTable )
-    {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "Layer %s is not a table",
-                 m_pszTableName);
-        return OGRERR_FAILURE;
-    }
 
 /* -------------------------------------------------------------------- */
 /*      Check that the new column name is not a duplicate.              */
@@ -4275,13 +4252,8 @@ OGRErr OGRGeoPackageTableLayer::AlterFieldDefn( int iFieldToAlter,
 
 OGRErr OGRGeoPackageTableLayer::ReorderFields( int* panMap )
 {
-    if ( !m_poDS->GetUpdate() )
-    {
-        CPLError( CE_Failure, CPLE_NotSupported,
-                  UNSUPPORTED_OP_READ_ONLY,
-                  "ReorderFields");
+    if( !CheckUpdatableTable("ReorderFields") )
         return OGRERR_FAILURE;
-    }
 
     if (m_poFeatureDefn->GetFieldCount() == 0)
         return OGRERR_NONE;
@@ -4296,17 +4268,6 @@ OGRErr OGRGeoPackageTableLayer::ReorderFields( int* panMap )
     ResetReading();
     RunDeferredCreationIfNecessary();
     CreateSpatialIndexIfNecessary();
-
-/* -------------------------------------------------------------------- */
-/*      Check that is a table and not a view                            */
-/* -------------------------------------------------------------------- */
-    if( !m_bIsTable )
-    {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "Layer %s is not a table",
-                 m_pszTableName);
-        return OGRERR_FAILURE;
-    }
 
 /* -------------------------------------------------------------------- */
 /*      Drop any iterator since we change the DB structure              */
