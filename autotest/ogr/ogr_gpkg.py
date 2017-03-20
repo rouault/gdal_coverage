@@ -4127,9 +4127,63 @@ def ogr_gpkg_48():
         gdaltest.post_reason('fail')
         f.DumpReadable()
         return 'fail'
+
+    # No geom field, one single field with default value
+    lyr = ds.CreateLayer('default_field_no_geom', geom_type = ogr.wkbNone)
+    fld_defn = ogr.FieldDefn('foo')
+    fld_defn.SetDefault('x')
+    lyr.CreateField(fld_defn)
+    f = ogr.Feature(lyr.GetLayerDefn())
+    if lyr.CreateFeature(f) != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    lyr.ResetReading()
+    f = lyr.GetNextFeature()
+    if f.GetField('foo') != 'x':
+        gdaltest.post_reason('fail')
+        f.DumpReadable()
+        return 'fail'
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f.SetFID(1)
+    if lyr.SetFeature(f) != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    lyr.ResetReading()
+    f = lyr.GetNextFeature()
+    if f.GetField('foo') != 'x':
+        gdaltest.post_reason('fail')
+        f.DumpReadable()
+        return 'fail'
     ds = None
 
     gdaltest.gpkg_dr.DeleteDataSource('/vsimem/ogr_gpkg_48.gpkg')
+
+    return 'success'
+
+###############################################################################
+# Test CreateGeomField() on a attributes layer
+
+def ogr_gpkg_49():
+
+    if gdaltest.gpkg_dr is None:
+        return 'skip'
+
+    ds = gdaltest.gpkg_dr.CreateDataSource('/vsimem/ogr_gpkg_49.gpkg')
+
+    lyr = ds.CreateLayer('test', geom_type = ogr.wkbNone,
+                         options = [ 'ASPATIAL_VARIANT=GPKG_ATTRIBUTES' ])
+
+    f = ogr.Feature(lyr.GetLayerDefn())
+    lyr.CreateFeature(f)
+    f = None
+
+    field_defn = ogr.GeomFieldDefn('', ogr.wkbPoint)
+    if lyr.CreateGeomField(field_defn) != 0:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    ds = None
+
+    gdaltest.gpkg_dr.DeleteDataSource('/vsimem/ogr_gpkg_49.gpkg')
 
     return 'success'
 
@@ -4206,6 +4260,7 @@ gdaltest_list = [
     ogr_gpkg_46,
     ogr_gpkg_47,
     ogr_gpkg_48,
+    ogr_gpkg_49,
     ogr_gpkg_test_ogrsf,
     ogr_gpkg_cleanup,
 ]
