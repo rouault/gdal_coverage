@@ -31,6 +31,8 @@
 #include "ogr_p.h"
 #include "swq.h"
 #include "gdalwarper.h"
+#include "ogrgeopackageutility.h"
+#include "ogrsqliteutility.h"
 
 #include <cstdlib>
 
@@ -4524,7 +4526,7 @@ OGRLayer * GDALGeoPackageDataset::ExecuteSQL( const char *pszSQLCommand,
         while( *pszLayerName == ' ' )
             pszLayerName++;
 
-        int idx = FindLayerIndex( SQLUnescapeDoubleQuote(pszLayerName) );
+        int idx = FindLayerIndex( SQLUnescape(pszLayerName) );
         if( idx >= 0 )
         {
             DeleteLayer( idx );
@@ -4546,10 +4548,10 @@ OGRLayer * GDALGeoPackageDataset::ExecuteSQL( const char *pszSQLCommand,
             const char* pszDstTableName = papszTokens[5];
             OGRGeoPackageTableLayer* poSrcLayer =
                 (OGRGeoPackageTableLayer*)GetLayerByName(
-                        SQLUnescapeDoubleQuote(pszSrcTableName));
+                        SQLUnescape(pszSrcTableName));
             if( poSrcLayer )
             {
-                poSrcLayer->RenameTo( SQLUnescapeDoubleQuote(pszDstTableName) );
+                poSrcLayer->RenameTo( SQLUnescape(pszDstTableName) );
                 CSLDestroy(papszTokens);
                 return NULL;
             }

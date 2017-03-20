@@ -27,36 +27,44 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include "ogrsf_frmts.h"
+#ifndef OGR_SQLITEUTILITY_H_INCLUDED
+#define OGR_SQLITEUTILITY_H_INCLUDED
 
-#ifndef OGR_GEOPACKAGEUTILITY_H_INCLUDED
-#define OGR_GEOPACKAGEUTILITY_H_INCLUDED
+#include "ogr_core.h"
+#include "cpl_string.h"
+#include "sqlite3.h"
 
 typedef struct
 {
-    OGRBoolean bEmpty;
-    OGRBoolean bExtended;
-    OGRwkbByteOrder eByteOrder;
-    int iSrsId;
-    bool bExtentHasXY;
-    bool bExtentHasZ;
-#ifdef notdef
-    bool bExtentHasM;
-#endif
-    double MinX, MaxX, MinY, MaxY, MinZ, MaxZ;
-#ifdef notdef
-    double MinM, MaxM;
-#endif
-    size_t nHeaderLen;
-} GPkgHeader;
+    char** papszResult;
+    int nRowCount;
+    int nColCount;
+    char *pszErrMsg;
+    int rc;
+} SQLResult;
 
-OGRFieldType        GPkgFieldToOGR(const char *pszGpkgType, OGRFieldSubType& eSubType, int& nMaxWidth);
-const char*         GPkgFieldFromOGR(OGRFieldType eType, OGRFieldSubType eSubType, int nMaxWidth);
-OGRwkbGeometryType  GPkgGeometryTypeToWKB(const char *pszGpkgType, bool bHasZ, bool bHasM);
 
-GByte*              GPkgGeometryFromOGR(const OGRGeometry *poGeometry, int iSrsId, size_t *pnWkbLen);
-OGRGeometry*        GPkgGeometryToOGR(const GByte *pabyGpkg, size_t nGpkgLen, OGRSpatialReference *poSrs);
+OGRErr              SQLCommand(sqlite3 *poDb, const char * pszSQL);
+int                 SQLGetInteger(sqlite3 * poDb, const char * pszSQL, OGRErr *err);
+GIntBig             SQLGetInteger64(sqlite3 * poDb, const char * pszSQL, OGRErr *err);
 
-OGRErr              GPkgHeaderFromWKB(const GByte *pabyGpkg, size_t nGpkgLen, GPkgHeader *poHeader);
+OGRErr              SQLResultInit(SQLResult * poResult);
+OGRErr              SQLQuery(sqlite3 *poDb, const char * pszSQL, SQLResult * poResult);
+const char*         SQLResultGetValue(const SQLResult * poResult, int iColumnNum, int iRowNum);
+int                 SQLResultGetValueAsInteger(const SQLResult * poResult, int iColNum, int iRowNum);
+OGRErr              SQLResultFree(SQLResult * poResult);
 
-#endif
+int                 SQLiteFieldFromOGR(OGRFieldType eType);
+
+/* To escape literals. The returned string doesn't contain the surrounding single quotes */
+CPLString           SQLEscapeLiteral( const char *pszLiteral );
+
+/* To escape table or field names. The returned string doesn't contain the surrounding double quotes */
+CPLString           SQLEscapeName( const char* pszName );
+
+/* Remove leading ' or " and unescape in that case. Or return string unmodified */
+CPLString           SQLUnescape(const char* pszVal);
+
+char**              SQLTokenize( const char* pszSQL );
+
+#endif // OGR_SQLITEUTILITY_H_INCLUDED
