@@ -3694,7 +3694,7 @@ bool GDALGeoPackageDataset::CreateTileGriddedTable(char** papszOptions)
   "  AXIS[\"longitude\",east,ORDER[2],ANGLEUNIT[\"degree\",0.01745329252]],"
   "  AXIS[\"ellipsoidal height\",up,ORDER[3],LENGTHUNIT[\"metre\",1.0]],"
   "ID[\"EPSG\",4979]]";
-        if( m_bHasDefinition12_063 )
+        if( !m_bHasDefinition12_063 )
         {
             pszSQL = sqlite3_mprintf(
                 "INSERT INTO gpkg_spatial_ref_sys "
@@ -3708,8 +3708,8 @@ bool GDALGeoPackageDataset::CreateTileGriddedTable(char** papszOptions)
                 "INSERT INTO gpkg_spatial_ref_sys "
                 "(srs_name,srs_id,organization,organization_coordsys_id,"
                 "definition,definition_12_063) VALUES "
-                "('WGS 84 3D', 4979, 'EPSG', 4979, '%q', '%q')",
-                pszWKT, pszWKT);
+                "('WGS 84 3D', 4979, 'EPSG', 4979, 'undefined', '%q')",
+                pszWKT);
         }
         osSQL += ";";
         osSQL += pszSQL;
