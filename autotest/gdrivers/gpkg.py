@@ -448,6 +448,10 @@ def gpkg_3():
     out_ds = gdaltest.gpkg_dr.CreateCopy('/vsimem/tmp.gpkg', ds, options = ['TILE_FORMAT=WEBP'] )
     out_ds = None
 
+    if not validate('/vsimem/tmp.gpkg'):
+        gdaltest.post_reason('validation failed')
+        return 'fail'
+
     out_ds = gdal.OpenEx('/vsimem/tmp.gpkg')
     got_cs = [out_ds.GetRasterBand(i+1).Checksum() for i in range(3)]
     if got_cs != expected_cs:
@@ -1653,6 +1657,10 @@ def gpkg_17():
     out_ds.BuildOverviews('NEAR', [2])
     out_ds = None
     ds = None
+
+    if not validate('/vsimem/tmp.gpkg'):
+        gdaltest.post_reason('validation failed')
+        return 'fail'
 
     out_ds = gdal.Open('/vsimem/tmp.gpkg')
     got_cs = out_ds.GetRasterBand(1).GetOverview(0).Checksum()

@@ -63,6 +63,7 @@ class GPKGChecker:
 
     def __init__(self, filename, abort_at_first_error=True, verbose=False):
         self.filename = filename
+        self.extended_pragma_info = False
         self.abort_at_first_error = abort_at_first_error
         self.verbose = verbose
         self.errors = []
@@ -97,6 +98,8 @@ class GPKGChecker:
                     expected_notnull = 1
                 if type == 'INTEGER' and pk:
                     notnull = 1
+                if not self.extended_pragma_info and expected_pk > 1:
+                    expected_pk = 1
 
                 self._assert(type == expected_type, req,
                              'Wrong type for %s of %s. Expected %s, got %s' %
@@ -157,9 +160,15 @@ class GPKGChecker:
         self._check_structure(columns, expected_columns, 10,
                               'gpkg_spatial_ref_sys')
 
-        c.execute("SELECT srs_id, organization, organization_coordsys_id, "
-                  "definition FROM gpkg_spatial_ref_sys "
-                  "WHERE srs_id IN (-1, 0, 4326) ORDER BY srs_id")
+        if has_definition_12_063:
+            c.execute("SELECT srs_id, organization, organization_coordsys_id, "
+                      "definition, definition_12_063 "
+                      "FROM gpkg_spatial_ref_sys "
+                      "WHERE srs_id IN (-1, 0, 4326) ORDER BY srs_id")
+        else:
+            c.execute("SELECT srs_id, organization, organization_coordsys_id, "
+                      "definition FROM gpkg_spatial_ref_sys "
+                      "WHERE srs_id IN (-1, 0, 4326) ORDER BY srs_id")
         ret = c.fetchall()
         self._assert(ret[0][1] == 'NONE', 11,
                      'wrong value for organization for srs_id = -1: %s' %
@@ -170,6 +179,11 @@ class GPKGChecker:
         self._assert(ret[0][3] == 'undefined', 11,
                      'wrong value for definition for srs_id = -1: %s' %
                      ret[0][3])
+        if has_definition_12_063:
+            self._assert(ret[0][4] == 'undefined', 116,
+                         'wrong value for definition_12_063 for ' +
+                         'srs_id = -1: %s' % ret[0][4])
+
         self._assert(ret[1][1] == 'NONE', 11,
                      'wrong value for organization for srs_id = 0: %s' %
                      ret[1][1])
@@ -179,6 +193,11 @@ class GPKGChecker:
         self._assert(ret[1][3] == 'undefined', 11,
                      'wrong value for definition for srs_id = 0: %s' %
                      ret[1][3])
+        if has_definition_12_063:
+            self._assert(ret[1][4] == 'undefined', 116,
+                         'wrong value for definition_12_063 for ' +
+                         'srs_id = 0: %s' % ret[1][4])
+
         self._assert(ret[2][1].lower() == 'epsg', 11,
                      'wrong value for organization for srs_id = 4326: %s' %
                      ret[2][1])
@@ -188,6 +207,21 @@ class GPKGChecker:
         self._assert(ret[2][3] != 'undefined', 11,
                      'wrong value for definition for srs_id = 4326: %s' %
                      ret[2][3])
+        if has_definition_12_063:
+            self._assert(ret[2][4] != 'undefined', 116,
+                         'wrong value for definition_12_063 for ' +
+                         'srs_id = 4326: %s' % ret[2][4])
+
+        if has_definition_12_063:
+            c.execute("SELECT srs_id FROM gpkg_spatial_ref_sys "
+                      "WHERE srs_id NOT IN (0, -1) AND "
+                      "definition = 'undefined' AND "
+                      "definition_12_063 = 'undefined'")
+            rows = c.fetchall()
+            for (srs_id, ) in rows:
+                self._assert(False, 117,
+                             'srs_id = %d has both definition and ' % srs_id +
+                             'definition_12_063 undefined')
 
     def _check_gpkg_contents(self, c):
 
@@ -603,12 +637,28 @@ class GPKGChecker:
                           "corresponding row in gpkg_tile_matrix") %
                          (table_name, zoom_level))
 
-        c.execute("SELECT pixel_x_size, pixel_y_size FROM gpkg_tile_matrix "
+        zoom_other_levels = False
+        c.execute("SELECT 1 FROM sqlite_master WHERE name = 'gpkg_extensions'")
+        if c.fetchone() is not None:
+            c.execute("SELECT column_name FROM gpkg_extensions WHERE "
+                      "table_name = ? "
+                      "AND extension_name = 'gpkg_zoom_other'", (table_name,))
+            row = c.fetchone()
+            if row is not None:
+                (column_name, ) = row
+                self._assert(column_name == 'tile_data', 88,
+                             'Wrong column_name in gpkg_extensions for '
+                             'gpkg_zoom_other')
+                zoom_other_levels = True
+
+        c.execute("SELECT zoom_level, pixel_x_size, pixel_y_size "
+                  "FROM gpkg_tile_matrix "
                   "WHERE table_name = ? ORDER BY zoom_level", (table_name,))
         rows = c.fetchall()
+        prev_zoom_level = None
         prev_pixel_x_size = None
         prev_pixel_y_size = None
-        for (pixel_x_size, pixel_y_size) in rows:
+        for (zoom_level, pixel_x_size, pixel_y_size) in rows:
             if prev_pixel_x_size is not None:
                 self._assert(
                     pixel_x_size < prev_pixel_x_size and
@@ -616,8 +666,22 @@ class GPKGChecker:
                     53,
                     ('For table %s, pixel size are not consistent ' +
                      'with zoom_level') % table_name)
+            if prev_zoom_level is not None and \
+               zoom_level == prev_zoom_level + 1 and not zoom_other_levels:
+                    self._assert(
+                        abs((pixel_x_size-prev_pixel_x_size/2) /
+                            prev_pixel_x_size) < 1e-5, 35,
+                        "Expected pixel_x_size=%f for zoom_level=%d. Got %f" %
+                        (prev_pixel_x_size/2, zoom_level, pixel_x_size))
+                    self._assert(
+                        abs((pixel_y_size-prev_pixel_y_size/2) /
+                            prev_pixel_y_size) < 1e-5, 35,
+                        "Expected pixel_y_size=%f for zoom_level=%d. Got %f" %
+                        (prev_pixel_y_size/2, zoom_level, pixel_y_size))
+
             prev_pixel_x_size = pixel_x_size
             prev_pixel_y_size = pixel_y_size
+            prev_zoom_level = zoom_level
 
         c.execute("SELECT max_x - min_x, "
                   "       MIN(matrix_width * tile_width * pixel_x_size), "
@@ -663,7 +727,10 @@ class GPKGChecker:
                              "Invalid tile_row in %s" % table_name)
 
         c.execute("SELECT tile_data FROM %s" % _esc_id(table_name))
+        found_jpeg = False
+        found_png = False
         found_webp = False
+        found_tiff = False
         for (blob,) in c.fetchall():
             self._assert(blob is not None and len(blob) >= 12, 19,
                          'Invalid blob')
@@ -686,10 +753,20 @@ class GPKGChecker:
                 self._assert(is_png or is_tiff, 36,
                              'Unrecognized image mime type')
 
+            if is_jpeg:
+                found_jpeg = True
+            if is_png:
+                found_png = True
             if is_webp:
                 found_webp = True
+            if is_tiff:
+                found_tiff = True
 
         if found_webp:
+            self._assert(not found_png and not found_jpeg and not found_tiff,
+                         92,
+                         "Table %s should contain only webp tiles" %
+                         table_name)
             c.execute("SELECT 1 FROM gpkg_extensions WHERE "
                       "table_name = ? AND column_name = 'tile_data' AND "
                       "extension_name = 'gpkg_webp' AND "
@@ -1376,6 +1453,17 @@ class GPKGChecker:
                              'Wrong user_version: %d. Expected >= %d' %
                              (user_version, expected_version))
 
+        conn = sqlite3.connect(':memory:')
+        c = conn.cursor()
+        c.execute('CREATE TABLE foo(one TEXT, two TEXT, '
+                  'CONSTRAINT pk PRIMARY KEY (one, two))')
+        c.execute('PRAGMA table_info(foo)')
+        rows = c.fetchall()
+        if rows[1][5] == 2:
+            self.extended_pragma_info = True
+        c.close()
+        conn.close()
+
         conn = sqlite3.connect(self.filename)
         c = conn.cursor()
         try:
@@ -1458,5 +1546,8 @@ if __name__ == '__main__':
             sys.exit(0)
         else:
             for (req, msg) in ret:
-                print('Req %d: %s' % (req, msg))
+                if req:
+                    print('Req %d: %s' % (req, msg))
+                else:
+                    print(msg)
             sys.exit(1)
