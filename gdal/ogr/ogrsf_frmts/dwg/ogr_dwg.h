@@ -190,7 +190,7 @@ class OGRDWGDataSource : public OGRDataSource
 
     const char          *GetName() override { return m_osName; }
 
-    int                 GetLayerCount() override { return apoLayers.size(); }
+    int                 GetLayerCount() override { return static_cast<int>(apoLayers.size()); }
     OGRLayer            *GetLayer( int ) override;
 
     int                 TestCapability( const char * ) override;
@@ -239,18 +239,13 @@ protected:
 
 class OGRDWGDriver : public OGRSFDriver
 {
-    int     bInitialized;
-    void    Initialize();
-
-    OdStaticRxObject<OGRDWGServices> oServices;
-
-    static void ErrorHandler( OdResult oRes );
+    OGRDWGServices *poServices;
 
   public:
     OGRDWGDriver();
     ~OGRDWGDriver();
 
-    OGRDWGServices *GetServices() { return &oServices; }
+    OGRDWGServices *GetServices() { return poServices; }
 
     const char *GetName() override;
     OGRDataSource *Open( const char *, int ) override;
