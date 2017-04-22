@@ -44,6 +44,10 @@ except:
     has_gdal = False
 
 
+def _esc_literal(literal):
+    return literal.replace("'", "''")
+
+
 def _esc_id(identifier):
     return '"' + identifier.replace('"', "\"\"") + '"'
 
@@ -307,7 +311,7 @@ class GPKGChecker:
         geometry_type_name = rows_gpkg_geometry_columns[0][3]
         srs_id = rows_gpkg_geometry_columns[0][4]
 
-        c.execute('PRAGMA table_info(%s)' % table_name)
+        c.execute('PRAGMA table_info(%s)' % _esc_id(table_name))
         base_geom_types = ('GEOMETRY', 'POINT', 'LINESTRING', 'POLYGON',
                            'MULTIPOINT', 'MULTILINESTRING', 'MULTIPOLYGON',
                            'GEOMETRYCOLLECTION')
@@ -503,7 +507,7 @@ class GPKGChecker:
                          ("Table %s has a RTree, but not declared in " +
                           "gpkg_extensions") % table_name)
 
-            c.execute('PRAGMA table_info(%s)' % rtree_name)
+            c.execute('PRAGMA table_info(%s)' % _esc_id(rtree_name))
             columns = c.fetchall()
             expected_columns = [
                 (0, 'id', '', 0, None, 0),
@@ -515,19 +519,20 @@ class GPKGChecker:
             self._check_structure(columns, expected_columns, 77, rtree_name)
 
             c.execute("SELECT 1 FROM sqlite_master WHERE type = 'trigger' " +
-                      "AND name = '%s_insert'" % rtree_name)
+                      "AND name = '%s_insert'" % _esc_literal(rtree_name))
             self._assert(c.fetchone() is not None, 75,
                          "%s_insert trigger missing" % rtree_name)
 
             for i in range(4):
                 c.execute("SELECT 1 FROM sqlite_master WHERE " +
                           "type = 'trigger' " +
-                          "AND name = '%s_update%d'" % (rtree_name, i+1))
+                          "AND name = '%s_update%d'" %
+                          (_esc_literal(rtree_name), i+1))
                 self._assert(c.fetchone() is not None, 75,
                              "%s_update%d trigger missing" % (rtree_name, i+1))
 
             c.execute("SELECT 1 FROM sqlite_master WHERE type = 'trigger' " +
-                      "AND name = '%s_delete'" % rtree_name)
+                      "AND name = '%s_delete'" % _esc_literal(rtree_name))
             self._assert(c.fetchone() is not None, 75,
                          "%s_delete trigger missing" % rtree_name)
 
@@ -594,7 +599,7 @@ class GPKGChecker:
         for (table_name,) in rows:
             self._log('Checking attributes table ' + table_name)
 
-            c.execute('PRAGMA table_info(%s)' % table_name)
+            c.execute('PRAGMA table_info(%s)' % _esc_id(table_name))
             cols = c.fetchall()
             count_pkid = 0
             for (_, name, type, notnull, default, pk) in cols:
@@ -616,7 +621,7 @@ class GPKGChecker:
 
         self._log('Checking tile pyramid user table ' + table_name)
 
-        c.execute("PRAGMA table_info(%s)" % table_name)
+        c.execute("PRAGMA table_info(%s)" % _esc_id(table_name))
         columns = c.fetchall()
         expected_columns = [
             (0, 'id', 'INTEGER', 0, None, 1),
@@ -1247,6 +1252,17 @@ class GPKGChecker:
                                  62,
                                  "extension_name %s not valid" %
                                  extension_name)
+
+        # c.execute("SELECT extension_name, definition FROM gpkg_extensions "
+        #           "WHERE definition NOT LIKE 'Annex %' AND "
+        #           "definition NOT LIKE 'http%' AND "
+        #           "definition NOT LIKE 'mailto:%' AND "
+        #           "definition NOT LIKE 'Extension Title%' ")
+        # rows = c.fetchall()
+        # for (extension_name, definition) in rows:
+        #     self._assert(False, 63,
+        #                  "extension_name %s has invalid definition %s" %
+        #                  (extension_name, definition))
 
         c.execute("SELECT extension_name, scope FROM gpkg_extensions "
                   "WHERE scope NOT IN ('read-write', 'write-only')")
