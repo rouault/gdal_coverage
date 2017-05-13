@@ -2810,7 +2810,11 @@ def tiff_read_ycbcr_int12():
 
     with gdaltest.error_handler():
         ds = gdal.Open('data/int12_ycbcr_contig.tif')
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
     if gdal.GetLastErrorMsg().find('Cannot open TIFF file with') < 0:
+        gdaltest.post_reason('fail')
         print(gdal.GetLastErrorMsg())
         return 'fail'
 
@@ -3072,6 +3076,23 @@ def tiff_read_many_blocks():
     return 'success'
 
 ###############################################################################
+# Test reading  images with nbits > 32
+
+def tiff_read_uint33():
+
+    with gdaltest.error_handler():
+        ds = gdal.Open('data/uint33.tif')
+    if ds is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    if gdal.GetLastErrorMsg().find('Unsupported TIFF configuration') < 0:
+        gdaltest.post_reason('fail')
+        print(gdal.GetLastErrorMsg())
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
 
 for item in init_list:
     ut = gdaltest.GDALTest( 'GTiff', item[0], item[1], item[2] )
@@ -3134,8 +3155,6 @@ gdaltest_list.append( (tiff_read_scanline_more_than_2GB) )
 gdaltest_list.append( (tiff_read_wrong_number_extrasamples) )
 gdaltest_list.append( (tiff_read_one_strip_no_bytecount) )
 
-gdaltest_list.append( (tiff_read_online_1) )
-gdaltest_list.append( (tiff_read_online_2) )
 gdaltest_list.append( (tiff_read_md1) )
 gdaltest_list.append( (tiff_read_md2) )
 gdaltest_list.append( (tiff_read_md3) )
@@ -3177,7 +3196,10 @@ gdaltest_list.append( (tiff_read_big_strip) )
 gdaltest_list.append( (tiff_read_big_tile) )
 gdaltest_list.append( (tiff_read_huge_number_strips) )
 gdaltest_list.append( (tiff_read_many_blocks) )
+gdaltest_list.append( (tiff_read_uint33) )
 
+gdaltest_list.append( (tiff_read_online_1) )
+gdaltest_list.append( (tiff_read_online_2) )
 
 # gdaltest_list = [ tiff_read_ycbcr_lzw ]
 
