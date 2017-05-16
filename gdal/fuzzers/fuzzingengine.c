@@ -26,39 +26,42 @@
  * DEALINGS IN THE SOFTWARE.
  ****************************************************************************/
 
-#include <stddef.h>
-#include <stdint.h>
+#include <stdlib.h>
+#include <stdio.h>
 
-#include "ogr_api.h"
-#include "cpl_error.h"
-#include "cpl_vsi.h"
-#include "ogrsf_frmts.h"
+int LLVMFuzzerTestOneInput(void *buf, size_t len);
 
-extern "C" int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len);
-
-int LLVMFuzzerTestOneInput(const uint8_t *buf, size_t len)
+int main(int argc, char* argv[])
 {
-    VSILFILE* fp = VSIFileFromMemBuffer( "/vsimem/test.gdb.tar",
-            reinterpret_cast<GByte*>(const_cast<uint8_t*>(buf)), len, FALSE );
-    VSIFCloseL(fp);
-    RegisterOGROpenFileGDB();
-    CPLPushErrorHandler(CPLQuietErrorHandler);
-    OGRDataSourceH hDS = OGROpen( "/vsimem/test.gdb.tar", FALSE, NULL );
-    if( hDS )
+    if( argc < 2 )
     {
-        const int nLayers = OGR_DS_GetLayerCount(hDS);
-        for( int i = 0; i < nLayers; i++ )
-        {
-            OGRLayerH hLayer = OGR_DS_GetLayer(hDS, i);
-            OGRFeatureH hFeature;
-            while( (hFeature = OGR_L_GetNextFeature(hLayer)) != NULL )
-            {
-                OGR_F_Destroy(hFeature);
-            }
-        }
-        OGR_DS_Destroy(hDS);
+        return LLVMFuzzerTestOneInput(" ", 1);
     }
-    CPLPopErrorHandler();
-    VSIUnlink( "/vsimem/test.gdb.tar" );
-    return 0;
+    else
+    {
+        int nRet = 0;
+        void* buf = NULL;
+        int nLen = 0;
+        FILE* f = fopen(argv[1], "rb");
+        if( !f )
+        {
+            fprintf(stderr, "%s does not exist.\n", argv[1]);
+            exit(1);
+        }
+        fseek(f, 0, SEEK_END);
+        nLen = (int)ftell(f);
+        fseek(f, 0, SEEK_SET);
+        buf = malloc(nLen);
+        if( !buf )
+        {
+            fprintf(stderr, "malloc failed.\n");
+            fclose(f);
+            exit(1);
+        }
+        fread(buf, nLen, 1, f);
+        fclose(f);
+        nRet = LLVMFuzzerTestOneInput(buf, nLen);
+        free(buf);
+        return nRet;
+    }
 }
