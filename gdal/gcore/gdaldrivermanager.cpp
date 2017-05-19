@@ -44,7 +44,9 @@
 #include "gdal.h"
 #include "gdal_pam.h"
 #include "ogr_srs_api.h"
-#include "ogr_xerces.h"
+#ifdef HAVE_XERCES
+#  include "ogr_xerces.h"
+#endif  // HAVE_XERCES
 
 #ifdef _MSC_VER
 #  ifdef MSVC_USE_VLD
@@ -69,7 +71,7 @@ CPL_CVSID("$Id$");
 static volatile GDALDriverManager *poDM = NULL;
 static CPLMutex *hDMMutex = NULL;
 
-// FIXME: Disale following code as it crashed on OSX CI test.
+// FIXME: Disabled following code as it crashed on OSX CI test.
 //#if HAVE_CXX11
 //static std::mutex oDeleteMutex;
 //#endif
@@ -248,7 +250,9 @@ GDALDriverManager::~GDALDriverManager()
 /* -------------------------------------------------------------------- */
     OSRCleanup();
 
+#ifdef HAVE_XERCES
     OGRCleanupXercesMutex();
+#endif
 
 /* -------------------------------------------------------------------- */
 /*      Cleanup VSIFileManager.                                         */
@@ -766,7 +770,7 @@ void GDALDriverManager::AutoLoadDrivers()
                                      "/Library/Application Support/GDAL/"
                                      num2str(GDAL_VERSION_MAJOR) "."
                                      num2str(GDAL_VERSION_MINOR) "/PlugIns" );
-   #endif
+#endif
     }
 
 /* -------------------------------------------------------------------- */
@@ -879,7 +883,7 @@ void CPL_STDCALL GDALDestroyDriverManager( void )
     // needs to be reacquired within the destructor during driver
     // deregistration.
 
-// FIXME: Disale following code as it crashed on OSX CI test.
+// FIXME: Disable following code as it crashed on OSX CI test.
 //#if HAVE_CXX11
 //    std::lock_guard<std::mutex> oLock(oDeleteMutex);
 //#endif
