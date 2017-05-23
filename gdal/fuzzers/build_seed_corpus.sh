@@ -42,6 +42,9 @@ cd $(dirname $0)/../../autotest/ogr/data
 rm -f $OUT/ogr_fuzzer_seed_corpus.zip
 zip -r $OUT/ogr_fuzzer_seed_corpus.zip . >/dev/null
 cd $OLDPWD
+cd $(dirname $0)/../../autotest/ogr/data
+zip -r $OUT/ogr_fuzzer_seed_corpus.zip . >/dev/null
+cd $OLDPWD
 
 echo "Building shape_fuzzer_seed_corpus.zip"
 printf "FUZZER_FRIENDLY_ARCHIVE\n" > poly_shp.tar
