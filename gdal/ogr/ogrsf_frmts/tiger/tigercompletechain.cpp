@@ -404,6 +404,8 @@ OGRFeature *TigerCompleteChain::GetFeature( int nRecordId )
         return NULL;
     }
 
+    // Overflow cannot happen since psRTInfo->nRecordLength is unsigned
+    // char and sizeof(achRecord) == OGR_TIGER_RECBUF_LEN > 255
     if( VSIFReadL( achRecord, psRT1Info->nRecordLength, 1, fpPrimary ) != 1 )
     {
         CPLError( CE_Failure, CPLE_FileIO,
@@ -438,6 +440,8 @@ OGRFeature *TigerCompleteChain::GetFeature( int nRecordId )
             return NULL;
         }
 
+        // Overflow cannot happen since psRTInfo->nRecordLength is unsigned
+        // char and sizeof(achRecord) == OGR_TIGER_RECBUF_LEN > 255
         if( VSIFReadL( achRT3Rec, psRT3Info->nRecordLength, 1, fpRT3 ) != 1 )
         {
             CPLError( CE_Failure, CPLE_FileIO,
