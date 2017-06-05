@@ -636,11 +636,16 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
             return FALSE;
         }
 
+        InstallSQLFunctions();
+
         // Ingest the lines of the dump
         VSIFSeekL( poOpenInfo->fpL, 0, SEEK_SET );
         const char* pszLine;
         while( (pszLine = CPLReadLineL( poOpenInfo->fpL )) != NULL )
         {
+            if( STARTS_WITH(pszLine, "--") )
+                continue;
+
             // Blacklist a few words tat might have security implications
             // Basically we just want to allow CREATE TABLE and INSERT INTO
             if( CPLString(pszLine).ifind("ATTACH") != std::string::npos ||
@@ -654,14 +659,61 @@ int GDALGeoPackageDataset::Open( GDALOpenInfo* poOpenInfo )
                 CPLString(pszLine).ifind("ALTER") != std::string::npos||
                 CPLString(pszLine).ifind("VIRTUAL") != std::string::npos )
             {
-                CPLError(CE_Failure, CPLE_NotSupported,
-                         "Rejected statement: %s", pszLine);
-                return FALSE;
-            }
-            sqlite3_exec( hDB, pszLine, NULL, NULL, NULL );
-        }
+                bool bOK = false;
+                // Accept creation of spatial index
+                if( STARTS_WITH_CI(pszLine, "CREATE VIRTUAL TABLE ") )
+                {
+                    const char* pszStr = pszLine +
+                                        strlen("CREATE VIRTUAL TABLE ");
+                    if( *pszStr == '"' )
+                        pszStr ++;
+                    while( (*pszStr >= 'a' && *pszStr <= 'z') ||
+                            (*pszStr >= 'A' && *pszStr <= 'Z') ||
+                            *pszStr == '_' )
+                    {
+                        pszStr ++;
+                    }
+                    if( *pszStr == '"' )
+                        pszStr ++;
+                    if( EQUAL(pszStr,
+                        " USING rtree(id, minx, maxx, miny, maxy);") )
+                    {
+                        bOK = true;
+                    }
+                }
+                // Accept INSERT INTO rtree_poly_geom SELECT fid, ST_MinX(geom), ST_MaxX(geom), ST_MinY(geom), ST_MaxY(geom) FROM poly;
+                else if( STARTS_WITH_CI(pszLine, "INSERT INTO rtree_") &&
+                    CPLString(pszLine).ifind("SELECT") != std::string::npos )
+                {
+                    char** papszTokens = CSLTokenizeString2( pszLine, " (),,", 0 );
+                    if( CSLCount(papszTokens) == 15 &&
+                        EQUAL(papszTokens[3], "SELECT") &&
+                        EQUAL(papszTokens[5], "ST_MinX") &&
+                        EQUAL(papszTokens[7], "ST_MaxX") &&
+                        EQUAL(papszTokens[9], "ST_MinY") &&
+                        EQUAL(papszTokens[11], "ST_MaxY") &&
+                        EQUAL(papszTokens[13], "FROM") )
+                    {
+                        bOK = TRUE;
+                    }
+                    CSLDestroy(papszTokens);
+                }
 
-        InstallSQLFunctions();
+                if( !bOK )
+                {
+                    CPLError(CE_Failure, CPLE_NotSupported,
+                            "Rejected statement: %s", pszLine);
+                    return FALSE;
+                }
+            }
+            char* pszErrMsg = NULL;
+            if( sqlite3_exec( hDB, pszLine, NULL, NULL, &pszErrMsg ) != SQLITE_OK )
+            {
+                if( pszErrMsg )
+                    CPLDebug("SQLITE", "Error %s", pszErrMsg);
+            }
+            sqlite3_free(pszErrMsg);
+        }
     }
 
     else
