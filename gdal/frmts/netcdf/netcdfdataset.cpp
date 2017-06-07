@@ -6207,9 +6207,10 @@ GDALDataset *netCDFDataset::Open( GDALOpenInfo *poOpenInfo )
         bTreatAsSubdataset = false;
         poDS->eFormat = eTmpFormat;
     }
+    else
 #endif
 
-    else if( STARTS_WITH_CI(poOpenInfo->pszFilename, "NETCDF:") )
+    if( STARTS_WITH_CI(poOpenInfo->pszFilename, "NETCDF:") )
     {
         char **papszName =
             CSLTokenizeString2(poOpenInfo->pszFilename,
@@ -8397,6 +8398,10 @@ void GDALRegister_netCDF()
 #endif
 #ifdef HAVE_HDF5
     poDriver->SetMetadataItem("GDAL_HAS_HDF5", "YES");
+#endif
+
+#ifdef ENABLE_NCDUMP
+    poDriver->SetMetadataItem("ENABLE_NCDUMP", "YES");
 #endif
 
     poDriver->SetMetadataItem(GDAL_DMD_CREATIONFIELDDATATYPES,
