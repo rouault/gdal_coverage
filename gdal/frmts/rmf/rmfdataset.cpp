@@ -308,9 +308,9 @@ CPLErr RMFRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
 
             if( nRawBytes > nTileBytes )
             {
-                GByte *pszRawBuf = reinterpret_cast<GByte *>(
+                GByte *pabyRawBuf = reinterpret_cast<GByte *>(
                     VSIMalloc( nRawBytes ) );
-                if( pszRawBuf == NULL )
+                if( pabyRawBuf == NULL )
                 {
                     CPLError( CE_Failure, CPLE_FileIO,
                               "Can't allocate a buffer for raw data of "
@@ -323,9 +323,9 @@ CPLErr RMFRasterBand::IReadBlock( int nBlockXOff, int nBlockYOff,
                 }
 
                 (*poGDS->Decompress)( pabyTile, nTileBytes,
-                                      pszRawBuf, nRawBytes );
+                                      pabyRawBuf, nRawBytes );
                 CPLFree( pabyTile );
-                pabyTile = pszRawBuf;
+                pabyTile = pabyRawBuf;
                 nTileBytes = nRawBytes;
             }
         }
@@ -1341,8 +1341,10 @@ do {                                                                    \
                 VSIFReadL( &nValue, 1, sizeof(nValue),
                            poDS->fp ) != sizeof(nValue) )
             {
-                delete poDS;
-                return NULL;
+                CPLDebug("RMF", "Cannot read ROI at index %u", i);
+                break;
+                //delete poDS;
+                //return NULL;
             }
 
             CPLDebug( "RMF", "%d", nValue );
@@ -1422,7 +1424,7 @@ do {                                                                    \
          i < poDS->sHeader.nTileTblSize / sizeof(GUInt32);
          i += 2 )
     {
-        CPLDebug( "RMF", "    %d / %d",
+        CPLDebug( "RMF", "    %u / %u",
                   poDS->paiTiles[i], poDS->paiTiles[i + 1] );
     }
 #endif
