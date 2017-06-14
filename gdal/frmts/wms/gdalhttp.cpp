@@ -210,7 +210,11 @@ CPLErr WMSHTTPFetchMulti(WMSHTTPRequest *pasRequest, int nRequestCount) {
     }
 
     if (conn_i != nRequestCount) { // something gone really really wrong
-        CPLError(CE_Fatal, CPLE_AppDefined, "CPLHTTPFetchMulti(): conn_i != nRequestCount, this should never happen ...");
+        // oddly built libcurl or perhaps absence of network interface
+        CPLError(CE_Failure, CPLE_AppDefined,
+                 "CPLHTTPFetchMulti(): conn_i != nRequestCount, this should never happen ...");
+        nRequestCount = conn_i;
+        ret = CE_Failure;
     }
 
     for (i = 0; i < nRequestCount; ++i) {
@@ -236,7 +240,8 @@ CPLErr WMSHTTPFetchMulti(WMSHTTPRequest *pasRequest, int nRequestCount) {
         if (psRequest->Error.empty()
             && psRequest->nStatus != 0
             && psRequest->nStatus != 200
-            && strstr(psRequest->ContentType, "text"))
+            && strstr(psRequest->ContentType, "text")
+            && psRequest->pabyData != NULL )
             psRequest->Error = reinterpret_cast<const char *>(psRequest->pabyData);
 
         CPLDebug("HTTP", "Request [%d] %s : status = %d, content type = %s, error = %s",
