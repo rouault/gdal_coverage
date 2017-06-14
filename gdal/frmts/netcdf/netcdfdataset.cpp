@@ -1281,6 +1281,12 @@ CPLErr netCDFRasterBand::CreateBandMetadata( const int *paDimIds )
         snprintf(szMetaName, sizeof(szMetaName), "NETCDF_DIM_%s", szVarName);
         SetMetadataItem(szMetaName, szMetaTemp);
 
+        // Avoid int32 overflow. Perhaps something more sensible to do here ?
+        if( result > 0 && Sum > INT_MAX / result )
+            break;
+        if( Taken > INT_MAX - result * Sum )
+            break;
+
         Taken += result * Sum;
     }  // End loop non-spatial dimensions.
 
@@ -8021,7 +8027,7 @@ netCDFDataset::CreateCopy( const char *pszFilename, GDALDataset *poSrcDS,
         else
         {
             szBandName[0] = '\0';
-}
+        }
 
         // Get long_name from <var>#long_name.
         char szLongName[NC_MAX_NAME + 1];
