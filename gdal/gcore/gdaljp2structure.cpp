@@ -361,10 +361,11 @@ static void DumpBPCCBox(CPLXMLNode* psBox, GDALJP2Box& oBox)
         GByte* pabyIter = pabyBoxData;
         int nBPCIndex = 0;
         CPLXMLNode* psLastChild = NULL;
-        while( nRemainingLength >= 1 && nBPCIndex < 16384 )
+        const int nbMaxJPEG2000Components = 16384; // per the JPEG2000 standard
+        while( nRemainingLength >= 1 && nBPCIndex < nbMaxJPEG2000Components )
         {
             AddField(psDecodedContent,
-                     psLastChild, 
+                     psLastChild,
                         CPLSPrintf("BPC%d", nBPCIndex),
                         *pabyIter,
                         GetInterpretationOfBPC(*pabyIter));
@@ -1353,6 +1354,9 @@ void GDALGetJPEG2000StructureInternal(CPLXMLNode* psParent,
                                       int nRecLevel,
                                       vsi_l_offset nFileOrParentBoxSize)
 {
+    // Limit recursion to a reasonable level. I believe that in practice 2
+    // should be sufficient, but just in case someone creates deeply
+    // nested "super-boxes", allow up to 5.
     if( nRecLevel == 5 )
         return;
 
