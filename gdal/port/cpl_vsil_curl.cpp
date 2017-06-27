@@ -2407,6 +2407,7 @@ void VSICurlFilesystemHandler::InvalidateCachedData( const char* pszURL )
         if( psRegion->pszURLHash == pszURLHash )
         {
             CPLFree(psRegion->pData);
+            CPLFree(psRegion);
             if( i < nRegions - 1 )
             {
                 memmove(papsRegions, papsRegions + 1,
@@ -5003,6 +5004,7 @@ char** VSIGSFSHandler::GetFileList( const char *pszDirname,
         }
         else
         {
+            CPLFree(sWriteFuncData.pBuffer);
             delete poHandleHelper;
             return NULL;
         }
