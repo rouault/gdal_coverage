@@ -715,6 +715,51 @@ aws_secret_access_key = bar
     return 'success'
 
 ###############################################################################
+# Read credentials from simulated  ~/.aws/config
+
+def vsis3_read_config_file():
+
+    if gdaltest.webserver_port == 0:
+        return 'skip'
+
+    gdal.SetConfigOption('AWS_SECRET_ACCESS_KEY', '')
+    gdal.SetConfigOption('AWS_ACCESS_KEY_ID', '')
+
+    gdal.SetConfigOption('AWS_CONFIG_FILE', '/vsimem/aws_config')
+
+    gdal.VSICurlClearCache()
+
+    gdal.FileFromMemBuffer('/vsimem/aws_config', """
+[unrelated]
+aws_access_key_id = foo
+aws_secret_access_key = bar
+[default]
+aws_access_key_id = AWS_ACCESS_KEY_ID
+aws_secret_access_key = AWS_SECRET_ACCESS_KEY
+region = us-east-1
+[unrelated]
+aws_access_key_id = foo
+aws_secret_access_key = bar
+""")
+
+    f = open_for_read('/vsis3/s3_fake_bucket/resource')
+    if f is None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+    data = gdal.VSIFReadL(1, 4, f).decode('ascii')
+    gdal.VSIFCloseL(f)
+
+    if data != 'foo':
+        gdaltest.post_reason('fail')
+        print(data)
+        return 'fail'
+
+    gdal.SetConfigOption('AWS_CONFIG_FILE', '')
+    gdal.Unlink('/vsimem/aws_config')
+
+    return 'success'
+
+###############################################################################
 # Read credentials from simulated ~/.aws/credentials and ~/.aws/config
 
 def vsis3_read_credentials_config_file():
@@ -909,6 +954,9 @@ def vsis3_read_credentials_ec2():
     if gdaltest.webserver_port == 0:
         return 'skip'
 
+    if sys.platform not in ('linux', 'linux2', 'win32'):
+        return 'skip'
+
     gdal.SetConfigOption('CPL_AWS_EC2_CREDENTIALS_URL',
                          'http://localhost:%d/latest/meta-data/iam/security-credentials/' % gdaltest.webserver_port)
     # Disable hypervisor related check to test if we are really on EC2
@@ -955,6 +1003,9 @@ def vsis3_read_credentials_ec2():
 def vsis3_read_credentials_ec2_expiration():
 
     if gdaltest.webserver_port == 0:
+        return 'skip'
+
+    if sys.platform not in ('linux', 'linux2', 'win32'):
         return 'skip'
 
     gdal.SetConfigOption('CPL_AWS_EC2_CREDENTIALS_URL',
@@ -1092,6 +1143,7 @@ gdaltest_list = [ vsis3_init,
                   vsis3_5,
                   vsis3_6,
                   vsis3_read_credentials_file,
+                  vsis3_read_config_file,
                   vsis3_read_credentials_config_file,
                   vsis3_read_credentials_config_file_non_default,
                   vsis3_read_credentials_config_file_inconsistent,
