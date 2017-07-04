@@ -308,8 +308,8 @@ namespace Selafin {
             return 0;
         };
         if (!bDiscard) {
-            nData=0;
-            for (size_t i=0;i<4;++i) nData=(nData*0x100)+anb[i];
+            memcpy(&nData, anb, 4);
+            CPL_MSBPTR32(&nData);
         }
         return 1;
     }
@@ -508,14 +508,29 @@ namespace Selafin {
         poHeader->anUnused[0]=panTemp[1];
         CPLFree(panTemp);
         if (poHeader->nVar<0) {
+            poHeader->nVar = 0;
+            delete poHeader;
+            return NULL;
+        }
+        if( poHeader->nVar > 1000000 &&
+            nFileSize / static_cast<int>(sizeof(int)) < poHeader->nVar)
+        {
+            poHeader->nVar = 0;
             delete poHeader;
             return NULL;
         }
         // For each variable, read its name as a string of 32 characters
         poHeader->papszVariables=(char**)VSI_MALLOC2_VERBOSE(sizeof(char*),poHeader->nVar);
+        if( poHeader->nVar > 0 && poHeader->papszVariables == NULL )
+        {
+            poHeader->nVar = 0;
+            delete poHeader;
+            return NULL;
+        }
         for (int i=0;i<poHeader->nVar;++i) {
             nLength=read_string(fp,poHeader->papszVariables[i]);
             if (nLength==0) {
+                poHeader->nVar = i;
                 delete poHeader;
                 return NULL;
             }
