@@ -1961,6 +1961,12 @@ static OSMRetCode PBF_ProcessBlock(OSMContext* psCtxt)
         nRet = ReadBlob(psCtxt, eType);
         if( nRet )
         {
+            if( eRetCode == OSM_EOF &&
+                (psCtxt->iNextJob < psCtxt->nJobs ||
+                 psCtxt->nBlobOffset < psCtxt->nBlobSize) )
+            {
+                eRetCode = OSM_OK;
+            }
             CPLAssert( psCtxt->iNextJob == psCtxt->nJobs ||
                        eType == BLOB_OSMDATA );
         }
