@@ -112,6 +112,9 @@ int SDTSModId::Set( DDFField *poField )
     if( poDefn->GetSubfieldCount() >= 2
         && poDefn->GetSubfield(0)->GetWidth() == 4 )
     {
+        if( strlen(pachData) < 5 )
+            return FALSE;
+
         memcpy( szModule, pachData, 4 );
         szModule[4] = '\0';
 
@@ -121,6 +124,8 @@ int SDTSModId::Set( DDFField *poField )
     {
         DDFSubfieldDefn *poSF
             = poField->GetFieldDefn()->FindSubfieldDefn( "MODN" );
+        if( poSF == NULL )
+            return FALSE;
         int nBytesRemaining;
         pachData = poField->GetSubfieldData(poSF, &nBytesRemaining);
         snprintf( szModule, sizeof(szModule), "%s",
