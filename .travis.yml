@@ -7,6 +7,7 @@ matrix:
       compiler: gcc
       language: cpp
       sudo: required
+      dist: precise
 
 before_install:
   - sudo mv /etc/apt/sources.list.d/pgdg* /tmp
