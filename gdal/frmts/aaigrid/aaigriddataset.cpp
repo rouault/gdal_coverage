@@ -65,11 +65,12 @@ CPL_CVSID("$Id$")
 namespace {
 
 float DoubleToFloatClamp(double dfValue) {
-    if( dfValue <= std::numeric_limits<float>::lowest() )
 #if HAVE_CXX11
+    if( dfValue <= std::numeric_limits<float>::lowest() )
         return std::numeric_limits<float>::lowest();
 #else
-        return -std::numeric_limits<float>::max()
+    if( dfValue <= -std::numeric_limits<float>::max() )
+        return -std::numeric_limits<float>::max();
 #endif
     if( dfValue >= std::numeric_limits<float>::max() )
         return std::numeric_limits<float>::max();
@@ -82,7 +83,7 @@ static CPLString OSR_GDS( char **papszNV, const char *pszField,
                           const char *pszDefaultValue );
 
 /************************************************************************/
-/*                           AAIGRasterBand()                            */
+/*                           AAIGRasterBand()                           */
 /************************************************************************/
 
 AAIGRasterBand::AAIGRasterBand( AAIGDataset *poDSIn, int nDataStart ) :
