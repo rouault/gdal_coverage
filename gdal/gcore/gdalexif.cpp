@@ -43,6 +43,7 @@
 #endif
 
 #include <algorithm>
+#include <limits>
 #include <vector>
 
 #include "cpl_conv.h"
@@ -807,7 +808,7 @@ static GByte* ParseUndefined(const char* pszVal, GUInt32* pnLength)
             GetHexValue(pszVal[i+2]) >= 0 && (
                 pszVal[i+3] == ' ' || pszVal[i+3] == '\0') )
         {
-            pabyData[nSize] = GetHexValue(pszVal[i+2]);
+            pabyData[nSize] = static_cast<GByte>(GetHexValue(pszVal[i+2]));
             nSize ++;
             if( pszVal[i+3] == '\0' )
                 break;
@@ -819,8 +820,8 @@ static GByte* ParseUndefined(const char* pszVal, GUInt32* pnLength)
                  GetHexValue(pszVal[i+3]) >= 0 &&
                  (pszVal[i+4] == ' ' || pszVal[i+4] == '\0') )
         {
-            pabyData[nSize] = GetHexValue(pszVal[i+2]) * 16 +
-                                    GetHexValue(pszVal[i+3]);
+            pabyData[nSize] = static_cast<GByte>(GetHexValue(pszVal[i+2]) * 16 +
+                                    GetHexValue(pszVal[i+3]));
             nSize ++;
             if( pszVal[i+4] == '\0' )
                 break;
@@ -893,26 +894,28 @@ static bool GetNumDenomFromDouble(GDALEXIFTIFFDataType datatype, double dfVal,
         {
             return false;
         }
-        else if (dfVal <= 0xFFFFFFFFU &&
-                    dfVal == static_cast<GUInt32>(dfVal))
+        else if (dfVal <= std::numeric_limits<unsigned int>::max() &&
+                 dfVal == static_cast<GUInt32>(dfVal))
         {
             nNum = static_cast<GUInt32>(dfVal);
             nDenom = 1;
         }
         else if (dfVal<1.0)
         {
-            nNum = static_cast<GUInt32>(dfVal*0xFFFFFFFFU);
-            nDenom = 0xFFFFFFFFU;
+            nNum = static_cast<GUInt32>(
+                        dfVal*std::numeric_limits<unsigned int>::max());
+            nDenom = std::numeric_limits<unsigned int>::max();
         }
         else
         {
-            nNum = 0xFFFFFFFFU;
-            nDenom = static_cast<GUInt32>(0xFFFFFFFFU/dfVal);
+            nNum = std::numeric_limits<unsigned int>::max();
+            nDenom = static_cast<GUInt32>(
+                        std::numeric_limits<unsigned int>::max()/dfVal);
         }
     }
     else if (dfVal < 0.0)
     {
-        if( dfVal >= -0x80000000 &&
+        if( dfVal >= std::numeric_limits<int>::min() &&
             dfVal == static_cast<GInt32>(dfVal))
         {
             nNum = static_cast<GInt32>(dfVal);
@@ -920,18 +923,20 @@ static bool GetNumDenomFromDouble(GDALEXIFTIFFDataType datatype, double dfVal,
         }
         else if (dfVal>-1.0)
         {
-            nNum = -static_cast<GInt32>((-dfVal)*0x7FFFFFFF);
-            nDenom = 0x7FFFFFFF;
+            nNum = -static_cast<GInt32>(
+                        (-dfVal)*std::numeric_limits<int>::max());
+            nDenom = std::numeric_limits<int>::max();
         }
         else
         {
-            nNum = -0x7FFFFFFF;
-            nDenom = static_cast<GInt32>(0x7FFFFFFF/(-dfVal));
+            nNum = -std::numeric_limits<int>::max();
+            nDenom = static_cast<GInt32>(
+                        std::numeric_limits<int>::max()/(-dfVal));
         }
     }
     else
     {
-        if (dfVal <= 0x7FFFFFFF &&
+        if (dfVal <= std::numeric_limits<int>::max() &&
                 dfVal == static_cast<GInt32>(dfVal))
         {
             nNum = static_cast<GInt32>(dfVal);
@@ -939,13 +944,13 @@ static bool GetNumDenomFromDouble(GDALEXIFTIFFDataType datatype, double dfVal,
         }
         else if (dfVal<1.0)
         {
-            nNum = static_cast<GInt32>(dfVal*0x7FFFFFFF);
-            nDenom = 0x7FFFFFFF;
+            nNum = static_cast<GInt32>(dfVal*std::numeric_limits<int>::max());
+            nDenom = std::numeric_limits<int>::max();
         }
         else
         {
-            nNum = 0x7FFFFFFF;
-            nDenom = static_cast<GInt32>(0x7FFFFFFF/dfVal);
+            nNum = std::numeric_limits<int>::max();
+            nDenom = static_cast<GInt32>(std::numeric_limits<int>::max()/dfVal);
         }
     }
     return true;
@@ -1127,7 +1132,8 @@ std::vector<TagValue> EXIFFormatTagValue(char** papszEXIFMetadata,
                 {
                     GUInt32 nVal = atoi(papszTokens[j]);
                     if( tag.datatype == TIFF_SHORT )
-                        WriteLEUInt16(tag.pabyVal, nOffset, nVal);
+                        WriteLEUInt16(tag.pabyVal, nOffset,
+                                      static_cast<GUInt16>(nVal));
                     else
                         WriteLEUInt32(tag.pabyVal, nOffset, nVal);
                 }
@@ -1243,7 +1249,7 @@ static void WriteTag(GByte* pabyData, GUInt32& nBufferOff,
                      GUInt32 nCount, GUInt32 nVal)
 {
     WriteLEUInt16(pabyData, nBufferOff, nTag);
-    WriteLEUInt16(pabyData, nBufferOff, nType);
+    WriteLEUInt16(pabyData, nBufferOff, static_cast<GUInt16>(nType));
     WriteLEUInt32(pabyData, nBufferOff, nCount);
     WriteLEUInt32(pabyData, nBufferOff, nVal);
 }
@@ -1259,7 +1265,8 @@ static void WriteTags(GByte* pabyData, GUInt32& nBufferOff,
     for( size_t i = 0; i < tags.size(); i++ )
     {
         WriteLEUInt16(pabyData, nBufferOff, tags[i].tag);
-        WriteLEUInt16(pabyData, nBufferOff, tags[i].datatype);
+        WriteLEUInt16(pabyData, nBufferOff,
+                      static_cast<GUInt16>(tags[i].datatype));
         WriteLEUInt32(pabyData, nBufferOff, tags[i].nLength);
         if( tags[i].nRelOffset < 0 )
         {
