@@ -52,6 +52,7 @@
 #include <cstddef>
 
 #include <algorithm>
+#include <limits>
 #include <new>
 #include <utility>
 #include <vector>
@@ -4658,7 +4659,18 @@ static void OGRGeometryFactoryStrokeArc( OGRLineString* poLine,
     const int nSign = dfStep > 0 ? 1 : -1;
 
     // Constant angle between all points, so as to not depend on winding order.
-    int nSteps = static_cast<int>(fabs((alpha1 - alpha0) / dfStep) + 0.5);
+    const double dfNumSteps = fabs((alpha1 - alpha0) / dfStep) + 0.5;
+    if ( dfNumSteps >= std::numeric_limits<int>::max() ||
+         dfNumSteps <= std::numeric_limits<int>::min() ||
+         CPLIsNan(dfNumSteps) )
+    {
+        CPLError(CE_Warning, CPLE_AppDefined,
+                 "OGRGeometryFactoryStrokeArc: bogus steps: "
+                 "%lf %lf %lf %lf", alpha0, alpha1, dfStep, dfNumSteps);
+        return;
+    }
+
+    int nSteps = static_cast<int>(dfNumSteps);
     if( bStealthConstraints )
     {
         // We need at least 6 intermediate vertex, and if more additional
@@ -4686,7 +4698,9 @@ static void OGRGeometryFactoryStrokeArc( OGRLineString* poLine,
             poLine->addPoint(dfX, dfY, z);
         }
         else
+        {
             poLine->addPoint(dfX, dfY);
+        }
     }
 }
 
