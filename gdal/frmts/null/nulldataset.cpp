@@ -54,6 +54,9 @@ class GDALNullDataset: public GDALDataset
 
             virtual int         TestCapability( const char * ) override;
 
+            virtual CPLErr      SetProjection(const char*) override;
+            virtual CPLErr      SetGeoTransform(double*) override;
+
             static GDALDataset* Open(GDALOpenInfo* poOpenInfo);
             static GDALDataset* Create(const char *pszFilename,
                                      int nXSize, int nYSize, int nBands,
@@ -127,14 +130,23 @@ GDALNullRasterBand::GDALNullRasterBand(GDALDataType eDT)
 /************************************************************************/
 
 CPLErr GDALNullRasterBand::IRasterIO( GDALRWFlag eRWFlag,
-                                  int , int , int , int ,
+                                  int nXOff, int nYOff, int nXSize, int nYSize,
                                   void * pData, int nBufXSize, int nBufYSize,
                                   GDALDataType eBufType,
                                   GSpacing nPixelSpace, GSpacing nLineSpace,
-                                  GDALRasterIOExtraArg*  )
+                                  GDALRasterIOExtraArg* psExtraArg )
 {
     if( eRWFlag == GF_Write )
         return CE_None;
+    if( psExtraArg->eResampleAlg != GRIORA_NearestNeighbour &&
+        (nBufXSize != nXSize || nBufYSize != nYSize) )
+    {
+        return GDALRasterBand::IRasterIO(eRWFlag, nXOff, nYOff, nXSize, nYSize,
+                                         pData, nBufXSize, nBufYSize,
+                                         eBufType,
+                                         nPixelSpace, nLineSpace,
+                                         psExtraArg);
+    }
     if( nPixelSpace == GDALGetDataTypeSizeBytes(eBufType) &&
         nLineSpace == nPixelSpace * nBufXSize )
     {
@@ -237,6 +249,26 @@ OGRLayer *GDALNullDataset::GetLayer( int iLayer )
         return NULL;
     else
         return m_papoLayers[iLayer];
+}
+
+/************************************************************************/
+/*                           SetProjection()                            */
+/************************************************************************/
+
+CPLErr GDALNullDataset::SetProjection(const char*)
+
+{
+    return CE_None;
+}
+
+/************************************************************************/
+/*                          SetGeoTransform()                           */
+/************************************************************************/
+
+CPLErr GDALNullDataset::SetGeoTransform(double *)
+
+{
+    return CE_None;
 }
 
 /************************************************************************/
