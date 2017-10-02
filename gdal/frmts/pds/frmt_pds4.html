@@ -20,7 +20,7 @@ as well as selected other header metadata.<p>
 
 If several Array objects are present in the label, they will be reported as
 separate subdatasets (typically the main subdataset is an Array3D, and
-backplanes are represented as Array2D. Creation of new datasets with
+backplanes are represented as Array2D). Creation of new datasets with
 subdatasets is not supported: only a single Array3D with possibly multiple bands
 is supported.<p>
 
@@ -240,6 +240,18 @@ gdal.Translate('out.xml', 'in.tif', format = 'PDS4',
 # Cleanup
 gdal.Unlink(in_memory_template)
 </pre>
+
+<h2>Limitations</h2>
+
+<ul>
+<li>No support for the creation of subdatasets</li>
+<li>No PDS4 table support</li>
+</ul>
+
+<p>
+As a new driver and new format, please report any issues to the bug tracker,
+as explained on the <a href="https://trac.osgeo.org/gdal/wiki">wiki</a>
+</p>
 
 <h2>See Also:</h2>
 
