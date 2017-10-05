@@ -59,8 +59,8 @@ before_install:
   - sudo cp -r install-libkml/include/* /usr/local/include
   - sudo cp -r install-libkml/lib/* /usr/local/lib
   - tar xzf openjpeg-v2.3.0-linux-x86_64.tar.gz
-  - sudo cp -r openjpeg-v2.3.0-linux-x86_64/include/* /usr/include
-  - sudo cp -r openjpeg-v2.3.0-linux-x86_64/lib/* /usr/lib
+  - sudo cp -r openjpeg-v2.3.0-linux-x86_64/include/* /usr/local/include
+  - sudo cp -r openjpeg-v2.3.0-linux-x86_64/lib/* /usr/local/lib
   - tar xzf mongo-cxx-1.0.2-install-ubuntu12.04-64bit.tar.gz
   - sudo cp -r mongo-cxx-1.0.2-install/include/* /usr/local/include
   - sudo cp -r mongo-cxx-1.0.2-install/lib/* /usr/local/lib
