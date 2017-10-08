@@ -447,7 +447,7 @@ namespace Selafin {
     int read_floatarray(VSILFILE *fp,double **papadfData,vsi_l_offset nFileSize,bool bDiscard) {
         int nLength=0;
         read_integer(fp,nLength);
-        if (nLength<0 || nLength+1<=0 || static_cast<unsigned>(nLength)/4 > nFileSize) {
+        if (nLength<0 || static_cast<unsigned>(nLength)/4 > nFileSize) {
             CPLError(CE_Failure,CPLE_FileIO,"%s",SELAFIN_ERROR_MESSAGE);
             return -1;
         }
@@ -594,7 +594,7 @@ namespace Selafin {
         CPLFree(panTemp);
         // Read the connectivity table as an array of nPointsPerElement*nElements integers, and check if all point numbers are valid
         nLength=read_intarray(fp,poHeader->panConnectivity,poHeader->nFileSize);
-        if (nLength!=poHeader->nElements*poHeader->nPointsPerElement) {
+        if (poHeader->nElements != 0 && nLength/poHeader->nElements != poHeader->nPointsPerElement) {
             delete poHeader;
             return NULL;
         }
