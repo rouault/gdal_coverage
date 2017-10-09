@@ -75,6 +75,28 @@ static void CheckCurlFeatures()
         bSupportGZip = strstr(pszVersion, "zlib/") != NULL;
         bSupportHTTP2 = strstr(curl_version(), "nghttp2/") != NULL;
         bHasCheckVersion = true;
+
+        curl_version_info_data* data = curl_version_info(CURLVERSION_NOW);
+        if( data->version_num < LIBCURL_VERSION_NUM )
+        {
+            CPLError(CE_Warning, CPLE_AppDefined,
+                     "GDAL was built against curl %d.%d.%d, but is "
+                     "running against %s. Runtime failure is likely !",
+                     LIBCURL_VERSION_MAJOR,
+                     LIBCURL_VERSION_MINOR,
+                     LIBCURL_VERSION_PATCH,
+                     data->version);
+        }
+        else if( data->version_num > LIBCURL_VERSION_NUM )
+        {
+            CPLDebug("HTTP",
+                     "GDAL was built against curl %d.%d.%d, but is "
+                     "running against %s.",
+                     LIBCURL_VERSION_MAJOR,
+                     LIBCURL_VERSION_MINOR,
+                     LIBCURL_VERSION_PATCH,
+                     data->version);
+        }
     }
 }
 
@@ -174,6 +196,7 @@ static const TupleEnvVarOptionName asAssocEnvVarOptionName[] =
     { "GDAL_HTTP_TIMEOUT", "TIMEOUT" },
     { "GDAL_HTTP_LOW_SPEED_TIME", "LOW_SPEED_TIME" },
     { "GDAL_HTTP_LOW_SPEED_LIMIT", "LOW_SPEED_LIMIT" },
+    { "GDAL_HTTP_USERPWD", "USERPWD" },
     { "GDAL_HTTP_PROXY", "PROXY" },
     { "GDAL_HTTP_PROXYUSERPWD", "PROXYUSERPWD" },
     { "GDAL_PROXY_AUTH", "PROXYAUTH" },
@@ -258,10 +281,10 @@ char** CPLHTTPGetOptionsFromEnv()
  *
  * Alternatively, if not defined in the papszOptions arguments, the
  * CONNECTTIMEOUT, TIMEOUT,
- * LOW_SPEED_TIME, LOW_SPEED_LIMIT, PROXY, PROXYUSERPWD, PROXYAUTH, NETRC,
+ * LOW_SPEED_TIME, LOW_SPEED_LIMIT, USERPWD, PROXY, PROXYUSERPWD, PROXYAUTH, NETRC,
  * MAX_RETRY and RETRY_DELAY, HEADER_FILE, HTTP_VERSION values are searched in the configuration
  * options respectively named GDAL_HTTP_CONNECTTIMEOUT, GDAL_HTTP_TIMEOUT,
- * GDAL_HTTP_LOW_SPEED_TIME, GDAL_HTTP_LOW_SPEED_LIMIT,
+ * GDAL_HTTP_LOW_SPEED_TIME, GDAL_HTTP_LOW_SPEED_LIMIT, GDAL_HTTP_USERPWD,
  * GDAL_HTTP_PROXY, GDAL_HTTP_PROXYUSERPWD, GDAL_PROXY_AUTH,
  * GDAL_HTTP_NETRC, GDAL_HTTP_MAX_RETRY, GDAL_HTTP_RETRY_DELAY,
  * GDAL_HTTP_HEADER_FILE, GDAL_HTTP_VERSION
