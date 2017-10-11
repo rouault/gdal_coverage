@@ -4383,6 +4383,8 @@ CPLErr CPL_STDCALL GDALDatasetCopyWholeRaster(
               nSwathCols, nSwathLines, static_cast<int>(bInterleave) );
 
     // Advise the source raster that we are going to read it completely
+    // Note: this might already have been done by GDALCreateCopy() in the
+    // likely case this function is indirectly called by it
     poSrcDS->AdviseRead( 0, 0, nXSize, nYSize, nXSize, nYSize, eDT,
                          nBandCount, NULL, NULL );
 
@@ -4570,7 +4572,7 @@ CPLErr CPL_STDCALL GDALDatasetCopyWholeRaster(
 /************************************************************************/
 
 /**
- * \brief Copy all raster band raster data.
+ * \brief Copy a whole raster band
  *
  * This function copies the complete raster contents of one band to
  * another similarly configured band.  The source and destination
@@ -4675,6 +4677,9 @@ CPLErr CPL_STDCALL GDALRasterBandCopyWholeRaster(
 
     const bool bCheckHoles = CPLTestBool( CSLFetchNameValueDef(
                     papszOptions, "SKIP_HOLES", "NO" ) );
+
+    // Advise the source raster that we are going to read it completely
+    poSrcBand->AdviseRead( 0, 0, nXSize, nYSize, nXSize, nYSize, eDT, NULL );
 
 /* ==================================================================== */
 /*      Band oriented (uninterleaved) case.                             */
