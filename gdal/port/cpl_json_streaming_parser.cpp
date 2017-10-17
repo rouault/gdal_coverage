@@ -458,7 +458,7 @@ bool CPLJSonStreamingParser::Parse(const char* pStr, size_t nLength,
         {
             while(nLength)
             {
-                int ch = *pStr;
+                char ch = *pStr;
                 if( ch == '+' || ch == '-' || isdigit(ch) ||
                     ch == '.' || ch == 'e' || ch == 'E' )
                 {
@@ -505,7 +505,7 @@ bool CPLJSonStreamingParser::Parse(const char* pStr, size_t nLength,
                     return EmitException("Too many characters in number");
                 }
 
-                int ch = *pStr;
+                char ch = *pStr;
                 if( m_bInUnicode)
                 {
                     if( m_osUnicodeHex.size() == 8 )
@@ -618,11 +618,6 @@ bool CPLJSonStreamingParser::Parse(const char* pStr, size_t nLength,
                 }
                 else if( ch == '"' )
                 {
-                    if( m_bInUnicode )
-                    {
-                        return EmitException("Unterminated unicode sequence");
-                    }
-
                     bEOS = true;
                     AdvanceChar(pStr, nLength);
                     SkipSpace(pStr, nLength);
@@ -783,7 +778,7 @@ bool CPLJSonStreamingParser::Parse(const char* pStr, size_t nLength,
         {
             while(nLength)
             {
-                int ch = *pStr;
+                char ch = *pStr;
                 if( isalpha(ch) )
                 {
                     m_osToken += ch;
@@ -862,7 +857,7 @@ std::string CPLJSonStreamingParser::GetSerializedString(const char* pszStr)
             osStr += "\\\"";
         else if( ch == '\\' )
             osStr += "\\\\";
-        else if( ch >= 0 && ch < ' ' )
+        else if( static_cast<int>(ch) >= 0 && ch < ' ' )
             osStr += CPLSPrintf("\\u%04X", ch);
         else
             osStr += ch;
