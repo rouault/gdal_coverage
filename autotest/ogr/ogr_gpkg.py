@@ -218,11 +218,26 @@ def ogr_gpkg_4():
         return 'fail'
 
     lyr0 = gdaltest.gpkg_ds.GetLayer(0)
-    lyr1 = gdaltest.gpkg_ds.GetLayer(1)
+
+    if lyr0.GetFIDColumn() != 'fid':
+        gdaltest.post_reason( 'unexpected FID name for layer 0' )
+        return 'fail'
+
+    gdaltest.gpkg_ds = None
+    gdaltest.gpkg_ds = gdaltest.gpkg_dr.Open( 'tmp/gpkg_test.gpkg', update = 1 )
+
+    lyr0 = gdaltest.gpkg_ds.GetLayer(0)
 
     if lyr0.GetName() != 'first_layer':
         gdaltest.post_reason( 'unexpected layer name for layer 0' )
         return 'fail'
+
+    gdaltest.gpkg_ds = None
+    gdaltest.gpkg_ds = gdaltest.gpkg_dr.Open( 'tmp/gpkg_test.gpkg', update = 1 )
+
+    lyr0 = gdaltest.gpkg_ds.GetLayer(0)
+    lyr1 = gdaltest.gpkg_ds.GetLayer(1)
+
     if lyr0.GetLayerDefn().GetGeomFieldDefn(0).GetName() != 'gpkg_geometry':
         gdaltest.post_reason( 'unexpected geometry field name for layer 0' )
         return 'fail'
@@ -3945,11 +3960,11 @@ def ogr_gpkg_46():
 
     ds.ExecuteSQL("CREATE VIEW my_view2 AS SELECT geom, fid AS OGC_FID, 'bla' as another_column FROM foo")
     ds.ExecuteSQL("INSERT INTO gpkg_contents (table_name, identifier, data_type, srs_id) VALUES ( 'my_view2', 'my_view2', 'features', 0 )")
-    ds.ExecuteSQL("INSERT INTO gpkg_geometry_columns (table_name, column_name, geometry_type_name, srs_id, z, m) values ('my_view2', 'my_geom', 'GEOMETRY', 0, 0, 0)")
+    ds.ExecuteSQL("INSERT INTO gpkg_geometry_columns (table_name, column_name, geometry_type_name, srs_id, z, m) values ('my_view2', 'geom', 'GEOMETRY', 0, 0, 0)")
 
     ds.ExecuteSQL('CREATE VIEW my_view3 AS SELECT a.fid, a.geom, b.fid as fid2 FROM foo a, foo b')
     ds.ExecuteSQL("INSERT INTO gpkg_contents (table_name, identifier, data_type, srs_id) VALUES ( 'my_view3', 'my_view3', 'features', 0 )")
-    ds.ExecuteSQL("INSERT INTO gpkg_geometry_columns (table_name, column_name, geometry_type_name, srs_id, z, m) values ('my_view3', 'my_geom', 'GEOMETRY', 0, 0, 0)")
+    ds.ExecuteSQL("INSERT INTO gpkg_geometry_columns (table_name, column_name, geometry_type_name, srs_id, z, m) values ('my_view3', 'geom', 'GEOMETRY', 0, 0, 0)")
 
     ds = None
 
@@ -4603,7 +4618,7 @@ gdaltest_list = [
     ogr_gpkg_cleanup,
 ]
 
-# gdaltest_list = [ ogr_gpkg_1, ogr_gpkg_38, ogr_gpkg_cleanup ]
+# gdaltest_list = [ ogr_gpkg_1, ogr_gpkg_46, ogr_gpkg_cleanup ]
 
 if __name__ == '__main__':
 
