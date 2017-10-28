@@ -111,7 +111,7 @@ void OGRESRIJSONReader::ReadLayers( OGRGeoJSONDataSource* poDS )
 
     OGRSpatialReference* poSRS = OGRESRIJSONReadSpatialReference( poGJObject_ );
 
-    poLayer_ = new OGRGeoJSONLayer( OGRGeoJSONLayer::DefaultName, poSRS,
+    poLayer_ = new OGRGeoJSONLayer( "ESRIJSON", poSRS,
                                     OGRESRIJSONGetGeometryType(poGJObject_),
                                     poDS, NULL );
     if( poSRS != NULL )
