@@ -23,8 +23,7 @@
 #include <limits>
 
 #include "clock.h"
-#include "memendian.h"
-#include "fileendian.h"
+#include "tendian.h"
 #include "degrib2.h"
 #include "degrib1.h"
 #include "tdlpack.h"
