@@ -27,14 +27,14 @@ Status:
             src/mdl_g2c/engribapi.h
             src/mdl_g2c/mdl_g2c.h -> grib2api.h
             src/mdl_g2c/grib2api.c
-
-        TODO:
             src/degrib/inventory.c
             src/degrib/inventory.h
             src/degrib/metaname.c
             src/degrib/metaname.h
             src/degrib/metaparse.c
             src/degrib/metaprint.c
+
+        TODO:
             src/degrib/myassert.c
             src/degrib/myassert.h
             src/degrib/myerror.c
