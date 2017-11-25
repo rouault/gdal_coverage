@@ -4284,6 +4284,41 @@ def ogr_geom_geometrycollection():
     return 'success'
 
 ###############################################################################
+# Test fix for #7126
+
+def ogr_geom_assignspatialref():
+
+    g = ogr.CreateGeometryFromWkt('GEOMETRYCOLLECTION(POLYGON((0 0,0 1,1 1,0 0)),COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0)),POLYHEDRALSURFACE(((0 0,0 1,1 1,0 0))))')
+    sr = osr.SpatialReference()
+    sr.ImportFromEPSG(4326)
+    g.AssignSpatialReference(sr)
+    if g.GetGeometryRef(0).GetSpatialReference().ExportToWkt() != sr.ExportToWkt():
+        return 'fail'
+    if g.GetGeometryRef(0).GetGeometryRef(0).GetSpatialReference().ExportToWkt() != sr.ExportToWkt():
+        return 'fail'
+    if g.GetGeometryRef(1).GetSpatialReference().ExportToWkt() != sr.ExportToWkt():
+        return 'fail'
+    if g.GetGeometryRef(1).GetGeometryRef(0).GetSpatialReference().ExportToWkt() != sr.ExportToWkt():
+        return 'fail'
+    if g.GetGeometryRef(2).GetSpatialReference().ExportToWkt() != sr.ExportToWkt():
+        return 'fail'
+    if g.GetGeometryRef(2).GetGeometryRef(0).GetSpatialReference().ExportToWkt() != sr.ExportToWkt():
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+def ogr_geom_swapxy():
+
+    g = ogr.CreateGeometryFromWkt('GEOMETRYCOLLECTION(POINT(1 2),LINESTRING(1 2,2 3),POLYGON((0 0,0 1,1 1,0 0)),COMPOUNDCURVE(CIRCULARSTRING(0 0,1 1,2 0)),POLYHEDRALSURFACE(((0 0,0 1,1 1,0 0))))')
+    g.SwapXY()
+    if g.ExportToWkt() != 'GEOMETRYCOLLECTION (POINT (2 1),LINESTRING (2 1,3 2),POLYGON ((0 0,1 0,1 1,0 0)),COMPOUNDCURVE (CIRCULARSTRING (0 0,1 1,0 2)),POLYHEDRALSURFACE (((0 0,1 0,1 1,0 0))))':
+        print(g)
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
 # cleanup
 
 def ogr_geom_cleanup():
@@ -4352,6 +4387,8 @@ gdaltest_list = [
     ogr_geom_polygon_empty_ring,
     ogr_geom_polygon_intersects_point,
     ogr_geom_geometrycollection,
+    ogr_geom_assignspatialref,
+    ogr_geom_swapxy,
     ogr_geom_cleanup ]
 
 # gdaltest_list = [ ogr_geom_triangle_ps_tin_conversion ]
