@@ -148,6 +148,10 @@ static const GTIFFTags asTIFFTags[] =
     { "TIFFTAG_MAXSAMPLEVALUE", TIFFTAG_MAXSAMPLEVALUE, GTIFFTAGTYPE_SHORT },
 };
 
+const char szPROFILE_BASELINE[] = "BASELINE";
+const char szPROFILE_GeoTIFF[] = "GeoTIFF";
+const char szPROFILE_GDALGeoTIFF[] = "GDALGeoTIFF";
+
 /************************************************************************/
 /*                            IsPowerOfTwo()                            */
 /************************************************************************/
@@ -5408,7 +5412,28 @@ CPLErr GTiffRasterBand::SetNoDataValue( double dfNoData )
     poGDS->LoadGeoreferencingAndPamIfNeeded();
 
     if( poGDS->bNoDataSet && poGDS->dfNoDataValue == dfNoData )
+    {
+        bNoDataSet = true;
+        dfNoDataValue = dfNoData;
         return CE_None;
+    }
+
+    if( poGDS->nBands > 1 && poGDS->osProfile == szPROFILE_GDALGeoTIFF )
+    {
+        int bOtherBandHasNoData = FALSE;
+        const int nOtherBand = nBand > 1 ? 1 : 2;
+        double dfOtherNoData = poGDS->GetRasterBand(nOtherBand)->
+                                    GetNoDataValue(&bOtherBandHasNoData);
+        if( bOtherBandHasNoData && dfOtherNoData != dfNoData )
+        {
+            CPLError(CE_Warning, CPLE_AppDefined,
+                 "Setting nodata to %.18g on band %d, but band %d has nodata "
+                 "at %.18g. The TIFFTAG_GDAL_NODATA only support one value "
+                 "per dataset. This value of %.18g will be used for all bands "
+                 "on re-opening",
+                 dfNoData, nBand, nOtherBand, dfOtherNoData, dfNoData);
+        }
+    }
 
     if( poGDS->bStreamingOut && poGDS->bCrystalized )
     {
@@ -7258,7 +7283,7 @@ GTiffDataset::GTiffDataset() :
     bMetadataChanged(false),
     bColorProfileMetadataChanged(false),
     bNeedsRewrite(false),
-    osProfile("GDALGeoTIFF"),
+    osProfile(szPROFILE_GDALGeoTIFF),
     papszCreationOptions(NULL),
     bLoadingOtherBands(false),
     pabyTempWriteBuffer(NULL),
@@ -10790,7 +10815,7 @@ void GTiffDataset::WriteGeoTIFFInfo()
         if( adfGeoTransform[2] == 0.0 && adfGeoTransform[4] == 0.0
                 && adfGeoTransform[5] < 0.0 )
         {
-            if( !EQUAL(osProfile,"BASELINE") )
+            if( !EQUAL(osProfile,szPROFILE_BASELINE) )
             {
                 const double adfPixelScale[3] = {
                     adfGeoTransform[1], fabs(adfGeoTransform[5]), 0.0 };
@@ -10808,7 +10833,7 @@ void GTiffDataset::WriteGeoTIFFInfo()
                     adfGeoTransform[4] * 0.5 + adfGeoTransform[5] * 0.5;
             }
 
-            if( !EQUAL(osProfile,"BASELINE") )
+            if( !EQUAL(osProfile,szPROFILE_BASELINE) )
                 TIFFSetField( hTIFF, TIFFTAG_GEOTIEPOINTS, 6, adfTiePoints );
         }
         else
@@ -10831,7 +10856,7 @@ void GTiffDataset::WriteGeoTIFFInfo()
                     adfGeoTransform[4] * 0.5 + adfGeoTransform[5] * 0.5;
             }
 
-            if( !EQUAL(osProfile,"BASELINE") )
+            if( !EQUAL(osProfile,szPROFILE_BASELINE) )
                 TIFFSetField( hTIFF, TIFFTAG_GEOTRANSMATRIX, 16, adfMatrix );
         }
 
@@ -10865,7 +10890,7 @@ void GTiffDataset::WriteGeoTIFFInfo()
             }
         }
 
-        if( !EQUAL(osProfile,"BASELINE") )
+        if( !EQUAL(osProfile,szPROFILE_BASELINE) )
             TIFFSetField( hTIFF, TIFFTAG_GEOTIEPOINTS,
                           6 * GetGCPCount(), padfTiePoints );
         CPLFree( padfTiePoints );
@@ -10877,7 +10902,7 @@ void GTiffDataset::WriteGeoTIFFInfo()
     const bool bHasProjection =
         pszProjection != NULL && strlen(pszProjection) > 0;
     if( (bHasProjection || bPixelIsPoint)
-        && !EQUAL(osProfile,"BASELINE") )
+        && !EQUAL(osProfile,szPROFILE_BASELINE) )
     {
         bNeedsRewrite = true;
 
@@ -11137,7 +11162,7 @@ void GTiffDataset::WriteRPC( GDALDataset *poSrcDS, TIFF *l_hTIFF,
     {
         bool bRPCSerializedOtherWay = false;
 
-        if( EQUAL(pszProfile,"GDALGeoTIFF") )
+        if( EQUAL(pszProfile,szPROFILE_GDALGeoTIFF) )
         {
             if( !bWriteOnlyInPAMIfNeeded )
                 GTiffDatasetWriteRPCTag( l_hTIFF, papszRPCMD );
@@ -11150,7 +11175,7 @@ void GTiffDataset::WriteRPC( GDALDataset *poSrcDS, TIFF *l_hTIFF,
             CPLFetchBool( l_papszCreationOptions, "RPB", false );
         bool bRPBExplicitlyDenied =
             !CPLFetchBool( l_papszCreationOptions, "RPB", true );
-        if( (!EQUAL(pszProfile,"GDALGeoTIFF") &&
+        if( (!EQUAL(pszProfile,szPROFILE_GDALGeoTIFF) &&
              !CPLFetchBool( l_papszCreationOptions, "RPCTXT", false ) &&
              !bRPBExplicitlyDenied )
             || bRPBExplicitlyAsked )
@@ -11370,7 +11395,7 @@ bool GTiffDataset::WriteMetadata( GDALDataset *poSrcDS, TIFF *l_hTIFF,
     {
         bool bRet = true;
 
-        if( EQUAL(pszProfile,"GDALGeoTIFF") )
+        if( EQUAL(pszProfile,szPROFILE_GDALGeoTIFF) )
         {
             char *pszXML_MD = CPLSerializeXMLTree( psRoot );
             if( strlen(pszXML_MD) > 32000 )
@@ -11421,7 +11446,7 @@ bool GTiffDataset::WriteMetadata( GDALDataset *poSrcDS, TIFF *l_hTIFF,
 
     // If we have no more metadata but it existed before,
     // remove the GDAL_METADATA tag.
-    if( EQUAL(pszProfile,"GDALGeoTIFF") )
+    if( EQUAL(pszProfile,szPROFILE_GDALGeoTIFF) )
     {
         char* pszText = NULL;
         if( TIFFGetField( l_hTIFF, TIFFTAG_GDAL_METADATA, &pszText ) )
@@ -14983,7 +15008,7 @@ TIFF *GTiffDataset::CreateLL( const char * pszFilename,
 /* -------------------------------------------------------------------- */
     const char *pszProfile = CSLFetchNameValue(papszParmList, "PROFILE");
     if( pszProfile == NULL )
-        pszProfile = "GDALGeoTIFF";
+        pszProfile = szPROFILE_GDALGeoTIFF;
 
     const bool bTiled = CPLFetchBool( papszParmList, "TILED", false );
 
@@ -15518,7 +15543,7 @@ TIFF *GTiffDataset::CreateLL( const char * pszFilename,
     }
 
     // Set the ICC color profile.
-    if( !EQUAL(pszProfile,"BASELINE") )
+    if( !EQUAL(pszProfile,szPROFILE_BASELINE) )
     {
         SaveICCProfile(NULL, l_hTIFF, papszParmList, l_nBitsPerSample);
     }
@@ -16315,11 +16340,11 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
     const char *pszProfile = CSLFetchNameValue(papszOptions, "PROFILE");
     if( pszProfile == NULL )
-        pszProfile = "GDALGeoTIFF";
+        pszProfile = szPROFILE_GDALGeoTIFF;
 
-    if( !EQUAL(pszProfile, "BASELINE")
-        && !EQUAL(pszProfile, "GeoTIFF")
-        && !EQUAL(pszProfile, "GDALGeoTIFF") )
+    if( !EQUAL(pszProfile, szPROFILE_BASELINE)
+        && !EQUAL(pszProfile, szPROFILE_GeoTIFF)
+        && !EQUAL(pszProfile, szPROFILE_GDALGeoTIFF) )
     {
         CPLError( CE_Failure, CPLE_AppDefined,
                   "PROFILE=%s not supported in GTIFF driver.",
@@ -16327,7 +16352,7 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
         return NULL;
     }
 
-    const bool bGeoTIFF = !EQUAL(pszProfile, "BASELINE");
+    const bool bGeoTIFF = !EQUAL(pszProfile, szPROFILE_BASELINE);
 
 /* -------------------------------------------------------------------- */
 /*      Special handling for NBITS.  Copy from band metadata if found.  */
@@ -16720,7 +16745,7 @@ GTiffDataset::CreateCopy( const char * pszFilename, GDALDataset *poSrcDS,
 /* -------------------------------------------------------------------- */
 /*      Write NoData value, if exist.                                   */
 /* -------------------------------------------------------------------- */
-    if( EQUAL(pszProfile,"GDALGeoTIFF") )
+    if( EQUAL(pszProfile,szPROFILE_GDALGeoTIFF) )
     {
         int bSuccess = FALSE;
         const double dfNoData =
