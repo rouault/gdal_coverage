@@ -1,5 +1,5 @@
 #!/bin/bash
-lcov --directory . --capture --output-file gdal.info 
+lcov --gcov-tool=gcov-4.8 --directory . --capture --output-file gdal.info 
 gcc filter_info.c -o filter_info
 ./filter_info < gdal.info > gdal_filtered.info 
 
