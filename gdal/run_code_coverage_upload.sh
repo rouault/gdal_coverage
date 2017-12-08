@@ -1,14 +1,14 @@
 #!/bin/bash
-lcov --gcov-tool=gcov-4.8 --directory . --capture --output-file gdal.info 
+lcov --directory . --capture --output-file gdal.info 
 gcc filter_info.c -o filter_info
 ./filter_info < gdal.info > gdal_filtered.info 
 
 
-cp /usr/bin/genhtml .
+#cp /usr/bin/genhtml .
 # to remove date and occurences number, so that only real differences show up
-patch -p0 < genhtml.patch
+#patch -p0 < genhtml.patch
 
-./genhtml -o ./coverage_html --num-spaces 2 gdal_filtered.info 
+genhtml -o ./coverage_html --ignore-errors source --num-spaces 2 gdal_filtered.info 
 
 openssl aes-256-cbc -K $encrypted_380b91a86902_key -iv $encrypted_380b91a86902_iv -in ../id_rsa-gdalautotest-coverage-results.enc -out ~/.ssh/id_rsa-gdalautotest-coverage-results -d
 chmod 600 ~/.ssh/id_rsa-gdalautotest-coverage-results
