@@ -23,7 +23,7 @@ before_install:
 #  - sudo apt-get install python-pip
   - sudo apt-get install libogdi3.2-dev
 # Boost for Mongo
-"  - sudo apt-get install libboost-regex-dev libboost-system-dev libboost-thread-dev
+#  - sudo apt-get install libboost-regex-dev libboost-system-dev libboost-thread-dev
 #  - sudo pip install pyflakes
 #  - pyflakes autotest
 #  - pyflakes gdal/swig/python/scripts
