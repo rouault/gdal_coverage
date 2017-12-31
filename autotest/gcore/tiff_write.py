@@ -7631,6 +7631,7 @@ def tiff_write_166():
         print(ds.GetRasterBand(1).GetOffset())
         return 'fail'
 
+    # Scale + offset through CreateCopy()
     gdal.Translate('/vsimem/tiff_write_166.tif', 'data/byte.tif',
                    options = '-a_srs EPSG:26711+5773 -a_scale 2.0 -a_offset 10 -co PROFILE=GEOTIFF')
     if gdal.VSIStatL('/vsimem/tiff_write_166.tif.aux.xml') is not None:
@@ -7650,6 +7651,52 @@ def tiff_write_166():
     ds = None
     gdal.Unlink('/vsimem/tiff_write_166.tif')
 
+    # Offset only through CreateCopy()
+    gdal.Translate('/vsimem/tiff_write_166.tif', 'data/byte.tif',
+                   options = '-a_srs EPSG:26711+5773 -a_offset 10 -co PROFILE=GEOTIFF')
+    if gdal.VSIStatL('/vsimem/tiff_write_166.tif.aux.xml') is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    ds = gdal.Open('/vsimem/tiff_write_166.tif')
+    if ds.GetRasterBand(1).GetScale() != 1.0:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(1).GetScale())
+        return 'fail'
+
+    if ds.GetRasterBand(1).GetOffset() != 10.0:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(1).GetOffset())
+        return 'fail'
+    ds = None
+    gdal.Unlink('/vsimem/tiff_write_166.tif')
+
+    # Scale + offset through Create()
+    ds = gdal.GetDriverByName('GTiff').Create('/vsimem/tiff_write_166.tif', 1, 1, options = ['PROFILE=GEOTIFF'])
+    sr = osr.SpatialReference()
+    sr.SetFromUserInput('EPSG:26711+5773')
+    ds.SetProjection(sr.ExportToWkt())
+    ds.SetGeoTransform([440720,60,0,3751320,0,-60])
+    ds.GetRasterBand(1).SetScale(2)
+    ds.GetRasterBand(1).SetOffset(10)
+    ds = None
+    if gdal.VSIStatL('/vsimem/tiff_write_166.tif.aux.xml') is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    ds = gdal.Open('/vsimem/tiff_write_166.tif')
+    if ds.GetRasterBand(1).GetScale() != 2.0:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(1).GetScale())
+        return 'fail'
+    if ds.GetRasterBand(1).GetOffset() != 10.0:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(1).GetOffset())
+        return 'fail'
+    ds = None
+    gdal.Unlink('/vsimem/tiff_write_166.tif')
+
+    # Scale only through Create()
     ds = gdal.GetDriverByName('GTiff').Create('/vsimem/tiff_write_166.tif', 1, 1, options = ['PROFILE=GEOTIFF'])
     sr = osr.SpatialReference()
     sr.SetFromUserInput('EPSG:26711+5773')
@@ -7672,6 +7719,69 @@ def tiff_write_166():
         return 'fail'
     ds = None
     gdal.Unlink('/vsimem/tiff_write_166.tif')
+
+    # Offset only through through Create()
+    ds = gdal.GetDriverByName('GTiff').Create('/vsimem/tiff_write_166.tif', 1, 1, options = ['PROFILE=GEOTIFF'])
+    sr = osr.SpatialReference()
+    sr.SetFromUserInput('EPSG:26711+5773')
+    ds.SetProjection(sr.ExportToWkt())
+    ds.SetGeoTransform([440720,60,0,3751320,0,-60])
+    ds.GetRasterBand(1).SetOffset(10)
+    ds = None
+    if gdal.VSIStatL('/vsimem/tiff_write_166.tif.aux.xml') is not None:
+        gdaltest.post_reason('fail')
+        return 'fail'
+
+    ds = gdal.Open('/vsimem/tiff_write_166.tif')
+    if ds.GetRasterBand(1).GetScale() != 1.0:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(1).GetScale())
+        return 'fail'
+    if ds.GetRasterBand(1).GetOffset() != 10.0:
+        gdaltest.post_reason('fail')
+        print(ds.GetRasterBand(1).GetOffset())
+        return 'fail'
+    ds = None
+    gdal.Unlink('/vsimem/tiff_write_166.tif')
+
+    return 'success'
+
+###############################################################################
+def tiff_write_167_deflate_zlevel():
+
+    src_ds = gdal.Open('data/byte.tif')
+    gdal.GetDriverByName('GTiff').CreateCopy('/vsimem/out.tif', src_ds,
+                                             options = ['COMPRESS=DEFLATE',
+                                                        'ZLEVEL=1'])
+    size1 = gdal.VSIStatL('/vsimem/out.tif').size
+
+    gdal.GetDriverByName('GTiff').CreateCopy('/vsimem/out.tif', src_ds,
+                                             options = ['COMPRESS=DEFLATE',
+                                                        'NUM_THREADS=2',
+                                                        'ZLEVEL=9'])
+    size2 = gdal.VSIStatL('/vsimem/out.tif').size
+    gdal.Unlink('/vsimem/out.tif')
+
+    if size2 >= size1:
+        gdaltest.post_reason('fail')
+        print(size1, size2)
+        return 'fail'
+
+    ds = gdal.GetDriverByName('GTiff').Create('/vsimem/out.tif', 20, 20, 1,
+                                             options = ['COMPRESS=DEFLATE',
+                                                        'ZLEVEL=9'])
+    ds.SetProjection(src_ds.GetProjectionRef())
+    ds.SetGeoTransform(src_ds.GetGeoTransform())
+    ds.WriteRaster(0, 0, 20, 20, src_ds.ReadRaster())
+    ds = None
+
+    size2_create = gdal.VSIStatL('/vsimem/out.tif').size
+    gdal.Unlink('/vsimem/out.tif')
+
+    if size2 != size2_create:
+        gdaltest.post_reason('fail')
+        print(size2, size2_create)
+        return 'fail'
 
     return 'success'
 
@@ -7871,6 +7981,7 @@ gdaltest_list = [
     tiff_write_164,
     tiff_write_165,
     tiff_write_166,
+    tiff_write_167_deflate_zlevel,
     #tiff_write_api_proxy,
     tiff_write_cleanup ]
 
