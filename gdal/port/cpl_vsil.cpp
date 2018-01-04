@@ -32,9 +32,9 @@
 #include "cpl_vsi.h"
 
 #include <cassert>
-#include <cstring>
 #include <cstdarg>
 #include <cstddef>
+#include <cstring>
 #if HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
@@ -355,6 +355,12 @@ int VSIMkdir( const char *pszPathname, long mode )
 
 int VSIMkdirRecursive( const char *pszPathname, long mode )
 {
+    if( pszPathname == nullptr || pszPathname[0] == '\0' ||
+        strncmp("/", pszPathname, 2) == 0 )
+    {
+        return -1;
+    }
+
     VSIStatBufL sStat;
     const CPLString osPathname(pszPathname);
     const CPLString osParentPath(CPLGetPath(osPathname));
@@ -474,6 +480,11 @@ int VSIRmdir( const char * pszDirname )
 
 int VSIRmdirRecursive( const char* pszDirname )
 {
+    if( pszDirname == nullptr || pszDirname[0] == '\0' ||
+        strncmp("/", pszDirname, 2) == 0 )
+    {
+        return -1;
+    }
     char** papszFiles = VSIReadDir(pszDirname);
     for( char** papszIter = papszFiles; papszIter && *papszIter; ++papszIter )
     {
