@@ -212,6 +212,8 @@ int CPL_DLL     VSISupportsSparseFiles( const char* pszPath );
 
 int CPL_DLL     VSIHasOptimizedReadMultiRange( const char* pszPath );
 
+const char CPL_DLL *VSIGetActualURL( const char* pszFilename );
+
 void CPL_DLL   *VSIFGetNativeFileDescriptorL( VSILFILE* );
 
 /* ==================================================================== */
@@ -320,6 +322,8 @@ void VSIInstallAzureFileHandler(void);
 void VSIInstallAzureStreamingFileHandler(void);
 void VSIInstallOSSFileHandler(void);
 void VSIInstallOSSStreamingFileHandler(void);
+void VSIInstallSwiftFileHandler(void);
+void VSIInstallSwiftStreamingFileHandler(void);
 void VSIInstallGZipFileHandler(void); /* No reason to export that */
 void VSIInstallZipFileHandler(void); /* No reason to export that */
 void VSIInstallStdinHandler(void); /* No reason to export that */
