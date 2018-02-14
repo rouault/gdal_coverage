@@ -211,6 +211,20 @@ def ogr_mvt_limit_cases():
 
 ###############################################################################
 
+def ogr_mvt_with_extension_fields():
+
+    ds = ogr.Open('data/mvt/with_extension_fields.pbf')
+    lyr = ds.GetLayer(0)
+    f = lyr.GetNextFeature()
+    if ogrtest.check_feature_geometry(f, 'LINESTRING (2070 2690,2082 2707)') != 0:
+        gdaltest.post_reason('fail')
+        f.DumpReadable()
+        return 'fail'
+
+    return 'success'
+
+###############################################################################
+
 def ogr_mvt_mixed():
 
     ds = ogr.Open('data/mvt/mixed/0/0/0.pbf')
@@ -1544,6 +1558,16 @@ def ogr_mvt_write_errors():
         return 'fail'
     gdal.RmdirRecursive('tmp/tmpmvt')
 
+    # Test reprojection failure
+    gdal.RmdirRecursive('/vsimem/foo')
+    ds = ogr.GetDriverByName('MVT').CreateDataSource('/vsimem/foo')
+    with gdaltest.error_handler():
+        lyr = ds.CreateLayer('test', srs = osr.SpatialReference())
+    f = ogr.Feature(lyr.GetLayerDefn())
+    f.SetGeometry(ogr.CreateGeometryFromWkt('POINT(0 0)'))
+    lyr.CreateFeature(f)
+    ds = None
+
     gdal.RmdirRecursive('/vsimem/foo')
 
     return 'success'
@@ -1555,6 +1579,7 @@ gdaltest_list = [
     ogr_mvt_datatypes,
     ogr_mvt_datatype_promotion,
     ogr_mvt_limit_cases,
+    ogr_mvt_with_extension_fields,
     ogr_mvt_mixed,
     ogr_mvt_linestring,
     ogr_mvt_multilinestring,
