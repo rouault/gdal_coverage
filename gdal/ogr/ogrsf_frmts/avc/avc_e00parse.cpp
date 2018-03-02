@@ -1703,7 +1703,8 @@ AVCTxt   *AVCE00ParseNextTx6Line(AVCE00ParseInfo *psInfo, const char *pszLine)
 
         psInfo->iCurItem++;
     }
-    else if (psInfo->iCurItem < (8 + ABS(psTxt->numVerticesLine) +
+    else if (psInfo->iCurItem >= 8 &&
+             psInfo->iCurItem < (8 + ABS(psTxt->numVerticesLine) +
                                    ABS(psTxt->numVerticesArrow)) && nLen >= 28)
     {
         /*-------------------------------------------------------------
@@ -1718,7 +1719,9 @@ AVCTxt   *AVCE00ParseNextTx6Line(AVCE00ParseInfo *psInfo, const char *pszLine)
 
         psInfo->iCurItem++;
     }
-    else if (psInfo->iCurItem < psInfo->numItems &&
+    else if (psInfo->iCurItem >= (8 + ABS(psTxt->numVerticesLine) +
+                                   ABS(psTxt->numVerticesArrow)) &&
+             psInfo->iCurItem < psInfo->numItems &&
              (psTxt->numChars-1)/80 + 1 - (psInfo->numItems - psInfo->iCurItem) >= 0 )
     {
         /*-------------------------------------------------------------
@@ -1889,6 +1892,14 @@ AVCTableDef   *AVCE00ParseNextTableDefLine(AVCE00ParseInfo *psInfo,
             psTableDef->numFields  = (GInt16)AVCE00Str2Int(pszLine+34, 4);
             psTableDef->nRecSize   = (GInt16)AVCE00Str2Int(pszLine+42, 4);
             psTableDef->numRecords = AVCE00Str2Int(pszLine+46, 10);
+            if( psTableDef->numFields < 0 || psTableDef->numFields > 10 * 1024 )
+            {
+                CPLError(CE_Failure, CPLE_AppDefined,
+                        "Error parsing E00 Table Definition line: \"%s\"", pszLine);
+                psInfo->numItems = psInfo->iCurItem = 0;
+                psTableDef->numFields = 0;
+                return nullptr;
+            }
 
             /*---------------------------------------------------------
              * Alloc array of fields defs, will be filled in further calls
