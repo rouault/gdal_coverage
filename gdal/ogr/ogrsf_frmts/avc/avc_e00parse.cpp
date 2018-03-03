@@ -181,29 +181,35 @@ void    _AVCE00ParseDestroyCurObject(AVCE00ParseInfo  *psInfo)
     {
         CPLFree(psInfo->cur.psArc->pasVertices);
         CPLFree(psInfo->cur.psArc);
+        psInfo->cur.psArc = nullptr;
     }
     else if (psInfo->eFileType == AVCFilePAL ||
              psInfo->eFileType == AVCFileRPL )
     {
         CPLFree(psInfo->cur.psPal->pasArcs);
         CPLFree(psInfo->cur.psPal);
+        psInfo->cur.psPal = nullptr;
     }
     else if (psInfo->eFileType == AVCFileCNT)
     {
         CPLFree(psInfo->cur.psCnt->panLabelIds);
         CPLFree(psInfo->cur.psCnt);
+        psInfo->cur.psCnt = nullptr;
     }
     else if (psInfo->eFileType == AVCFileLAB)
     {
         CPLFree(psInfo->cur.psLab);
+        psInfo->cur.psLab = nullptr;
     }
     else if (psInfo->eFileType == AVCFileTOL)
     {
         CPLFree(psInfo->cur.psTol);
+        psInfo->cur.psTol = nullptr;
     }
     else if (psInfo->eFileType == AVCFilePRJ)
     {
         CSLDestroy(psInfo->cur.papszPrj);
+        psInfo->cur.papszPrj = nullptr;
     }
     else if (psInfo->eFileType == AVCFileTXT ||
              psInfo->eFileType == AVCFileTX6)
@@ -211,15 +217,19 @@ void    _AVCE00ParseDestroyCurObject(AVCE00ParseInfo  *psInfo)
         CPLFree(psInfo->cur.psTxt->pasVertices);
         CPLFree(psInfo->cur.psTxt->pszText);
         CPLFree(psInfo->cur.psTxt);
+        psInfo->cur.psTxt = nullptr;
     }
     else if (psInfo->eFileType == AVCFileRXP)
     {
         CPLFree(psInfo->cur.psRxp);
+        psInfo->cur.psRxp = nullptr;
     }
     else if (psInfo->eFileType == AVCFileTABLE)
     {
         _AVCDestroyTableFields(psInfo->hdr.psTableDef, psInfo->cur.pasFields);
         _AVCDestroyTableDef(psInfo->hdr.psTableDef);
+        psInfo->hdr.psTableDef = nullptr;
+        psInfo->cur.pasFields = nullptr;
         psInfo->bTableHdrComplete = FALSE;
     }
     else
@@ -229,7 +239,6 @@ void    _AVCE00ParseDestroyCurObject(AVCE00ParseInfo  *psInfo)
     }
 
     psInfo->eFileType = AVCFileUnknown;
-    psInfo->cur.psArc = nullptr;
 }
 
 /**********************************************************************
@@ -1286,9 +1295,9 @@ char  **AVCE00ParseNextPrjLine(AVCE00ParseInfo *psInfo, const char *pszLine)
         int  iLastLine, nNewLen;
 
         iLastLine = CSLCount(psInfo->cur.papszPrj) - 1;
-        nNewLen = (int)strlen(psInfo->cur.papszPrj[iLastLine])+(int)strlen(pszLine)-1+1;
         if (iLastLine >= 0)
         {
+            nNewLen = (int)strlen(psInfo->cur.papszPrj[iLastLine])+(int)strlen(pszLine)-1+1;
             psInfo->cur.papszPrj[iLastLine] =
                   (char*)CPLRealloc(psInfo->cur.papszPrj[iLastLine],
                                     nNewLen * sizeof(char));
@@ -1960,9 +1969,16 @@ AVCTableDef   *AVCE00ParseNextTableDefLine(AVCE00ParseInfo *psInfo,
             psDef->v11      = (GInt16)AVCE00Str2Int(pszLine + 39, 4);
             psDef->v12      = (GInt16)AVCE00Str2Int(pszLine + 43, 4);
             psDef->v13      = (GInt16)AVCE00Str2Int(pszLine + 47, 2);
-
             strncpy(psDef->szAltName, pszLine+49, 16);
             psDef->szAltName[16] = '\0';
+
+            if( psDef->nSize < 0 )
+            {
+                CPLError(CE_Failure, CPLE_AppDefined,
+                 "Error parsing E00 Table Definition line: \"%s\"", pszLine);
+                psInfo->numItems = psInfo->iCurItem = 0;
+                return nullptr;
+            }
 
             psInfo->nCurObjectId++;
         }
