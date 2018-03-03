@@ -1401,15 +1401,16 @@ AVCTxt   *AVCE00ParseNextTxtLine(AVCE00ParseInfo *psInfo, const char *pszLine)
             psTxt->pszText = (GByte *)CPLRealloc(psTxt->pszText,
                                                  (psTxt->numChars+1)*
                                                      sizeof(GByte));
-            numVertices = ABS(psTxt->numVerticesLine) +
-                                 ABS(psTxt->numVerticesArrow);
-            if( numVertices > 10*1024*1024 )
+            if( ABS(psTxt->numVerticesLine) > 10*1024*1024 -
+                                                ABS(psTxt->numVerticesArrow) )
             {
                 CPLError(CE_Failure, CPLE_AppDefined,
                         "Error parsing E00 TXT line: \"%s\"", pszLine);
                 psInfo->numItems = psInfo->iCurItem = 0;
                 return nullptr;
             }
+            numVertices = ABS(psTxt->numVerticesLine) +
+                                 ABS(psTxt->numVerticesArrow);
             if (numVertices > 0)
                 psTxt->pasVertices = (AVCVertex*)CPLRealloc(psTxt->pasVertices,
                                               numVertices*sizeof(AVCVertex));
@@ -1627,15 +1628,16 @@ AVCTxt   *AVCE00ParseNextTx6Line(AVCE00ParseInfo *psInfo, const char *pszLine)
                                                  (psTxt->numChars+1)*
                                                  sizeof(GByte));
 
-            numVertices = ABS(psTxt->numVerticesLine) +
-                                 ABS(psTxt->numVerticesArrow);
-            if( numVertices > 10*1024*1024 )
+            if( ABS(psTxt->numVerticesLine) > 10*1024*1024 -
+                                                ABS(psTxt->numVerticesArrow) )
             {
                 CPLError(CE_Failure, CPLE_AppDefined,
                         "Error parsing E00 TX6/TX7 line: \"%s\"", pszLine);
                 psInfo->numItems = psInfo->iCurItem = 0;
                 return nullptr;
             }
+            numVertices = ABS(psTxt->numVerticesLine) +
+                                 ABS(psTxt->numVerticesArrow);
             if (numVertices > 0)
                 psTxt->pasVertices = (AVCVertex*)CPLRealloc(psTxt->pasVertices,
                                               numVertices*sizeof(AVCVertex));
@@ -1673,7 +1675,7 @@ AVCTxt   *AVCE00ParseNextTx6Line(AVCE00ParseInfo *psInfo, const char *pszLine)
         if (psInfo->iCurItem == 2 || psInfo->iCurItem == 5)
             numValPerLine = 6;
 
-        for(i=0; i<numValPerLine; i++)
+        for(i=0; i<numValPerLine && nLen >= static_cast<size_t>(i)*10+10; i++)
             pValue[i] = (GInt16)AVCE00Str2Int(pszLine + i*10, 10);
 
         psInfo->iCurItem++;
