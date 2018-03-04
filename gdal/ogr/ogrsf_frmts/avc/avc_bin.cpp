@@ -1766,6 +1766,8 @@ int _AVCBinReadNextArcNit(AVCRawBinFile *psFile, AVCFieldInfo *psField)
         return -1;
 
     psField->nSize     = AVCRawBinReadInt16(psFile);
+    if( psField->nSize < 0 )
+        return -1;
     psField->v2        = AVCRawBinReadInt16(psFile);  /* Always -1 ? */
     psField->nOffset   = AVCRawBinReadInt16(psFile);
     psField->v4        = AVCRawBinReadInt16(psFile);  /* Always 4 ?  */
@@ -2086,7 +2088,7 @@ AVCBinFile *_AVCBinReadOpenTable(const char *pszInfoPath,
             sTableDef.szDataFile[80] = '\0';
 
             for(i = (int)strlen(sTableDef.szDataFile)-1;
-                isspace((unsigned char)sTableDef.szDataFile[i]);
+                i >= 0 && isspace((unsigned char)sTableDef.szDataFile[i]);
                 i--)
             {
                 sTableDef.szDataFile[i] = '\0';
