@@ -956,7 +956,11 @@ void OGRCSVLayer::BuildFeatureDefn( const char *pszNfdcGeomField,
                 poFeatureDefn->AddFieldDefn(&oField);
             }
 
-            osSeqDim = papszDims[nEurostatDims];
+            if( nEurostatDims >= 0 )
+                osSeqDim = papszDims[nEurostatDims];
+            else
+                CPLError(CE_Warning, CPLE_AppDefined, "Invalid nEurostatDims");
+
             CSLDestroy(papszDims);
         }
         else
