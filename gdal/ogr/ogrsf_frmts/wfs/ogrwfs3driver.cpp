@@ -28,6 +28,7 @@
 
 #include "ogrsf_frmts.h"
 #include "cpl_conv.h"
+#include "cpl_minixml.h"
 #include "cpl_http.h"
 #include "swq.h"
 
@@ -53,6 +54,13 @@ class OGRWFS3Dataset : public GDALDataset
         std::vector<std::unique_ptr<OGRLayer>> m_apoLayers;
         bool                                   m_bAPIDocLoaded = false;
         CPLJSONDocument                        m_oAPIDoc;
+
+        static bool                    Download(
+            const CPLString& osURL,
+            const char* pszAccept,
+            CPLString& osResult,
+            CPLString& osContentType,
+            CPLStringList* paosHeaders = nullptr );
 
         static bool                    DownloadJSon(
             const CPLString& osURL,
@@ -80,6 +88,8 @@ class OGRWFS3Layer: public OGRLayer
 {
         OGRWFS3Dataset* m_poDS = nullptr;
         OGRFeatureDefn* m_poFeatureDefn = nullptr;
+        CPLString       m_osURL;
+        CPLString       m_osPath;
         OGREnvelope     m_oExtent;
         bool            m_bFeatureDefnEstablished = false;
         std::unique_ptr<GDALDataset> m_poUnderlyingDS;
@@ -107,6 +117,11 @@ class OGRWFS3Layer: public OGRLayer
                      const CPLJSONArray& oBBOX,
                      const CPLJSONArray& oLinks,
                      const CPLJSONArray& oCRS);
+        OGRWFS3Layer(OGRWFS3Dataset* poDS,
+                     const CPLString& osName,
+                     const CPLString& osTitle,
+                     const CPLString& osURL,
+                     const OGREnvelope& oEnvelope);
        ~OGRWFS3Layer();
 
        const char*     GetName() override { return GetDescription(); }
@@ -130,20 +145,28 @@ class OGRWFS3Layer: public OGRLayer
 };
 
 /************************************************************************/
-/*                           DownloadJSon()                             */
+/*                              Download()                              */
 /************************************************************************/
 
-bool OGRWFS3Dataset::DownloadJSon(const CPLString& osURL,
-                                  CPLJSONDocument& oDoc,
-                                  const char* pszAccept,
-                                  CPLStringList* paosHeaders)
+bool OGRWFS3Dataset::Download(
+            const CPLString& osURL,
+            const char* pszAccept,
+            CPLString& osResult,
+            CPLString& osContentType,
+            CPLStringList* paosHeaders )
 {
 #ifndef REMOVE_HACK
     VSIStatBufL sStatBuf;
     if( VSIStatL(osURL, &sStatBuf) == 0 )
     {
         CPLDebug("WFS3", "Reading %s", osURL.c_str());
-        return oDoc.Load(osURL);
+        GByte* pabyRet = nullptr;
+        if( VSIIngestFile( nullptr, osURL, &pabyRet, nullptr, -1) )
+        {
+            osResult = reinterpret_cast<char*>(pabyRet);
+            CPLFree(pabyRet);
+        }
+        return false;
     }
 #endif
     char** papszOptions = CSLSetNameValue(nullptr,
@@ -163,17 +186,42 @@ bool OGRWFS3Dataset::DownloadJSon(const CPLString& osURL,
         return false;
     }
 
-    if( strstr(osURL, "raw.githubusercontent.com") && strstr(osURL, ".json") )
+    if( psResult->pszContentType )
+        osContentType = psResult->pszContentType;
+    bool bFoundExpectedContentType = false;
+    // FIXME ?
+    if( strstr(pszAccept, "json") )
     {
-        // OK
+        if( strstr(osURL, "raw.githubusercontent.com") &&
+            strstr(osURL, ".json") )
+        {
+            bFoundExpectedContentType = true;
+        }
+        else if( psResult->pszContentType != nullptr &&
+            (strstr(psResult->pszContentType, "application/json") != nullptr ||
+            strstr(psResult->pszContentType, "application/geo+json") != nullptr) )
+        {
+            bFoundExpectedContentType = true;
+        }
     }
-    else if( psResult->pszContentType == nullptr ||
-        (strstr(psResult->pszContentType, "application/json") == nullptr &&
-         strstr(psResult->pszContentType, "application/geo+json") == nullptr) )
+    if( strstr(pszAccept, "xml") &&
+        psResult->pszContentType != nullptr &&
+        strstr(psResult->pszContentType, "text/xml") != nullptr )
+    {
+        bFoundExpectedContentType = true;
+    }
+    if( strstr(pszAccept, "application/openapi+json;version=3.0") &&
+        psResult->pszContentType != nullptr &&
+        strstr(psResult->pszContentType, "application/openapi+json;version=3.0") != nullptr )
+    {
+        bFoundExpectedContentType = true;
+    }
+
+    if( !bFoundExpectedContentType )
     {
         CPLError(CE_Failure, CPLE_AppDefined,
-                 "Unexpected Content-Type: %s",
-                 psResult->pszContentType ?
+                "Unexpected Content-Type: %s",
+                psResult->pszContentType ?
                     psResult->pszContentType : "(null)" );
         CPLHTTPDestroyResult(psResult);
         return false;
@@ -192,10 +240,26 @@ bool OGRWFS3Dataset::DownloadJSon(const CPLString& osURL,
         *paosHeaders = CSLDuplicate(psResult->papszHeaders);
     }
 
-    bool bOK =
-        oDoc.LoadMemory( reinterpret_cast<const char*>(psResult->pabyData) );
+    osResult = reinterpret_cast<const char*>(psResult->pabyData);
     CPLHTTPDestroyResult(psResult);
-    return bOK;
+    return true;
+}
+
+
+/************************************************************************/
+/*                           DownloadJSon()                             */
+/************************************************************************/
+
+bool OGRWFS3Dataset::DownloadJSon(const CPLString& osURL,
+                                  CPLJSONDocument& oDoc,
+                                  const char* pszAccept,
+                                  CPLStringList* paosHeaders)
+{
+    CPLString osResult;
+    CPLString osContentType;
+    if( !Download(osURL, pszAccept, osResult, osContentType, paosHeaders) )
+        return false;
+    return oDoc.LoadMemory( osResult );
 }
 
 /************************************************************************/
@@ -244,36 +308,105 @@ bool OGRWFS3Dataset::Open(GDALOpenInfo* poOpenInfo)
     m_osRootURL = 
         CSLFetchNameValueDef(poOpenInfo->papszOpenOptions, "URL",
             poOpenInfo->pszFilename + strlen("WFS3:"));
-    CPLJSONDocument oDoc;
-    if( !DownloadJSon(m_osRootURL, oDoc) )
-        return false;
     m_nPageSize = atoi( CSLFetchNameValueDef(poOpenInfo->papszOpenOptions,
                             "PAGE_SIZE",CPLSPrintf("%d", m_nPageSize)) );
-
-    CPLJSONArray oCollections = oDoc.GetRoot().GetArray("collections");
-    if( !oCollections.IsValid() )
-    {
-        CPLError(CE_Failure, CPLE_AppDefined,
-                 "No collections array");
+    CPLString osResult;
+    CPLString osContentType;
+    // FIXME: json would be preferable in first position, but
+    // http://www.pvretano.com/cubewerx/cubeserv/default/wfs/3.0.0/foundation doesn't like it
+    if( !Download(m_osRootURL,
+            "text/xml, application/json",
+            osResult, osContentType) )
         return false;
-    }
 
-    for( int i = 0; i < oCollections.Size(); i++ )
+    if( osContentType.find("json") != std::string::npos )
     {
-        CPLJSONObject oCollection = oCollections[i];
-        if( oCollection.GetType() != CPLJSONObject::Type::Object )
-            continue;
-        CPLString osName( oCollection.GetString("name") );
-        if( osName.empty() )
-            continue;
-        CPLString osTitle( oCollection.GetString("title") );
-        CPLString osDescription( oCollection.GetString("description") );
-        CPLJSONArray oBBOX = oCollection.GetArray("extent/bbox");
-        CPLJSONArray oLinks = oCollection.GetArray("links");
-        CPLJSONArray oCRS = oCollection.GetArray("crs");
-        m_apoLayers.push_back( std::unique_ptr<OGRWFS3Layer>( new
-            OGRWFS3Layer(this, osName, osTitle, osDescription,
-                         oBBOX, oLinks, oCRS) ) );
+        CPLJSONDocument oDoc;
+        if( !oDoc.LoadMemory(osResult) )
+        {
+            return false;
+        }
+        CPLJSONArray oCollections = oDoc.GetRoot().GetArray("collections");
+        if( !oCollections.IsValid() )
+        {
+            CPLError(CE_Failure, CPLE_AppDefined,
+                    "No collections array");
+            return false;
+        }
+
+        for( int i = 0; i < oCollections.Size(); i++ )
+        {
+            CPLJSONObject oCollection = oCollections[i];
+            if( oCollection.GetType() != CPLJSONObject::Type::Object )
+                continue;
+            CPLString osName( oCollection.GetString("name") );
+            if( osName.empty() )
+                continue;
+            CPLString osTitle( oCollection.GetString("title") );
+            CPLString osDescription( oCollection.GetString("description") );
+            CPLJSONArray oBBOX = oCollection.GetArray("extent/bbox");
+            CPLJSONArray oLinks = oCollection.GetArray("links");
+            CPLJSONArray oCRS = oCollection.GetArray("crs");
+            m_apoLayers.push_back( std::unique_ptr<OGRWFS3Layer>( new
+                OGRWFS3Layer(this, osName, osTitle, osDescription,
+                            oBBOX, oLinks, oCRS) ) );
+        }
+    }
+    else if( osContentType.find("xml") != std::string::npos )
+    {
+        CPLXMLNode* psDoc = CPLParseXMLString(osResult);
+        if( !psDoc )
+            return false;
+        CPLXMLTreeCloser oCloser(psDoc);
+        CPLStripXMLNamespace(psDoc, nullptr, true);
+        CPLXMLNode* psCollections = CPLGetXMLNode(psDoc, "=Collections");
+        if( !psCollections )
+            return false;
+        for( CPLXMLNode* psIter = psCollections->psChild;
+                                            psIter; psIter = psIter->psNext )
+        {
+            if( psIter->eType == CXT_Element &&
+                strcmp(psIter->pszValue, "Collection") == 0 )
+            {
+                CPLString osHref;
+                OGREnvelope oEnvelope;
+                for( CPLXMLNode* psCollIter = psIter->psChild;
+                                psCollIter; psCollIter = psCollIter->psNext )
+                {
+                    if( psCollIter->eType == CXT_Element &&
+                        strcmp(psCollIter->pszValue, "link") == 0 )
+                    {
+                        CPLString osRel(CPLGetXMLValue(psCollIter, "rel", ""));
+                        if( osRel == "collection" )
+                        {
+                            osHref = CPLGetXMLValue(psCollIter, "href", "");
+                            break;
+                        }
+                    }
+                }
+                CPLString osName(CPLGetXMLValue(psIter, "Name", ""));
+                CPLString osTitle(CPLGetXMLValue(psIter, "Title", ""));
+                CPLString osLC(CPLGetXMLValue(psIter,
+                                        "WGS84BoundingBox.LowerCorner", ""));
+                CPLString osUC(CPLGetXMLValue(psIter,
+                                        "WGS84BoundingBox.UpperCorner", ""));
+                CPLStringList aosLC(CSLTokenizeString2(osLC, " ", 0));
+                CPLStringList aosUC(CSLTokenizeString2(osUC, " ", 0));
+                if( aosLC.size() == 2 && aosUC.size() == 2 )
+                {
+                    oEnvelope.MinX = CPLAtof(aosLC[0]);
+                    oEnvelope.MinY = CPLAtof(aosLC[1]);
+                    oEnvelope.MaxX = CPLAtof(aosUC[0]);
+                    oEnvelope.MaxY = CPLAtof(aosUC[1]);
+                }
+                if( !osHref.empty() )
+                {
+                    m_apoLayers.push_back( std::unique_ptr<OGRWFS3Layer>( new
+                        OGRWFS3Layer(
+                            this, osName, osTitle, osHref, oEnvelope) ) );
+                }
+            }
+        }
     }
 
     return true;
@@ -345,6 +478,43 @@ OGRWFS3Layer::OGRWFS3Layer(OGRWFS3Dataset* poDS,
         poSRS->Release();
     }
 
+    m_osURL = m_poDS->m_osRootURL + "/" + osName; // FIXME
+    m_osPath = "/" + osName; // FIXME
+
+    ResetReading();
+}
+
+/************************************************************************/
+/*                           OGRWFS3Layer()                             */
+/************************************************************************/
+
+OGRWFS3Layer::OGRWFS3Layer(OGRWFS3Dataset* poDS,
+                           const CPLString& osName,
+                           const CPLString& osTitle,
+                           const CPLString& osURL,
+                           const OGREnvelope& oEnvelope) :
+    m_poDS(poDS),
+    m_osURL(osURL)
+{
+    m_poFeatureDefn = new OGRFeatureDefn(osName);
+    m_poFeatureDefn->Reference();
+    SetDescription(osName);
+    if( !osTitle.empty() )
+        SetMetadataItem("TITLE", osTitle.c_str());
+    if( oEnvelope.IsInit() )
+    {
+        m_oExtent = oEnvelope;
+    }
+
+    OGRSpatialReference* poSRS = new OGRSpatialReference();
+    poSRS->SetFromUserInput(SRS_WKT_WGS84);
+    m_poFeatureDefn->GetGeomFieldDefn(0)->SetSpatialRef(poSRS);
+    poSRS->Release();
+
+    size_t nPos = osURL.rfind('/');
+    if( nPos != std::string::npos )
+        m_osPath = osURL.substr(nPos);
+
     ResetReading();
 }
 
@@ -380,7 +550,7 @@ bool OGRWFS3Layer::EstablishFeatureDefnFromAPIDoc()
         return false;
 
     CPLJSONObject oSchema = oDoc.GetRoot().GetObj("paths")
-            .GetObj(CPLString("/") + GetDescription() + "/{id}")
+            .GetObj(m_osPath + "/{id}")
             .GetObj("get/responses/200/content")
             .GetObj("application/geo+json")
             .GetObj("schema");
@@ -441,8 +611,12 @@ void OGRWFS3Layer::EstablishFeatureDefn()
         return;
 
     CPLJSONDocument oDoc;
-    if( !m_poDS->DownloadJSon(
-                m_poDS->m_osRootURL + "/" + GetDescription(), oDoc) )
+    CPLString osURL(m_osURL);
+    // FIXME
+    // Explicit count is needed for http://www.pvretano.com/cubewerx/cubeserv/default/wfs/3.0.0/foundation/ otherwise full collection is returned
+    osURL = CPLURLAddKVP(osURL, "count",
+                            CPLSPrintf("%d", m_poDS->m_nPageSize));
+    if( !m_poDS->DownloadJSon(osURL, oDoc) )
         return;
 
     CPLString osTmpFilename(CPLSPrintf("/vsimem/wfs3_%p.json", this));
@@ -474,7 +648,7 @@ void OGRWFS3Layer::ResetReading()
     m_poUnderlyingDS.reset();
     m_poUnderlyingLayer = nullptr;
     m_nFID = 1;
-    m_osGetURL = m_poDS->m_osRootURL + "/" + GetDescription();
+    m_osGetURL = m_osURL;
     if( m_poDS->m_nPageSize > 0 )
     {
         m_osGetURL = CPLURLAddKVP(m_osGetURL, "count",
@@ -557,66 +731,72 @@ OGRFeature* OGRWFS3Layer::GetNextRawFeature()
                 return nullptr;
             }
 
-            CPLJSONArray oLinks = oDoc.GetRoot().GetArray("links");
-            if( oLinks.IsValid() )
+            // To avoid issues with implementations having a non-relevant
+            // next link, make sure the current page is not empty
+            // We could even check that the feature count is the page size
+            // actually
+            if( m_poUnderlyingLayer->GetFeatureCount() > 0 )
             {
-                for( int i = 0; i < oLinks.Size(); i++ )
+                CPLJSONArray oLinks = oDoc.GetRoot().GetArray("links");
+                if( oLinks.IsValid() )
                 {
-                    CPLJSONObject oLink = oLinks[i];
-                    if( !oLink.IsValid() ||
-                        oLink.GetType() != CPLJSONObject::Type::Object )
+                    for( int i = 0; i < oLinks.Size(); i++ )
                     {
-                        continue;
-                    }
-                    if( oLink.GetString("rel") == "next" &&
-                        oLink.GetString("type") == "application/geo+json" )
-                    {
-                        m_osGetURL = oLink.GetString("href");
-                        break;
-                    }
-                }
-            }
-
-            if( m_osGetURL.empty() )
-            {
-                for( int i = 0; i < aosHeaders.size(); i++ )
-                {
-                    CPLDebug("WFS3", "%s", aosHeaders[i]);
-                    if( STARTS_WITH_CI(aosHeaders[i], "Link=") &&
-                        strstr(aosHeaders[i], "rel=\"next\"") &&
-                        strstr(aosHeaders[i], "type=\"application/geo+json\"") )
-                    {
-                        const char* pszStart = strchr(aosHeaders[i], '<');
-                        if( pszStart )
+                        CPLJSONObject oLink = oLinks[i];
+                        if( !oLink.IsValid() ||
+                            oLink.GetType() != CPLJSONObject::Type::Object )
                         {
-                            const char* pszEnd = strchr(pszStart + 1, '>');
-                            if( pszEnd )
-                            {
-                                m_osGetURL = pszStart + 1;
-                                m_osGetURL.resize(pszEnd - pszStart - 1);
-                            }
+                            continue;
                         }
-                        break;
+                        if( oLink.GetString("rel") == "next" &&
+                            oLink.GetString("type") == "application/geo+json" )
+                        {
+                            m_osGetURL = oLink.GetString("href");
+                            break;
+                        }
                     }
                 }
-            }
+
+                if( m_osGetURL.empty() )
+                {
+                    for( int i = 0; i < aosHeaders.size(); i++ )
+                    {
+                        CPLDebug("WFS3", "%s", aosHeaders[i]);
+                        if( STARTS_WITH_CI(aosHeaders[i], "Link=") &&
+                            strstr(aosHeaders[i], "rel=\"next\"") &&
+                            strstr(aosHeaders[i], "type=\"application/geo+json\"") )
+                        {
+                            const char* pszStart = strchr(aosHeaders[i], '<');
+                            if( pszStart )
+                            {
+                                const char* pszEnd = strchr(pszStart + 1, '>');
+                                if( pszEnd )
+                                {
+                                    m_osGetURL = pszStart + 1;
+                                    m_osGetURL.resize(pszEnd - pszStart - 1);
+                                }
+                            }
+                            break;
+                        }
+                    }
+                }
 
 #ifndef REMOVE_HACK
-            if( m_osGetURL.empty() &&
-                m_poUnderlyingLayer->GetFeatureCount() > 0 )
-            {
-                m_osGetURL = m_poDS->m_osRootURL + "/" + GetDescription();
-                if( m_poDS->m_nPageSize > 0 )
+                if( m_osGetURL.empty() )
                 {
-                    m_osGetURL = CPLURLAddKVP(m_osGetURL, "count",
-                                        CPLSPrintf("%d", m_poDS->m_nPageSize));
+                    m_osGetURL = m_osURL;
+                    if( m_poDS->m_nPageSize > 0 )
+                    {
+                        m_osGetURL = CPLURLAddKVP(m_osGetURL, "count",
+                                            CPLSPrintf("%d", m_poDS->m_nPageSize));
+                    }
+                    m_osGetURL = CPLURLAddKVP(m_osGetURL, "startIndex",
+                        CPLSPrintf(CPL_FRMT_GIB,
+                            m_nFID + m_poUnderlyingLayer->GetFeatureCount() - 1));
+                    m_osGetURL = AddFilters(m_osGetURL);
                 }
-                m_osGetURL = CPLURLAddKVP(m_osGetURL, "startIndex",
-                    CPLSPrintf(CPL_FRMT_GIB,
-                        m_nFID + m_poUnderlyingLayer->GetFeatureCount() - 1));
-                m_osGetURL = AddFilters(m_osGetURL);
-            }
 #endif
+            }
         }
 
         poSrcFeature = m_poUnderlyingLayer->GetNextFeature();
@@ -671,7 +851,7 @@ bool OGRWFS3Layer::SupportsResultTypeHits()
         return false;
 
     CPLJSONArray oParameters = oDoc.GetRoot().GetObj("paths")
-                                  .GetObj(CPLString("/") + GetDescription())
+                                  .GetObj(m_osPath)
                                   .GetObj("get")
                                   .GetArray("parameters");
     if( !oParameters.IsValid() )
@@ -683,6 +863,12 @@ bool OGRWFS3Layer::SupportsResultTypeHits()
         if( !osRef.empty() && osRef.find("#/") == 0 )
         {
             oParam = oDoc.GetRoot().GetObj(osRef.substr(2));
+#ifndef REMOVE_HACK
+            // Needed for http://www.pvretano.com/cubewerx/cubeserv/default/wfs/3.0.0/foundation/api
+            // that doesn't define #/components/parameters/resultType
+            if( osRef == "#/components/parameters/resultType" )
+                return true;
+#endif
         }
         if( oParam.GetString("name") == "resultType" &&
             oParam.GetString("in") == "query" )
@@ -708,15 +894,42 @@ GIntBig OGRWFS3Layer::GetFeatureCount(int bForce)
 {
     if( SupportsResultTypeHits() && !m_bFilterMustBeClientSideEvaluated )
     {
-        CPLString osURL(m_poDS->m_osRootURL + "/" + GetDescription());
+        CPLString osURL(m_osURL);
         osURL = CPLURLAddKVP(osURL, "resultType", "hits");
         osURL = AddFilters(osURL);
-        CPLJSONDocument oDoc;
-        if( m_poDS->DownloadJSon(osURL, oDoc) )
+#ifndef REMOVE_HACK
+        bool bGMLRequest = m_osURL.find("cubeserv") != std::string::npos;
+#else
+        constexpr bool bGMLRequest = false;
+#endif
+        if( bGMLRequest )
         {
-            GIntBig nFeatures = oDoc.GetRoot().GetLong("numberMatched", -1);
-            if( nFeatures >= 0 )
-                return nFeatures;
+            CPLString osResult;
+            CPLString osContentType;
+            if( m_poDS->Download(osURL, "text/xml", osResult, osContentType) )
+            {
+                CPLXMLNode* psDoc = CPLParseXMLString(osResult);
+                if( psDoc )
+                {
+                    CPLXMLTreeCloser oCloser(psDoc);
+                    CPLStripXMLNamespace(psDoc, nullptr, true);
+                    CPLString osNumberMatched =
+                        CPLGetXMLValue(psDoc,
+                                       "=FeatureCollection.numberMatched", "");
+                    if( !osNumberMatched.empty() )
+                        return CPLAtoGIntBig(osNumberMatched);
+                }
+            }
+        }
+        else
+        {
+            CPLJSONDocument oDoc;
+            if( m_poDS->DownloadJSon(osURL, oDoc) )
+            {
+                GIntBig nFeatures = oDoc.GetRoot().GetLong("numberMatched", -1);
+                if( nFeatures >= 0 )
+                    return nFeatures;
+            }
         }
     }
 
@@ -820,7 +1033,7 @@ void OGRWFS3Layer::GetQueriableAttributes()
         return;
 
     CPLJSONArray oParameters = oDoc.GetRoot().GetObj("paths")
-                                  .GetObj(CPLString("/") + GetDescription())
+                                  .GetObj(m_osPath)
                                   .GetObj("get")
                                   .GetArray("parameters");
     if( !oParameters.IsValid() )
